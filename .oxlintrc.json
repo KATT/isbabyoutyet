@@ -154,7 +154,8 @@
         "react/exhaustive-effect-dependencies": "off",
         "react-hooks/exhaustive-deps": "off",
         "unicorn/consistent-function-scoping": "off",
-        "unicorn/prefer-add-event-listener": "off"
+        "unicorn/prefer-add-event-listener": "off",
+        "workspace/no-tautological-expect": "error"
       }
     },
     {

@@ -318,9 +318,6 @@ test("keeps a stable query key scoped by baby for loader prefetch and useQuery",
     "browserPushCapability",
     babyRef,
   ]);
-  expect(browserPushQueryOptions(queryClient, babyRef).queryKey).toEqual(
-    browserPushQueryOptions(queryClient, babyRef).queryKey,
-  );
 });
 
 test("prefetches capability and isSubscribed into the query cache in the browser", async () => {

@@ -17,7 +17,6 @@ function queryClientResource() {
 test("keeps a stable query key scoped by image URL", () => {
   const url = "https://cdn.example/full.jpg";
   expect(browserImageFactory(url).queryKey).toEqual(["browserImagePrefetch", url]);
-  expect(browserImageFactory(url).queryKey).toEqual(browserImageFactory(url).queryKey);
 });
 
 test("prefetches the image into the query cache in the browser", async () => {

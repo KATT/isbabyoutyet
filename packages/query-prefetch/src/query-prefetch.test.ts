@@ -143,7 +143,7 @@ test("getQueryPreloader awaits data and returns a preloaded handle with initialD
   expect(handle.initialData).toEqual({ id: "2", title: "Post 2" });
 
   const options = preloadedQueryOptions(postById, handle);
-  expect(options.initialData).toEqual(handle.initialData);
+  expect(options.initialData).toEqual({ id: "2", title: "Post 2" });
 });
 
 test("getQueryPreloader awaits infinite query data", async () => {
@@ -153,7 +153,10 @@ test("getQueryPreloader awaits infinite query data", async () => {
   expect(handle.initialData.pages[0]?.page[0]?.tag).toBe("hot");
 
   const options = preloadedInfiniteQueryOptions(postsInfinite, handle);
-  expect(options.initialData).toEqual(handle.initialData);
+  expect(options.initialData).toEqual({
+    pages: [{ page: [{ id: "1", tag: "hot" }], nextCursor: null }],
+    pageParams: [null],
+  });
 });
 
 test("preloadedQueryOptions rebuilds a no-arg factory from an initiated handle", async () => {
@@ -180,7 +183,7 @@ test("preloadedQueryOptions preserves initialData when remixing a preloaded hand
   const preloader = getQueryPreloader(queryClient);
   const handle = await preloader.ensureQueryData(postById, { postId: "remix" });
   const options = preloadedQueryOptions(postById, handle, (input) => input);
-  expect(options.initialData).toEqual(handle.initialData);
+  expect(options.initialData).toEqual({ id: "remix", title: "Post remix" });
 });
 
 test("preloadedInfiniteQueryOptions supports remixInput on initiated handles", async () => {
@@ -198,7 +201,10 @@ test("preloadedInfiniteQueryOptions preserves initialData for preloaded handles"
   const preloader = getQueryPreloader(queryClient);
   const handle = await preloader.ensureInfiniteQueryData(postsInfinite, { tag: "saved" });
   const options = preloadedInfiniteQueryOptions(postsInfinite, handle);
-  expect(options.initialData).toEqual(handle.initialData);
+  expect(options.initialData).toEqual({
+    pages: [{ page: [{ id: "1", tag: "saved" }], nextCursor: null }],
+    pageParams: [null],
+  });
 });
 
 test("getQueryInitiator forwards infinite query errors to onError", async () => {
@@ -218,7 +224,10 @@ test("preloadedInfiniteQueryOptions remixes preloaded infinite handles", async (
   const preloader = getQueryPreloader(queryClient);
   const handle = await preloader.ensureInfiniteQueryData(postsInfinite, { tag: "saved" });
   const options = preloadedInfiniteQueryOptions(postsInfinite, handle, (input) => input);
-  expect(options.initialData).toEqual(handle.initialData);
+  expect(options.initialData).toEqual({
+    pages: [{ page: [{ id: "1", tag: "saved" }], nextCursor: null }],
+    pageParams: [null],
+  });
 });
 
 test("useInitiateQuery returns a handle and warms the cache", async () => {

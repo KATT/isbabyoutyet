@@ -1,13 +1,7 @@
 import { convexTest } from "convex-test";
 import sharp from "sharp";
 import { expect, test } from "vitest";
-import {
-  BLUR_PLACEHOLDER,
-  PUSH_IMAGE,
-  renderBlurDataUrl,
-  renderPageThumbnail,
-  renderPushImage,
-} from "../src/photoDerivatives";
+import { renderBlurDataUrl, renderPageThumbnail, renderPushImage } from "../src/photoDerivatives";
 import {
   generateBlurDataUrlsForExistingPhotosDoc,
   generatePushImagesForExistingPhotosDoc,
@@ -38,8 +32,8 @@ test("push images are 1350×675 JPEGs under 200KB (Android big-picture at 3×)",
   const rendered = await renderPushImage(source);
   const meta = await sharp(rendered).metadata();
   expect(meta.format).toBe("jpeg");
-  expect(meta.width).toBe(PUSH_IMAGE.width);
-  expect(meta.height).toBe(PUSH_IMAGE.height);
+  expect(meta.width).toBe(1350);
+  expect(meta.height).toBe(675);
   expect(rendered.byteLength).toBeLessThan(200_000);
 
   const page = await sharp(await renderPageThumbnail(source)).metadata();
@@ -56,8 +50,8 @@ test("blur placeholders are tiny JPEG data URLs of the same center-cover crop", 
   const jpeg = Buffer.from(blurDataUrl.slice("data:image/jpeg;base64,".length), "base64");
   const meta = await sharp(jpeg).metadata();
   expect(meta.format).toBe("jpeg");
-  expect(meta.width).toBe(BLUR_PLACEHOLDER.width);
-  expect(meta.height).toBe(BLUR_PLACEHOLDER.height);
+  expect(meta.width).toBe(8);
+  expect(meta.height).toBe(8);
 
   const red = await renderBlurDataUrl(
     await jpegBytes({ width: 64, height: 64, background: { r: 220, g: 30, b: 30 } }),

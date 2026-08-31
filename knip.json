@@ -47,6 +47,7 @@
         "no-optional.ts!",
         "no-overzealous-destructuring.ts!",
         "no-rhf-watch.ts!",
+        "no-tautological-expect.ts!",
         "no-test-preloaded-query.ts!",
         "no-use-effect.ts!",
         "no-use-state.ts!",

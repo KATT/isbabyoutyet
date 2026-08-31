@@ -8,8 +8,6 @@ import { modules, registerComponents } from "./test.setup";
 import { getCurrentStatus } from "../src/types";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "../src/seedCredentials";
 import {
-  HOMEPAGE_DEMO_FEED,
-  HOMEPAGE_DEMO_FEED_SLOTS,
   HOMEPAGE_DEMO_PHOTO_KEYS,
   homepageDemoFeedFor,
   homepageDemoLocales,
@@ -17,9 +15,6 @@ import {
 import { SUPPORTED_LOCALES } from "../src/i18n";
 
 const FIRST_PAGE = { numItems: 50, cursor: null };
-
-const FIXTURE_UPDATES = HOMEPAGE_DEMO_FEED.filter((item) => item.kind === "update");
-const FIXTURE_ENCOURAGEMENTS = HOMEPAGE_DEMO_FEED.filter((item) => item.kind === "encouragement");
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -62,18 +57,13 @@ async function storeCompletePhotoSet(t: Awaited<ReturnType<typeof setup>>) {
 }
 
 test("every locale has copy for every shared feed slot", () => {
-  const updateSlots = HOMEPAGE_DEMO_FEED_SLOTS.filter((slot) => slot.kind === "update").length;
-  const encouragementSlots = HOMEPAGE_DEMO_FEED_SLOTS.filter(
-    (slot) => slot.kind === "encouragement",
-  ).length;
+  expect(homepageDemoLocales()).toEqual(["en-GB", "en-US", "sv", "es", "pt-BR"]);
 
-  expect(homepageDemoLocales()).toEqual([...SUPPORTED_LOCALES]);
-
-  for (const locale of SUPPORTED_LOCALES) {
+  for (const locale of ["en-GB", "en-US", "sv", "es", "pt-BR"] as const) {
     const feed = homepageDemoFeedFor(locale);
-    expect(feed).toHaveLength(HOMEPAGE_DEMO_FEED_SLOTS.length);
-    expect(feed.filter((item) => item.kind === "update")).toHaveLength(updateSlots);
-    expect(feed.filter((item) => item.kind === "encouragement")).toHaveLength(encouragementSlots);
+    expect(feed).toHaveLength(23);
+    expect(feed.filter((item) => item.kind === "update")).toHaveLength(8);
+    expect(feed.filter((item) => item.kind === "encouragement")).toHaveLength(15);
   }
 
   expect(homepageDemoFeedFor("en-US").some((item) => item.message.includes("labor"))).toBe(true);
@@ -86,14 +76,14 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
   const t = await setup();
 
   const result = await t.mutation(internal.homepageDemo.refresh, {});
-  expect(result.publicId).toBe(HOMEPAGE_DEMO_BABY.publicId);
+  expect(result.publicId).toBe("juniper-hale");
   expect(result.locale).toBe("en-GB");
 
-  const baby = await t.query(api.baby.getByPublicId, { id: HOMEPAGE_DEMO_BABY.publicId });
+  const baby = await t.query(api.baby.getByPublicId, { id: "juniper-hale" });
   expect(baby).toMatchObject({
-    name: HOMEPAGE_DEMO_BABY.name,
-    publicId: HOMEPAGE_DEMO_BABY.publicId,
-    theme: HOMEPAGE_DEMO_BABY.theme,
+    name: "Juniper Hale",
+    publicId: "juniper-hale",
+    theme: "sunny-days",
     locale: "en-GB",
     demo: true,
   });
@@ -113,7 +103,7 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
     babyId: baby!._id,
     paginationOpts: FIRST_PAGE,
   });
-  expect(feed.page).toHaveLength(HOMEPAGE_DEMO_FEED.length);
+  expect(feed.page).toHaveLength(23);
   expect(feed.page[0]?.kind).toBe("encouragement");
   expect(feed.page[0]?.kind === "encouragement" && feed.page[0].encouragement.authorName).toBe(
     "Jess",
@@ -121,8 +111,8 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
 
   const updates = feed.page.filter((item) => item.kind === "update");
   const encouragements = feed.page.filter((item) => item.kind === "encouragement");
-  expect(updates).toHaveLength(FIXTURE_UPDATES.length);
-  expect(encouragements).toHaveLength(FIXTURE_ENCOURAGEMENTS.length);
+  expect(updates).toHaveLength(8);
+  expect(encouragements).toHaveLength(15);
   expect(updates.map((item) => item.kind === "update" && item.update.milestone)).toEqual(
     expect.arrayContaining(["labor_started", "gone_to_hospital", "born"]),
   );
@@ -143,7 +133,7 @@ test("refresh is idempotent and wipes visitor encouragements", async () => {
     babyId: first.babyId,
     paginationOpts: FIRST_PAGE,
   });
-  expect(before.page).toHaveLength(HOMEPAGE_DEMO_FEED.length + 1);
+  expect(before.page).toHaveLength(24);
 
   const second = await t.mutation(internal.homepageDemo.refresh, {});
   expect(second.babyId).toBe(first.babyId);
@@ -160,7 +150,7 @@ test("refresh is idempotent and wipes visitor encouragements", async () => {
     babyId: second.babyId,
     paginationOpts: FIRST_PAGE,
   });
-  expect(after.page).toHaveLength(HOMEPAGE_DEMO_FEED.length);
+  expect(after.page).toHaveLength(23);
   expect(
     after.page.some(
       (item) => item.kind === "encouragement" && item.encouragement.authorName === "Random Visitor",
@@ -216,7 +206,7 @@ test("daily reset reuses stored photos and ignores recent fixture encouragements
 
   vi.setSystemTime(new Date("2026-08-21T03:00:00.000Z"));
   const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
-  expect(result).toEqual({ status: "reset", resetBabies: SUPPORTED_LOCALES.length });
+  expect(result).toEqual({ status: "reset", resetBabies: 5 });
   expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(true);
 
   const baby = await t.query(api.baby.getByPublicId, { id: first.publicId });
@@ -248,7 +238,7 @@ test("daily reset protects only the baby with a recent visitor encouragement", a
   const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
   expect(result).toEqual({
     status: "reset",
-    resetBabies: SUPPORTED_LOCALES.length - 1,
+    resetBabies: 4,
   });
   expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(true);
 
@@ -381,12 +371,12 @@ test("refresh({ locale: 'sv' }) creates Ella Holm with Swedish copy", async () =
   const t = await setup();
 
   const result = await t.mutation(internal.homepageDemo.refresh, { locale: "sv" });
-  expect(result.publicId).toBe(HOMEPAGE_DEMO_BABIES.sv.publicId);
+  expect(result.publicId).toBe("ella-holm");
   expect(result.locale).toBe("sv");
 
-  const baby = await t.query(api.baby.getByPublicId, { id: HOMEPAGE_DEMO_BABIES.sv.publicId });
+  const baby = await t.query(api.baby.getByPublicId, { id: "ella-holm" });
   expect(baby).toMatchObject({
-    name: HOMEPAGE_DEMO_BABIES.sv.name,
+    name: "Ella Holm",
     publicId: "ella-holm",
     locale: "sv",
     resolvedLocale: "sv",
@@ -426,22 +416,33 @@ test("each locale gets its own baby with the same feed shape and shared photos",
     results.push(await t.mutation(internal.homepageDemo.refresh, { locale, photos }));
   }
 
-  expect(new Set(results.map((result) => result.babyId)).size).toBe(SUPPORTED_LOCALES.length);
-  expect(results.map((result) => result.publicId)).toEqual(
-    SUPPORTED_LOCALES.map((locale) => HOMEPAGE_DEMO_BABIES[locale].publicId),
-  );
+  expect(new Set(results.map((result) => result.babyId)).size).toBe(5);
+  expect(results.map((result) => result.publicId)).toEqual([
+    "juniper-hale",
+    "willow-brooks",
+    "ella-holm",
+    "lucia-navarro",
+    "helena-costa",
+  ]);
 
+  const expectedNames = {
+    "en-GB": "Juniper Hale",
+    "en-US": "Willow Brooks",
+    sv: "Ella Holm",
+    es: "Lucía Navarro",
+    "pt-BR": "Helena Costa",
+  } as const;
   for (const result of results) {
     const baby = await t.query(api.baby.getByPublicId, { id: result.publicId });
     expect(baby?.photoId).toBe(photos.born?.photoId);
     expect(baby?.locale).toBe(result.locale);
-    expect(baby?.name).toBe(HOMEPAGE_DEMO_BABIES[result.locale].name);
+    expect(baby?.name).toBe(expectedNames[result.locale]);
 
     const feed = await t.query(api.timeline.listByBaby, {
       babyId: result.babyId,
       paginationOpts: FIRST_PAGE,
     });
-    expect(feed.page).toHaveLength(HOMEPAGE_DEMO_FEED_SLOTS.length);
+    expect(feed.page).toHaveLength(23);
   }
 
   const juniper = await t.query(api.baby.getByPublicId, { id: "juniper-hale" });

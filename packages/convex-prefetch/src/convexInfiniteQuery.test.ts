@@ -17,7 +17,7 @@ test("convexInfiniteQuery builds cursor pagination options", () => {
     initialNumItems: 20,
   });
 
-  expect(options.queryKey[0]).toBe(CONVEX_INFINITE_QUERY_KEY);
+  expect(options.queryKey[0]).toBe("convexInfiniteQuery");
   expect(options.initialPageParam).toEqual({ numItems: 20, cursor: null });
   expect(
     options.getNextPageParam(

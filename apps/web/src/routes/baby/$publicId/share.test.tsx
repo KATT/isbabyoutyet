@@ -3,12 +3,17 @@ import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { expect, test, vi } from "vitest";
-import { getBabySeo } from "@/lib/baby-seo";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { seedOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
 import { Route } from "@/routes/baby/$publicId/share";
+
+function expectBabyOgImageUrl(url: string | undefined, publicId: string) {
+  const parsed = new URL(url ?? "");
+  expect(parsed.pathname).toBe(`/og/baby/${publicId}`);
+  expect(parsed.searchParams.get("v")).toBeTruthy();
+}
 
 test("beforeLoad validates and canonicalizes the baby slug", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
@@ -62,12 +67,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
     params: { publicId: baby.publicId },
   });
 
-  const babyDoc = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-  if (!babyDoc) throw new Error("expected baby");
-  const prefetchedImageUrl = new URL(data.imagePrefetch.input ?? "");
-  expect(prefetchedImageUrl.pathname).toBe(`/og/baby/${baby.publicId}`);
-  expect(prefetchedImageUrl.searchParams.get("v")).toBeTruthy();
-  expect(data.imagePrefetch.input).toBe(getBabySeo(babyDoc, baby.publicId).imageUrl);
+  expectBabyOgImageUrl(data.imagePrefetch.input, baby.publicId);
   expect(data.myAccess.initialData.canManage).toBe(true);
   expect(data.shareLink).toBe(`https://isbabyoutyet.com/baby/${baby.publicId}`);
 });
@@ -100,7 +100,7 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
 
   const freshBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
   if (!freshBaby) throw new Error("expected baby");
-  expect(data.imagePrefetch.input).toBe(getBabySeo(freshBaby, baby.publicId).imageUrl);
+  expectBabyOgImageUrl(data.imagePrefetch.input, baby.publicId);
   expect(freshBaby.theme).toBe("baby-blue");
 });
 
@@ -111,9 +111,6 @@ test("copies from the route overlay and dismisses through overlay history", asyn
     babyId: baby.babyId,
     theme: "baby-blue",
   });
-  const babyDoc = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-  if (!babyDoc) throw new Error("expected baby");
-  const preview = getBabySeo(babyDoc, baby.publicId);
   const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
   const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
   await using _clipboard = makeResource({}, () => {
@@ -141,8 +138,8 @@ test("copies from the route overlay and dismisses through overlay history", asyn
   await vi.waitFor(() => {
     expect(ctx.view.getByRole("dialog")).toBeTruthy();
   });
-  const image = ctx.view.getByRole("img", { name: preview.title });
-  expect(image.getAttribute("src")).toBe(preview.imageUrl);
+  const image = ctx.view.getByRole("img", { name: /Baby Smith/ });
+  expectBabyOgImageUrl(image.getAttribute("src") ?? undefined, baby.publicId);
   fireEvent.click(ctx.view.getByRole("button", { name: "Copy link to share" }));
   await vi.waitFor(() => {
     expect(writeText).toHaveBeenCalledWith(`https://isbabyoutyet.com/baby/${baby.publicId}`);
