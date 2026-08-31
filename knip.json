@@ -17,7 +17,8 @@
       "entry": [
         "public/sw.js!",
         "src/server.ts!",
-        "src/test/setup.ts!",
+        "src/test/stubJsdomWindow.ts!",
+        "src/test/renderResource.ts!",
         "src/test/convexTestHarness.ts!",
         "src/test/convexTestSeed.ts!",
         "src/test/renderWithConvexTest.tsx!",

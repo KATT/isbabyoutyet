@@ -1,7 +1,8 @@
 import { Check } from "@phosphor-icons/react";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { Dialog, DialogContent } from "@workspace/ui/components/dialog";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { renderResource } from "@/test/renderResource";
 import {
   Outlet,
   RouterProvider,
@@ -156,7 +157,7 @@ test("SubmitButton honors an extra disabled prop while idle", async () => {
 
 test("SubmitButton throws when used outside a Form without an explicit form", () => {
   expect(() => {
-    render(
+    renderResource(
       <LocaleProvider locale="en-GB">
         <SubmitButton form="context" IconComponent={Check} iconPosition="start">
           Send
@@ -841,10 +842,7 @@ test("dirty form overlay blocks in-app navigation until discarded", async () => 
     defaultPendingMinMs: 0,
   });
   await router.load();
-  const view = render(<RouterProvider router={router} />);
-  await using _view = makeResource(view, () => {
-    view.unmount();
-  });
+  await using view = renderResource(<RouterProvider router={router} />);
 
   fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
   fireEvent.click(view.getByRole("button", { name: "Leave" }));

@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, type RenderResult } from "@testing-library/react";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
@@ -42,12 +42,12 @@ const absentSettingsProps = {
   onOpenChangeComplete: null,
 };
 
-function openJourneyEditor(view: ReturnType<typeof render>) {
+function openJourneyEditor(view: RenderResult) {
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
 }
 
 /** Press the modal dialog's backdrop the way a real pointer would. */
-function clickDialogBackdrop(view: ReturnType<typeof render>) {
+function clickDialogBackdrop(view: RenderResult) {
   const backdrop = view.baseElement.querySelector("[data-slot=dialog-overlay]");
   if (!backdrop) throw new Error("dialog backdrop missing");
   fireEvent.pointerDown(backdrop, { pointerType: "mouse" });
@@ -56,7 +56,7 @@ function clickDialogBackdrop(view: ReturnType<typeof render>) {
   fireEvent.click(backdrop);
 }
 
-function selectJourneyPreset(view: ReturnType<typeof render>, label: string) {
+function selectJourneyPreset(view: RenderResult, label: string) {
   fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
   const option = view.getByRole("option", { name: label });
   fireEvent.pointerDown(option, { pointerType: "mouse" });

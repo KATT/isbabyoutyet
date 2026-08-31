@@ -1,15 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { Coachmark } from "./coachmark";
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+import { renderResource } from "@/test/renderResource";
 
 test("scrolls the target into view and can hide the tip", async () => {
   const onDismiss = vi.fn<() => void>();
