@@ -1,6 +1,8 @@
 import { fireEvent } from "@testing-library/react";
 import type { NavigateOptions } from "@tanstack/react-router";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { makeResource } from "@workspace/convex/convex/test.resource";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
 import { AddBabyPage, AddBabyPageView, Route, type CreateBaby } from "./dashboard_.add";
@@ -361,4 +363,66 @@ test("does not subscribe for visitor messages when the switch stays off", async 
     expect(createBaby).toHaveBeenCalled();
   });
   expect(subscribeOwnerMessages).not.toHaveBeenCalled();
+});
+
+test("still navigates when message-notification subscribe fails", async () => {
+  const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
+  await using _restore = makeResource({}, () => {
+    toastError.mockRestore();
+  });
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue({
+    publicId: "baby-fern",
+    babyId: TEST_BABY_ID,
+  } as Awaited<ReturnType<CreateBaby>>);
+  const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
+  const subscribeOwnerMessages = vi
+    .fn<SubscribeOwnerMessages>()
+    .mockRejectedValue(new Error("Notification permission denied"));
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages });
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-09" },
+  });
+  fireEvent.click(view.getByRole("switch", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
+
+  await vi.waitFor(() => {
+    expect(subscribeOwnerMessages).toHaveBeenCalledWith(TEST_BABY_ID);
+  });
+  expect(toastError).toHaveBeenCalledWith("Notification permission denied");
+  expect(navigate).toHaveBeenCalledWith({
+    to: "/baby/$publicId",
+    params: { publicId: "baby-fern" },
+  });
+});
+
+test("toasts a generic subscribe failure when the error is not an Error", async () => {
+  const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
+  await using _restore = makeResource({}, () => {
+    toastError.mockRestore();
+  });
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue({
+    publicId: "baby-fern",
+    babyId: TEST_BABY_ID,
+  } as Awaited<ReturnType<CreateBaby>>);
+  const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
+  const subscribeOwnerMessages = vi.fn<SubscribeOwnerMessages>().mockRejectedValue("nope");
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages });
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-09" },
+  });
+  fireEvent.click(view.getByRole("switch", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
+
+  await vi.waitFor(() => {
+    expect(toastError).toHaveBeenCalledWith("Failed to subscribe to notifications");
+  });
+  expect(navigate).toHaveBeenCalled();
 });

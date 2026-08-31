@@ -20,6 +20,8 @@ test("settings loader fetches only manager settings data", async () => {
       initialData: { coParents: unknown[]; invites: unknown[] };
     };
     profile: { initialData: { locale: string } | null };
+    vapidPublicKey: { initialData: string };
+    browserPush: { input: string };
   }>({
     harness,
     route: Route,
@@ -35,6 +37,8 @@ test("settings loader fetches only manager settings data", async () => {
     initialData: { coParents: [], invites: [] },
   });
   expect(result.profile?.initialData?.locale).toBeTruthy();
+  expect(result.vapidPublicKey.initialData).toBeTruthy();
+  expect(result.browserPush).toMatchObject({ input: baby.publicId });
 });
 
 test("settings loader redirects non-managers to the public baby page", async () => {
