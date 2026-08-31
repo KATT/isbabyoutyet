@@ -1,22 +1,14 @@
-import { render } from "@testing-library/react";
-import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
+import { renderResource } from "@/test/renderResource";
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
   return makeResource({}, () => {
     vi.useRealTimers();
-  });
-}
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
   });
 }
 

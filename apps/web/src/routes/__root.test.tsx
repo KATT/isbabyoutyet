@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -13,13 +13,11 @@ import {
   RootDocument,
   RootErrorComponent,
 } from "@/routes/__root";
+import { renderResource } from "@/test/renderResource";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 function renderProgress(ui: ReactElement) {
-  const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
-  return makeResource(view, () => {
-    view.unmount();
-  });
+  return renderResource(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
 }
 
 function withoutBrowserWindow(run: () => Promise<void>) {

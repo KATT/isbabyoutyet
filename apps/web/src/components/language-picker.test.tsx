@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LanguagePicker } from "./language-picker";
 import { shouldApplyLocaleChange } from "@/lib/should-apply-locale-change";
+import { renderResource } from "@/test/renderResource";
 
 test("shouldApplyLocaleChange rejects empty, unsupported, and unchanged values", () => {
   expect(shouldApplyLocaleChange(null, "en-GB")).toBe(false);
@@ -16,7 +16,7 @@ function renderPicker(opts: {
   value: "en-GB" | "sv";
   onValueChange: (locale: "en-GB" | "sv" | "en-US" | "es" | "pt-BR") => Promise<void>;
 }) {
-  const view = render(
+  return renderResource(
     <LanguagePicker
       disabled={false}
       label="Language"
@@ -24,9 +24,6 @@ function renderPicker(opts: {
       onValueChange={opts.onValueChange}
     />,
   );
-  return makeResource(view, () => {
-    view.unmount();
-  });
 }
 
 test("ignores selecting the already-active locale", async () => {

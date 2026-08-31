@@ -1,14 +1,11 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
+import { renderResource } from "@/test/renderResource";
 
 function renderToastResource(publicId: string) {
-  const view = render(<HomepageDemoToast publicId={publicId} />);
-  return makeResource(view, () => {
-    view.unmount();
-  });
+  return renderResource(<HomepageDemoToast publicId={publicId} />);
 }
 
 test("shows a persistent demo toast on the homepage demo baby", async () => {

@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act } from "@testing-library/react";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { renderResource } from "@/test/renderResource";
 import {
   closeOverlayLink,
   dismissOverlay,
@@ -143,10 +144,7 @@ test("useOverlayNav owns enter/exit state and dismisses after animation", async 
     defaultPendingMinMs: 0,
   });
   await router.load();
-  const view = render(<RouterProvider router={router} />);
-  await using _view = makeResource(view, () => {
-    view.unmount();
-  });
+  await using _view = renderResource(<RouterProvider router={router} />);
 
   expect(latest.current?.open).toBe(false);
   act(() => {
