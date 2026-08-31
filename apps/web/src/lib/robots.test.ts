@@ -1,5 +1,4 @@
 import { expect, test } from "vitest";
-import { HOMEPAGE_DEMO_BABIES } from "@workspace/convex/src/seedCredentials";
 import {
   babyPageRobotsHeaders,
   isIndexableBabyPublicId,
@@ -7,6 +6,14 @@ import {
   robotsTxt,
   searchRobotsMeta,
 } from "@/lib/robots";
+
+const HOMEPAGE_DEMO_PUBLIC_IDS = [
+  "juniper-hale",
+  "willow-brooks",
+  "ella-holm",
+  "lucia-navarro",
+  "helena-costa",
+] as const;
 
 test("only homepage live-demo baby pages are indexable", () => {
   expect(isIndexableBabyPublicId("juniper-hale")).toBe(true);
@@ -23,9 +30,9 @@ test("robots.txt blocks family baby pages and allows live demos", () => {
   const body = robotsTxt();
   expect(body).toContain("Disallow: /baby/");
   expect(body).toContain("Disallow: /og/baby/");
-  for (const baby of Object.values(HOMEPAGE_DEMO_BABIES)) {
-    expect(body).toContain(`Allow: /baby/${baby.publicId}`);
-    expect(body).toContain(`Allow: /og/baby/${baby.publicId}`);
+  for (const publicId of HOMEPAGE_DEMO_PUBLIC_IDS) {
+    expect(body).toContain(`Allow: /baby/${publicId}`);
+    expect(body).toContain(`Allow: /og/baby/${publicId}`);
   }
 });
 
@@ -46,8 +53,8 @@ test("robots.txt lets model-training crawlers index the homepage and live demos"
   expect(body).toContain("User-agent: ClaudeBot\nAllow: /");
   expect(body).toContain("User-agent: Applebot-Extended\nAllow: /");
   expect(body).not.toContain("User-agent: GPTBot\nDisallow: /");
-  for (const baby of Object.values(HOMEPAGE_DEMO_BABIES)) {
-    expect(body).toContain(`Allow: /baby/${baby.publicId}`);
+  for (const publicId of HOMEPAGE_DEMO_PUBLIC_IDS) {
+    expect(body).toContain(`Allow: /baby/${publicId}`);
   }
 });
 
@@ -67,5 +74,7 @@ test("search robots meta keeps Google indexing off family pages", () => {
 test("noindex headers apply to private pages without blocking public demos", () => {
   expect(noIndexHeaders()).toEqual({ "X-Robots-Tag": "noindex, nofollow" });
   expect(babyPageRobotsHeaders("juniper-hale")).toEqual({});
-  expect(babyPageRobotsHeaders("a-real-family-page")).toEqual(noIndexHeaders());
+  expect(babyPageRobotsHeaders("a-real-family-page")).toEqual({
+    "X-Robots-Tag": "noindex, nofollow",
+  });
 });

@@ -8,7 +8,7 @@ import {
   openGraphImageMeta,
   robotsNoIndexMeta,
 } from "@/lib/seo";
-import { CANONICAL_ORIGIN, absoluteUrl, canonicalUrl } from "@/lib/site-url";
+import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -18,14 +18,13 @@ function useFakeTimersResource(now: Date) {
 }
 
 test("canonical URLs always point at production", () => {
-  expect(canonicalUrl("/")).toBe(`${CANONICAL_ORIGIN}/`);
-  expect(canonicalUrl("/baby/juniper-hale")).toBe(`${CANONICAL_ORIGIN}/baby/juniper-hale`);
+  expect(canonicalUrl("/")).toBe("https://isbabyoutyet.com/");
+  expect(canonicalUrl("/baby/juniper-hale")).toBe("https://isbabyoutyet.com/baby/juniper-hale");
 });
 
 test("absolute asset URLs accept an explicit origin", () => {
-  expect(absoluteUrl(homepageOgImagePath(), "http://localhost:3000")).toBe(
-    "http://localhost:3000/og",
-  );
+  expect(homepageOgImagePath()).toBe("/og");
+  expect(absoluteUrl("/og", "http://localhost:3000")).toBe("http://localhost:3000/og");
   expect(absoluteUrl("/og/baby/juniper-hale", "http://localhost:3000")).toBe(
     "http://localhost:3000/og/baby/juniper-hale",
   );
@@ -49,7 +48,7 @@ test("baby SEO head includes countdown title, description, and dynamic OG image"
   expect(seo.title).toContain("21 days until due date");
   expect(seo.title).toContain("Juniper");
   expect(seo.description).toContain("Juniper");
-  expect(seo.canonical).toBe(`${CANONICAL_ORIGIN}/baby/juniper-hale`);
+  expect(seo.canonical).toBe("https://isbabyoutyet.com/baby/juniper-hale");
   expect(seo.imageUrl).toContain("/og/baby/juniper-hale");
   expect(seo.indexable).toBe(true);
 });
@@ -75,7 +74,6 @@ test("baby OG image URL version changes with rendered baby data", () => {
   expect(mangoUrl.searchParams.get("v")).toBeTruthy();
   expect(babyBlueUrl.searchParams.get("v")).not.toBe(mangoUrl.searchParams.get("v"));
   expect(photoUrl.searchParams.get("v")).not.toBe(mangoUrl.searchParams.get("v"));
-  expect(babySeoHead(baby).imageUrl).toBe(mangoUrl.toString());
 });
 
 test("custom due date text replaces countdown metadata", async () => {
@@ -200,7 +198,6 @@ test("overdue baby titles use the overdue copy", async () => {
   });
 
   expect(seo.title).toContain("overdue");
-  expect(robotsNoIndexMeta()[0]?.content).toContain("noindex");
 });
 
 test("baby titles use singular day copy for one-day overdue and one day until due", async () => {
@@ -343,6 +340,13 @@ test("baby status detail covers born, in-progress, overdue, and due-date copy", 
       status: { type: "not_yet" },
     }),
   ).toBe("9 days overdue");
+});
+
+test("noindex meta opts search and Googlebot out of indexing", () => {
+  expect(robotsNoIndexMeta()).toEqual([
+    { name: "robots", content: "noindex, nofollow" },
+    { name: "googlebot", content: "noindex, nofollow" },
+  ]);
 });
 
 test("Open Graph image meta includes dimensions and a large Twitter card", () => {

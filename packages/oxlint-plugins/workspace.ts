@@ -10,6 +10,7 @@ import { noMock } from "./no-mock.ts";
 import { noOptional } from "./no-optional.ts";
 import { noOverzealousDestructuring } from "./no-overzealous-destructuring.ts";
 import { noRhfWatch } from "./no-rhf-watch.ts";
+import { noTautologicalExpect } from "./no-tautological-expect.ts";
 import { noTestPreloadedQuery } from "./no-test-preloaded-query.ts";
 import { noUseEffect } from "./no-use-effect.ts";
 import { noUseState } from "./no-use-state.ts";
@@ -31,6 +32,7 @@ const plugin = eslintCompatPlugin({
     "no-optional": noOptional,
     "no-overzealous-destructuring": noOverzealousDestructuring,
     "no-rhf-watch": noRhfWatch,
+    "no-tautological-expect": noTautologicalExpect,
     "no-test-preloaded-query": noTestPreloadedQuery,
     "no-use-effect": noUseEffect,
     "no-use-state": noUseState,

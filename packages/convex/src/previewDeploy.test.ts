@@ -26,7 +26,12 @@ test("fingerprint is stable for the same files", () => {
     { path: "convex/schema.ts", contents: "a" },
     { path: "convex/convex.config.ts", contents: "b" },
   ];
-  expect(computeSchemaFingerprint(files)).toBe(computeSchemaFingerprint(files));
+  expect(computeSchemaFingerprint(files)).toBe(
+    "fb282669f0fdc87d4f475283421f430dd14d00f3b3988d11d8b326cfc9eb3597",
+  );
+  expect(computeSchemaFingerprint([...files])).toBe(
+    "fb282669f0fdc87d4f475283421f430dd14d00f3b3988d11d8b326cfc9eb3597",
+  );
 });
 
 test("recreates the preview when no fingerprint is stored yet", () => {
