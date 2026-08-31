@@ -31,7 +31,7 @@ Prefer **`@todo`**: the optional is still in use; remaining work is to require t
 Permanent exceptions (not a follow-up to require the key):
 
 - `migrations.runAll` runner args: keep `@todo Keep mirroring @convex-dev/migrations runner options`.
-- `baby.update` args: sparse `ctx.db.patch` (omitted key means unchanged). Use `oxlint-disable` / `oxlint-enable` around those validators, not `@todo`.
+- Sparse `ctx.db.patch` RPCs named `update` or `patch*` whose `args` are `{ <id>: v.id(...), ...v.optional() }` (same shape as `baby.update`). Omitted keys mean unchanged. No `@todo` / `oxlint-disable`.
 
 ```typescript
 /** @todo Optional until every row sets this key. */
@@ -59,7 +59,7 @@ Skip phase 2 when the key is schema-only (no RPC arg). Skip phase 3 when every r
 
 Leave `migrations.runAll` runner args optional (`@todo Keep mirroring @convex-dev/migrations runner options`).
 
-Leave `baby.update` args optional (`oxlint-disable` around the sparse patch fields). Skip phase 2 for that mutation: omitted keys mean unchanged and map to `ctx.db.patch`.
+Leave `update` / `patch*` sparse patch args optional (required `v.id(...)` plus sibling `v.optional()` fields). Skip phase 2 for those mutations: omitted keys mean unchanged and map to `ctx.db.patch`.
 
 ## Removing fields or enum values
 
