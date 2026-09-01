@@ -169,6 +169,11 @@ export function interpretEnvGetResult(opts: { ok: boolean; stdout: string; stder
   return { previewExists: false, fingerprint: null };
 }
 
+/** Fresh Convex previews can hang on `start_push` for 5 minutes and 408. */
+export function isConvexStartPushTimeout(output: string) {
+  return /\/api\/deploy2\/start_push\s+408\b/i.test(output);
+}
+
 export function parseEnvGetOutput(stdout: string) {
   const lines = stdout
     .trim()

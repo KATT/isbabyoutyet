@@ -17,6 +17,9 @@
  *    change. A missing fingerprint on an existing preview reuses
  *    `--preview-name` (create/wipe is what 408s `start_push`).
  *    `--preview-run` reseeds demo login on a fresh backend.
+ *    If preview `start_push` 408s after `--cmd` already built the web
+ *    app, the required Vercel check still passes — env/migrations/seed
+ *    are skipped. Production still fails on that timeout.
  * 3. Runtime environment variables are synced when the plan says so
  *    (production every deploy; preview after create or first fingerprint
  *    write). Consecutive matching-fingerprint preview deploys skip
@@ -39,6 +42,7 @@ import {
   convexDeployCliArgs,
   describeConvexDeployPlan,
   interpretEnvGetResult,
+  isConvexStartPushTimeout,
   planConvexDeploy,
   previewNameCliArgs,
   shouldPushConvexBackend,
@@ -101,8 +105,8 @@ function convexCliOutput(args: string[]) {
 }
 
 const execFileErrorSchema = z.object({
-  stdout: z.string(),
-  stderr: z.string(),
+  stdout: z.union([z.string(), z.null()]),
+  stderr: z.union([z.string(), z.null()]),
 });
 
 function convexCliCaptured(args: string[]) {
@@ -117,10 +121,38 @@ function convexCliCaptured(args: string[]) {
     return { ok: true, stdout, stderr: "" };
   } catch (error) {
     const parsed = execFileErrorSchema.safeParse(error);
-    if (parsed.success) {
-      return { ok: false, stdout: parsed.data.stdout, stderr: parsed.data.stderr };
+    if (!parsed.success) {
+      throw error;
     }
-    throw error;
+    return {
+      ok: false,
+      stdout: parsed.data.stdout ?? "",
+      stderr: parsed.data.stderr ?? "",
+    };
+  }
+}
+
+function convexCliResult(args: string[]) {
+  console.log(`\n$ convex ${args.join(" ")}`);
+  try {
+    const stdout = execFileSync("pnpm", ["convex", ...args], {
+      cwd: convexPackageDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: convexDeployEnv(),
+    });
+    process.stdout.write(stdout);
+    return { ok: true as const, stdout, stderr: "" };
+  } catch (error) {
+    const parsed = execFileErrorSchema.safeParse(error);
+    if (!parsed.success) {
+      throw error;
+    }
+    const stdout = parsed.data.stdout ?? "";
+    const stderr = parsed.data.stderr ?? "";
+    process.stdout.write(stdout);
+    process.stderr.write(stderr);
+    return { ok: false as const, stdout, stderr };
   }
 }
 
@@ -191,7 +223,7 @@ if (plan.kind === "merge-queue-web-only") {
   const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
   const previewArgs = previewNameCliArgs(plan);
 
-  convexCli([
+  const deploy = convexCliResult([
     "deploy",
     "--cmd-url-env-var-name",
     "VITE_CONVEX_URL",
@@ -199,27 +231,37 @@ if (plan.kind === "merge-queue-web-only") {
     "node ../../apps/web/scripts/build-web.mjs",
     ...convexDeployCliArgs(plan),
   ]);
-
-  if (plan.writeEnv) {
-    for (const [key, value] of Object.entries(convexEnv)) {
-      convexCli(["env", "set", key, value, ...previewArgs]);
-    }
-    if (plan.kind !== "production") {
-      convexCli(["env", "set", SCHEMA_FINGERPRINT_ENV, currentFingerprint, ...previewArgs]);
+  if (!deploy.ok) {
+    const deployOutput = `${deploy.stdout}\n${deploy.stderr}`;
+    if (plan.kind !== "production" && isConvexStartPushTimeout(deployOutput)) {
+      console.log(
+        "\nConvex start_push timed out after the web build — skipping env, migrations, and seed",
+      );
+    } else {
+      throw new Error(`convex deploy failed:\n${deployOutput}`);
     }
   } else {
-    console.log("\nConvex env already set on this preview — skipping env sync");
-  }
+    if (plan.writeEnv) {
+      for (const [key, value] of Object.entries(convexEnv)) {
+        convexCli(["env", "set", key, value, ...previewArgs]);
+      }
+      if (plan.kind !== "production") {
+        convexCli(["env", "set", SCHEMA_FINGERPRINT_ENV, currentFingerprint, ...previewArgs]);
+      }
+    } else {
+      console.log("\nConvex env already set on this preview — skipping env sync");
+    }
 
-  convexCli(["run", "migrations:runAll", ...previewArgs]);
-  await waitForMigrations(previewArgs);
+    convexCli(["run", "migrations:runAll", ...previewArgs]);
+    await waitForMigrations(previewArgs);
 
-  if (plan.seed) {
-    console.log(`\n$ pnpm ${plan.seed}`);
-    execFileSync("pnpm", ["run", plan.seed, "--", ...previewArgs], {
-      cwd: convexPackageDir,
-      stdio: "inherit",
-      env: process.env,
-    });
+    if (plan.seed) {
+      console.log(`\n$ pnpm ${plan.seed}`);
+      execFileSync("pnpm", ["run", plan.seed, "--", ...previewArgs], {
+        cwd: convexPackageDir,
+        stdio: "inherit",
+        env: process.env,
+      });
+    }
   }
 }

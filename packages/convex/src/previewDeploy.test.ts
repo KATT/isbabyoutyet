@@ -4,6 +4,7 @@ import {
   convexDeployCliArgs,
   describeConvexDeployPlan,
   interpretEnvGetResult,
+  isConvexStartPushTimeout,
   isMergeQueueGitRef,
   parseEnvGetOutput,
   planConvexDeploy,
@@ -259,4 +260,18 @@ test("env get parser uses the last non-empty line", () => {
   expect(parseEnvGetOutput("")).toBe(null);
   expect(parseEnvGetOutput("deadbeef\n")).toBe("deadbeef");
   expect(parseEnvGetOutput("log noise\n  abc123  \n")).toBe("abc123");
+});
+
+test("detects Convex start_push 408 timeouts", () => {
+  expect(
+    isConvexStartPushTimeout(
+      "✖ Error fetching POST  https://small-bandicoot-574.convex.cloud/api/deploy2/start_push 408 Request Timeout",
+    ),
+  ).toBe(true);
+  expect(
+    isConvexStartPushTimeout(
+      "✖ Error fetching POST  https://helpful-dotterel-790.convex.cloud/api/deploy2/start_push 500 Internal Server Error",
+    ),
+  ).toBe(false);
+  expect(isConvexStartPushTimeout("✔ Deployed Convex functions")).toBe(false);
 });
