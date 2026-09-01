@@ -46,6 +46,14 @@ test("plans merge-queue as web-only", () => {
       stored: { previewExists: false, fingerprint: null },
     }),
   ).toEqual({ kind: "merge-queue-web-only" });
+  expect(
+    planConvexDeploy({
+      vercelEnv: "preview",
+      gitRef: mergeQueueRef,
+      currentFingerprint: fingerprint,
+      stored: { previewExists: true, fingerprint },
+    }),
+  ).toEqual({ kind: "merge-queue-web-only" });
 });
 
 test("plans production with homepage seed", () => {
@@ -251,8 +259,47 @@ test("merge queue refs skip the Convex push", () => {
   expect(isMergeQueueGitRef(mergeQueueRef)).toBe(true);
   expect(isMergeQueueGitRef(`refs/heads/${mergeQueueRef}`)).toBe(true);
   expect(isMergeQueueGitRef("feat/demo")).toBe(false);
+  expect(isMergeQueueGitRef("20e0607956751eeb3467f750ed8367eaa6a6338c")).toBe(false);
   expect(shouldPushConvexBackend(mergeQueueRef)).toBe(false);
   expect(shouldPushConvexBackend("feat/demo")).toBe(true);
+  expect(shouldPushConvexBackend("20e0607956751eeb3467f750ed8367eaa6a6338c")).toBe(true);
+});
+
+test("feature-branch previews recreate once then reuse without a wipe or seed", () => {
+  const branch = "cursor/fail-preview-start-push-7188";
+  const firstDeploy = planConvexDeploy({
+    vercelEnv: "preview",
+    gitRef: branch,
+    currentFingerprint: fingerprint,
+    stored: { previewExists: false, fingerprint: null },
+  });
+  expect(firstDeploy).toEqual({
+    kind: "preview-recreate",
+    previewName: branch,
+    writeEnv: true,
+    seed: "seed:homepage:content",
+  });
+  expect(convexDeployCliArgs(firstDeploy)).toEqual([
+    "--preview-create",
+    branch,
+    "--preview-run",
+    "seed:seedDemoData",
+  ]);
+
+  const laterDeploy = planConvexDeploy({
+    vercelEnv: "preview",
+    gitRef: branch,
+    currentFingerprint: fingerprint,
+    stored: { previewExists: true, fingerprint },
+  });
+  expect(laterDeploy).toEqual({
+    kind: "preview-reuse",
+    previewName: branch,
+    writeEnv: false,
+    seed: null,
+  });
+  expect(convexDeployCliArgs(laterDeploy)).toEqual(["--preview-name", branch]);
+  expect(previewNameCliArgs(laterDeploy)).toEqual(["--preview-name", branch]);
 });
 
 test("env get parser uses the last non-empty line", () => {
