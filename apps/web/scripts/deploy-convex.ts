@@ -101,6 +101,11 @@ function convexCliOutput(args: string[]) {
   });
 }
 
+const execFileErrorSchema = z.object({
+  stdout: z.string(),
+  stderr: z.string(),
+});
+
 function convexCliCaptured(args: string[]) {
   console.log(`\n$ convex ${args.join(" ")}`);
   try {
@@ -112,17 +117,9 @@ function convexCliCaptured(args: string[]) {
     });
     return { ok: true, stdout, stderr: "" };
   } catch (error) {
-    if (
-      error !== null &&
-      typeof error === "object" &&
-      "stdout" in error &&
-      "stderr" in error
-    ) {
-      return {
-        ok: false,
-        stdout: String(error.stdout ?? ""),
-        stderr: String(error.stderr ?? ""),
-      };
+    const parsed = execFileErrorSchema.safeParse(error);
+    if (parsed.success) {
+      return { ok: false, stdout: parsed.data.stdout, stderr: parsed.data.stderr };
     }
     throw error;
   }
