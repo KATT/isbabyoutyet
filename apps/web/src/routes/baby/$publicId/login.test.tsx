@@ -6,7 +6,7 @@ import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { loginAuthAdapter } from "@/routes/auth/login";
 import { Route } from "@/routes/baby/$publicId/login";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { seedOwnedBaby } from "@/test/convexTestSeed";
+import { seedOwnedBaby, patchOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { runRouteBeforeLoad } from "@/test/routeTestContext";
 
@@ -22,9 +22,11 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
   ).rejects.toMatchObject({ isNotFound: true });
 
   const baby = await seedOwnedBaby(harness, { name: "Baby Nova", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    name: "Renamed Nova",
+  await patchOwnedBaby(harness, {
+    id: baby.babyId,
+    patch: {
+      name: "Renamed Nova",
+    },
   });
   const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
 
