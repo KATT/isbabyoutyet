@@ -30,10 +30,7 @@ function Input({
   const [isFocused, setIsFocused] = React.useState(false);
   const currentValue = value ?? defaultValue;
   const showTextPlaceholder =
-    Boolean(placeholder) &&
-    isDatePickerType(type) &&
-    isEmptyInputValue(currentValue) &&
-    !isFocused;
+    Boolean(placeholder) && isDatePickerType(type) && isEmptyInputValue(currentValue) && !isFocused;
 
   return (
     <InputPrimitive
