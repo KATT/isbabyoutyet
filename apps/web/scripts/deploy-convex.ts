@@ -11,10 +11,10 @@
  *    `--preview-create` only when `schema.ts` / `convex.config.ts` change
  *    (fingerprint stored as PREVIEW_SCHEMA_FINGERPRINT). Otherwise
  *    `--preview-name` reuses the branch backend so deploys skip seed and
- *    photo uploads. GitHub merge-queue refs (`gh-readonly-queue/…/pr-N-<sha>`)
- *    are unique per attempt, so the script maps them to the pull request
- *    head (or `pr-N`) and reuses that backend instead of provisioning a new
- *    one every time. `--preview-run` reseeds demo login on a fresh backend
+ *    photo uploads. GitHub merge-queue refs (`gh-readonly-queue/…`) skip
+ *    the Convex push entirely — the required Vercel check only needs the
+ *    web build, and a queue-specific backend would be created and thrown
+ *    away. `--preview-run` reseeds demo login on a fresh backend
  *    (ignored in production).
  * 2. Runtime environment variables are synced when the backend is new
  *    (production every deploy; preview only after `--preview-create`).
@@ -33,12 +33,13 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { convexEnvSchema } from "@workspace/convex/src/env";
 import {
+  MERGE_QUEUE_PLACEHOLDER_CONVEX_URL,
   SCHEMA_FINGERPRINT_ENV,
   SCHEMA_FINGERPRINT_RELATIVE_PATHS,
   computeSchemaFingerprint,
   parseEnvGetOutput,
   previewDeployCliArgs,
-  resolveConvexPreviewName,
+  shouldPushConvexBackend,
   shouldRecreatePreview,
   shouldWriteConvexEnv,
 } from "@workspace/convex/src/previewDeploy";
@@ -62,8 +63,6 @@ const isPreview = env.VERCEL_ENV === "preview";
 const siteUrl = isPreview
   ? `https://${env.VERCEL_BRANCH_URL}`
   : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
-
-const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const convexPackageDir = path.resolve(scriptsDir, "../../../packages/convex");
@@ -119,91 +118,96 @@ function readStoredSchemaFingerprint(previewName: string) {
   }
 }
 
-const previewName = await resolveConvexPreviewName({
-  gitRef: env.VERCEL_GIT_COMMIT_REF,
-  owner: process.env.VERCEL_GIT_REPO_OWNER ?? null,
-  repo: process.env.VERCEL_GIT_REPO_SLUG ?? null,
-  token: process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? null,
-  fetch,
-});
-if (previewName === null) {
-  throw new Error(`Could not resolve Convex preview name from ${env.VERCEL_GIT_COMMIT_REF}`);
-}
-if (previewName !== env.VERCEL_GIT_COMMIT_REF) {
-  console.log(`\nGit ref "${env.VERCEL_GIT_COMMIT_REF}" → Convex preview "${previewName}"`);
-}
-
-const currentFingerprint = readCurrentSchemaFingerprint();
-const recreatePreview =
-  isPreview && shouldRecreatePreview(readStoredSchemaFingerprint(previewName), currentFingerprint);
-
-if (isPreview) {
-  if (recreatePreview) {
-    console.log(`\nSchema changed or preview is new — recreating Convex preview "${previewName}"`);
-  } else {
-    console.log(`\nSchema unchanged — reusing Convex preview "${previewName}"`);
-  }
-}
-
-convexCli([
-  "deploy",
-  "--cmd-url-env-var-name",
-  "VITE_CONVEX_URL",
-  "--cmd",
-  "node ../../apps/web/scripts/build-web.mjs",
-  ...(isPreview ? previewDeployCliArgs(previewName, recreatePreview) : []),
-]);
-
-// `convex deploy` infers the preview name from the git branch; the other
-// commands need it passed explicitly.
-const previewArgs = isPreview ? ["--preview-name", previewName] : [];
-
-if (shouldWriteConvexEnv(isPreview, recreatePreview)) {
-  for (const [key, value] of Object.entries(convexEnv)) {
-    convexCli(["env", "set", key, value, ...previewArgs]);
-  }
-  if (isPreview) {
-    convexCli(["env", "set", SCHEMA_FINGERPRINT_ENV, currentFingerprint, ...previewArgs]);
-  }
+if (isPreview && !shouldPushConvexBackend(env.VERCEL_GIT_COMMIT_REF)) {
+  console.log("\nGitHub merge queue — skipping Convex push, building web app only");
+  execFileSync("node", [path.join(scriptsDir, "build-web.mjs")], {
+    stdio: "inherit",
+    env: {
+      ...convexDeployEnv(),
+      VITE_CONVEX_URL: MERGE_QUEUE_PLACEHOLDER_CONVEX_URL,
+    },
+  });
 } else {
-  console.log("\nConvex env already set on this preview — skipping env sync");
-}
+  const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
 
-convexCli(["run", "migrations:runAll", ...previewArgs]);
+  const currentFingerprint = readCurrentSchemaFingerprint();
+  const recreatePreview =
+    isPreview &&
+    shouldRecreatePreview(
+      readStoredSchemaFingerprint(env.VERCEL_GIT_COMMIT_REF),
+      currentFingerprint,
+    );
 
-const migrationStatusSchema = z.object({
-  isDone: z.boolean(),
-  failed: z.array(z.string()),
-});
-
-for (let attempt = 0; attempt < 300; attempt += 1) {
-  const status = migrationStatusSchema.parse(
-    JSON.parse(convexCliOutput(["run", "migrations:deploymentStatus", ...previewArgs])),
-  );
-  if (status.failed.length > 0) {
-    throw new Error(`Migration failed: ${status.failed.join("; ")}`);
+  if (isPreview) {
+    if (recreatePreview) {
+      console.log(
+        `\nSchema changed or preview is new — recreating Convex preview "${env.VERCEL_GIT_COMMIT_REF}"`,
+      );
+    } else {
+      console.log(`\nSchema unchanged — reusing Convex preview "${env.VERCEL_GIT_COMMIT_REF}"`);
+    }
   }
-  if (status.isDone) {
-    break;
-  }
-  if (attempt === 299) {
-    throw new Error("Migrations did not finish before the deployment deadline");
-  }
-  await new Promise((resolve) => setTimeout(resolve, 1_000));
-}
 
-if (!isPreview) {
-  console.log("\n$ pnpm seed:homepage");
-  execFileSync("pnpm", ["run", "seed:homepage", "--", ...previewArgs], {
-    cwd: convexPackageDir,
-    stdio: "inherit",
-    env: process.env,
+  convexCli([
+    "deploy",
+    "--cmd-url-env-var-name",
+    "VITE_CONVEX_URL",
+    "--cmd",
+    "node ../../apps/web/scripts/build-web.mjs",
+    ...(isPreview ? previewDeployCliArgs(env.VERCEL_GIT_COMMIT_REF, recreatePreview) : []),
+  ]);
+
+  // `convex deploy` infers the preview name from the git branch; the other
+  // commands need it passed explicitly.
+  const previewArgs = isPreview ? ["--preview-name", env.VERCEL_GIT_COMMIT_REF] : [];
+
+  if (shouldWriteConvexEnv(isPreview, recreatePreview)) {
+    for (const [key, value] of Object.entries(convexEnv)) {
+      convexCli(["env", "set", key, value, ...previewArgs]);
+    }
+    if (isPreview) {
+      convexCli(["env", "set", SCHEMA_FINGERPRINT_ENV, currentFingerprint, ...previewArgs]);
+    }
+  } else {
+    console.log("\nConvex env already set on this preview — skipping env sync");
+  }
+
+  convexCli(["run", "migrations:runAll", ...previewArgs]);
+
+  const migrationStatusSchema = z.object({
+    isDone: z.boolean(),
+    failed: z.array(z.string()),
   });
-} else if (recreatePreview) {
-  console.log("\n$ pnpm seed:homepage:content");
-  execFileSync("pnpm", ["run", "seed:homepage:content", "--", ...previewArgs], {
-    cwd: convexPackageDir,
-    stdio: "inherit",
-    env: process.env,
-  });
+
+  for (let attempt = 0; attempt < 300; attempt += 1) {
+    const status = migrationStatusSchema.parse(
+      JSON.parse(convexCliOutput(["run", "migrations:deploymentStatus", ...previewArgs])),
+    );
+    if (status.failed.length > 0) {
+      throw new Error(`Migration failed: ${status.failed.join("; ")}`);
+    }
+    if (status.isDone) {
+      break;
+    }
+    if (attempt === 299) {
+      throw new Error("Migrations did not finish before the deployment deadline");
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+
+  if (!isPreview) {
+    console.log("\n$ pnpm seed:homepage");
+    execFileSync("pnpm", ["run", "seed:homepage", "--", ...previewArgs], {
+      cwd: convexPackageDir,
+      stdio: "inherit",
+      env: process.env,
+    });
+  } else if (recreatePreview) {
+    console.log("\n$ pnpm seed:homepage:content");
+    execFileSync("pnpm", ["run", "seed:homepage:content", "--", ...previewArgs], {
+      cwd: convexPackageDir,
+      stdio: "inherit",
+      env: process.env,
+    });
+  }
 }
