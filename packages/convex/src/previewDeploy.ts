@@ -25,6 +25,12 @@ export type ConvexDeployPlan =
   | { kind: "merge-queue-web-only" }
   | { kind: "production"; writeEnv: true; seed: "seed:homepage" }
   | {
+      kind: "preview-create";
+      previewName: string;
+      writeEnv: true;
+      seed: "seed:homepage:content";
+    }
+  | {
       kind: "preview-recreate";
       previewName: string;
       writeEnv: true;
@@ -94,13 +100,13 @@ export function previewNameFromGitRef(ref: string) {
   return branch;
 }
 
-function shouldRecreatePreview(opts: {
+function shouldWipePreview(opts: {
   storedFingerprint: string | null;
   currentFingerprint: string;
   previewExists: boolean;
 }) {
   if (!opts.previewExists) {
-    return true;
+    return false;
   }
   if (opts.storedFingerprint === null) {
     return false;
@@ -121,8 +127,16 @@ export function planConvexDeploy(opts: {
     return { kind: "production", writeEnv: true, seed: "seed:homepage" };
   }
   const previewName = previewNameFromGitRef(opts.gitRef) ?? opts.gitRef;
+  if (!opts.stored.previewExists) {
+    return {
+      kind: "preview-create",
+      previewName,
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    };
+  }
   if (
-    shouldRecreatePreview({
+    shouldWipePreview({
       storedFingerprint: opts.stored.fingerprint,
       currentFingerprint: opts.currentFingerprint,
       previewExists: opts.stored.previewExists,
@@ -149,8 +163,10 @@ export function describeConvexDeployPlan(plan: ConvexDeployPlan) {
       return "GitHub merge queue — skipping Convex push, building web app only";
     case "production":
       return "Production — deploying Convex and building the web app";
+    case "preview-create":
+      return `Preview is new — creating Convex preview "${plan.previewName}" (no wipe)`;
     case "preview-recreate":
-      return `Schema changed or preview is new — recreating Convex preview "${plan.previewName}"`;
+      return `Schema changed — recreating Convex preview "${plan.previewName}"`;
     case "preview-reuse":
       if (plan.writeEnv) {
         return `Preview exists without a schema fingerprint — pushing functions to existing preview "${plan.previewName}" (no wipe)`;
@@ -164,10 +180,57 @@ export function convexDeployCliArgs(plan: ConvexDeployPlan) {
     case "merge-queue-web-only":
     case "production":
       return [];
+    case "preview-create":
+      return ["--preview-name", plan.previewName, "--preview-run", "seed:seedDemoData"];
     case "preview-recreate":
       return ["--preview-create", plan.previewName, "--preview-run", "seed:seedDemoData"];
     case "preview-reuse":
       return ["--preview-name", plan.previewName];
+  }
+}
+
+/** After a start_push 408 the preview is already claimed — retry without a wipe. */
+export function convexDeployRetryCliArgs(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+      return [];
+    case "production":
+      return [];
+    case "preview-create":
+    case "preview-recreate":
+    case "preview-reuse":
+      return ["--preview-name", plan.previewName];
+  }
+}
+
+/**
+ * Tiny `--cmd` so Convex `start_push` runs immediately after claim.
+ * The real Vite build runs after a successful push (see deploy-convex.ts).
+ */
+export const CONVEX_DEPLOY_URL_CMD = "node ../../apps/web/scripts/write-convex-url.mjs";
+
+export function convexDeployArgv(extraArgs: string[]) {
+  return [
+    "deploy",
+    "--cmd-url-env-var-name",
+    "VITE_CONVEX_URL",
+    "--cmd",
+    CONVEX_DEPLOY_URL_CMD,
+    ...extraArgs,
+  ];
+}
+
+/** `--preview-run` is skipped on retry (`isNewDeployment` is then false). */
+export function convexSeedNpmScripts(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+    case "preview-reuse":
+      return [];
+    case "production":
+      return [plan.seed];
+    case "preview-create":
+    case "preview-recreate":
+      return ["seed:demo-login", plan.seed];
   }
 }
 
@@ -176,6 +239,7 @@ export function previewNameCliArgs(plan: ConvexDeployPlan) {
     case "merge-queue-web-only":
     case "production":
       return [];
+    case "preview-create":
     case "preview-recreate":
     case "preview-reuse":
       return ["--preview-name", plan.previewName];

@@ -1,7 +1,8 @@
 /**
- * Runs the web app build. Invoked by `convex deploy --cmd` (see
- * deploy-convex.ts), which sets VITE_CONVEX_URL to the deployment URL;
- * the .convex.site URL is derived from it.
+ * Runs the web app build after Convex `start_push` succeeds.
+ * `deploy-convex.ts` sets VITE_CONVEX_URL from the URL written by
+ * `write-convex-url.mjs` during `convex deploy --cmd`; the
+ * .convex.site URL is derived from it.
  */
 import { execFileSync } from "node:child_process";
 import * as path from "node:path";
