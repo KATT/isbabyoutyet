@@ -18,11 +18,12 @@ concurrency:
 
 jobs:
   seed-homepage-photos:
+    # Vercel sets `github.ref` / `deployment.ref` to the commit SHA, so a
+    # job-level `contains(github.ref, 'gh-readonly-queue')` never matches.
+    # The runner env `GITHUB_REF` is `refs/heads/gh-readonly-queue/…`.
     if: >
       github.event.deployment_status.state == 'success'
       && !contains(github.event.deployment.environment, 'Production')
-      && !contains(github.event.deployment.ref, 'gh-readonly-queue')
-      && !contains(github.event.deployment.environment, 'gh-readonly-queue')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -30,7 +31,18 @@ jobs:
       pull-requests: read
 
     steps:
+      - name: Skip merge-queue deployments
+        id: queue
+        run: |
+          if [[ "${GITHUB_REF:-}" == *gh-readonly-queue* ]]; then
+            echo "Merge queue deployment — skipping Convex photo seed"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout deployed commit
+        if: steps.queue.outputs.skip != 'true'
         uses: actions/checkout@v7
         with:
           lfs: true
@@ -38,18 +50,22 @@ jobs:
           fetch-depth: 0
 
       - name: Setup pnpm
+        if: steps.queue.outputs.skip != 'true'
         uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
+        if: steps.queue.outputs.skip != 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: "pnpm"
 
       - name: Install dependencies
+        if: steps.queue.outputs.skip != 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Seed homepage demo photos
+        if: steps.queue.outputs.skip != 'true'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           GH_TOKEN: ${{ github.token }}
@@ -60,8 +76,10 @@ jobs:
             echo "CONVEX_DEPLOY_KEY is not set in GitHub secrets; cannot seed Convex preview photos."
             exit 1
           fi
-          # Merge-queue Vercel deploys do not push a Convex backend.
-          if [[ "$DEPLOYMENT_REF" == *gh-readonly-queue* ]]; then
+          # Skip before resolving a SHA to a PR head — that head is the
+          # feature branch and would seed the PR Convex preview. `GITHUB_REF`
+          # is `refs/heads/gh-readonly-queue/…` on queue deploys.
+          if [[ "${GITHUB_REF:-}" == *gh-readonly-queue* || "$DEPLOYMENT_REF" == *gh-readonly-queue* ]]; then
             echo "Merge queue deployment — skipping Convex photo seed"
             exit 0
           fi
