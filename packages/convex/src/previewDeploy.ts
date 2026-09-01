@@ -221,6 +221,18 @@ export function convexDeployArgv(extraArgs: string[]) {
 }
 
 /** `--preview-run` is skipped on retry (`isNewDeployment` is then false). */
+export function convexPostPushRunFunctions(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+    case "preview-reuse":
+    case "production":
+      return [];
+    case "preview-create":
+    case "preview-recreate":
+      return ["seed:seedDemoData"];
+  }
+}
+
 export function convexSeedNpmScripts(plan: ConvexDeployPlan) {
   switch (plan.kind) {
     case "merge-queue-web-only":
@@ -230,7 +242,7 @@ export function convexSeedNpmScripts(plan: ConvexDeployPlan) {
       return [plan.seed];
     case "preview-create":
     case "preview-recreate":
-      return ["seed:demo-login", plan.seed];
+      return [plan.seed];
   }
 }
 

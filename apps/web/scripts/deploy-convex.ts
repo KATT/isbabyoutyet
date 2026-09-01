@@ -29,8 +29,8 @@
  * 5. Production bootstraps homepage demos in-band. Preview wipes seed
  *    fixture text during the build; homepage photos run from GitHub
  *    Actions after the Vercel deployment is Ready (`seed-preview.yml`).
- *    Create/recreate also run `seed:demo-login` here because a 408
- *    retry uses `--preview-name` and Convex then skips `--preview-run`.
+ *    Create/recreate also `convex run seed:seedDemoData` here because a
+ *    408 retry uses `--preview-name` and Convex then skips `--preview-run`.
  */
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -46,6 +46,7 @@ import {
   convexDeployArgv,
   convexDeployCliArgs,
   convexDeployRetryCliArgs,
+  convexPostPushRunFunctions,
   convexSeedNpmScripts,
   describeConvexDeployPlan,
   interpretEnvGetResult,
@@ -267,6 +268,10 @@ if (plan.kind === "merge-queue-web-only") {
 
   convexCli(["run", "migrations:runAll", ...previewArgs]);
   await waitForMigrations(previewArgs);
+
+  for (const functionName of convexPostPushRunFunctions(plan)) {
+    convexCli(["run", functionName, ...previewArgs]);
+  }
 
   for (const script of convexSeedNpmScripts(plan)) {
     console.log(`\n$ pnpm ${script}`);

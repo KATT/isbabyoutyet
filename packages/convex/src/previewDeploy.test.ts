@@ -5,6 +5,7 @@ import {
   convexDeployArgv,
   convexDeployCliArgs,
   convexDeployRetryCliArgs,
+  convexPostPushRunFunctions,
   convexSeedNpmScripts,
   describeConvexDeployPlan,
   interpretEnvGetResult,
@@ -453,15 +454,39 @@ test("deploy argv uses a tiny --cmd so start_push is not blocked by the web buil
   ]);
 });
 
-test("create and recreate seed demo login after push because retry skips --preview-run", () => {
-  expect(convexSeedNpmScripts({ kind: "merge-queue-web-only" })).toEqual([]);
+test("create and recreate run seedDemoData via convex run after push because retry skips --preview-run", () => {
+  expect(convexPostPushRunFunctions({ kind: "merge-queue-web-only" })).toEqual([]);
   expect(
-    convexSeedNpmScripts({
+    convexPostPushRunFunctions({
       kind: "production",
       writeEnv: true,
       seed: "seed:homepage",
     }),
-  ).toEqual(["seed:homepage"]);
+  ).toEqual([]);
+  expect(
+    convexPostPushRunFunctions({
+      kind: "preview-create",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["seed:seedDemoData"]);
+  expect(
+    convexPostPushRunFunctions({
+      kind: "preview-recreate",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["seed:seedDemoData"]);
+  expect(
+    convexPostPushRunFunctions({
+      kind: "preview-reuse",
+      previewName: "feat/demo",
+      writeEnv: false,
+      seed: null,
+    }),
+  ).toEqual([]);
   expect(
     convexSeedNpmScripts({
       kind: "preview-create",
@@ -469,21 +494,13 @@ test("create and recreate seed demo login after push because retry skips --previ
       writeEnv: true,
       seed: "seed:homepage:content",
     }),
-  ).toEqual(["seed:demo-login", "seed:homepage:content"]);
+  ).toEqual(["seed:homepage:content"]);
   expect(
     convexSeedNpmScripts({
-      kind: "preview-recreate",
-      previewName: "feat/demo",
+      kind: "production",
       writeEnv: true,
-      seed: "seed:homepage:content",
+      seed: "seed:homepage",
     }),
-  ).toEqual(["seed:demo-login", "seed:homepage:content"]);
-  expect(
-    convexSeedNpmScripts({
-      kind: "preview-reuse",
-      previewName: "feat/demo",
-      writeEnv: false,
-      seed: null,
-    }),
-  ).toEqual([]);
+  ).toEqual(["seed:homepage"]);
+  expect(convexSeedNpmScripts({ kind: "merge-queue-web-only" })).toEqual([]);
 });
