@@ -90,6 +90,18 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   );
 });
 
+test("due date editor requires a date in exact mode", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = await renderWithTestRouter(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.change(htmlInput(view.getByLabelText("Due date")), { target: { value: "" } });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => expect(view.getByText("Pick a date")).toBeTruthy());
+  expect(onUpdate).not.toHaveBeenCalled();
+});
+
 test("due date editor saves message mode without public text", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = await renderWithTestRouter(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
@@ -374,7 +386,9 @@ test("theme selector reports a failed update and remains open", async () => {
   fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
 
   await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Theme update failed"));
-  expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
+  await vi.waitFor(() => {
+    expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
+  });
 });
 
 test("theme selector toasts a generic message for non-Error failures", async () => {
@@ -462,6 +476,54 @@ test("status editor confirms destructive deletion", async () => {
   expect(view.getByText(/deletes its timeline update/i)).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Delete status" }));
 
+  await vi.waitFor(() => expect(onRemove).toHaveBeenCalledWith("born"));
+});
+
+test("status delete dialog stays open while deletion is pending", async () => {
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  vi.useFakeTimers();
+
+  let releaseRemove: (() => void) | undefined;
+  const onRedate = vi.fn<MilestoneRedateHandler>().mockResolvedValue(undefined);
+  const onRemove = vi.fn<MilestoneRemoveHandler>(async () => {
+    await new Promise<void>((resolve) => {
+      releaseRemove = resolve;
+    });
+  });
+  const bornBaby = {
+    ...baby,
+    laborStarted: "2026-08-10T08:00:00.000Z",
+    wentToHospital: "2026-08-10T12:00:00.000Z",
+    babyBorn: "2026-08-11T03:00:00.000Z",
+  };
+  await using view = await renderWithTestRouter(
+    <StatusDateEditor
+      baby={bornBaby}
+      status="born"
+      currentDate={bornBaby.babyBorn}
+      onRedate={onRedate}
+      onRemove={onRemove}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.click(view.getByRole("button", { name: "Delete" }));
+  fireEvent.click(view.getByRole("button", { name: "Delete status" }));
+  await vi.advanceTimersByTimeAsync(500);
+
+  await vi.waitFor(() => {
+    expect(
+      htmlButton(view.getByRole("button", { name: "Delete status" })).getAttribute("aria-busy"),
+    ).toBe("true");
+  });
+
+  fireEvent.keyDown(view.getByRole("alertdialog"), { key: "Escape" });
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+
+  releaseRemove?.();
+  await vi.advanceTimersByTimeAsync(0);
   await vi.waitFor(() => expect(onRemove).toHaveBeenCalledWith("born"));
 });
 
