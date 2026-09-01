@@ -19,6 +19,9 @@ import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
 import { getBabySeo } from "@/lib/baby-seo";
 import { renderResource } from "@/test/renderResource";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby } from "@/test/convexTestSeed";
+import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 
 const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
@@ -37,11 +40,17 @@ test("parent route caches public overlays and keeps manager overlays private", (
     params: { publicId: "juniper-hale" },
     matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/settings" }],
   });
+  const loginHeaders = headers({
+    params: { publicId: "juniper-hale" },
+    matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/login" }],
+  });
 
   expect(publicHeaders["Cache-Control"]).toContain("public");
   expect(publicHeaders["Vercel-Cache-Tag"]).toContain("baby-public-id:juniper-hale");
   expect(privateHeaders["Cache-Control"]).toContain("private");
   expect(privateHeaders["Cache-Control"]).toContain("no-store");
+  expect(loginHeaders["Cache-Control"]).toContain("private");
+  expect(loginHeaders["Cache-Control"]).toContain("no-store");
 });
 
 function useFakeTimersResource(now: Date) {
@@ -578,4 +587,74 @@ test("share preview uses the canonical route slug while reactive baby data chang
 
   expect(new URL(seo.imageUrl).pathname).toBe("/og/baby/juniper-hale");
   expect(seo.canonical).toBe("https://isbabyoutyet.com/baby/juniper-hale");
+});
+
+test("logged-out visitors see a sign-in icon in the top dock", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  harness.withIdentity(null);
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: routeModule.Route,
+    path: "/baby/$publicId",
+    initialEntry: `/baby/${baby.publicId}`,
+    overlayHistory: null,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("button", { name: "Sign in" })).toBeTruthy();
+  });
+  expect(ctx.view.getByRole("button", { name: "Sign in" }).getAttribute("href")).toBe(
+    `/baby/${baby.publicId}/login`,
+  );
+  expect(ctx.view.queryByRole("button", { name: "Dashboard" })).toBeNull();
+  expect(ctx.view.queryByText("Are you the parent? Sign in")).toBeNull();
+});
+
+test("owners see a dashboard icon instead of sign-in", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: routeModule.Route,
+    path: "/baby/$publicId",
+    initialEntry: `/baby/${baby.publicId}`,
+    overlayHistory: null,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("heading", { name: /Is Baby Smith out yet/i })).toBeTruthy();
+  });
+  expect(ctx.view.getByRole("button", { name: "Dashboard" }).getAttribute("href")).toBe(
+    "/dashboard",
+  );
+  expect(ctx.view.queryByRole("button", { name: "Sign in" })).toBeNull();
+  expect(ctx.view.queryByText("Are you the parent? Sign in")).toBeNull();
+});
+
+test("notification #feed landmark is the messages list, not the compose box", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: routeModule.Route,
+    path: "/baby/$publicId",
+    initialEntry: `/baby/${baby.publicId}`,
+    overlayHistory: null,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("heading", { name: "Updates & messages" })).toBeTruthy();
+  });
+
+  const feed = document.getElementById("feed");
+  expect(feed).toBeTruthy();
+  expect(feed?.contains(ctx.view.getByRole("heading", { name: "Updates & messages" }))).toBe(true);
+  expect(feed?.contains(ctx.view.getByLabelText("Message"))).toBe(false);
 });

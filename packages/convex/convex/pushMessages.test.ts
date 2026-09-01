@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
-import { getPushMessage } from "../src/pushMessages";
+import { getOwnerPushMessage, getPushMessage, truncateOwnerPushBody } from "../src/pushMessages";
+import type { OwnerMessagePushEvent } from "../src/pushMessages";
+import { SUPPORTED_LOCALES } from "../src/i18n";
 import type { SupportedLocale } from "../src/i18n";
 import type { NotifiableStatus } from "../src/types";
 
@@ -53,4 +55,61 @@ test("push copy follows the baby's locale and dialect", () => {
     "Nova chegou! 🎉",
     "Foto nova de Nova! 📸",
   ]);
+});
+
+test("owner message push copy names the visitor and truncates long notes", () => {
+  expect(
+    getOwnerPushMessage({
+      locale: "en-GB",
+      event: "created",
+      babyName: "Nova",
+      authorName: "Grandma",
+      message: "Can't wait to meet you!",
+    }),
+  ).toEqual({
+    title: "New message for Nova",
+    body: "Grandma: Can't wait to meet you!",
+  });
+  expect(
+    getOwnerPushMessage({
+      locale: "en-GB",
+      event: "updated",
+      babyName: "Nova",
+      authorName: "Grandma",
+      message: "Fixed the typo",
+    }),
+  ).toEqual({
+    title: "Grandma updated their message on Nova's page",
+    body: "Fixed the typo",
+  });
+  expect(
+    getOwnerPushMessage({
+      locale: "sv",
+      event: "updated",
+      babyName: "Nova",
+      authorName: "Mormor",
+      message: "Korrigerade stavningen",
+    }),
+  ).toEqual({
+    title: "Mormor uppdaterade sin hälsning på Novas sida",
+    body: "Korrigerade stavningen",
+  });
+  expect(truncateOwnerPushBody("short")).toBe("short");
+  expect(truncateOwnerPushBody("x".repeat(181)).length).toBe(180);
+  expect(truncateOwnerPushBody("x".repeat(181)).endsWith("…")).toBe(true);
+
+  const events = ["created", "updated"] as const satisfies OwnerMessagePushEvent[];
+  for (const locale of SUPPORTED_LOCALES) {
+    for (const event of events) {
+      const copy = getOwnerPushMessage({
+        locale,
+        event,
+        babyName: "Nova",
+        authorName: "Ada",
+        message: "Hi from the waiting room",
+      });
+      expect(copy.title.length).toBeGreaterThan(0);
+      expect(copy.body.length).toBeGreaterThan(0);
+    }
+  }
 });

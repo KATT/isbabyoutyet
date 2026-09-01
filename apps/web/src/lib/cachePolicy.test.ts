@@ -57,6 +57,7 @@ describe("applyCachePolicy", () => {
     ["/baby/juniper-hale", "POST"],
     ["/baby/juniper-hale/settings", "GET"],
     ["/baby/juniper-hale/post", "GET"],
+    ["/baby/juniper-hale/login", "GET"],
   ])("keeps %s %s private", (path, method) => {
     const response = responseFor(path, method);
 
@@ -122,6 +123,7 @@ describe("applyCachePolicy", () => {
   test.each([
     "/baby/$publicId/settings",
     "/baby/$publicId/post",
+    "/baby/$publicId/login",
     "/baby/$publicId/future-manager-overlay",
   ])("treats the %s overlay match as private", (routeId) => {
     const headers = babyRouteCacheHeaders({

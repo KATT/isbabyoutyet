@@ -38,6 +38,7 @@ const absentSettingsProps = {
   profileLocale: "en-GB" as const,
   onDelete: null,
   coParents: null,
+  messagePush: null,
   onMilestoneRedate: () => undefined,
   onMilestoneRemove: () => undefined,
   onOpenChangeComplete: null,
@@ -109,6 +110,7 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(open.queryByRole("button", { name: "Labour" })).toBeNull();
 
   expect(open.queryByText("Delete page")).toBeNull();
+  expect(open.queryByRole("switch", { name: "Message notifications" })).toBeNull();
 
   fireEvent.click(open.getByRole("button", { name: "Close" }));
   expect(onOpenChange).toHaveBeenCalled();
@@ -229,6 +231,7 @@ test("delete page control appears when onDelete is provided", async () => {
       onOpenChangeComplete={null}
       profileLocale="en-GB"
       coParents={null}
+      messagePush={null}
       onMilestoneRedate={() => undefined}
       onMilestoneRemove={() => undefined}
     />,
@@ -416,6 +419,7 @@ test("theme constants render through the active translation catalog", async () =
         profileLocale="sv"
         onDelete={null}
         coParents={null}
+        messagePush={null}
         onMilestoneRedate={() => undefined}
         onMilestoneRemove={() => undefined}
       />

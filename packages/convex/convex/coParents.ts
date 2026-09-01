@@ -13,6 +13,7 @@ import { toManagerBabyDto } from "./babyDto";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { isActive, softDeletePatch } from "./softDelete";
 import { parseOptionalString } from "@workspace/runtime/json";
+import { deleteOwnerSubscriptionsForIdentity } from "./pushSubscriptions";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -220,6 +221,10 @@ export const removeCoParent = mutation({
     }
     await requireBabyOwner(ctx, row.babyId);
     await ctx.db.patch(args.coParentId, softDeletePatch());
+    await deleteOwnerSubscriptionsForIdentity(ctx, {
+      babyId: row.babyId,
+      tokenIdentifier: row.tokenIdentifier,
+    });
   },
 });
 
@@ -253,6 +258,10 @@ export const leave = mutation({
       throw new Error("You are not a co-parent on this page");
     }
     await ctx.db.patch(membership._id, softDeletePatch());
+    await deleteOwnerSubscriptionsForIdentity(ctx, {
+      babyId: args.babyId,
+      tokenIdentifier: caller.tokenIdentifier,
+    });
   },
 });
 

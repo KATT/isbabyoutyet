@@ -7,10 +7,12 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { signUpTestUser } from "@/test/convexTestSeed";
+import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
   browserPushQueryOptions,
+  ManagerNotificationChooserView,
   NotificationSubscribe,
   prefetchBrowserPushCapability,
 } from "./notification-subscribe";
@@ -25,7 +27,12 @@ type BrowserPushCapability =
   | { kind: "needsIosInstall" }
   | { kind: "serviceWorkerTimeout" }
   | { kind: "unsubscribed" }
-  | { kind: "subscribed"; subscription: PushSubscription; isSubscribed: boolean };
+  | {
+      kind: "subscribed";
+      subscription: PushSubscription;
+      family: boolean;
+      messages: boolean;
+    };
 
 type BrowserPushStub = {
   userAgent: string;
@@ -148,6 +155,9 @@ function queryClientResource(isSubscribedInConvex = true) {
           if (name === "pushSubscriptions:isSubscribed") {
             return Promise.resolve(isSubscribedInConvex);
           }
+          if (name === "pushSubscriptions:isOwnerSubscribed") {
+            return Promise.resolve(isSubscribedInConvex);
+          }
           return Promise.reject(new Error(`unexpected query ${name}`));
         },
       },
@@ -158,7 +168,7 @@ function queryClientResource(isSubscribedInConvex = true) {
   });
 }
 
-async function renderSubscribe(capability: BrowserPushCapability) {
+async function renderSubscribe(capability: BrowserPushCapability, audience: "visitor" | "manager") {
   const harnessCtx = await createConvexTestHarness({ identity: null });
   await signUpTestUser(harnessCtx, {
     email: "owner@example.com",
@@ -181,6 +191,7 @@ async function renderSubscribe(capability: BrowserPushCapability) {
             capability,
             babyRef,
           )}
+          audience={audience}
         />
       </TooltipProvider>
     ),
@@ -258,7 +269,12 @@ test("returns the existing browser push subscription and Convex isSubscribed", a
 
   const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
-  expect(capability).toEqual({ kind: "subscribed", subscription, isSubscribed: true });
+  expect(capability).toEqual({
+    kind: "subscribed",
+    subscription,
+    family: true,
+    messages: true,
+  });
 });
 
 test("lets an installed iOS PWA subscribe instead of showing the install guide", async () => {
@@ -342,7 +358,8 @@ test("prefetches capability and isSubscribed into the query cache in the browser
     ).toEqual({
       kind: "subscribed",
       subscription: { endpoint: "https://push.example/sub" },
-      isSubscribed: true,
+      family: true,
+      messages: true,
     });
   });
 });
@@ -367,7 +384,7 @@ test("does not touch PushManager while prefetching on the server", async () => {
 });
 
 test("shows iOS Home Screen instructions when the PWA is not installed", async () => {
-  await using view = await renderSubscribe({ kind: "needsIosInstall" });
+  await using view = await renderSubscribe({ kind: "needsIosInstall" }, "visitor");
 
   fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
 
@@ -376,43 +393,348 @@ test("shows iOS Home Screen instructions when the PWA is not installed", async (
 });
 
 test("offers subscribe when push is supported without a subscription", async () => {
-  await using view = await renderSubscribe({ kind: "unsubscribed" });
+  await using view = await renderSubscribe({ kind: "unsubscribed" }, "visitor");
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
   expect(view.queryByText("Get Notifications on iOS")).toBeNull();
 });
 
 test("offers subscribe when the service worker times out", async () => {
-  await using view = await renderSubscribe({ kind: "serviceWorkerTimeout" });
+  await using view = await renderSubscribe({ kind: "serviceWorkerTimeout" }, "visitor");
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
   expect(view.queryByText("Get Notifications on iOS")).toBeNull();
 });
 
 test("offers subscribe when push is unsupported", async () => {
-  await using view = await renderSubscribe({ kind: "unsupported" });
+  await using view = await renderSubscribe({ kind: "unsupported" }, "visitor");
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
 });
 
 test("shows unsubscribe when Convex reports an active subscription", async () => {
-  await using view = await renderSubscribe({
-    kind: "subscribed",
-    // SAFETY: Test fixture is a subset of the production type.
-    subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-    isSubscribed: true,
-  });
+  await using view = await renderSubscribe(
+    {
+      kind: "subscribed",
+      // SAFETY: Test fixture is a subset of the production type.
+      subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+      family: true,
+      messages: false,
+    },
+    "visitor",
+  );
 
   expect(view.getByRole("button", { name: "Unsubscribe" })).toBeTruthy();
 });
 
 test("offers subscribe when the browser is subscribed but Convex is not", async () => {
-  await using view = await renderSubscribe({
-    kind: "subscribed",
-    // SAFETY: Test fixture is a subset of the production type.
-    subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-    isSubscribed: false,
-  });
+  await using view = await renderSubscribe(
+    {
+      kind: "subscribed",
+      // SAFETY: Test fixture is a subset of the production type.
+      subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+      family: false,
+      messages: false,
+    },
+    "visitor",
+  );
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
+});
+
+test("managers still get iOS Home Screen instructions before the chooser", async () => {
+  await using view = await renderSubscribe({ kind: "needsIosInstall" }, "manager");
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+
+  expect(screen.getByText("Get Notifications on iOS")).toBeTruthy();
+  expect(screen.queryByText("Choose notifications")).toBeNull();
+  expect(screen.getByText(/does not inherit your Safari login/i)).toBeTruthy();
+});
+
+test("visitor iOS install copy does not mention signing in", async () => {
+  await using view = await renderSubscribe({ kind: "needsIosInstall" }, "visitor");
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+
+  expect(screen.getByText(/Come back here and tap/i)).toBeTruthy();
+  expect(screen.queryByText(/does not inherit your Safari login/i)).toBeNull();
+});
+
+test("managers pick status and message alerts in a chooser", async () => {
+  await using view = await renderSubscribe({ kind: "unsubscribed" }, "manager");
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+
+  expect(screen.getByRole("heading", { name: "Choose notifications" })).toBeTruthy();
+  expect(
+    screen.getByRole("checkbox", { name: "Status updates" }).getAttribute("aria-checked"),
+  ).toBe("true");
+  expect(
+    screen.getByRole("checkbox", { name: "Message notifications" }).getAttribute("aria-checked"),
+  ).toBe("true");
+});
+
+test("manager chooser defaults match the current subscription", async () => {
+  await using view = await renderSubscribe(
+    {
+      kind: "subscribed",
+      // SAFETY: Test fixture is a subset of the production type.
+      subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+      family: true,
+      messages: false,
+    },
+    "manager",
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Unsubscribe" }));
+
+  expect(
+    screen.getByRole("checkbox", { name: "Status updates" }).getAttribute("aria-checked"),
+  ).toBe("true");
+  expect(
+    screen.getByRole("checkbox", { name: "Message notifications" }).getAttribute("aria-checked"),
+  ).toBe("false");
+});
+
+test("saving the manager chooser reports the selected alerts", async () => {
+  const onSubmit = vi
+    .fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>()
+    .mockResolvedValue();
+  await using view = await renderWithTestRouter(
+    <TooltipProvider>
+      <ManagerNotificationChooserView
+        familyDefault={true}
+        messagesDefault={true}
+        isSubscribed={false}
+        isPending={false}
+        onSubmit={onSubmit}
+      />
+    </TooltipProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+  fireEvent.click(view.getByRole("checkbox", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledWith({ family: true, messages: false });
+  });
+});
+
+test("saving both channels off reports an unsubscribe selection", async () => {
+  const onSubmit = vi
+    .fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>()
+    .mockResolvedValue();
+  await using view = await renderWithTestRouter(
+    <TooltipProvider>
+      <ManagerNotificationChooserView
+        familyDefault={true}
+        messagesDefault={true}
+        isSubscribed={true}
+        isPending={false}
+        onSubmit={onSubmit}
+      />
+    </TooltipProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Unsubscribe" }));
+  fireEvent.click(view.getByRole("checkbox", { name: "Status updates" }));
+  fireEvent.click(view.getByRole("checkbox", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledWith({ family: false, messages: false });
+  });
+});
+
+test("chooser Save waits for the mutation before closing", async () => {
+  let finishSave: (() => void) | undefined;
+  const onSubmit = vi.fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>(
+    () =>
+      new Promise((resolve) => {
+        finishSave = resolve;
+      }),
+  );
+  await using view = await renderWithTestRouter(
+    <TooltipProvider>
+      <ManagerNotificationChooserView
+        familyDefault={true}
+        messagesDefault={true}
+        isSubscribed={false}
+        isPending={false}
+        onSubmit={onSubmit}
+      />
+    </TooltipProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
+  expect(view.getByRole("heading", { name: "Choose notifications" })).toBeTruthy();
+
+  finishSave?.();
+  await vi.waitFor(() => {
+    expect(view.queryByRole("heading", { name: "Choose notifications" })).toBeNull();
+  });
+});
+
+test("dirty chooser dismiss asks to discard unsaved changes", async () => {
+  const onSubmit = vi
+    .fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>()
+    .mockResolvedValue();
+  await using view = await renderWithTestRouter(
+    <TooltipProvider>
+      <ManagerNotificationChooserView
+        familyDefault={true}
+        messagesDefault={true}
+        isSubscribed={false}
+        isPending={false}
+        onSubmit={onSubmit}
+      />
+    </TooltipProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+  fireEvent.click(view.getByRole("checkbox", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Close" }));
+
+  expect(view.getByRole("heading", { name: "Discard unsaved changes?" })).toBeTruthy();
+  expect(onSubmit).not.toHaveBeenCalled();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  expect(view.getByRole("heading", { name: "Choose notifications" })).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Close" }));
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+
+  await vi.waitFor(() => {
+    expect(view.queryByRole("heading", { name: "Choose notifications" })).toBeNull();
+  });
+  expect(onSubmit).not.toHaveBeenCalled();
+});
+
+const OWNER_ENDPOINT = "https://push.example/owner-and-family";
+
+function ownerPushSubscription() {
+  // SAFETY: Test fixture is a subset of the production type.
+  return {
+    endpoint: OWNER_ENDPOINT,
+    toJSON: (): PushSubscriptionJSON => ({
+      endpoint: OWNER_ENDPOINT,
+      keys: { p256dh: "p256", auth: "auth" },
+    }),
+  } as PushSubscription;
+}
+
+function stubGrantedOwnerPush() {
+  const restore: Array<() => void> = [];
+  const subscription = ownerPushSubscription();
+
+  function replaceProperty<$Target extends object>(
+    target: $Target,
+    property: { key: string; descriptor: PropertyDescriptor },
+  ) {
+    const existing = Object.getOwnPropertyDescriptor(target, property.key);
+    Object.defineProperty(target, property.key, { configurable: true, ...property.descriptor });
+    restore.push(() => {
+      if (existing) {
+        Object.defineProperty(target, property.key, existing);
+        return;
+      }
+      Reflect.deleteProperty(target, property.key);
+    });
+  }
+
+  const NotificationStub = function Notification() {};
+  Object.defineProperty(NotificationStub, "permission", {
+    configurable: true,
+    get: () => "granted",
+  });
+  replaceProperty(globalThis, {
+    key: "Notification",
+    descriptor: { value: NotificationStub },
+  });
+  // SAFETY: Test fixture is a subset of the production type.
+  const registration = {
+    pushManager: {
+      getSubscription: () => Promise.resolve(subscription),
+      subscribe: () => Promise.resolve(subscription),
+    },
+  } as ServiceWorkerRegistration;
+  replaceProperty(navigator, {
+    key: "serviceWorker",
+    descriptor: { value: { ready: Promise.resolve(registration) } },
+  });
+
+  return makeResource({}, () => {
+    for (const fn of restore.toReversed()) {
+      fn();
+    }
+  });
+}
+
+test("visitor Get Notifications does not drop owner message alerts", async () => {
+  await using _env = stubGrantedOwnerPush();
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: baby.babyId,
+    endpoint: OWNER_ENDPOINT,
+    p256dh: "p256",
+    auth: "auth",
+    userAgent: "vitest",
+  });
+  harness.withIdentity(null);
+
+  const vapid = await harness.convexPreloader.ensureQueryData(
+    api.pushSubscriptions.getPublicKey,
+    {},
+  );
+  const view = await renderWithConvexTest({
+    harness,
+    ui: (
+      <TooltipProvider>
+        <NotificationSubscribe
+          babyId={baby.babyId}
+          vapidPublicKey={vapid}
+          browserPush={testPreloadedQuery(
+            (ref) => browserPushQueryOptions(harness.queryClient, ref),
+            {
+              kind: "subscribed",
+              subscription: ownerPushSubscription(),
+              family: false,
+              messages: true,
+            },
+            baby.publicId,
+          )}
+          audience="visitor"
+        />
+      </TooltipProvider>
+    ),
+    wrap: null,
+  });
+  await using _view = makeAsyncResource(view, async () => {
+    view[Symbol.dispose]();
+  });
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+
+  await vi.waitFor(async () => {
+    expect(
+      await harness.client.query(api.pushSubscriptions.isSubscribed, {
+        babyId: baby.babyId,
+        endpoint: OWNER_ENDPOINT,
+      }),
+    ).toBe(true);
+  });
+  expect(
+    await harness.client.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: baby.babyId,
+      endpoint: OWNER_ENDPOINT,
+    }),
+  ).toBe(true);
 });

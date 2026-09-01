@@ -159,7 +159,17 @@ const enGB = {
   "Get Notifications": "Get Notifications",
   Unsubscribe: "Unsubscribe",
   "Get notified when the baby's status changes": "Get notified when the baby's status changes",
+  "Get notified when someone leaves a message": "Get notified when someone leaves a message",
   "Stop receiving push notifications for updates": "Stop receiving push notifications for updates",
+  "Stop receiving push notifications for messages":
+    "Stop receiving push notifications for messages",
+  "Message notifications": "Message notifications",
+  "Choose notifications": "Choose notifications",
+  "Pick what this device should receive.": "Pick what this device should receive.",
+  "Status updates": "Status updates",
+  Notifications: "Notifications",
+  "You'll get a push when someone leaves a message on this page.":
+    "You'll get a push when someone leaves a message on this page.",
   "Your Babies": "Your Babies",
   "Track and manage all your babies' journeys": "Keep all your baby pages in one place",
   "Add Baby": "Add Baby",
@@ -319,6 +329,10 @@ const enGB = {
   'Scroll down and tap "Add to Home Screen"': 'Scroll down and tap "Add to Home Screen"',
   "Open the app from your Home Screen": "Open the app from your Home Screen",
   'Come back here and tap "Get Notifications"': 'Come back here and tap "Get Notifications"',
+  "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.":
+    "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.",
+  "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.":
+    "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.",
   "No subscription endpoint found": "Couldn't set up notifications. Try again.",
   "Unsubscribing from notifications...": "Unsubscribing from notifications...",
   "Unsubscribed from notifications!": "Notifications off",
@@ -723,7 +737,16 @@ const sv: TranslationCatalog = {
   "Get Notifications": "Få notiser",
   Unsubscribe: "Stäng av notiser",
   "Get notified when the baby's status changes": "Få en notis när bäbisens status ändras",
+  "Get notified when someone leaves a message": "Få en notis när någon lämnar en hälsning",
   "Stop receiving push notifications for updates": "Stäng av pushnotiser",
+  "Stop receiving push notifications for messages": "Stäng av notiser om hälsningar",
+  "Message notifications": "Notiser om hälsningar",
+  "Choose notifications": "Välj notiser",
+  "Pick what this device should receive.": "Välj vad den här enheten ska ta emot.",
+  "Status updates": "Statusuppdateringar",
+  Notifications: "Notiser",
+  "You'll get a push when someone leaves a message on this page.":
+    "Du får en notis när någon lämnar en hälsning på sidan.",
   "Your Babies": "Dina bäbisar",
   "Track and manage all your babies' journeys": "Håll koll på alla dina bäbissidor",
   "Add Baby": "Lägg till bäbis",
@@ -884,6 +907,10 @@ const sv: TranslationCatalog = {
   'Scroll down and tap "Add to Home Screen"': 'Rulla ned och tryck på "Lägg till på hemskärmen"',
   "Open the app from your Home Screen": "Öppna appen från hemskärmen",
   'Come back here and tap "Get Notifications"': 'Gå tillbaka hit och tryck på "Få notiser"',
+  "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.":
+    "Hemskärmsikonen tar inte med inloggningen från Safari. Logga in i appen och tryck sedan på Få notiser.",
+  "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.":
+    "På iPhone behöver notiser om hälsningar appen på hemskärmen. Du slår på dem när du öppnat den från ikonen.",
   "No subscription endpoint found": "Vi hittade inga aktiva notiser",
   "Unsubscribing from notifications...": "Stänger av notiser...",
   "Unsubscribed from notifications!": "Notiserna är avstängda!",
@@ -1264,7 +1291,17 @@ const es: TranslationCatalog = {
   "Get Notifications": "Recibir notificaciones",
   Unsubscribe: "Cancelar suscripción",
   "Get notified when the baby's status changes": "Recibe una notificación cuando cambie el estado",
+  "Get notified when someone leaves a message":
+    "Recibe una notificación cuando alguien deje un mensaje",
   "Stop receiving push notifications for updates": "Dejar de recibir notificaciones",
+  "Stop receiving push notifications for messages": "Dejar de recibir notificaciones de mensajes",
+  "Message notifications": "Notificaciones de mensajes",
+  "Choose notifications": "Elegir notificaciones",
+  "Pick what this device should receive.": "Elige qué debe recibir este dispositivo.",
+  "Status updates": "Actualizaciones de estado",
+  Notifications: "Notificaciones",
+  "You'll get a push when someone leaves a message on this page.":
+    "Recibirás un aviso cuando alguien deje un mensaje en esta página.",
   "Your Babies": "Tus bebés",
   "Track and manage all your babies' journeys": "Sigue y gestiona las páginas de tus bebés",
   "Add Baby": "Añadir bebé",
@@ -1426,6 +1463,10 @@ const es: TranslationCatalog = {
     'Desplázate hacia abajo y toca "Añadir a pantalla de inicio"',
   "Open the app from your Home Screen": "Abre la aplicación desde la pantalla de inicio",
   'Come back here and tap "Get Notifications"': 'Vuelve aquí y toca "Recibir notificaciones"',
+  "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.":
+    "El icono de la pantalla de inicio no hereda el inicio de sesión de Safari. Entra en la app, inicia sesión y luego toca Recibir notificaciones.",
+  "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.":
+    "En iPhone, las notificaciones de mensajes necesitan la app en la pantalla de inicio. Las activarás al abrirla desde el icono.",
   "No subscription endpoint found": "No encontramos la suscripción",
   "Unsubscribing from notifications...": "Desactivando las notificaciones...",
   "Unsubscribed from notifications!": "¡Notificaciones desactivadas!",
@@ -1814,7 +1855,17 @@ const ptBR: TranslationCatalog = {
   Unsubscribe: "Desativar notificações",
   "Get notified when the baby's status changes":
     "Ative as notificações para saber quando o status do bebê mudar",
+  "Get notified when someone leaves a message":
+    "Ative as notificações para saber quando alguém deixar um recado",
   "Stop receiving push notifications for updates": "Parar de receber notificações de novidades",
+  "Stop receiving push notifications for messages": "Parar de receber notificações de mensagens",
+  "Message notifications": "Notificações de mensagens",
+  "Choose notifications": "Escolher notificações",
+  "Pick what this device should receive.": "Escolha o que este dispositivo deve receber.",
+  "Status updates": "Atualizações de status",
+  Notifications: "Notificações",
+  "You'll get a push when someone leaves a message on this page.":
+    "Você recebe um aviso quando alguém deixar um recado nesta página.",
   "Your Babies": "Seus bebês",
   "Track and manage all your babies' journeys": "Acompanhe e cuide das páginas dos seus bebês",
   "Add Baby": "Adicionar bebê",
@@ -1977,6 +2028,10 @@ const ptBR: TranslationCatalog = {
     'Role para baixo e toque em "Adicionar à Tela de Início"',
   "Open the app from your Home Screen": "Abra o aplicativo pela Tela de Início",
   'Come back here and tap "Get Notifications"': 'Volte aqui e toque em "Ativar notificações"',
+  "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.":
+    "O ícone da Tela de Início não herda o login do Safari. Entre no app, faça login e toque em Ativar notificações.",
+  "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.":
+    "No iPhone, as notificações de mensagens precisam do app na Tela de Início. Você liga depois de abrir pelo ícone.",
   "No subscription endpoint found": "Não foi possível encontrar os dados das notificações",
   "Unsubscribing from notifications...": "Desativando notificações...",
   "Unsubscribed from notifications!": "Notificações desativadas!",

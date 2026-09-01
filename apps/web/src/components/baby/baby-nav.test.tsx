@@ -1,24 +1,34 @@
 import { fireEvent } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { expect, test, vi } from "vitest";
 import { BabyNav } from "@/components/baby/baby-nav";
-import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { htmlButton, htmlElement } from "@/test/htmlElement";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+
+type BabyNavProps = ComponentProps<typeof BabyNav>;
+
+function navProps(overrides: Partial<BabyNavProps>): BabyNavProps {
+  return {
+    shareButton: { to: "/baby/$publicId/share" },
+    shareOpen: false,
+    onDismissShare: null,
+    postUpdateButton: { to: "/baby/$publicId/post" },
+    postUpdateOpen: false,
+    onDismissPostUpdate: null,
+    onSettingsOpened: null,
+    settingsButton: { to: "/" },
+    settingsOpen: false,
+    onDismissSettings: null,
+    signInButton: null,
+    signInOpen: false,
+    onDismissSignIn: null,
+    dashboardButton: null,
+    ...overrides,
+  };
+}
 
 test("groups owner actions separately from page actions", async () => {
-  await using view = await renderWithTestRouter(
-    <BabyNav
-      shareButton={{ to: "/baby/$publicId/share" }}
-      shareOpen={false}
-      onDismissShare={null}
-      postUpdateButton={{ to: "/baby/$publicId/post" }}
-      postUpdateOpen={false}
-      onDismissPostUpdate={null}
-      onSettingsOpened={null}
-      settingsButton={{ to: "/" }}
-      settingsOpen={false}
-      onDismissSettings={null}
-    />,
-  );
+  await using view = await renderWithTestRouter(<BabyNav {...navProps({})} />);
 
   const ownerGroup = view.getByRole("group", { name: "Owner actions" });
   const pageGroup = view.getByRole("group", { name: "Page actions" });
@@ -34,20 +44,7 @@ test("groups owner actions separately from page actions", async () => {
 });
 
 test("collapses Post update to an icon on small screens without dropping the name", async () => {
-  await using view = await renderWithTestRouter(
-    <BabyNav
-      shareButton={{ to: "/baby/$publicId/share" }}
-      shareOpen={false}
-      onDismissShare={null}
-      postUpdateButton={{ to: "/baby/$publicId/post" }}
-      postUpdateOpen={false}
-      onDismissPostUpdate={null}
-      onSettingsOpened={null}
-      settingsButton={{ to: "/" }}
-      settingsOpen={false}
-      onDismissSettings={null}
-    />,
-  );
+  await using view = await renderWithTestRouter(<BabyNav {...navProps({})} />);
 
   expect(htmlElement(view.getByRole("button", { name: "Post update" })).className).toMatch(
     /max-sm:size-8/,
@@ -61,16 +58,10 @@ test("collapses Post update to an icon on small screens without dropping the nam
 test("hides the owner group when the visitor has no owner actions", async () => {
   await using view = await renderWithTestRouter(
     <BabyNav
-      shareButton={{ to: "/baby/$publicId/share" }}
-      shareOpen={false}
-      onDismissShare={null}
-      postUpdateButton={null}
-      postUpdateOpen={false}
-      onDismissPostUpdate={null}
-      onSettingsOpened={null}
-      settingsButton={null}
-      settingsOpen={false}
-      onDismissSettings={null}
+      {...navProps({
+        postUpdateButton: null,
+        settingsButton: null,
+      })}
     />,
   );
 
@@ -81,16 +72,12 @@ test("hides the owner group when the visitor has no owner actions", async () => 
 test("disables sharing when the share link is empty", async () => {
   await using view = await renderWithTestRouter(
     <BabyNav
-      shareButton={null}
-      shareOpen={false}
-      onDismissShare={null}
-      postUpdateButton={null}
-      postUpdateOpen={false}
-      onDismissPostUpdate={null}
-      onSettingsOpened={null}
-      settingsButton={{ to: "/" }}
-      settingsOpen={true}
-      onDismissSettings={() => {}}
+      {...navProps({
+        shareButton: null,
+        postUpdateButton: null,
+        settingsOpen: true,
+        onDismissSettings: () => {},
+      })}
     />,
   );
 
@@ -106,16 +93,17 @@ test("calls dismiss handlers when overlay owner actions are open", async () => {
 
   await using view = await renderWithTestRouter(
     <BabyNav
-      shareButton={{ to: "/baby/$publicId/share" }}
-      shareOpen={true}
-      onDismissShare={onDismissShare}
-      postUpdateButton={{ to: "/baby/$publicId/post" }}
-      postUpdateOpen={true}
-      onDismissPostUpdate={onDismissPostUpdate}
-      onSettingsOpened={null}
-      settingsButton={{ to: "/baby/$publicId/settings" }}
-      settingsOpen={true}
-      onDismissSettings={onDismissSettings}
+      {...navProps({
+        shareButton: { to: "/baby/$publicId/share" },
+        shareOpen: true,
+        onDismissShare,
+        postUpdateButton: { to: "/baby/$publicId/post" },
+        postUpdateOpen: true,
+        onDismissPostUpdate,
+        settingsButton: { to: "/baby/$publicId/settings" },
+        settingsOpen: true,
+        onDismissSettings,
+      })}
     />,
   );
 
@@ -126,4 +114,52 @@ test("calls dismiss handlers when overlay owner actions are open", async () => {
   expect(onDismissShare).toHaveBeenCalledOnce();
   expect(onDismissPostUpdate).toHaveBeenCalledOnce();
   expect(onDismissSettings).toHaveBeenCalledOnce();
+});
+
+test("logged-out visitors get a sign-in icon in page actions", async () => {
+  await using view = await renderWithTestRouter(
+    <BabyNav
+      {...navProps({
+        postUpdateButton: null,
+        settingsButton: null,
+        signInButton: { to: "/baby/$publicId/login", params: { publicId: "baby-waiting" } },
+      })}
+    />,
+  );
+
+  const pageGroup = view.getByRole("group", { name: "Page actions" });
+  const signIn = view.getByRole("button", { name: "Sign in" });
+  expect(pageGroup.contains(signIn)).toBe(true);
+  expect(signIn.getAttribute("href")).toBe("/baby/baby-waiting/login");
+  expect(view.queryByRole("button", { name: "Dashboard" })).toBeNull();
+});
+
+test("signed-in visitors get a dashboard icon in page actions", async () => {
+  await using view = await renderWithTestRouter(
+    <BabyNav {...navProps({ dashboardButton: { to: "/dashboard" } })} />,
+  );
+
+  const pageGroup = view.getByRole("group", { name: "Page actions" });
+  const dashboard = view.getByRole("button", { name: "Dashboard" });
+  expect(pageGroup.contains(dashboard)).toBe(true);
+  expect(dashboard.getAttribute("href")).toBe("/dashboard");
+  expect(view.queryByRole("button", { name: "Sign in" })).toBeNull();
+});
+
+test("calls dismiss when the sign-in overlay is open", async () => {
+  const onDismissSignIn = vi.fn<() => void>();
+  await using view = await renderWithTestRouter(
+    <BabyNav
+      {...navProps({
+        postUpdateButton: null,
+        settingsButton: null,
+        signInButton: { to: "/baby/$publicId/login", params: { publicId: "baby-waiting" } },
+        signInOpen: true,
+        onDismissSignIn,
+      })}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Sign in" }));
+  expect(onDismissSignIn).toHaveBeenCalledOnce();
 });

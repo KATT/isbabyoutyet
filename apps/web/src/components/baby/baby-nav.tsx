@@ -1,7 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
+import { ChatCircleText, GearSix, House, ShareNetwork, SignIn } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
@@ -36,6 +36,13 @@ type BabyNavProps = {
   onDismissPostUpdate: (() => void) | null;
   /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
   onSettingsOpened: (() => void) | null;
+  /** Open parent login overlay. Null when the visitor is signed in. */
+  signInButton: LinkProps | null;
+  signInOpen: boolean;
+  /** When login is open, dismiss via history.back / replace fallback. */
+  onDismissSignIn: (() => void) | null;
+  /** Dashboard link for signed-in visitors. Null when logged out. */
+  dashboardButton: LinkProps | null;
 };
 
 export function BabyNav(props: BabyNavProps) {
@@ -114,6 +121,56 @@ export function BabyNav(props: BabyNavProps) {
     </div>
   ) : null;
 
+  const accountAction = props.signInButton ? (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          props.signInOpen && props.onDismissSignIn ? (
+            <Button
+              variant="default"
+              size="icon"
+              className="rounded-full"
+              aria-label={t("Sign in")}
+              onClick={props.onDismissSignIn}
+            >
+              <SignIn />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              render={<Link {...props.signInButton} />}
+              nativeButton={false}
+              aria-label={t("Sign in")}
+            >
+              <SignIn />
+            </Button>
+          )
+        }
+      />
+      <TooltipContent>{t("Sign in")}</TooltipContent>
+    </Tooltip>
+  ) : props.dashboardButton ? (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            render={<Link {...props.dashboardButton} />}
+            nativeButton={false}
+            aria-label={t("Dashboard")}
+          >
+            <House />
+          </Button>
+        }
+      />
+      <TooltipContent>{t("Dashboard")}</TooltipContent>
+    </Tooltip>
+  ) : null;
+
   const pageActions = (
     <div role="group" aria-label={t("Page actions")} className="flex items-center gap-1">
       <Tooltip>
@@ -152,6 +209,7 @@ export function BabyNav(props: BabyNavProps) {
       </Tooltip>
 
       <ModeToggle className="rounded-full" />
+      {accountAction}
     </div>
   );
 

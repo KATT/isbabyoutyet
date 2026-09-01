@@ -2,13 +2,18 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import type { NavigateOptions } from "@tanstack/react-router";
 import { z } from "zod";
 import type { FunctionArgs } from "convex/server";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import type { ReactMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { ensureWebPushSubscription } from "@/lib/web-push-subscription";
+import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { AddBabyOptionalSettings } from "@/components/baby/add-baby-optional-settings";
+import { OwnerMessageNotifyFormField } from "@/components/baby/owner-message-notify-switch";
+import { needsIosPushInstall } from "@/components/baby/notification-subscribe";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
@@ -38,6 +43,7 @@ function addBabySchema(t: TranslationFunction) {
         z.literal("custom"),
       ]),
       theme: z.union([z.string(), z.null()]),
+      notifyOnMessages: z.boolean(),
     })
     .superRefine((values, ctx) => {
       if (values.showExactDueDate && !values.dueDate) {
@@ -48,13 +54,16 @@ function addBabySchema(t: TranslationFunction) {
         });
       }
     })
-    .transform((values): FunctionArgs<typeof api.baby.create> => ({
-      name: values.name,
-      dueDate: values.dueDate,
-      dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
-      publicDueDateText: values.publicDueDateText || null,
-      birthJourney: values.birthJourney,
-      theme: values.theme,
+    .transform((values) => ({
+      create: {
+        name: values.name,
+        dueDate: values.dueDate,
+        dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
+        publicDueDateText: values.publicDueDateText || null,
+        birthJourney: values.birthJourney,
+        theme: values.theme,
+      } satisfies FunctionArgs<typeof api.baby.create>,
+      notifyOnMessages: values.notifyOnMessages,
     }));
 }
 
@@ -66,9 +75,30 @@ export type CreateBaby = ReactMutation<typeof api.baby.create>;
 
 export function AddBabyPage() {
   const router = useRouter();
+  const convex = useConvex();
   const createBaby = useMutation(api.baby.create);
+  const subscribeAsOwner = useMutation(api.pushSubscriptions.subscribeAsOwner);
 
-  return <AddBabyPageView createBaby={createBaby} navigate={(opts) => router.navigate(opts)} />;
+  return (
+    <AddBabyPageView
+      createBaby={createBaby}
+      navigate={(opts) => router.navigate(opts)}
+      subscribeOwnerMessages={async (babyId) => {
+        if (needsIosPushInstall()) {
+          return;
+        }
+        const vapidPublicKey = await convex.query(api.pushSubscriptions.getPublicKey, {});
+        const keys = await ensureWebPushSubscription(vapidPublicKey);
+        await subscribeAsOwner({
+          babyId,
+          endpoint: keys.endpoint,
+          p256dh: keys.p256dh,
+          auth: keys.auth,
+          userAgent: navigator.userAgent,
+        });
+      }}
+    />
+  );
 }
 
 /**
@@ -80,6 +110,7 @@ export function AddBabyPage() {
 export function AddBabyPageView(props: {
   createBaby: CreateBaby;
   navigate: (opts: NavigateOptions) => Promise<void>;
+  subscribeOwnerMessages: ((babyId: Id<"baby">) => Promise<void>) | null;
 }) {
   const { t } = useI18n();
   const overlay = useFormGuard({ onOpenChange: undefined });
@@ -93,6 +124,7 @@ export function AddBabyPageView(props: {
       publicDueDateText: "",
       birthJourney: "labor" as const,
       theme: null,
+      notifyOnMessages: false,
     },
   });
 
@@ -131,7 +163,18 @@ export function AddBabyPageView(props: {
               <Form
                 form={form}
                 handleSubmit={async (values) => {
-                  const result = await props.createBaby(values);
+                  const result = await props.createBaby(values.create);
+                  if (values.notifyOnMessages && props.subscribeOwnerMessages) {
+                    try {
+                      await props.subscribeOwnerMessages(result.babyId);
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : t("Failed to subscribe to notifications"),
+                      );
+                    }
+                  }
 
                   await props.navigate({
                     to: "/baby/$publicId",
@@ -168,6 +211,8 @@ export function AddBabyPageView(props: {
                     sectionLabelClassName="font-bold"
                     stopPopoverPropagation={false}
                   />
+
+                  <OwnerMessageNotifyFormField control={form.control} name="notifyOnMessages" />
 
                   <AddBabyOptionalSettings
                     control={form.control}

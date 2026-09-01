@@ -191,6 +191,13 @@ export function useBabyShareOverlayNav(publicId: string) {
   });
 }
 
+export function useBabyLoginOverlayNav(publicId: string) {
+  return useOverlayNav({
+    open: { to: "/baby/$publicId/login", params: { publicId } },
+    close: { to: "/baby/$publicId", params: { publicId } },
+  });
+}
+
 export function useBabyPhotoOverlayNav(publicId: string) {
   return useOverlayNav({
     open: { to: "/baby/$publicId/photo", params: { publicId } },
