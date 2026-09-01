@@ -1,7 +1,12 @@
 import { expect, test } from "vitest";
 import {
   computeSchemaFingerprint,
+  CONVEX_DEPLOY_URL_CMD,
+  convexDeployArgv,
   convexDeployCliArgs,
+  convexDeployRetryCliArgs,
+  convexPostPushRunFunctions,
+  convexSeedNpmScripts,
   describeConvexDeployPlan,
   interpretEnvGetResult,
   isConvexPreviewWithoutFunctions,
@@ -74,7 +79,7 @@ test("plans production with homepage seed", () => {
   });
 });
 
-test("recreates when the preview is missing or the fingerprint changed", () => {
+test("creates a missing preview without a wipe", () => {
   expect(
     planConvexDeploy({
       vercelEnv: "preview",
@@ -83,11 +88,14 @@ test("recreates when the preview is missing or the fingerprint changed", () => {
       stored: { previewExists: false, fingerprint: null },
     }),
   ).toEqual({
-    kind: "preview-recreate",
+    kind: "preview-create",
     previewName,
     writeEnv: true,
     seed: "seed:homepage:content",
   });
+});
+
+test("recreates only when the schema fingerprint changed", () => {
   expect(
     planConvexDeploy({
       vercelEnv: "preview",
@@ -145,12 +153,20 @@ test("describes reuse as a function push without a wipe", () => {
   ).toBe("Production — deploying Convex and building the web app");
   expect(
     describeConvexDeployPlan({
+      kind: "preview-create",
+      previewName,
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toBe(`Preview is new — creating Convex preview "${previewName}" (no wipe)`);
+  expect(
+    describeConvexDeployPlan({
       kind: "preview-recreate",
       previewName,
       writeEnv: true,
       seed: "seed:homepage:content",
     }),
-  ).toBe(`Schema changed or preview is new — recreating Convex preview "${previewName}"`);
+  ).toBe(`Schema changed — recreating Convex preview "${previewName}"`);
   expect(
     describeConvexDeployPlan({
       kind: "preview-reuse",
@@ -171,7 +187,7 @@ test("describes reuse as a function push without a wipe", () => {
   ).toBe(`Schema unchanged — pushing functions to existing preview "${previewName}" (no wipe)`);
 });
 
-test("deploy flags wipe and seed only when recreating", () => {
+test("deploy flags wipe only when recreating an existing preview", () => {
   expect(convexDeployCliArgs({ kind: "merge-queue-web-only" })).toEqual([]);
   expect(
     convexDeployCliArgs({
@@ -180,6 +196,14 @@ test("deploy flags wipe and seed only when recreating", () => {
       seed: "seed:homepage",
     }),
   ).toEqual([]);
+  expect(
+    convexDeployCliArgs({
+      kind: "preview-create",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["--preview-name", "feat/demo", "--preview-run", "seed:seedDemoData"]);
   expect(
     convexDeployCliArgs({
       kind: "preview-recreate",
@@ -198,6 +222,41 @@ test("deploy flags wipe and seed only when recreating", () => {
   ).toEqual(["--preview-name", "feat/demo"]);
 });
 
+test("start_push 408 retries claim the preview without a wipe", () => {
+  expect(convexDeployRetryCliArgs({ kind: "merge-queue-web-only" })).toEqual([]);
+  expect(
+    convexDeployRetryCliArgs({
+      kind: "production",
+      writeEnv: true,
+      seed: "seed:homepage",
+    }),
+  ).toEqual([]);
+  expect(
+    convexDeployRetryCliArgs({
+      kind: "preview-create",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["--preview-name", "feat/demo"]);
+  expect(
+    convexDeployRetryCliArgs({
+      kind: "preview-recreate",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["--preview-name", "feat/demo"]);
+  expect(
+    convexDeployRetryCliArgs({
+      kind: "preview-reuse",
+      previewName: "feat/demo",
+      writeEnv: false,
+      seed: null,
+    }),
+  ).toEqual(["--preview-name", "feat/demo"]);
+});
+
 test("follow-up Convex CLI commands get --preview-name on preview plans", () => {
   expect(previewNameCliArgs({ kind: "merge-queue-web-only" })).toEqual([]);
   expect(
@@ -207,6 +266,14 @@ test("follow-up Convex CLI commands get --preview-name on preview plans", () => 
       seed: "seed:homepage",
     }),
   ).toEqual([]);
+  expect(
+    previewNameCliArgs({
+      kind: "preview-create",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["--preview-name", "feat/demo"]);
   expect(
     previewNameCliArgs({
       kind: "preview-recreate",
@@ -268,7 +335,7 @@ test("merge queue refs skip the Convex push", () => {
   expect(shouldPushConvexBackend("20e0607956751eeb3467f750ed8367eaa6a6338c")).toBe(true);
 });
 
-test("feature-branch previews recreate once then reuse without a wipe or seed", () => {
+test("feature-branch previews create without a wipe then reuse", () => {
   const branch = "cursor/skip-mq-seed-preview-7188";
   const firstDeploy = planConvexDeploy({
     vercelEnv: "preview",
@@ -277,13 +344,13 @@ test("feature-branch previews recreate once then reuse without a wipe or seed", 
     stored: { previewExists: false, fingerprint: null },
   });
   expect(firstDeploy).toEqual({
-    kind: "preview-recreate",
+    kind: "preview-create",
     previewName: branch,
     writeEnv: true,
     seed: "seed:homepage:content",
   });
   expect(convexDeployCliArgs(firstDeploy)).toEqual([
-    "--preview-create",
+    "--preview-name",
     branch,
     "--preview-run",
     "seed:seedDemoData",
@@ -352,6 +419,91 @@ test("detects Convex start_push 408 timeouts", () => {
     ),
   ).toBe(false);
   expect(isConvexStartPushTimeout("✔ Deployed Convex functions")).toBe(false);
+});
+
+test("deploy argv uses a tiny --cmd so start_push is not blocked by the web build", () => {
+  expect(
+    convexDeployArgv(["--preview-name", "feat/demo", "--preview-run", "seed:seedDemoData"]),
+  ).toEqual([
+    "deploy",
+    "--cmd-url-env-var-name",
+    "VITE_CONVEX_URL",
+    "--cmd",
+    CONVEX_DEPLOY_URL_CMD,
+    "--preview-name",
+    "feat/demo",
+    "--preview-run",
+    "seed:seedDemoData",
+  ]);
+  expect(
+    convexDeployArgv(
+      convexDeployRetryCliArgs({
+        kind: "preview-create",
+        previewName: "feat/demo",
+        writeEnv: true,
+        seed: "seed:homepage:content",
+      }),
+    ),
+  ).toEqual([
+    "deploy",
+    "--cmd-url-env-var-name",
+    "VITE_CONVEX_URL",
+    "--cmd",
+    CONVEX_DEPLOY_URL_CMD,
+    "--preview-name",
+    "feat/demo",
+  ]);
+});
+
+test("create and recreate run seedDemoData via convex run after push because retry skips --preview-run", () => {
+  expect(convexPostPushRunFunctions({ kind: "merge-queue-web-only" })).toEqual([]);
+  expect(
+    convexPostPushRunFunctions({
+      kind: "production",
+      writeEnv: true,
+      seed: "seed:homepage",
+    }),
+  ).toEqual([]);
+  expect(
+    convexPostPushRunFunctions({
+      kind: "preview-create",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["seed:seedDemoData"]);
+  expect(
+    convexPostPushRunFunctions({
+      kind: "preview-recreate",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["seed:seedDemoData"]);
+  expect(
+    convexPostPushRunFunctions({
+      kind: "preview-reuse",
+      previewName: "feat/demo",
+      writeEnv: false,
+      seed: null,
+    }),
+  ).toEqual([]);
+  expect(
+    convexSeedNpmScripts({
+      kind: "preview-create",
+      previewName: "feat/demo",
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    }),
+  ).toEqual(["seed:homepage:content"]);
+  expect(
+    convexSeedNpmScripts({
+      kind: "production",
+      writeEnv: true,
+      seed: "seed:homepage",
+    }),
+  ).toEqual(["seed:homepage"]);
+  expect(convexSeedNpmScripts({ kind: "merge-queue-web-only" })).toEqual([]);
 });
 
 test("detects a Convex preview with no functions after a skipped or timed-out push", () => {

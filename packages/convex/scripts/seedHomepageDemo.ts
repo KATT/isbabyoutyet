@@ -203,7 +203,7 @@ function skipSeedWhenPreviewHasNoFunctions(cause: unknown) {
     throw cause;
   }
   console.log(
-    "Convex preview has no functions — skipping photo seed (start_push likely timed out after the Vercel web build)",
+    "Convex preview has no functions — skipping photo seed (merge-queue skip or missing preview)",
   );
 }
 

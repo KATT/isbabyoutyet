@@ -27,7 +27,8 @@
         "src/test/routeTestContext.ts!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
-        "scripts/build-web.mjs!"
+        "scripts/build-web.mjs!",
+        "scripts/write-convex-url.mjs!"
       ]
     },
     "packages/convex": {
