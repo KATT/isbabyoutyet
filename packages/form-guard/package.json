@@ -15,6 +15,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@workspace/tsconfig": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@types/react": "catalog:",
     "jsdom": "catalog:",

@@ -15,10 +15,11 @@
     "@workspace/runtime": "workspace:*"
   },
   "devDependencies": {
+    "@workspace/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "tsdown": "^0.22.14",
+    "tsdown": "catalog:",
     "typescript": "catalog:"
   }
 }

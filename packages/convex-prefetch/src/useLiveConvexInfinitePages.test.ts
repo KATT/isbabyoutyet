@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
 import { ConvexProvider, type ConvexReactClient } from "convex/react";
 import {
-  anyApi,
   makeFunctionReference,
   type DefaultFunctionArgs,
   type FunctionReference,
@@ -239,8 +238,8 @@ test("useLiveConvexInfinitePages does not resubscribe when opts identities chang
     }) =>
       useLiveConvexInfinitePages({
         queryKey: props.queryKey,
-        // Fresh api-proxy identity each render, same function name.
-        funcRef: anyApi.timeline.listByBaby,
+        // Fresh function-reference identity each render, same function name.
+        funcRef: makeFunctionReference<"query">("timeline:listByBaby"),
         args: props.args,
         pageParams: props.pageParams,
       }),
@@ -298,7 +297,7 @@ test("useLiveConvexInfinitePages resubscribes when args contents change", () => 
     (props: LivePagesHookProps) =>
       useLiveConvexInfinitePages({
         queryKey: ["convexInfiniteQuery", "timeline:listByBaby", props.args],
-        funcRef: anyApi.timeline.listByBaby,
+        funcRef: makeFunctionReference<"query">("timeline:listByBaby"),
         args: props.args,
         pageParams: [{ numItems: 20, cursor: null }],
       }),

@@ -19,8 +19,9 @@
     "@workspace/runtime": "workspace:*"
   },
   "devDependencies": {
-    "@tanstack/react-query": "^5.101.4",
-    "@testing-library/react": "^16.3.2",
+    "@workspace/tsconfig": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "jsdom": "catalog:",
     "oxfmt": "catalog:",

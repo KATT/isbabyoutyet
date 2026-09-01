@@ -1,13 +1,7 @@
 {
+  "extends": "@workspace/tsconfig/node.json",
+  "include": ["scripts/**/*.ts", "src/**/*.ts"],
   "compilerOptions": {
-    "strict": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "target": "ESNext",
-    "noEmit": true,
-    "skipLibCheck": true,
-    "types": ["node"],
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["scripts/**/*.ts", "src/**/*.ts"]
+    "types": ["node"]
+  }
 }

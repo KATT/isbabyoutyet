@@ -154,7 +154,7 @@ async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
   if (!response.ok) {
     throw new Error(`Photo upload failed: ${response.status} ${await response.text()}`);
   }
-  const payload: JsonValue = await response.json();
+  const payload = await response.json();
   if (!isJsonObjectValue(payload) || !("storageId" in payload)) {
     throw new Error(`Upload response missing storageId: ${JSON.stringify(payload)}`);
   }
