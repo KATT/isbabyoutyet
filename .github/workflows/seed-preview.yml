@@ -18,7 +18,15 @@ concurrency:
 
 jobs:
   seed-homepage-photos:
-    if: github.event.deployment_status.state == 'success' && !contains(github.event.deployment.environment, 'Production')
+    # Vercel GitHub deployments set `deployment.ref` to the commit SHA, so
+    # `contains(deployment.ref, 'gh-readonly-queue')` never matches. Actions
+    # still sets `github.ref` to `refs/heads/gh-readonly-queue/…`.
+    if: >
+      github.event.deployment_status.state == 'success'
+      && !contains(github.event.deployment.environment, 'Production')
+      && !contains(github.ref, 'gh-readonly-queue')
+      && !contains(github.event.deployment.ref, 'gh-readonly-queue')
+      && !contains(github.event.deployment.environment, 'gh-readonly-queue')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -56,6 +64,13 @@ jobs:
             echo "CONVEX_DEPLOY_KEY is not set in GitHub secrets; cannot seed Convex preview photos."
             exit 1
           fi
+          # Skip before resolving a SHA to a PR head — that head is the
+          # feature branch and would seed the PR Convex preview. `GITHUB_REF`
+          # is `refs/heads/gh-readonly-queue/…` on queue deploys.
+          if [[ "${GITHUB_REF:-}" == *gh-readonly-queue* || "$DEPLOYMENT_REF" == *gh-readonly-queue* ]]; then
+            echo "Merge queue deployment — skipping Convex photo seed"
+            exit 0
+          fi
           # Vercel GitHub deployments set ref to the commit SHA. Convex
           # preview names follow VERCEL_GIT_COMMIT_REF (the git branch).
           BRANCH=""
@@ -69,6 +84,10 @@ jobs:
           if [ -z "$BRANCH" ]; then
             git fetch --force origin '+refs/heads/*:refs/remotes/origin/*'
             BRANCH="$(git for-each-ref --points-at HEAD --format='%(refname:short)' refs/remotes/origin | sed 's|^origin/||' | grep -v '^HEAD$' | head -1)"
+          fi
+          if [[ "$BRANCH" == *gh-readonly-queue* ]]; then
+            echo "Merge queue deployment — skipping Convex photo seed"
+            exit 0
           fi
           if [ -z "$BRANCH" ]; then
             echo "Could not resolve Convex preview name for ${DEPLOYMENT_SHA}"
