@@ -2,16 +2,19 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, createBabyArgs } from "./test.setup";
 
 test("sending a photo notification resolves the image URL and marks the job sent", async () => {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Baby Smith",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   const photo = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["fake image bytes"], { type: "image/jpeg" }));

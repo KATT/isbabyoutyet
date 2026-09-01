@@ -10,12 +10,14 @@ import {
   homepageDemoLocales,
 } from "../src/homepageDemoFeed";
 import type { HomepageDemoPhotoKey } from "../src/homepageDemoFeed";
+import { isConvexPreviewWithoutFunctions } from "../src/previewDeploy";
 import {
   isJsonObjectValue,
   parseJsonBoolean,
   parseJsonString,
   type JsonValue,
 } from "@workspace/runtime/json";
+import * as z from "zod";
 
 const LFS_POINTER_PREFIX = "version https://git-lfs.github.com/spec/v1";
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
@@ -173,7 +175,7 @@ function refreshHomepageDemoLocales(opts: {
 }) {
   const results = [];
   for (const locale of homepageDemoLocales()) {
-    const args = opts.photos ? { photos: opts.photos, locale } : { locale };
+    const args = { photos: opts.photos ?? {}, locale };
     const result = convexRun({
       functionName: "homepageDemo:refresh",
       args,
@@ -183,6 +185,26 @@ function refreshHomepageDemoLocales(opts: {
     results.push(result);
   }
   return results;
+}
+
+const execFileErrorSchema = z.object({
+  message: z.string(),
+  stdout: z.union([z.string(), z.null()]).optional(),
+  stderr: z.union([z.string(), z.null()]).optional(),
+});
+
+function execFileErrorOutput(error: z.infer<typeof execFileErrorSchema>) {
+  return `${error.message}\n${error.stdout ?? ""}\n${error.stderr ?? ""}`;
+}
+
+function skipSeedWhenPreviewHasNoFunctions(cause: unknown) {
+  const parsed = execFileErrorSchema.safeParse(cause);
+  if (!parsed.success || !isConvexPreviewWithoutFunctions(execFileErrorOutput(parsed.data))) {
+    throw cause;
+  }
+  console.log(
+    "Convex preview has no functions — skipping photo seed (merge-queue skip or missing preview)",
+  );
 }
 
 function hasCompleteHomepageDemoPhotoSet(extraConvexArgs: string[]) {
@@ -260,8 +282,13 @@ async function uploadHomepageDemoPhotos(opts: { extraConvexArgs: string[] }) {
 /** Resize, upload, and attach homepage demo photos to every locale baby. */
 export async function seedHomepageDemoPhotos(opts: { extraConvexArgs?: string[] }) {
   const extraConvexArgs = opts.extraConvexArgs ?? [];
-  if (hasCompleteHomepageDemoPhotoSet(extraConvexArgs)) {
-    console.log("Homepage demo photos already stored — skipping uploads.");
+  try {
+    if (hasCompleteHomepageDemoPhotoSet(extraConvexArgs)) {
+      console.log("Homepage demo photos already stored — skipping uploads.");
+      return [];
+    }
+  } catch (error) {
+    skipSeedWhenPreviewHasNoFunctions(error);
     return [];
   }
   const photos = await uploadHomepageDemoPhotos({ extraConvexArgs });
@@ -270,8 +297,13 @@ export async function seedHomepageDemoPhotos(opts: { extraConvexArgs?: string[] 
 
 export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
   const extraConvexArgs = opts.extraConvexArgs ?? [];
-  if (hasCompleteHomepageDemoPhotoSet(extraConvexArgs)) {
-    console.log("Homepage demo already initialized — daily cron handles resets.");
+  try {
+    if (hasCompleteHomepageDemoPhotoSet(extraConvexArgs)) {
+      console.log("Homepage demo already initialized — daily cron handles resets.");
+      return [];
+    }
+  } catch (error) {
+    skipSeedWhenPreviewHasNoFunctions(error);
     return [];
   }
   await seedHomepageDemoContent({ extraConvexArgs });

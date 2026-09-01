@@ -1,6 +1,7 @@
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { createAuth } from "@workspace/convex/convex/auth";
+import type { FunctionArgs } from "convex/server";
 import type { ConvexTestHarness } from "@/test/convexTestHarness";
 
 /** Creates a baby owned by the harness identity (must already be set). */
@@ -14,6 +15,10 @@ export async function seedOwnedBaby(
   const created = await harness.client.mutation(api.baby.create, {
     name: opts.name,
     dueDate: opts.dueDate,
+    dueDateDisplayMode: opts.dueDate ? "exact" : "message",
+    publicDueDateText: null,
+    birthJourney: "labor",
+    theme: null,
   });
   return {
     // SAFETY: Seeded convex-test document id.
@@ -84,6 +89,8 @@ export async function seedTimelineUpdateWithPhoto(
   const updateId = await harness.client.mutation(api.updates.post, {
     babyId: opts.babyId,
     message: opts.message,
+    milestone: null,
+    occurredAt: null,
     photoId,
   });
   return { updateId, photoId };
@@ -117,7 +124,33 @@ export async function seedPendingLaborNotification(
 ) {
   await harness.client.mutation(api.updates.post, {
     babyId: opts.babyId,
+    message: null,
     milestone: "labor_started",
+    occurredAt: null,
+    photoId: null,
+  });
+}
+
+/** Sparse test patch for `baby.update`; unspecified `patch` keys keep the stored values. */
+export async function patchOwnedBaby(
+  harness: ConvexTestHarness,
+  args: FunctionArgs<typeof api.baby.update>,
+) {
+  await harness.client.mutation(api.baby.update, args);
+}
+
+/** Posts a timeline update with omitted fields as explicit `null`. */
+export async function postTestUpdate(
+  harness: ConvexTestHarness,
+  opts: Pick<FunctionArgs<typeof api.updates.post>, "babyId"> &
+    Partial<FunctionArgs<typeof api.updates.post>>,
+) {
+  return await harness.client.mutation(api.updates.post, {
+    message: null,
+    milestone: null,
+    occurredAt: null,
+    photoId: null,
+    ...opts,
   });
 }
 
@@ -135,5 +168,8 @@ export async function seedTimelineEncouragement(
     authorName: opts.authorName,
     message: opts.message,
     visitorId: "visitor-test",
+    userAgent: null,
+    locale: null,
+    timezone: null,
   });
 }

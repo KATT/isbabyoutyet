@@ -11,12 +11,16 @@
  * 1. Merge-queue refs (`gh-readonly-queue/…`) skip the Convex push —
  *    the required Vercel check only needs the web build, and a
  *    queue-specific backend would be created and thrown away.
- * 2. Otherwise `convex deploy` pushes functions and runs the web build
- *    via `--cmd`. Preview backends are wiped with `--preview-create`
- *    only when the preview is missing or `schema.ts` / `convex.config.ts`
- *    change. A missing fingerprint on an existing preview reuses
- *    `--preview-name` (create/wipe is what 408s `start_push`).
- *    `--preview-run` reseeds demo login on a fresh backend.
+ * 2. Otherwise `convex deploy` claims the preview, runs a tiny `--cmd`
+ *    that writes `VITE_CONVEX_URL` to a temp file, then `start_push`es
+ *    immediately. (A Vite `--cmd` used to finish first, so a 5-minute
+ *    `start_push` 408 happened after a successful web build.) Missing
+ *    previews use `--preview-name` (create, no wipe). `--preview-create`
+ *    wipes only when an existing preview's schema fingerprint changed.
+ *    `--preview-run` reseeds demo login on a fresh backend. If
+ *    `start_push` 408s, retry once with `--preview-name` (the preview
+ *    is already claimed). A second 408 fails the Vercel build. After
+ *    a successful push, the web app is built with the written URL.
  * 3. Runtime environment variables are synced when the plan says so
  *    (production every deploy; preview after create or first fingerprint
  *    write). Consecutive matching-fingerprint preview deploys skip
@@ -25,9 +29,12 @@
  * 5. Production bootstraps homepage demos in-band. Preview wipes seed
  *    fixture text during the build; homepage photos run from GitHub
  *    Actions after the Vercel deployment is Ready (`seed-preview.yml`).
+ *    Create/recreate also `convex run seed:seedDemoData` here because a
+ *    408 retry uses `--preview-name` and Convex then skips `--preview-run`.
  */
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { convexEnvSchema } from "@workspace/convex/src/env";
@@ -36,9 +43,14 @@ import {
   SCHEMA_FINGERPRINT_ENV,
   SCHEMA_FINGERPRINT_RELATIVE_PATHS,
   computeSchemaFingerprint,
+  convexDeployArgv,
   convexDeployCliArgs,
+  convexDeployRetryCliArgs,
+  convexPostPushRunFunctions,
+  convexSeedNpmScripts,
   describeConvexDeployPlan,
   interpretEnvGetResult,
+  isConvexStartPushTimeout,
   planConvexDeploy,
   previewNameCliArgs,
   shouldPushConvexBackend,
@@ -128,6 +140,30 @@ function convexCliCaptured(args: string[]) {
   }
 }
 
+function convexCliResult(args: string[]) {
+  console.log(`\n$ convex ${args.join(" ")}`);
+  try {
+    const stdout = execFileSync("pnpm", ["convex", ...args], {
+      cwd: convexPackageDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: convexDeployEnv(),
+    });
+    process.stdout.write(stdout);
+    return { ok: true as const, stdout, stderr: "" };
+  } catch (error) {
+    const parsed = execFileErrorSchema.safeParse(error);
+    if (!parsed.success) {
+      throw error;
+    }
+    const stdout = parsed.data.stdout ?? "";
+    const stderr = parsed.data.stderr ?? "";
+    process.stdout.write(stdout);
+    process.stderr.write(stderr);
+    return { ok: false as const, stdout, stderr };
+  }
+}
+
 function readCurrentSchemaFingerprint() {
   const files = SCHEMA_FINGERPRINT_RELATIVE_PATHS.map((relativePath) => ({
     path: relativePath,
@@ -167,6 +203,16 @@ async function waitForMigrations(previewArgs: string[]) {
   }
 }
 
+function buildWebApp(convexUrl: string) {
+  execFileSync("node", [path.join(scriptsDir, "build-web.mjs")], {
+    stdio: "inherit",
+    env: {
+      ...convexDeployEnv(),
+      VITE_CONVEX_URL: convexUrl,
+    },
+  });
+}
+
 const pushConvex = shouldPushConvexBackend(env.VERCEL_GIT_COMMIT_REF);
 const currentFingerprint = pushConvex ? readCurrentSchemaFingerprint() : "";
 const stored =
@@ -184,25 +230,30 @@ const plan = planConvexDeploy({
 console.log(`\n${describeConvexDeployPlan(plan)}`);
 
 if (plan.kind === "merge-queue-web-only") {
-  execFileSync("node", [path.join(scriptsDir, "build-web.mjs")], {
-    stdio: "inherit",
-    env: {
-      ...convexDeployEnv(),
-      VITE_CONVEX_URL: MERGE_QUEUE_PLACEHOLDER_CONVEX_URL,
-    },
-  });
+  buildWebApp(MERGE_QUEUE_PLACEHOLDER_CONVEX_URL);
 } else {
   const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
   const previewArgs = previewNameCliArgs(plan);
+  const convexUrlFile = path.join(
+    fs.mkdtempSync(path.join(os.tmpdir(), "convex-url-")),
+    "vite-convex-url",
+  );
+  process.env.CONVEX_URL_FILE = convexUrlFile;
 
-  convexCli([
-    "deploy",
-    "--cmd-url-env-var-name",
-    "VITE_CONVEX_URL",
-    "--cmd",
-    "node ../../apps/web/scripts/build-web.mjs",
-    ...convexDeployCliArgs(plan),
-  ]);
+  let deploy = convexCliResult(convexDeployArgv(convexDeployCliArgs(plan)));
+  if (!deploy.ok && isConvexStartPushTimeout(`${deploy.stdout}\n${deploy.stderr}`)) {
+    console.log("\nConvex start_push timed out — retrying without a wipe");
+    deploy = convexCliResult(convexDeployArgv(convexDeployRetryCliArgs(plan)));
+  }
+  if (!deploy.ok) {
+    throw new Error(`convex deploy failed:\n${deploy.stdout}\n${deploy.stderr}`);
+  }
+
+  const convexUrl = fs.readFileSync(convexUrlFile, "utf8").trim();
+  if (convexUrl.length === 0) {
+    throw new Error("convex deploy did not write VITE_CONVEX_URL");
+  }
+  buildWebApp(convexUrl);
 
   if (plan.writeEnv) {
     for (const [key, value] of Object.entries(convexEnv)) {
@@ -218,9 +269,13 @@ if (plan.kind === "merge-queue-web-only") {
   convexCli(["run", "migrations:runAll", ...previewArgs]);
   await waitForMigrations(previewArgs);
 
-  if (plan.seed) {
-    console.log(`\n$ pnpm ${plan.seed}`);
-    execFileSync("pnpm", ["run", plan.seed, "--", ...previewArgs], {
+  for (const functionName of convexPostPushRunFunctions(plan)) {
+    convexCli(["run", functionName, ...previewArgs]);
+  }
+
+  for (const script of convexSeedNpmScripts(plan)) {
+    console.log(`\n$ pnpm ${script}`);
+    execFileSync("pnpm", ["run", script, "--", ...previewArgs], {
       cwd: convexPackageDir,
       stdio: "inherit",
       env: process.env,

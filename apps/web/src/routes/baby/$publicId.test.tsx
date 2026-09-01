@@ -8,7 +8,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import schema from "@workspace/convex/convex/schema";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
+import { createBabyArgs, modules, registerComponents } from "@workspace/convex/convex/test.setup";
 import type { BabyData } from "@workspace/convex/src/types";
 import {
   FORBIDDEN,
@@ -85,10 +85,13 @@ test("renders a baby detail page from local convex-test data", async () => {
   await registerComponents(t);
 
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Baby Smith",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(baby).toMatchObject({
@@ -157,12 +160,15 @@ test("renders optional public due date text without exposing the exact day", asy
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const t = convexTest(schema, modules);
   await registerComponents(t);
-  const created = await t.withIdentity({ subject: "alice" }).mutation(api.baby.create, {
-    name: "Baby Smith",
-    dueDate: null,
-    dueDateDisplayMode: "message",
-    publicDueDateText: "Any day now",
-  });
+  const created = await t.withIdentity({ subject: "alice" }).mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: null,
+      dueDateDisplayMode: "message",
+      publicDueDateText: "Any day now",
+    }),
+  );
   const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
   if (!baby) {
     throw new Error("expected baby from getByPublicId");
@@ -190,12 +196,15 @@ test("hides the due date box when message mode has no public text", async () => 
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const t = convexTest(schema, modules);
   await registerComponents(t);
-  const created = await t.withIdentity({ subject: "alice" }).mutation(api.baby.create, {
-    name: "Baby Smith",
-    dueDate: "2026-09-01",
-    dueDateDisplayMode: "message",
-    publicDueDateText: null,
-  });
+  const created = await t.withIdentity({ subject: "alice" }).mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: "2026-09-01",
+      dueDateDisplayMode: "message",
+      publicDueDateText: null,
+    }),
+  );
   const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
   if (!baby) {
     throw new Error("expected baby from getByPublicId");

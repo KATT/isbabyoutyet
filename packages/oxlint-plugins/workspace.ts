@@ -3,6 +3,7 @@ import { eslintCompatPlugin } from "@oxlint/plugins";
 import { inferCallbackParams } from "./infer-callback-params.ts";
 import { inlineJsxCallback } from "./inline-jsx-callback.ts";
 import { noBannedReactReexport } from "./no-banned-react-reexport.ts";
+import { noUndocumentedOptional } from "./no-convex-optional.ts";
 import { noConvexQueryHooks } from "./no-convex-query-hooks.ts";
 import { noInvalidConvexClient } from "./no-invalid-convex-client.ts";
 import { noManualMemoization } from "./no-manual-memoization.ts";
@@ -32,6 +33,7 @@ const plugin = eslintCompatPlugin({
     "no-overzealous-destructuring": noOverzealousDestructuring,
     "no-rhf-watch": noRhfWatch,
     "no-test-preloaded-query": noTestPreloadedQuery,
+    "no-undocumented-optional": noUndocumentedOptional,
     "no-use-effect": noUseEffect,
     "no-use-state": noUseState,
     "require-preloaded-query-options": requirePreloadedQueryOptions,

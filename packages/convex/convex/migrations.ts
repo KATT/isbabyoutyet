@@ -1,6 +1,6 @@
 import { Migrations } from "@convex-dev/migrations";
 import { components } from "./_generated/api";
-import type { DataModel, Doc } from "./_generated/dataModel";
+import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
@@ -12,6 +12,7 @@ import { skipUserOnboarding, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onb
 import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 import { isJsonObjectValue, parseJsonNumber, parseJsonString } from "@workspace/runtime/json";
+import { DEFAULT_TIME_ZONE } from "../src/timeZone";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -28,6 +29,7 @@ export const generateThumbnailsForExistingPhotos = migrations.define({
       await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
         babyId: baby._id,
         photoId: baby.photoId,
+        updateId: null,
       });
     }
   },
@@ -88,6 +90,7 @@ export async function generateBlurDataUrlsForExistingBabyPhotosDoc(
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateBlurDataUrl, {
     babyId: baby._id,
     photoId: baby.photoId,
+    updateId: null,
   });
 }
 
@@ -426,6 +429,218 @@ export const backfillUserProfileIsAdmin = migrations.define({
   migrateOne: backfillUserProfileIsAdminDoc,
 });
 
+function isOwnKey<TRecord extends object>(record: TRecord, key: PropertyKey): key is keyof TRecord {
+  return Object.hasOwn(record, key);
+}
+
+async function patchMissingKeys<TTable extends keyof DataModel>(
+  ctx: MutationCtx,
+  opts: {
+    id: Id<TTable>;
+    doc: Doc<TTable>;
+    defaults: Partial<Doc<TTable>>;
+  },
+) {
+  const patch: Partial<Doc<TTable>> = {};
+  for (const key in opts.defaults) {
+    if (!isOwnKey(opts.defaults, key)) continue;
+    if (opts.doc[key] === undefined) {
+      patch[key] = opts.defaults[key];
+    }
+  }
+  if (Object.keys(patch).length === 0) return;
+  await ctx.db.patch(opts.id, patch);
+}
+
+/** Writes omitted union/boolean keys so a later PR can drop `v.optional()`. */
+export async function backfillBabyOptionalKeysDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  await patchMissingKeys(ctx, {
+    id: baby._id,
+    doc: baby,
+    defaults: {
+      theme: null,
+      locale: null,
+      photoId: null,
+      thumbnailId: null,
+      blurDataUrl: null,
+      demo: false,
+      deletedAt: null,
+    },
+  });
+}
+
+export const backfillBabyOptionalKeys = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabyOptionalKeysDoc,
+});
+
+export async function backfillUserProfileOptionalKeysDoc(
+  ctx: MutationCtx,
+  profile: Doc<"userProfiles">,
+) {
+  await patchMissingKeys(ctx, {
+    id: profile._id,
+    doc: profile,
+    defaults: { timeZone: DEFAULT_TIME_ZONE },
+  });
+}
+
+export const backfillUserProfileOptionalKeys = migrations.define({
+  table: "userProfiles",
+  migrateOne: backfillUserProfileOptionalKeysDoc,
+});
+
+export async function backfillPushSubscriptionOptionalKeysDoc(
+  ctx: MutationCtx,
+  subscription: Doc<"pushSubscriptions">,
+) {
+  await patchMissingKeys(ctx, {
+    id: subscription._id,
+    doc: subscription,
+    defaults: { userAgent: null },
+  });
+}
+
+export const backfillPushSubscriptionOptionalKeys = migrations.define({
+  table: "pushSubscriptions",
+  migrateOne: backfillPushSubscriptionOptionalKeysDoc,
+});
+
+export async function backfillScheduledNotificationOptionalKeysDoc(
+  ctx: MutationCtx,
+  notification: Doc<"scheduledNotifications">,
+) {
+  await patchMissingKeys(ctx, {
+    id: notification._id,
+    doc: notification,
+    defaults: {
+      scheduledId: null,
+      customMessage: null,
+      photoId: null,
+      updateId: null,
+    },
+  });
+}
+
+export const backfillScheduledNotificationOptionalKeys = migrations.define({
+  table: "scheduledNotifications",
+  migrateOne: backfillScheduledNotificationOptionalKeysDoc,
+});
+
+export async function backfillEncouragementOptionalKeysDoc(
+  ctx: MutationCtx,
+  encouragement: Doc<"encouragements">,
+) {
+  await patchMissingKeys(ctx, {
+    id: encouragement._id,
+    doc: encouragement,
+    defaults: {
+      demoFixture: false,
+      userAgent: null,
+      locale: null,
+      timezone: null,
+      deletedAt: null,
+    },
+  });
+}
+
+export const backfillEncouragementOptionalKeys = migrations.define({
+  table: "encouragements",
+  migrateOne: backfillEncouragementOptionalKeysDoc,
+});
+
+export async function backfillTimelineItemOptionalKeysDoc(
+  ctx: MutationCtx,
+  item: Doc<"timelineItems">,
+) {
+  await patchMissingKeys(ctx, {
+    id: item._id,
+    doc: item,
+    defaults: { deletedAt: null },
+  });
+}
+
+export const backfillTimelineItemOptionalKeys = migrations.define({
+  table: "timelineItems",
+  migrateOne: backfillTimelineItemOptionalKeysDoc,
+});
+
+export async function backfillUpdateOptionalKeysDoc(ctx: MutationCtx, update: Doc<"updates">) {
+  await patchMissingKeys(ctx, {
+    id: update._id,
+    doc: update,
+    defaults: {
+      message: null,
+      milestone: null,
+      occurredAt: null,
+      photoId: null,
+      thumbnailId: null,
+      blurDataUrl: null,
+      pushImageId: null,
+      deletedAt: null,
+    },
+  });
+}
+
+export const backfillUpdateOptionalKeys = migrations.define({
+  table: "updates",
+  migrateOne: backfillUpdateOptionalKeysDoc,
+});
+
+export async function backfillUserOnboardingOptionalKeysDoc(
+  ctx: MutationCtx,
+  onboarding: Doc<"userOnboarding">,
+) {
+  await patchMissingKeys(ctx, {
+    id: onboarding._id,
+    doc: onboarding,
+    defaults: {
+      activeCoachmarkStepId: null,
+      restartHintVisible: false,
+    },
+  });
+}
+
+export const backfillUserOnboardingOptionalKeys = migrations.define({
+  table: "userOnboarding",
+  migrateOne: backfillUserOnboardingOptionalKeysDoc,
+});
+
+export async function backfillCoParentOptionalKeysDoc(
+  ctx: MutationCtx,
+  coParent: Doc<"babyCoParents">,
+) {
+  await patchMissingKeys(ctx, {
+    id: coParent._id,
+    doc: coParent,
+    defaults: {
+      name: null,
+      deletedAt: null,
+    },
+  });
+}
+
+export const backfillCoParentOptionalKeys = migrations.define({
+  table: "babyCoParents",
+  migrateOne: backfillCoParentOptionalKeysDoc,
+});
+
+export async function backfillCoParentInviteOptionalKeysDoc(
+  ctx: MutationCtx,
+  invite: Doc<"babyCoParentInvites">,
+) {
+  await patchMissingKeys(ctx, {
+    id: invite._id,
+    doc: invite,
+    defaults: { deletedAt: null },
+  });
+}
+
+export const backfillCoParentInviteOptionalKeys = migrations.define({
+  table: "babyCoParentInvites",
+  migrateOne: backfillCoParentInviteOptionalKeysDoc,
+});
+
 export const runPushImageBackfill = migrations.runner(
   internal.migrations.generatePushImagesForExistingPhotos,
 );
@@ -453,6 +668,16 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.sanitizeOnboardingSteps,
   internal.migrations.backfillUserProfileIsAdmin,
   internal.migrations.removeBabyEncouragementsDisabled,
+  internal.migrations.backfillBabyOptionalKeys,
+  internal.migrations.backfillUserProfileOptionalKeys,
+  internal.migrations.backfillPushSubscriptionOptionalKeys,
+  internal.migrations.backfillScheduledNotificationOptionalKeys,
+  internal.migrations.backfillEncouragementOptionalKeys,
+  internal.migrations.backfillTimelineItemOptionalKeys,
+  internal.migrations.backfillUpdateOptionalKeys,
+  internal.migrations.backfillUserOnboardingOptionalKeys,
+  internal.migrations.backfillCoParentOptionalKeys,
+  internal.migrations.backfillCoParentInviteOptionalKeys,
 ]);
 
 const HISTORICAL_MIGRATION_NAMES = [
@@ -477,6 +702,16 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:generatePushImagesForExistingPhotos",
   "migrations:generateBlurDataUrlsForExistingPhotos",
   "migrations:generateBlurDataUrlsForExistingBabyPhotos",
+  "migrations:backfillBabyOptionalKeys",
+  "migrations:backfillUserProfileOptionalKeys",
+  "migrations:backfillPushSubscriptionOptionalKeys",
+  "migrations:backfillScheduledNotificationOptionalKeys",
+  "migrations:backfillEncouragementOptionalKeys",
+  "migrations:backfillTimelineItemOptionalKeys",
+  "migrations:backfillUpdateOptionalKeys",
+  "migrations:backfillUserOnboardingOptionalKeys",
+  "migrations:backfillCoParentOptionalKeys",
+  "migrations:backfillCoParentInviteOptionalKeys",
 ] as const;
 
 async function migrationDeploymentStatus(ctx: QueryCtx, names: readonly string[]) {
@@ -560,12 +795,19 @@ export function parseMigrationRunnerReport<TResult>(result: TResult): MigrationR
 
 export const runAll = internalMutation({
   args: {
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     fn: v.optional(v.string()),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     cursor: v.optional(v.union(v.string(), v.null())),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     batchSize: v.optional(v.number()),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     dryRun: v.optional(v.boolean()),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     next: v.optional(v.array(v.string())),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     reset: v.optional(v.boolean()),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     oneBatchOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<MigrationRunnerReport> => {
