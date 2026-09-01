@@ -374,8 +374,9 @@ test("theme selector reports a failed update and remains open", async () => {
   fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
 
   await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Theme update failed"));
-  // Coverage runs can still be pending here; the accessible name includes "Loading".
-  expect(view.getByRole("button", { name: /Bubblegum/ })).toBeTruthy();
+  await vi.waitFor(() => {
+    expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
+  });
 });
 
 test("theme selector toasts a generic message for non-Error failures", async () => {
