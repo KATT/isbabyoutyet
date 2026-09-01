@@ -10,6 +10,7 @@ import {
   previewNameCliArgs,
   previewNameFromGitRef,
   shouldPushConvexBackend,
+  shouldSkipPreviewPhotoSeed,
 } from "./previewDeploy";
 
 const previewName = "cursor/merge-queue-convex-preview";
@@ -300,6 +301,35 @@ test("feature-branch previews recreate once then reuse without a wipe or seed", 
   });
   expect(convexDeployCliArgs(laterDeploy)).toEqual(["--preview-name", branch]);
   expect(previewNameCliArgs(laterDeploy)).toEqual(["--preview-name", branch]);
+});
+
+test("photo seed skips merge-queue github.ref even when deployment.ref is a SHA", () => {
+  const mergeQueueGithubRef = `refs/heads/${mergeQueueRef}`;
+  const deploymentSha = "20e0607956751eeb3467f750ed8367eaa6a6338c";
+  expect(
+    shouldSkipPreviewPhotoSeed({
+      githubRef: mergeQueueGithubRef,
+      deploymentRef: deploymentSha,
+      deploymentEnvironment: "Preview",
+      resolvedBranch: "cursor/react-compiler-lint-6a73",
+    }),
+  ).toBe(true);
+  expect(
+    shouldSkipPreviewPhotoSeed({
+      githubRef: mergeQueueGithubRef,
+      deploymentRef: deploymentSha,
+      deploymentEnvironment: "Preview",
+      resolvedBranch: null,
+    }),
+  ).toBe(true);
+  expect(
+    shouldSkipPreviewPhotoSeed({
+      githubRef: "refs/heads/cursor/skip-mq-seed-preview-7188",
+      deploymentRef: deploymentSha,
+      deploymentEnvironment: "Preview",
+      resolvedBranch: "cursor/skip-mq-seed-preview-7188",
+    }),
+  ).toBe(false);
 });
 
 test("env get parser uses the last non-empty line", () => {

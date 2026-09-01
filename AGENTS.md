@@ -27,9 +27,9 @@ Checklist before adding a lib hook with `useEffect` / `useState` /
 2. **Documented** — file comment states what external system it syncs
 3. **Tested** when timing or subscription behavior is non-trivial
 4. **No re-export** of banned React hooks (`no-banned-react-reexport`)
-5. **Latest-callback refs** — write `ref.current = latest` during render (same
-   idiom across timing/observer hooks); do not use a sync effect solely to
-   refresh the ref
+5. **Latest callbacks** — use `useEffectEvent` so effects/observers always
+   see a fresh closure without listing the callback as a dependency. Do not
+   read or write `ref.current` during render (`react/refs`).
 
 `packages/ui` (vendored shadcn) is exempt. First-party packages stay under the
 rules; rare file overrides need a comment citing the concrete constraint.
@@ -62,6 +62,11 @@ Keep `replace: true` for slug canonicalize and auth redirects. Admin tab switche
 still use `resetScroll: false` (not overlay history).
 
 ## Tests
+
+Prefer automated tests (Vitest / jsdom) over a GUI browser. Do **not** use a
+computer-use agent unless the user asks for a walkthrough or the change cannot
+be proven without a real viewport (layout overflow, animation, pointer
+hit-testing). Do not open a browser just to capture PR screenshots.
 
 `vi.mock` / `vi.hoisted` / `vi.doMock` (and the `jest` equivalents) are banned
 repo-wide by the `no-mock` oxlint plugin. Build a seam instead:
@@ -118,5 +123,6 @@ For stacked PRs, also follow
   runs, setup steps, stale UI, redundant captures, or sensitive data.
 - Capture artifacts from the final tested preview revision and remove references
   to superseded artifacts when the UI changes.
-- If visual evidence is not applicable, write `None — <brief reason>` instead of
-  omitting the section.
+- If visual evidence is not applicable, or you did not run a browser
+  walkthrough, write `None — <brief reason>` instead of omitting the section.
+  Do not start computer use solely to fill this section.
