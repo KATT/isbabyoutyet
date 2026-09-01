@@ -18,6 +18,9 @@ export const MERGE_QUEUE_PLACEHOLDER_CONVEX_URL = "https://merge-queue.invalid.c
 const HEADS_PREFIX = "refs/heads/";
 const MERGE_QUEUE_REF = /^gh-readonly-queue\/.+\/pr-\d+-[0-9a-f]+$/i;
 
+/** Marker Vercel/GitHub put on merge-queue refs, aliases, and `github.ref`. */
+export const MERGE_QUEUE_REF_MARKER = "gh-readonly-queue";
+
 export type ConvexDeployPlan =
   | { kind: "merge-queue-web-only" }
   | { kind: "production"; writeEnv: true; seed: "seed:homepage" }
@@ -60,6 +63,26 @@ export function isMergeQueueGitRef(ref: string) {
 /** Merge-queue Vercel checks only need a web build — do not push or wipe a backend. */
 export function shouldPushConvexBackend(gitRef: string) {
   return !isMergeQueueGitRef(gitRef);
+}
+
+/**
+ * `seed-homepage-photos` must not run for merge-queue Vercel deploys.
+ * Those builds never push a Convex backend, and Vercel sets
+ * `deployment.ref` to a SHA. Resolving that SHA to a PR head would
+ * seed the PR preview. Actions still sets `github.ref` to
+ * `refs/heads/gh-readonly-queue/…`.
+ */
+export function shouldSkipPreviewPhotoSeed(opts: {
+  githubRef: string;
+  deploymentRef: string;
+  deploymentEnvironment: string;
+  resolvedBranch: string | null;
+}) {
+  const refs = [opts.githubRef, opts.deploymentRef, opts.deploymentEnvironment];
+  if (opts.resolvedBranch !== null) {
+    refs.push(opts.resolvedBranch);
+  }
+  return refs.some((ref) => ref.includes(MERGE_QUEUE_REF_MARKER));
 }
 
 /** Vercel GitHub deployments set `ref` to a SHA, not `refs/heads/<branch>`. */
