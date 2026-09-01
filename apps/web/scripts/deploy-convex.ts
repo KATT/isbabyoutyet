@@ -11,7 +11,10 @@
  *    `--preview-create` only when `schema.ts` / `convex.config.ts` change
  *    (fingerprint stored as PREVIEW_SCHEMA_FINGERPRINT). Otherwise
  *    `--preview-name` reuses the branch backend so deploys skip seed and
- *    photo uploads. `--preview-run` reseeds demo login on a fresh backend
+ *    photo uploads. GitHub merge-queue refs (`gh-readonly-queue/…/pr-N-<sha>`)
+ *    are unique per attempt, so the script maps them to the pull request
+ *    head (or `pr-N`) and reuses that backend instead of provisioning a new
+ *    one every time. `--preview-run` reseeds demo login on a fresh backend
  *    (ignored in production).
  * 2. Runtime environment variables are synced when the backend is new
  *    (production every deploy; preview only after `--preview-create`).
@@ -35,6 +38,7 @@ import {
   computeSchemaFingerprint,
   parseEnvGetOutput,
   previewDeployCliArgs,
+  resolveConvexPreviewName,
   shouldRecreatePreview,
   shouldWriteConvexEnv,
 } from "@workspace/convex/src/previewDeploy";
@@ -115,18 +119,29 @@ function readStoredSchemaFingerprint(previewName: string) {
   }
 }
 
+const previewName = await resolveConvexPreviewName({
+  gitRef: env.VERCEL_GIT_COMMIT_REF,
+  owner: process.env.VERCEL_GIT_REPO_OWNER ?? null,
+  repo: process.env.VERCEL_GIT_REPO_SLUG ?? null,
+  token: process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? null,
+  fetch,
+});
+if (previewName === null) {
+  throw new Error(`Could not resolve Convex preview name from ${env.VERCEL_GIT_COMMIT_REF}`);
+}
+if (previewName !== env.VERCEL_GIT_COMMIT_REF) {
+  console.log(`\nGit ref "${env.VERCEL_GIT_COMMIT_REF}" → Convex preview "${previewName}"`);
+}
+
 const currentFingerprint = readCurrentSchemaFingerprint();
 const recreatePreview =
-  isPreview &&
-  shouldRecreatePreview(readStoredSchemaFingerprint(env.VERCEL_GIT_COMMIT_REF), currentFingerprint);
+  isPreview && shouldRecreatePreview(readStoredSchemaFingerprint(previewName), currentFingerprint);
 
 if (isPreview) {
   if (recreatePreview) {
-    console.log(
-      `\nSchema changed or preview is new — recreating Convex preview "${env.VERCEL_GIT_COMMIT_REF}"`,
-    );
+    console.log(`\nSchema changed or preview is new — recreating Convex preview "${previewName}"`);
   } else {
-    console.log(`\nSchema unchanged — reusing Convex preview "${env.VERCEL_GIT_COMMIT_REF}"`);
+    console.log(`\nSchema unchanged — reusing Convex preview "${previewName}"`);
   }
 }
 
@@ -136,12 +151,12 @@ convexCli([
   "VITE_CONVEX_URL",
   "--cmd",
   "node ../../apps/web/scripts/build-web.mjs",
-  ...(isPreview ? previewDeployCliArgs(env.VERCEL_GIT_COMMIT_REF, recreatePreview) : []),
+  ...(isPreview ? previewDeployCliArgs(previewName, recreatePreview) : []),
 ]);
 
 // `convex deploy` infers the preview name from the git branch; the other
 // commands need it passed explicitly.
-const previewArgs = isPreview ? ["--preview-name", env.VERCEL_GIT_COMMIT_REF] : [];
+const previewArgs = isPreview ? ["--preview-name", previewName] : [];
 
 if (shouldWriteConvexEnv(isPreview, recreatePreview)) {
   for (const [key, value] of Object.entries(convexEnv)) {

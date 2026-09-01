@@ -57,7 +57,8 @@ jobs:
             exit 1
           fi
           # Vercel GitHub deployments set ref to the commit SHA. Convex
-          # preview names follow VERCEL_GIT_COMMIT_REF (the git branch).
+          # preview names follow the git branch, except merge-queue refs
+          # which reuse the pull request head (same mapping as deploy-convex).
           BRANCH=""
           if [[ "$DEPLOYMENT_REF" =~ ^refs/heads/ ]]; then
             BRANCH="${DEPLOYMENT_REF#refs/heads/}"
@@ -69,6 +70,11 @@ jobs:
           if [ -z "$BRANCH" ]; then
             git fetch --force origin '+refs/heads/*:refs/remotes/origin/*'
             BRANCH="$(git for-each-ref --points-at HEAD --format='%(refname:short)' refs/remotes/origin | sed 's|^origin/||' | grep -v '^HEAD$' | head -1)"
+          fi
+          if [[ "$BRANCH" =~ ^gh-readonly-queue/.+/pr-([0-9]+)-[0-9a-f]+$ ]]; then
+            PR="${BASH_REMATCH[1]}"
+            HEAD="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq '.head.ref // empty')"
+            BRANCH="${HEAD:-pr-${PR}}"
           fi
           if [ -z "$BRANCH" ]; then
             echo "Could not resolve Convex preview name for ${DEPLOYMENT_SHA}"
