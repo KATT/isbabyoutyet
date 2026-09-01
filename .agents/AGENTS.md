@@ -2,6 +2,9 @@
 
 Project skills live under [`.agents/skills/`](skills/).
 
+When reading or editing TypeScript, follow
+[`typescript-best-practices/SKILL.md`](skills/typescript-best-practices/SKILL.md).
+
 ## Route loaders
 
 When adding or changing TanStack Router loaders or SSR prefetch, follow
