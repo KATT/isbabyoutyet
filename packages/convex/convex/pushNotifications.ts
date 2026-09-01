@@ -69,9 +69,9 @@ export const sendNotification = internalAction({
     babyName: v.string(),
     publicId: v.string(), // Still need publicId for the URL
     status: notifiableStatusValidator,
-    customMessage: v.optional(v.union(v.string(), v.null())),
-    photoId: v.optional(v.union(v.id("_storage"), v.null())),
-    updateId: v.optional(v.union(v.id("updates"), v.null())),
+    customMessage: v.union(v.string(), v.null()),
+    photoId: v.union(v.id("_storage"), v.null()),
+    updateId: v.union(v.id("updates"), v.null()),
     locale: supportedLocaleValidator,
   },
   handler: async (ctx, args) => {

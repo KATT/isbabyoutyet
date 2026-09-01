@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { createAuth } from "./auth";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, createBabyArgs, postUpdateArgs } from "./test.setup";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -60,16 +60,22 @@ test("owner can add an existing user as co-parent; co-parent can post updates", 
   const asAlice = t.withIdentity({ subject: aliceId });
   const asBob = t.withIdentity({ subject: bobId });
 
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Shared Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Shared Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   await expect(
-    asBob.mutation(api.updates.post, {
-      babyId: created.babyId,
-      message: "Nope",
-    }),
+    asBob.mutation(
+      api.updates.post,
+      postUpdateArgs({
+        babyId: created.babyId,
+        message: "Nope",
+      }),
+    ),
   ).rejects.toThrow("Not authorized");
 
   const inviteResult = await asAlice.mutation(api.coParents.invite, {
@@ -78,10 +84,13 @@ test("owner can add an existing user as co-parent; co-parent can post updates", 
   });
   expect(inviteResult).toEqual({ status: "added" });
 
-  const updateId = await asBob.mutation(api.updates.post, {
-    babyId: created.babyId,
-    message: "Labour vibes",
-  });
+  const updateId = await asBob.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId: created.babyId,
+      message: "Labour vibes",
+    }),
+  );
 
   const stored = await t.run(async (ctx) => ctx.db.get(updateId));
   expect(stored?.postedByUserId).toBe(bobId);
@@ -106,10 +115,13 @@ test("inviting an unknown email creates a pending invite claimed on sign-up", as
   });
   const asAlice = t.withIdentity({ subject: aliceId });
 
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Pending Invite Baby",
-    dueDate: "2026-10-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Pending Invite Baby",
+      dueDate: "2026-10-01",
+    }),
+  );
 
   const inviteResult = await asAlice.mutation(api.coParents.invite, {
     babyId: created.babyId,
@@ -158,10 +170,13 @@ test("pending invite is claimed when an existing user signs in", async () => {
   });
   const asAlice = t.withIdentity({ subject: aliceId });
 
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Sign-in Claim Baby",
-    dueDate: "2026-10-15",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Sign-in Claim Baby",
+      dueDate: "2026-10-15",
+    }),
+  );
 
   await asAlice.mutation(api.coParents.invite, {
     babyId: created.babyId,
@@ -200,10 +215,13 @@ test("only the owner can manage co-parents and delete the baby", async () => {
   const asAlice = t.withIdentity({ subject: aliceId });
   const asBob = t.withIdentity({ subject: bobId });
 
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Owned Baby",
-    dueDate: "2026-11-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Owned Baby",
+      dueDate: "2026-11-01",
+    }),
+  );
   await asAlice.mutation(api.coParents.invite, {
     babyId: created.babyId,
     email: "bob2@example.com",
@@ -281,10 +299,13 @@ test("manager-only listings return forbidden for visitors instead of throwing", 
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
   const asBob = t.withIdentity({ subject: "bob" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Gated Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Gated Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   // Signed-in non-manager and anonymous visitors get the sentinel, so the
   // baby route loader can query these homogeneously for everyone.
@@ -308,10 +329,13 @@ test("claimPendingInvites clears pending invites addressed to the page owner", a
     name: "Alice",
   });
   const asAlice = t.withIdentity({ subject: aliceId });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Owned Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Owned Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   const inviteId = await t.run(async (ctx) => {
     return await ctx.db.insert("babyCoParentInvites", {

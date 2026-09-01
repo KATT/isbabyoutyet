@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
+import type { FunctionArgs } from "convex/server";
 import type { convexTest } from "convex-test";
+import type { api } from "./_generated/api";
 
 /**
  * All Convex function modules for convex-test.
@@ -65,4 +67,48 @@ export async function registerMigrationsComponent(t: TestConvex) {
       default: Parameters<TestConvex["registerComponent"]>[1];
     };
   t.registerComponent("migrations", migrationsSchema.default, migrationsModules);
+}
+
+/** Required `baby.create` args with the pre-feature defaults tests used to omit. */
+export function createBabyArgs(
+  opts: Pick<FunctionArgs<typeof api.baby.create>, "name" | "dueDate"> &
+    Partial<FunctionArgs<typeof api.baby.create>>,
+): FunctionArgs<typeof api.baby.create> {
+  return {
+    dueDateDisplayMode: opts.dueDate ? "exact" : "message",
+    publicDueDateText: null,
+    birthJourney: "labor",
+    theme: null,
+    ...opts,
+  };
+}
+
+/** Required `updates.post` args; omitted fields are explicit `null`. */
+export function postUpdateArgs(
+  opts: Pick<FunctionArgs<typeof api.updates.post>, "babyId"> &
+    Partial<FunctionArgs<typeof api.updates.post>>,
+): FunctionArgs<typeof api.updates.post> {
+  return {
+    message: null,
+    milestone: null,
+    occurredAt: null,
+    photoId: null,
+    ...opts,
+  };
+}
+
+/** Required `encouragements.create` metadata; omitted fields are explicit `null`. */
+export function createEncouragementArgs(
+  opts: Pick<
+    FunctionArgs<typeof api.encouragements.create>,
+    "babyId" | "authorName" | "message" | "visitorId"
+  > &
+    Partial<FunctionArgs<typeof api.encouragements.create>>,
+): FunctionArgs<typeof api.encouragements.create> {
+  return {
+    userAgent: null,
+    locale: null,
+    timezone: null,
+    ...opts,
+  };
 }

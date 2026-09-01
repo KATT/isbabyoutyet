@@ -14,7 +14,7 @@ import {
 } from "./migrations";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, createBabyArgs } from "./test.setup";
 
 async function jpegBytes(opts: {
   width: number;
@@ -72,10 +72,13 @@ test("generateThumbnail stores a blur data URL on the baby and update", async ()
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Blur Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Blur Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   const source = await jpegBytes({ width: 400, height: 600 });
   const photoId = await t.run(async (ctx) => {
@@ -108,6 +111,7 @@ test("generateThumbnail stores a blur data URL on the baby and update", async ()
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: created.babyId,
     paginationOpts: { numItems: 20, cursor: null },
+    visitorId: null,
   });
   const photoItem = feed.page.find((item) => item.kind === "update");
   expect(photoItem?.kind === "update" && photoItem.update.blurDataUrl).toBe(baby?.blurDataUrl);
@@ -117,10 +121,13 @@ test("generateBlurDataUrl writes the placeholder without requiring a thumbnail",
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Blur Only Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Blur Only Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   const source = await jpegBytes({ width: 200, height: 200 });
   const photoId = await t.run(async (ctx) => {
@@ -133,6 +140,7 @@ test("generateBlurDataUrl writes the placeholder without requiring a thumbnail",
   const blurDataUrl = await t.action(internal.babyThumbnails.generateBlurDataUrl, {
     babyId: created.babyId,
     photoId,
+    updateId: null,
   });
   expect(blurDataUrl.startsWith("data:image/jpeg;base64,")).toBe(true);
 
@@ -144,10 +152,13 @@ test("updateBlurDataUrl ignores stale generation after the photo changes", async
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Stale Blur Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Stale Blur Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   const photoA = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["a"], { type: "image/jpeg" }));
   });
@@ -162,6 +173,7 @@ test("updateBlurDataUrl ignores stale generation after the photo changes", async
     babyId: created.babyId,
     photoId: photoA,
     blurDataUrl: "data:image/jpeg;base64,stale",
+    updateId: null,
   });
   const ignored = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(ignored?.blurDataUrl ?? null).toBeNull();
@@ -170,6 +182,7 @@ test("updateBlurDataUrl ignores stale generation after the photo changes", async
     babyId: created.babyId,
     photoId: photoB,
     blurDataUrl: "data:image/jpeg;base64,fresh",
+    updateId: null,
   });
   const applied = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(applied?.blurDataUrl).toBe("data:image/jpeg;base64,fresh");
@@ -179,10 +192,13 @@ test("send prefers the push image, then the page thumbnail, then the original", 
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Push Image Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Push Image Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   const original = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["original"], { type: "image/jpeg" }));
@@ -220,6 +236,7 @@ test("send prefers the push image, then the page thumbnail, then the original", 
     pushImageId: null,
     photoId: original,
     updateId,
+    blurDataUrl: null,
   });
   expect(
     await t.query(internal.baby.resolveNotificationImage, {
@@ -234,6 +251,7 @@ test("send prefers the push image, then the page thumbnail, then the original", 
     pushImageId: pushImage,
     photoId: original,
     updateId,
+    blurDataUrl: null,
   });
   expect(
     await t.query(internal.baby.resolveNotificationImage, {
@@ -263,10 +281,13 @@ test("push image backfill only schedules photo updates that still need a derivat
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Backfill Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Backfill Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   const photo = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["photo"], { type: "image/jpeg" }));
   });
@@ -328,10 +349,13 @@ test("blur data URL backfill only schedules photo updates that still need a plac
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Blur Backfill Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Blur Backfill Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   const photo = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["photo"], { type: "image/jpeg" }));
   });
@@ -390,10 +414,13 @@ test("updateThumbnail ignores stale generation after the photo changes", async (
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Stale Thumb Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Stale Thumb Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   const photoA = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["a"], { type: "image/jpeg" }));
   });
@@ -429,6 +456,7 @@ test("updateThumbnail ignores stale generation after the photo changes", async (
     pushImageId: null,
     photoId: photoA,
     updateId,
+    blurDataUrl: null,
   });
   const ignored = await t.run(async (ctx) => {
     const baby = await ctx.db.get(created.babyId);
@@ -444,6 +472,7 @@ test("updateThumbnail ignores stale generation after the photo changes", async (
     pushImageId: pushB,
     photoId: photoB,
     updateId,
+    blurDataUrl: null,
   });
   const applied = await t.run(async (ctx) => {
     const baby = await ctx.db.get(created.babyId);

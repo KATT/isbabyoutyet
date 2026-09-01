@@ -2,7 +2,12 @@ import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { seedOwnedBaby, seedTimelineUpdateWithPhoto } from "@/test/convexTestSeed";
+import {
+  seedOwnedBaby,
+  seedTimelineUpdateWithPhoto,
+  patchOwnedBaby,
+  postTestUpdate,
+} from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
 import { Route } from "@/routes/baby/$publicId/updates.$updateId.photo";
@@ -27,9 +32,11 @@ test("update photo beforeLoad redirects when the public id resolves to a differe
     babyId: baby.babyId,
     message: "Photo update",
   });
-  await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    name: "Renamed Nova",
+  await patchOwnedBaby(harness, {
+    id: baby.babyId,
+    patch: {
+      name: "Renamed Nova",
+    },
   });
   const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
 
@@ -68,7 +75,7 @@ test("update photo beforeLoad allows matching public ids", async () => {
 test("update photo loader redirects home when the update has no photo", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
-  const updateId = await harness.client.mutation(api.updates.post, {
+  const updateId = await postTestUpdate(harness, {
     babyId: baby.babyId,
     message: "Text only",
   });
