@@ -345,6 +345,31 @@ test("baby status detail covers born, in-progress, overdue, and due-date copy", 
   ).toBe("9 days overdue");
 });
 
+test("blank message-mode status detail falls back to not yet", () => {
+  expect(
+    babyStatusDetail({
+      baby: {
+        dueDateDisplayMode: "message",
+        publicDueDateText: "",
+        babyBorn: null,
+        locale: "en-GB",
+      },
+      status: { type: "not_yet" },
+    }),
+  ).toBe("Not yet");
+  expect(
+    babyStatusDetail({
+      baby: {
+        dueDateDisplayMode: "message",
+        publicDueDateText: "   ",
+        babyBorn: null,
+        locale: "en-GB",
+      },
+      status: { type: "not_yet" },
+    }),
+  ).toBe("Not yet");
+});
+
 test("Open Graph image meta includes dimensions and a large Twitter card", () => {
   const tags = openGraphImageMeta({
     imageUrl: "https://isbabyoutyet.com/og",
