@@ -32,6 +32,7 @@ const babySmith = {
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,
+  birthJourney: "labor" as const,
   role: "owner" as const,
 };
 

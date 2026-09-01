@@ -1,25 +1,26 @@
 import { ArrowRight, CalendarHeart } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@workspace/ui/components/badge";
+import type { FunctionReturnType } from "convex/server";
 import { getCurrentStatus } from "@workspace/convex/src/types";
-import type { BirthJourney } from "@workspace/convex/src/types";
+import type { api } from "@workspace/convex/convex/_generated/api";
 import { formatDueDate, getDaysUntilDueDate, getOverdueDays } from "./utils";
 import { useI18n } from "@/lib/i18n";
 
-type DashboardBabyCardBaby = {
-  name: string;
-  publicId: string;
-  dueDate: string | null;
-  dueDateDisplayMode: "exact" | "message";
-  publicDueDateText: string | null;
-  role: "owner" | "coParent";
-  timeZone: string;
-} & Partial<{
-  laborStarted: string | null;
-  wentToHospital: string | null;
-  babyBorn: string | null;
-  birthJourney: BirthJourney;
-}>;
+type DashboardBabyCardBaby = Pick<
+  FunctionReturnType<typeof api.baby.listByUser>[number],
+  | "name"
+  | "publicId"
+  | "dueDate"
+  | "dueDateDisplayMode"
+  | "publicDueDateText"
+  | "role"
+  | "timeZone"
+  | "laborStarted"
+  | "wentToHospital"
+  | "babyBorn"
+  | "birthJourney"
+>;
 
 type DashboardBabyCardProps = {
   baby: DashboardBabyCardBaby;
@@ -84,6 +85,10 @@ function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
           )}
         </Badge>
       );
+    }
+    default: {
+      const _exhaustive: never = currentStatus;
+      return _exhaustive;
     }
   }
 }
