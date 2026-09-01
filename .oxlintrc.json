@@ -81,7 +81,33 @@
     // Always on — including apps/web/src/lib — so banned hooks cannot be
     // laundered through a local re-export barrel.
     "workspace/no-banned-react-reexport": "error",
-    "workspace/no-undocumented-optional": "error"
+    "workspace/no-undocumented-optional": "error",
+    // React Compiler — full set as errors (eslint-plugin-react-hooks
+    // recommended + recommended-latest + experimental). Recommended rules
+    // already live in `correctness`; the rest sit in restriction/perf and
+    // would stay off with a blanket category enable.
+    "react/error-boundaries": "error",
+    "react/globals": "error",
+    "react/immutability": "error",
+    "react/incompatible-library": "error",
+    "react/preserve-manual-memoization": "error",
+    "react/purity": "error",
+    "react/refs": "error",
+    "react/set-state-in-effect": "error",
+    "react/set-state-in-render": "error",
+    "react/static-components": "error",
+    "react/use-memo": "error",
+    "react/unsupported-syntax": "error",
+    "react/void-use-memo": "error",
+    "react/no-deriving-state-in-effects": "error",
+    "react/invariant": "error",
+    "react/rule-suppression": "error",
+    "react/syntax": "error",
+    "react/todo": "error",
+    "react/capitalized-calls": "error",
+    "react/exhaustive-effect-dependencies": "error",
+    "react/hooks": "error",
+    "react/memo-dependencies": "error"
   },
   "overrides": [
     {
@@ -150,10 +176,8 @@
         "eslint/no-underscore-dangle": "off",
         "vitest/require-mock-type-parameters": "off",
         "vitest/no-conditional-expect": "off",
+        // Tests assign through `{ current }` holders and fixture refs.
         "react/immutability": "off",
-        "react/set-state-in-effect": "off",
-        "react/exhaustive-effect-dependencies": "off",
-        "react-hooks/exhaustive-deps": "off",
         "unicorn/consistent-function-scoping": "off",
         "unicorn/prefer-add-event-listener": "off"
       }
@@ -215,13 +239,33 @@
         "react/set-state-in-effect": "off",
         "react/exhaustive-effect-dependencies": "off",
         "react/immutability": "off",
+        "react/refs": "off",
+        "react/purity": "off",
+        "react/set-state-in-render": "off",
+        "react/hooks": "off",
+        "react/static-components": "off",
+        "react/preserve-manual-memoization": "off",
+        "react/use-memo": "off",
+        "react/void-use-memo": "off",
+        "react/unsupported-syntax": "off",
+        "react/incompatible-library": "off",
+        "react/error-boundaries": "off",
+        "react/globals": "off",
+        "react/invariant": "off",
+        "react/rule-suppression": "off",
+        "react/syntax": "off",
+        "react/todo": "off",
+        "react/capitalized-calls": "off",
+        "react/memo-dependencies": "off",
+        "react/no-deriving-state-in-effects": "off",
         "react-hooks/exhaustive-deps": "off"
       }
     },
     {
       // Audited React-hook seams under lib (not the whole lib directory).
-      // Timers/observers/stores may use effects, local state, and latest-callback
-      // refs written during render. Feature components stay banned.
+      // Timers/observers/stores may use effects and local state. Feature
+      // components stay banned. React Compiler rules stay on so render-phase
+      // ref access cannot hide in these seams.
       "files": [
         "apps/web/src/lib/use-*.{ts,tsx}",
         "apps/web/src/lib/overlay-nav.ts",
@@ -229,10 +273,7 @@
       ],
       "rules": {
         "workspace/no-use-effect": "off",
-        "workspace/no-use-state": "off",
-        "react/set-state-in-effect": "off",
-        "react/refs": "off",
-        "react/immutability": "off"
+        "workspace/no-use-state": "off"
       }
     },
     {
