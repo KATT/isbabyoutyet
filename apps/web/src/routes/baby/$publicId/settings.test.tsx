@@ -21,6 +21,8 @@ test("settings loader fetches only manager settings data", async () => {
       initialData: { coParents: unknown[]; invites: unknown[] };
     };
     profile: { initialData: { locale: string } | null };
+    vapidPublicKey: { initialData: string };
+    browserPush: { input: string };
   }>({
     harness,
     route: Route,
@@ -36,6 +38,8 @@ test("settings loader fetches only manager settings data", async () => {
     initialData: { coParents: [], invites: [] },
   });
   expect(result.profile?.initialData?.locale).toBeTruthy();
+  expect(result.vapidPublicKey.initialData).toBeTruthy();
+  expect(result.browserPush).toMatchObject({ input: baby.publicId });
 });
 
 test("settings loader redirects non-managers to the public baby page", async () => {
@@ -150,6 +154,8 @@ test("settings overlay closes to the baby page after the dialog exit animation",
   await vi.waitFor(() => {
     expect(ctx.view.getByRole("dialog")).toBeTruthy();
   });
+  expect(ctx.view.getByRole("heading", { name: "Notifications" })).toBeTruthy();
+  expect(ctx.view.getByRole("switch", { name: "Message notifications" })).toBeTruthy();
   fireEvent.click(ctx.view.getByRole("button", { name: "Close" }));
 
   expect(ctx.back).not.toHaveBeenCalled();

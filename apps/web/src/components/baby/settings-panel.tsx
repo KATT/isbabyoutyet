@@ -48,6 +48,7 @@ import type {
 } from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { InitiatedQuery } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import {
   DueDateEditor,
@@ -57,6 +58,8 @@ import {
   ThemeSelector,
 } from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
+import { OwnerMessageNotifyLiveSwitch } from "./owner-message-notify-switch";
+import type { BrowserPushCapabilityFactory } from "./notification-subscribe";
 import { formatDate, formatDueDate, getRelativeTime, getThemeOption } from "./utils";
 import {
   SUPPORTED_LOCALES,
@@ -98,6 +101,12 @@ type SettingsPanelProps = {
     babyId: Id<"baby">;
     isOwner: boolean;
     listing: PreloadedConvexQuery<typeof api.coParents.listForBaby>;
+  } | null;
+  /** Null on the preview page (no push subscription). */
+  messagePush: {
+    babyId: Id<"baby">;
+    vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
+    browserPush: InitiatedQuery<BrowserPushCapabilityFactory>;
   } | null;
 };
 
@@ -249,6 +258,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const inheritedLocale = props.profileLocale;
   const onDelete = props.onDelete;
   const coParents = props.coParents;
+  const messagePush = props.messagePush;
   const journeyOption = JOURNEY_OPTION_BY_VALUE[props.birthJourney];
   const overlay = useFormGuard({
     onOpenChange: (open) => {
@@ -457,6 +467,16 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 </ItemActions>
               </Item>
             </SettingsSection>
+
+            {messagePush && (
+              <SettingsSection title={t("Notifications")}>
+                <OwnerMessageNotifyLiveSwitch
+                  babyId={messagePush.babyId}
+                  vapidPublicKey={messagePush.vapidPublicKey}
+                  browserPush={messagePush.browserPush}
+                />
+              </SettingsSection>
+            )}
 
             {coParents && (
               <SettingsSection title={t("Access")}>

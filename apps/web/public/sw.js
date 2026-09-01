@@ -1,3 +1,20 @@
+/**
+ * Reuse the open baby page tab (hash ignored). Keep in sync with
+ * `shouldReuseBabyClient` in `apps/web/src/lib/notification-click.ts`.
+ * Nested overlay paths (`/settings`, `/login`, …) do not match.
+ */
+function shouldReuseBabyClient(clientUrl, targetUrl) {
+  const client = new URL(clientUrl);
+  const target = new URL(targetUrl);
+  if (client.origin !== target.origin) {
+    return false;
+  }
+  const babyPage = /^\/baby\/([^/]+)\/?$/;
+  const clientBaby = babyPage.exec(client.pathname);
+  const targetBaby = babyPage.exec(target.pathname);
+  return Boolean(clientBaby && targetBaby && clientBaby[1] === targetBaby[1]);
+}
+
 // Service Worker for Push Notifications
 const CACHE_NAME = "isbabyoutyet-v1";
 
@@ -40,15 +57,28 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon,
-      badge: data.icon, // Use same icon for badge
-      image: isString(data.image) ? data.image : undefined,
-      data: { url: data.url },
-      tag: data.tag,
-      requireInteraction: false,
-    }),
+    (async () => {
+      if (data.dismiss === true) {
+        if (!isString(data.tag)) {
+          return;
+        }
+        const notifications = await self.registration.getNotifications({ tag: data.tag });
+        for (const notification of notifications) {
+          notification.close();
+        }
+        return;
+      }
+
+      await self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: data.icon,
+        badge: data.icon, // Use same icon for badge
+        image: isString(data.image) ? data.image : undefined,
+        data: { url: data.url },
+        tag: data.tag,
+        requireInteraction: false,
+      });
+    })(),
   );
 });
 
@@ -67,14 +97,16 @@ self.addEventListener("notificationclick", (event) => {
         includeUncontrolled: true,
       })
       .then((clientList) => {
-        // Check if there's already a window/tab open with the target URL
         for (const client of clientList) {
-          // Compare absolute URLs (client.url is always absolute)
-          if (client.url === urlToOpen && "focus" in client) {
+          if (shouldReuseBabyClient(client.url, urlToOpen) && "focus" in client) {
+            // WindowClient.postMessage has no targetOrigin; this client is already same-origin.
+            // oxlint-disable-next-line unicorn/require-post-message-target-origin
+            client.postMessage({ type: "notification-click", url: urlToOpen });
+            // Do not client.navigate() — it rejects on uncontrolled / iOS
+            // clients and then focus never runs. The page sets #feed itself.
             return client.focus();
           }
         }
-        // If not, open a new window/tab
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }

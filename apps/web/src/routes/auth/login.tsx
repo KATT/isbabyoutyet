@@ -25,6 +25,11 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { authPageCacheHeaders } from "@/lib/cachePolicy";
+import {
+  babyLoginHomeLink,
+  babyLoginSuccessTarget,
+  loginRedirectQuery,
+} from "@/lib/baby-login-redirect";
 import { waitForConvexAuth } from "@/lib/convexAuthHandoff";
 
 function loginSchema(t: TranslationFunction) {
@@ -76,6 +81,9 @@ export async function signInAndHandoff(values: Credentials, deps: SignInHandoff)
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
+  validateSearch: z.object({
+    redirect: z.string().optional(),
+  }),
   headers: authPageCacheHeaders,
   head: (opts) => ({
     meta: [
@@ -109,10 +117,15 @@ export const loginAuthAdapter = {
 export function LoginPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const redirect = loginRedirectQuery(router.state.location.searchStr);
+  const homeLink = babyLoginHomeLink(redirect);
+  const successTarget = babyLoginSuccessTarget(redirect);
 
   return (
     <LoginCard
       demoLoginEnabled={hasDemoLogin}
+      variant="page"
+      homeLink={homeLink}
       onSignIn={(values) =>
         signInAndHandoff(values, {
           signIn: async (body, fetchOptions) => {
@@ -121,7 +134,7 @@ export function LoginPage() {
           },
           headers: () => loginAuthAdapter.headers(),
           waitForAuth: () => loginAuthAdapter.waitForAuth(),
-          navigate: () => router.navigate({ to: "/dashboard" }),
+          navigate: () => router.navigate(successTarget),
           failedMessage: t("Failed to sign in"),
         })
       }
@@ -138,6 +151,8 @@ export function LoginPage() {
 export function LoginCard(props: {
   demoLoginEnabled: boolean;
   onSignIn: (values: Credentials) => Promise<void>;
+  variant: "page" | "dialog";
+  homeLink: { to: "/" } | { to: "/baby/$publicId"; params: { publicId: string } };
 }) {
   const { t } = useI18n();
 
@@ -154,11 +169,96 @@ export function LoginCard(props: {
         },
   });
 
+  const card = (
+    <Card
+      className={
+        props.variant === "dialog"
+          ? "border-0 shadow-none"
+          : "rounded-[2rem] border-2 pop-shadow-strong"
+      }
+    >
+      <CardHeader className="text-center">
+        <p className="text-4xl" aria-hidden="true">
+          👋
+        </p>
+        <CardTitle className="text-2xl font-black">{t("Welcome back!")}</CardTitle>
+        <CardDescription className="font-medium">
+          {t("Sign in to keep everyone in the loop")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <DemoAccountPicker
+          enabled={props.demoLoginEnabled}
+          onPrefill={(account) => {
+            form.setValue("email", account.email);
+            form.setValue("password", account.password);
+            form.formRef.current?.requestSubmit();
+          }}
+        />
+        <Form form={form} handleSubmit={(values) => props.onSignIn(values)}>
+          <div className="space-y-5">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("Email")}</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="you@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("Password")}</FormLabel>
+                  <FormControl>
+                    <Input type="password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <SubmitButton
+              form="context"
+              IconComponent={SignIn}
+              iconPosition="start"
+              className="w-full rounded-full font-extrabold pop-shadow"
+              size="lg"
+            >
+              {t("Sign In")}
+            </SubmitButton>
+          </div>
+        </Form>
+
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          {t("Don't have an account?")}{" "}
+          <Link
+            to="/auth/signup"
+            className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
+          >
+            {t("Sign up")}
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  if (props.variant === "dialog") {
+    return card;
+  }
+
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <Link
-          to="/"
+          {...props.homeLink}
           className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm transition-transform hover:-rotate-2"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
@@ -166,78 +266,7 @@ export function LoginCard(props: {
           </span>
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
-        <Card className="rounded-[2rem] border-2 pop-shadow-strong">
-          <CardHeader className="text-center">
-            <p className="text-4xl" aria-hidden="true">
-              👋
-            </p>
-            <CardTitle className="text-2xl font-black">{t("Welcome back!")}</CardTitle>
-            <CardDescription className="font-medium">
-              {t("Sign in to keep everyone in the loop")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DemoAccountPicker
-              enabled={props.demoLoginEnabled}
-              onPrefill={(account) => {
-                form.setValue("email", account.email);
-                form.setValue("password", account.password);
-                form.formRef.current?.requestSubmit();
-              }}
-            />
-            <Form form={form} handleSubmit={(values) => props.onSignIn(values)}>
-              <div className="space-y-5">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("Email")}</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="you@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("Password")}</FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <SubmitButton
-                  form="context"
-                  IconComponent={SignIn}
-                  iconPosition="start"
-                  className="w-full rounded-full font-extrabold pop-shadow"
-                  size="lg"
-                >
-                  {t("Sign In")}
-                </SubmitButton>
-              </div>
-            </Form>
-
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              {t("Don't have an account?")}{" "}
-              <Link
-                to="/auth/signup"
-                className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
-              >
-                {t("Sign up")}
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        {card}
       </div>
     </div>
   );

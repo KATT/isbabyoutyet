@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules, registerComponents, createEncouragementArgs } from "./test.setup";
+import { modules, registerComponents, createBabyArgs, createEncouragementArgs } from "./test.setup";
 
 const FIRST_PAGE = { numItems: 10, cursor: null };
 
@@ -279,4 +279,131 @@ test("removing an encouragement soft-deletes it so it can be recovered later", a
   const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
   expect(stored?.deletedAt).toEqual(expect.any(Number));
   expect(stored?.message).toBe("Oops wrong baby");
+});
+
+test("visitor messages notify opted-in owners; deletes retract the push instead of sending one", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Notify Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
+  await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/owner-inbox",
+    p256dh: "owner-key",
+    auth: "owner-secret",
+    userAgent: "Mozilla/5.0",
+  });
+
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Grandma",
+      message: "Thinking of you!",
+      visitorId: "visitor-1",
+    }),
+  );
+  await t.finishInProgressScheduledFunctions();
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: "https://push.example/owner-inbox",
+    }),
+  ).toBe(true);
+
+  await t.mutation(api.encouragements.update, {
+    encouragementId,
+    visitorId: "visitor-1",
+    message: "Thinking of you both!",
+  });
+  await t.finishInProgressScheduledFunctions();
+  const afterEdit = await t.query(api.encouragements.listByBaby, {
+    babyId: created.babyId,
+    visitorId: "visitor-1",
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(afterEdit.page).toMatchObject([{ message: "Thinking of you both!" }]);
+
+  await t.mutation(api.encouragements.remove, {
+    encouragementId,
+    visitorId: "visitor-1",
+  });
+  await t.finishInProgressScheduledFunctions();
+  const afterDelete = await t.query(api.encouragements.listByBaby, {
+    babyId: created.babyId,
+    visitorId: "visitor-1",
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(afterDelete.page).toEqual([]);
+});
+
+test("a manager posting or deleting a message does not notify owners", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Quiet Delete Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
+  await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/owner-inbox",
+    p256dh: "owner-key",
+    auth: "owner-secret",
+    userAgent: "Mozilla/5.0",
+  });
+
+  const managerPostId = await asAlice.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Alice",
+      message: "Owner note",
+      visitorId: "owner-visitor",
+    }),
+  );
+  await t.finishInProgressScheduledFunctions();
+
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Stranger",
+      message: "Please delete me",
+      visitorId: "visitor-x",
+    }),
+  );
+  await t.finishInProgressScheduledFunctions();
+
+  await asAlice.mutation(api.encouragements.remove, {
+    encouragementId,
+    visitorId: null,
+  });
+  await asAlice.mutation(api.encouragements.remove, {
+    encouragementId: managerPostId,
+    visitorId: null,
+  });
+  await t.finishInProgressScheduledFunctions();
+
+  const listed = await t.query(api.encouragements.listByBaby, {
+    babyId: created.babyId,
+    visitorId: null,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(listed.page).toEqual([]);
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: "https://push.example/owner-inbox",
+    }),
+  ).toBe(true);
 });

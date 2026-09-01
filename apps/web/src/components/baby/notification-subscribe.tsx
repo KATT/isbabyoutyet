@@ -1,5 +1,6 @@
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { ensureWebPushSubscription, readWebPushSubscription } from "@/lib/web-push-subscription";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { Bell, BellSlash, Export } from "@phosphor-icons/react";
@@ -18,25 +19,45 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { isFunction } from "@workspace/runtime/guards";
 import type { InitiatedQuery } from "@workspace/query-prefetch";
 import { getQueryInitiator, preloadedQueryOptions } from "@workspace/query-prefetch";
+import type { ReactElement } from "react";
+import { toast } from "sonner";
+import * as z from "zod";
+import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { Button } from "@workspace/ui/components/button";
+import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+} from "@workspace/ui/components/field";
+import { FormControl, FormField, FormItem } from "@workspace/ui/components/form";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { toast } from "sonner";
 
 type BrowserPushCapability =
   | { kind: "unsupported" }
   | { kind: "needsIosInstall" }
   | { kind: "serviceWorkerTimeout" }
   | { kind: "unsubscribed" }
-  | { kind: "subscribed"; subscription: PushSubscription; isSubscribed: boolean };
+  | {
+      kind: "subscribed";
+      subscription: PushSubscription;
+      family: boolean;
+      messages: boolean;
+    };
 
 const browserPushCapabilityQueryKey = ["browserPushCapability"] as const;
 
@@ -85,6 +106,12 @@ type NotificationSubscribeProps = {
   babyId: Id<"baby">;
   vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
   browserPush: InitiatedQuery<BrowserPushCapabilityFactory>;
+  audience: "visitor" | "manager";
+};
+
+type NotificationSelection = {
+  family: boolean;
+  messages: boolean;
 };
 
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
@@ -101,73 +128,98 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   const subscribeMutationFn = useConvexMutation(api.pushSubscriptions.subscribe);
   const unsubscribeMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribe);
+  const subscribeAsOwnerMutationFn = useConvexMutation(api.pushSubscriptions.subscribeAsOwner);
+  const unsubscribeAsOwnerMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribeAsOwner);
+
+  const syncDeviceNotifications = async (selection: NotificationSelection) => {
+    if (
+      !capability ||
+      capability.kind === "unsupported" ||
+      capability.kind === "needsIosInstall" ||
+      !vapidPublicKey
+    ) {
+      throw new Error(t("Push notifications are not supported in this browser."));
+    }
+
+    const familyOn = capability.kind === "subscribed" && capability.family;
+    const messagesOn = capability.kind === "subscribed" && capability.messages;
+    if (!selection.family && !selection.messages) {
+      const existing = await readWebPushSubscription();
+      if (!existing) {
+        return;
+      }
+      const pushKeys = {
+        babyId: props.babyId,
+        endpoint: existing.endpoint,
+        p256dh: existing.p256dh,
+        auth: existing.auth,
+      };
+      if (familyOn) {
+        await unsubscribeMutationFn(pushKeys);
+      }
+      if (messagesOn) {
+        await unsubscribeAsOwnerMutationFn(pushKeys);
+      }
+      return;
+    }
+
+    const keys = await ensureWebPushSubscription(vapidPublicKey);
+    const pushKeys = {
+      babyId: props.babyId,
+      endpoint: keys.endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+      userAgent: navigator.userAgent,
+    };
+    if (selection.family) {
+      await subscribeMutationFn(pushKeys);
+    } else if (familyOn) {
+      await unsubscribeMutationFn(pushKeys);
+    }
+    if (selection.messages) {
+      await subscribeAsOwnerMutationFn(pushKeys);
+    } else if (messagesOn) {
+      await unsubscribeAsOwnerMutationFn(pushKeys);
+    }
+  };
 
   const subscribeMutation = useMutation({
+    mutationFn: syncDeviceNotifications,
+    onSuccess: () => {
+      void capabilityQuery.refetch();
+    },
+  });
+
+  const subscribeFamilyMutation = useMutation({
     mutationFn: async () => {
-      if (
-        !capability ||
-        capability.kind === "unsupported" ||
-        capability.kind === "needsIosInstall" ||
-        !vapidPublicKey
-      ) {
+      if (!vapidPublicKey) {
         throw new Error(t("Push notifications are not supported in this browser."));
       }
-
-      if (Notification.permission === "default") {
-        const permissionResult = await Notification.requestPermission();
-
-        if (permissionResult !== "granted") {
-          throw new Error(t("Notification permission denied"));
-        }
-      } else if (Notification.permission !== "granted") {
-        throw new Error(t("Notification permission is required"));
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-
-      const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
-      const pushSubscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
+      const keys = await ensureWebPushSubscription(vapidPublicKey);
+      await subscribeMutationFn({
+        babyId: props.babyId,
+        endpoint: keys.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        userAgent: navigator.userAgent,
       });
-
-      const subscriptionData = pushSubscription.toJSON();
-      if (
-        subscriptionData.endpoint &&
-        subscriptionData.keys?.p256dh &&
-        subscriptionData.keys?.auth
-      ) {
-        return await subscribeMutationFn({
-          babyId: props.babyId,
-          endpoint: subscriptionData.endpoint,
-          p256dh: subscriptionData.keys.p256dh,
-          auth: subscriptionData.keys.auth,
-          userAgent: navigator.userAgent,
-        });
-      }
-
-      throw new Error(t("Failed to get subscription data"));
     },
     onSuccess: () => {
       void capabilityQuery.refetch();
     },
   });
 
-  const unsubscribeMutation = useMutation<unknown, Error, PushSubscription>({
-    mutationFn: async (subscription) => {
-      const subscriptionData = subscription.toJSON();
-      if (
-        !subscriptionData.endpoint ||
-        !subscriptionData.keys?.p256dh ||
-        !subscriptionData.keys.auth
-      ) {
+  const unsubscribeMutation = useMutation({
+    mutationFn: async () => {
+      const keys = await readWebPushSubscription();
+      if (!keys) {
         throw new Error(t("Failed to get subscription data"));
       }
       return await unsubscribeMutationFn({
         babyId: props.babyId,
-        endpoint: subscriptionData.endpoint,
-        p256dh: subscriptionData.keys.p256dh,
-        auth: subscriptionData.keys.auth,
+        endpoint: keys.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
       });
     },
     onSuccess: () => {
@@ -175,7 +227,13 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     },
   });
 
-  const isLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
+  const isLoading =
+    subscribeMutation.isPending ||
+    subscribeFamilyMutation.isPending ||
+    unsubscribeMutation.isPending;
+  const familyOn = capability?.kind === "subscribed" && capability.family;
+  const messagesOn = capability?.kind === "subscribed" && capability.messages;
+  const isSubscribed = props.audience === "manager" ? familyOn || messagesOn : familyOn;
 
   if (!capability || !vapidPublicKey) {
     return <GetNotificationsPending />;
@@ -183,27 +241,45 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   switch (capability.kind) {
     case "needsIosInstall":
-      return <IosPwaInstallPrompt />;
+      return (
+        <IosPwaInstallPrompt
+          audience={props.audience === "manager" ? "owner" : "visitor"}
+          trigger={
+            <Button variant="default" size="lg">
+              <Bell className="w-5 h-5" />
+              {t("Get Notifications")}
+            </Button>
+          }
+        />
+      );
     case "unsupported":
     case "serviceWorkerTimeout":
     case "unsubscribed":
-      return (
-        <NotificationSubscribeControls
-          isSubscribed={false}
-          isLoading={isLoading}
-          onClick={() => {
-            toastSubscribe(subscribeMutation.mutateAsync, t);
-          }}
-        />
-      );
     case "subscribed":
+      if (props.audience === "manager") {
+        return (
+          <ManagerNotificationChooserView
+            familyDefault={!familyOn && !messagesOn ? true : Boolean(familyOn)}
+            messagesDefault={!familyOn && !messagesOn ? true : Boolean(messagesOn)}
+            isSubscribed={Boolean(isSubscribed)}
+            isPending={isLoading}
+            onSubmit={async (selection) => {
+              await toastPushSync({
+                run: subscribeMutation.mutateAsync(selection),
+                t,
+                turningOff: !selection.family && !selection.messages,
+              });
+            }}
+          />
+        );
+      }
       return (
         <NotificationSubscribeControls
-          isSubscribed={capability.isSubscribed}
+          isSubscribed={Boolean(isSubscribed)}
           isLoading={isLoading}
           onClick={() => {
-            if (capability.isSubscribed) {
-              toast.promise(unsubscribeMutation.mutateAsync(capability.subscription), {
+            if (isSubscribed) {
+              toast.promise(unsubscribeMutation.mutateAsync(), {
                 loading: t("Unsubscribing from notifications..."),
                 success: t("Unsubscribed from notifications!"),
                 error: (error) =>
@@ -211,25 +287,39 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
                     ? error.message
                     : t("Failed to unsubscribe from notifications"),
               });
-            } else {
-              toastSubscribe(subscribeMutation.mutateAsync, t);
+              return;
             }
+            toastPushSync({
+              run: subscribeFamilyMutation.mutateAsync(),
+              t,
+              turningOff: false,
+            });
           }}
         />
       );
   }
 }
 
-function toastSubscribe(
-  mutateAsync: () => Promise<Id<"pushSubscriptions">>,
-  t: TranslationFunction,
-) {
-  toast.promise(mutateAsync(), {
-    loading: t("Subscribing to notifications..."),
-    success: t("Subscribed to notifications!"),
-    error: (error) =>
-      error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
-  });
+function toastPushSync(opts: { run: Promise<void>; t: TranslationFunction; turningOff: boolean }) {
+  toast.promise(
+    opts.run,
+    opts.turningOff
+      ? {
+          loading: opts.t("Unsubscribing from notifications..."),
+          success: opts.t("Unsubscribed from notifications!"),
+          error: (error) =>
+            error instanceof Error
+              ? error.message
+              : opts.t("Failed to unsubscribe from notifications"),
+        }
+      : {
+          loading: opts.t("Subscribing to notifications..."),
+          success: opts.t("Subscribed to notifications!"),
+          error: (error) =>
+            error instanceof Error ? error.message : opts.t("Failed to subscribe to notifications"),
+        },
+  );
+  return opts.run;
 }
 
 function GetNotificationsPending() {
@@ -242,24 +332,16 @@ function GetNotificationsPending() {
   );
 }
 
-function IosPwaInstallPrompt() {
+export function IosPwaInstallPrompt(props: {
+  trigger: ReactElement;
+  audience: "visitor" | "owner";
+}) {
   const { t } = useI18n();
 
   return (
     <Dialog>
       <Tooltip>
-        <TooltipTrigger
-          render={
-            <DialogTrigger
-              render={
-                <Button variant="default" size="lg">
-                  <Bell className="w-5 h-5" />
-                  {t("Get Notifications")}
-                </Button>
-              }
-            />
-          }
-        />
+        <TooltipTrigger render={<DialogTrigger render={props.trigger} />} />
         <TooltipContent className="max-w-xs">
           <p>
             {t(
@@ -275,7 +357,7 @@ function IosPwaInstallPrompt() {
             {t("Install this app on your Home Screen before enabling push notifications on iOS.")}
           </DialogDescription>
         </DialogHeader>
-        <ol className="list-decimal list-inside space-y-3 text-sm">
+        <ol className="flex list-decimal list-inside flex-col gap-3 text-sm">
           <li className="flex items-start gap-2">
             <span className="font-medium min-w-5">1.</span>
             <span>
@@ -290,13 +372,209 @@ function IosPwaInstallPrompt() {
             <span className="font-medium min-w-5">3.</span>
             <span>{t("Open the app from your Home Screen")}</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="font-medium min-w-5">4.</span>
-            <span>{t('Come back here and tap "Get Notifications"')}</span>
-          </li>
+          {props.audience === "owner" ? (
+            <>
+              <li className="flex items-start gap-2">
+                <span className="font-medium min-w-5">4.</span>
+                <span>
+                  {t(
+                    "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.",
+                  )}
+                </span>
+              </li>
+            </>
+          ) : (
+            <li className="flex items-start gap-2">
+              <span className="font-medium min-w-5">4.</span>
+              <span>{t('Come back here and tap "Get Notifications"')}</span>
+            </li>
+          )}
         </ol>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const chooserSchema = z.object({
+  family: z.boolean(),
+  messages: z.boolean(),
+});
+
+/**
+ * Manager chooser for status and/or message alerts. Guarded overlay form:
+ * Save waits for the mutation, then closes; dirty dismiss asks to discard.
+ *
+ * @internal
+ */
+export function ManagerNotificationChooserView(props: {
+  familyDefault: boolean;
+  messagesDefault: boolean;
+  isSubscribed: boolean;
+  isPending: boolean;
+  onSubmit: (selection: NotificationSelection) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const overlay = useFormGuard({ onOpenChange: undefined });
+
+  return (
+    <Dialog {...overlay.rootProps}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  disabled={props.isPending}
+                  variant={props.isSubscribed ? "secondary" : "default"}
+                  size="lg"
+                >
+                  <GetNotificationsButtonLabel
+                    isSubscribed={props.isSubscribed}
+                    isLoading={props.isPending}
+                  />
+                </Button>
+              }
+            />
+          }
+        />
+        <TooltipContent>
+          <p>{t("Pick what this device should receive.")}</p>
+        </TooltipContent>
+      </Tooltip>
+      <DialogContent>
+        <FormGuardProvider guard={overlay}>
+          <ManagerNotificationChooserForm
+            key={`${String(props.familyDefault)}:${String(props.messagesDefault)}`}
+            familyDefault={props.familyDefault}
+            messagesDefault={props.messagesDefault}
+            isPending={props.isPending}
+            onSubmit={props.onSubmit}
+            onClose={overlay.close}
+          />
+        </FormGuardProvider>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ManagerNotificationChooserForm(props: {
+  familyDefault: boolean;
+  messagesDefault: boolean;
+  isPending: boolean;
+  onSubmit: (selection: NotificationSelection) => Promise<void>;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    schema: chooserSchema,
+    defaultValues: {
+      family: props.familyDefault,
+      messages: props.messagesDefault,
+    },
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onSubmit(values);
+        props.onClose();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>{t("Choose notifications")}</DialogTitle>
+        <DialogDescription>{t("Pick what this device should receive.")}</DialogDescription>
+      </DialogHeader>
+      <FieldSet className="mt-4">
+        <FieldLegend className="sr-only">{t("Choose notifications")}</FieldLegend>
+        <FieldGroup>
+          <FormField
+            control={form.control}
+            name="family"
+            render={(renderProps) => (
+              <FormItem className="border-0 p-0">
+                <Field orientation="horizontal">
+                  <FormControl>
+                    <Checkbox
+                      id="notify-family"
+                      checked={renderProps.field.value}
+                      disabled={props.isPending}
+                      onCheckedChange={(checked) => {
+                        renderProps.field.onChange(checked === true);
+                      }}
+                    />
+                  </FormControl>
+                  <FieldContent>
+                    <FieldTitle>
+                      <label htmlFor="notify-family">{t("Status updates")}</label>
+                    </FieldTitle>
+                    <FieldDescription>
+                      {t("Get notified when the baby's status changes")}
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="messages"
+            render={(renderProps) => (
+              <FormItem className="border-0 p-0">
+                <Field orientation="horizontal">
+                  <FormControl>
+                    <Checkbox
+                      id="notify-messages"
+                      checked={renderProps.field.value}
+                      disabled={props.isPending}
+                      onCheckedChange={(checked) => {
+                        renderProps.field.onChange(checked === true);
+                      }}
+                    />
+                  </FormControl>
+                  <FieldContent>
+                    <FieldTitle>
+                      <label htmlFor="notify-messages">{t("Message notifications")}</label>
+                    </FieldTitle>
+                    <FieldDescription>
+                      {t("Get notified when someone leaves a message")}
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+              </FormItem>
+            )}
+          />
+        </FieldGroup>
+      </FieldSet>
+      <DialogFooter>
+        <SubmitButton
+          form="context"
+          IconComponent={null}
+          iconPosition="start"
+          disabled={props.isPending}
+        >
+          {t("Save")}
+        </SubmitButton>
+      </DialogFooter>
+    </Form>
+  );
+}
+
+function GetNotificationsButtonLabel(props: { isSubscribed: boolean; isLoading: boolean }) {
+  const { t } = useI18n();
+  if (props.isSubscribed) {
+    return (
+      <>
+        {props.isLoading ? <Spinner className="w-5 h-5" /> : <BellSlash className="w-5 h-5" />}
+        {t("Unsubscribe")}
+      </>
+    );
+  }
+  return (
+    <>
+      {props.isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+      {t("Get Notifications")}
+    </>
   );
 }
 
@@ -306,6 +584,9 @@ function NotificationSubscribeControls(props: {
   onClick: () => void;
 }) {
   const { t } = useI18n();
+  const tooltip = props.isSubscribed
+    ? "Stop receiving push notifications for updates"
+    : "Get notified when the baby's status changes";
 
   return (
     <Tooltip>
@@ -317,30 +598,15 @@ function NotificationSubscribeControls(props: {
             variant={props.isSubscribed ? "secondary" : "default"}
             size="lg"
           >
-            {props.isSubscribed ? (
-              <>
-                {props.isLoading ? (
-                  <Spinner className="w-5 h-5" />
-                ) : (
-                  <BellSlash className="w-5 h-5" />
-                )}
-                {t("Unsubscribe")}
-              </>
-            ) : (
-              <>
-                {props.isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                {t("Get Notifications")}
-              </>
-            )}
+            <GetNotificationsButtonLabel
+              isSubscribed={props.isSubscribed}
+              isLoading={props.isLoading}
+            />
           </Button>
         }
       />
       <TooltipContent>
-        <p>
-          {props.isSubscribed
-            ? t("Stop receiving push notifications for updates")
-            : t("Get notified when the baby's status changes")}
-        </p>
+        <p>{t(tooltip)}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -375,6 +641,11 @@ function getIOSStatus() {
   return { isIOS: true, isStandalone };
 }
 
+export function needsIosPushInstall() {
+  const iosStatus = getIOSStatus();
+  return iosStatus.isIOS && !iosStatus.isStandalone;
+}
+
 function isPushSupported() {
   return (
     globalThis.window !== undefined &&
@@ -392,9 +663,26 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
   return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
 }
 
-function fetchIsSubscribed(opts: { queryClient: QueryClient; babyRef: string; endpoint: string }) {
+function fetchFamilyIsSubscribed(opts: {
+  queryClient: QueryClient;
+  babyRef: string;
+  endpoint: string;
+}) {
   return opts.queryClient.fetchQuery(
     convexQuery(api.pushSubscriptions.isSubscribed, {
+      babyId: opts.babyRef,
+      endpoint: opts.endpoint,
+    }),
+  );
+}
+
+function fetchOwnerIsSubscribed(opts: {
+  queryClient: QueryClient;
+  babyRef: string;
+  endpoint: string;
+}) {
+  return opts.queryClient.fetchQuery(
+    convexQuery(api.pushSubscriptions.isOwnerSubscribed, {
       babyId: opts.babyRef,
       endpoint: opts.endpoint,
     }),
@@ -418,12 +706,24 @@ async function resolveBrowserPushCapability(
     const registration = await waitForServiceWorkerWithTimeout(SERVICE_WORKER_READY_TIMEOUT_MS);
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
-      const isSubscribed = await fetchIsSubscribed({
-        queryClient,
-        babyRef,
-        endpoint: subscription.endpoint,
-      });
-      return { kind: "subscribed", subscription, isSubscribed: Boolean(isSubscribed) };
+      const [family, messages] = await Promise.all([
+        fetchFamilyIsSubscribed({
+          queryClient,
+          babyRef,
+          endpoint: subscription.endpoint,
+        }),
+        fetchOwnerIsSubscribed({
+          queryClient,
+          babyRef,
+          endpoint: subscription.endpoint,
+        }),
+      ]);
+      return {
+        kind: "subscribed",
+        subscription,
+        family: Boolean(family),
+        messages: Boolean(messages),
+      };
     }
     return { kind: "unsubscribed" };
   } catch (error) {
@@ -432,18 +732,4 @@ async function resolveBrowserPushCapability(
     }
     return { kind: "unsubscribed" };
   }
-}
-
-// Convert VAPID key from base64 URL to Uint8Array
-function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
 }

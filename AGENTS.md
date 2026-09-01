@@ -61,6 +61,18 @@ Use `@/lib/overlay-nav` for open/close (TanStack has `history.back` /
 Keep `replace: true` for slug canonicalize and auth redirects. Admin tab switches
 still use `resetScroll: false` (not overlay history).
 
+## Overlay forms (form-guard)
+
+Dialog, popover, sheet, and route-overlay forms must use `useFormGuard` +
+`FormGuardProvider` + `useZodForm` + `Form` from `@/components/Form`. `Form`
+registers dirty/submitting with the guard. Close after a successful save with
+`guard.close()` (imperative-action). Do not save from `DialogClose` /
+`PopoverClose` — that unmounts the overlay before the mutation finishes and
+skips the leave-guard.
+
+Live controls that persist immediately (language select, the settings message-
+notifications switch) are not overlay forms and do not need a Save button.
+
 ## Tests
 
 Prefer automated tests (Vitest / jsdom) over a GUI browser. Do **not** use a

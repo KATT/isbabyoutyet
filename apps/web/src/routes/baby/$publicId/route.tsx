@@ -31,9 +31,13 @@ import { getBabySeo } from "@/lib/baby-seo";
 import { babyRouteCacheHeaders } from "@/lib/cachePolicy";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
+import { authClient } from "@/lib/auth-client";
+import { BABY_FEED_HASH } from "@workspace/convex/src/babyFeedUrl";
+import { useHashScroll } from "@/lib/use-hash-scroll";
 import { useDemoToast } from "@/lib/use-demo-toast";
 import { isHomepageDemoPublicId } from "@workspace/convex/src/seedCredentials";
 import {
+  useBabyLoginOverlayNav,
   useBabyPostOverlayNav,
   useBabySettingsOverlayNav,
   useBabyShareOverlayNav,
@@ -255,9 +259,12 @@ function BabyPageLayout() {
     enabled: isHomepageDemoPublicId(params.publicId),
   });
   const matchRoute = useMatchRoute();
+  const session = authClient.useSession();
+  useHashScroll();
   const shareOpen = !!matchRoute({ to: "/baby/$publicId/share" });
   const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
   const postUpdateOpen = !!matchRoute({ to: "/baby/$publicId/post" });
+  const loginOpen = !!matchRoute({ to: "/baby/$publicId/login" });
   const photoOpen =
     !!matchRoute({ to: "/baby/$publicId/photo" }) ||
     !!matchRoute({ to: "/baby/$publicId/updates/$updateId/photo" });
@@ -284,10 +291,15 @@ function BabyPageLayout() {
   const share = useBabyShareOverlayNav(params.publicId);
   const post = useBabyPostOverlayNav(params.publicId);
   const settings = useBabySettingsOverlayNav(params.publicId);
+  const login = useBabyLoginOverlayNav(params.publicId);
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;
   const canManage = myAccess.canManage;
+  const sessionPending = session.isPending;
+  const signedIn = session.data !== null || canManage;
+  const signInButton = signedIn || sessionPending ? null : login.openLink;
+  const dashboardButton = signedIn ? { to: "/dashboard" as const } : null;
   const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
   const managerBaby = managerBabyDoc ? managerDocToBabyData(managerBabyDoc) : null;
   const birthJourney = managerBabyDoc?.birthJourney ?? null;
@@ -310,7 +322,7 @@ function BabyPageLayout() {
           surface="baby"
           onboarding={loaderData.onboarding}
           enabled={undefined}
-          spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen}
+          spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen && !loginOpen}
         />
       ) : null}
 
@@ -343,6 +355,10 @@ function BabyPageLayout() {
                   }
                 : null
             }
+            signInButton={signInButton}
+            signInOpen={loginOpen}
+            onDismissSignIn={loginOpen ? login.dismiss : null}
+            dashboardButton={dashboardButton}
           />
         </div>
       </header>
@@ -372,11 +388,12 @@ function BabyPageLayout() {
                   : null
               }
             />
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center">
               <NotificationSubscribe
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
                 browserPush={loaderData.browserPush}
+                audience={canManage ? "manager" : "visitor"}
               />
             </div>
             <div className="mt-4">
@@ -387,7 +404,8 @@ function BabyPageLayout() {
           {/* Timeline: owner updates interleaved with encouragements. The
               visitor's encouragement form sits above the feed so nobody has
               to scroll past every message to post; the owner posts via the
-              "Post update" button in the dock. */}
+              "Post update" button in the dock. Notification clicks land on
+              #feed — the messages list, not the compose box. */}
           <div className="space-y-8">
             <section
               className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8"
@@ -396,7 +414,10 @@ function BabyPageLayout() {
               <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
             </section>
 
-            <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
+            <section
+              id={BABY_FEED_HASH}
+              className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8"
+            >
               <TimelineFeed
                 babyId={babyDoc._id}
                 publicId={babyDoc.publicId}

@@ -1,9 +1,9 @@
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
-import { findBabyManager } from "./babyAccess";
+import { findBabyManager, requireBabyManager } from "./babyAccess";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { FORBIDDEN } from "../src/types";
 import { requiredEnv } from "./requiredEnv";
@@ -25,6 +25,24 @@ async function deleteByEndpoint(ctx: MutationCtx, endpoint: string) {
     .query("pushSubscriptions")
     .withIndex("by_endpoint", (q) => q.eq("endpoint", endpoint))) {
     await deleteSubscription(ctx, subscription);
+  }
+  for await (const subscription of ctx.db
+    .query("ownerPushSubscriptions")
+    .withIndex("by_endpoint", (q) => q.eq("endpoint", endpoint))) {
+    await ctx.db.delete(subscription._id);
+  }
+}
+
+export async function deleteOwnerSubscriptionsForIdentity(
+  ctx: MutationCtx,
+  opts: { babyId: Id<"baby">; tokenIdentifier: string },
+) {
+  for await (const subscription of ctx.db
+    .query("ownerPushSubscriptions")
+    .withIndex("by_babyId_and_tokenIdentifier", (q) =>
+      q.eq("babyId", opts.babyId).eq("tokenIdentifier", opts.tokenIdentifier),
+    )) {
+    await ctx.db.delete(subscription._id);
   }
 }
 
@@ -157,6 +175,104 @@ export const isSubscribed = query({
 
     const subscription = await ctx.db
       .query("pushSubscriptions")
+      .withIndex("by_babyId_and_endpoint", (q) =>
+        q.eq("babyId", baby._id).eq("endpoint", args.endpoint),
+      )
+      .first();
+
+    return subscription !== null;
+  },
+});
+
+export const subscribeAsOwner = mutation({
+  args: {
+    babyId: v.id("baby"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    userAgent: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
+
+    const existing = await ctx.db
+      .query("ownerPushSubscriptions")
+      .withIndex("by_babyId_and_endpoint", (q) =>
+        q.eq("babyId", baby._id).eq("endpoint", args.endpoint),
+      )
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        p256dh: args.p256dh,
+        auth: args.auth,
+        userAgent: args.userAgent,
+        userId: identity.authUserId,
+        tokenIdentifier: identity.tokenIdentifier,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("ownerPushSubscriptions", {
+      babyId: baby._id,
+      userId: identity.authUserId,
+      tokenIdentifier: identity.tokenIdentifier,
+      endpoint: args.endpoint,
+      p256dh: args.p256dh,
+      auth: args.auth,
+      createdAt: Date.now(),
+      userAgent: args.userAgent,
+    });
+  },
+});
+
+export const unsubscribeAsOwner = mutation({
+  args: {
+    babyId: v.id("baby"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const subscription = await ctx.db
+      .query("ownerPushSubscriptions")
+      .withIndex("by_babyId_and_endpoint", (q) =>
+        q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
+      )
+      .first();
+    if (subscription && subscription.p256dh === args.p256dh && subscription.auth === args.auth) {
+      await ctx.db.delete(subscription._id);
+    }
+  },
+});
+
+export const getOwnerSubscriptionsPage = internalQuery({
+  args: {
+    babyId: v.id("baby"),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(schema.doc("ownerPushSubscriptions")),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("ownerPushSubscriptions")
+      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .paginate(args.paginationOpts);
+  },
+});
+
+export const isOwnerSubscribed = query({
+  args: {
+    babyId: babyIdOrPublicIdValidator,
+    endpoint: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
+    if (!baby) {
+      return false;
+    }
+
+    const subscription = await ctx.db
+      .query("ownerPushSubscriptions")
       .withIndex("by_babyId_and_endpoint", (q) =>
         q.eq("babyId", baby._id).eq("endpoint", args.endpoint),
       )

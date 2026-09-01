@@ -7,3 +7,5 @@ export const notifiableStatusValidator = v.union(
   v.literal("photo_added"),
   v.literal("update_posted"),
 );
+
+export const ownerMessagePushEventValidator = v.union(v.literal("created"), v.literal("updated"));

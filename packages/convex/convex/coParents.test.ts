@@ -358,3 +358,100 @@ test("claimPendingInvites clears pending invites addressed to the page owner", a
   );
   expect(coParents).toHaveLength(0);
 });
+
+test("leaving a page drops that co-parent's message-notification subscriptions", async () => {
+  const t = await setup();
+  const aliceId = await signUp(t, {
+    email: "owner-push@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  const bobId = await signUp(t, {
+    email: "coparent-push@example.com",
+    password: "password123",
+    name: "Bob",
+  });
+  const asAlice = t.withIdentity({ subject: aliceId });
+  const asBob = t.withIdentity({ subject: bobId });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Shared Notify Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
+  await asAlice.mutation(api.coParents.invite, {
+    babyId: created.babyId,
+    email: "coparent-push@example.com",
+  });
+  await asBob.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/bob-inbox",
+    p256dh: "bob-key",
+    auth: "bob-secret",
+    userAgent: "Mozilla/5.0",
+  });
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: "https://push.example/bob-inbox",
+    }),
+  ).toBe(true);
+
+  await asBob.mutation(api.coParents.leave, { babyId: created.babyId });
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: "https://push.example/bob-inbox",
+    }),
+  ).toBe(false);
+});
+
+test("removing a co-parent drops their message-notification subscriptions", async () => {
+  const t = await setup();
+  const aliceId = await signUp(t, {
+    email: "owner-remove-push@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  const bobId = await signUp(t, {
+    email: "coparent-remove-push@example.com",
+    password: "password123",
+    name: "Bob",
+  });
+  const asAlice = t.withIdentity({ subject: aliceId });
+  const asBob = t.withIdentity({ subject: bobId });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Remove Notify Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
+  await asAlice.mutation(api.coParents.invite, {
+    babyId: created.babyId,
+    email: "coparent-remove-push@example.com",
+  });
+  await asBob.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/bob-removed",
+    p256dh: "bob-key",
+    auth: "bob-secret",
+    userAgent: "Mozilla/5.0",
+  });
+  const listed = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
+  if (listed === "forbidden") {
+    throw new Error("expected manager access");
+  }
+  const bobRow = listed.coParents[0];
+  if (!bobRow) {
+    throw new Error("expected co-parent row");
+  }
+  await asAlice.mutation(api.coParents.removeCoParent, { coParentId: bobRow._id });
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: "https://push.example/bob-removed",
+    }),
+  ).toBe(false);
+});
