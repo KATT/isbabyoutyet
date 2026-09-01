@@ -297,6 +297,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
           }}
         />
       );
+    default: {
+      const _exhaustive: never = capability;
+      return _exhaustive;
+    }
   }
 }
 

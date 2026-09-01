@@ -5,6 +5,7 @@ import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { MilestoneVisibility } from "@workspace/convex/src/types";
 import { getThemeColors } from "@/components/baby/utils";
+import type { BabyDueDateDisplay } from "@/lib/seo";
 import {
   OG_IMAGE_HEIGHT,
   OG_IMAGE_WIDTH,
@@ -84,11 +85,7 @@ type BabyOgImageBase = {
   photoUrl: string | null;
 } & Partial<{ milestoneVisibility: MilestoneVisibility | null; timeZone: string }>;
 
-export type BabyOgImageInput = BabyOgImageBase &
-  Partial<
-    | { dueDateDisplayMode: "exact"; dueDate: string }
-    | { dueDateDisplayMode: "message"; publicDueDateText: string | undefined }
-  >;
+export type BabyOgImageInput = BabyOgImageBase & BabyDueDateDisplay;
 
 async function resolvePhotoDataUrl(photoUrl: string | null) {
   if (!photoUrl) {
@@ -120,14 +117,12 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
       ? babyStatusDetail({ baby, status })
       : babyPageDescription({
           name: baby.name,
-          ...(baby.dueDateDisplayMode === "exact" && baby.dueDate
+          ...(baby.dueDateDisplayMode === "exact"
             ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
-            : baby.dueDateDisplayMode === "message"
-              ? {
-                  dueDateDisplayMode: "message" as const,
-                  publicDueDateText: baby.publicDueDateText,
-                }
-              : {}),
+            : {
+                dueDateDisplayMode: "message" as const,
+                publicDueDateText: baby.publicDueDateText,
+              }),
           publicId: "",
           theme: baby.theme,
           locale: baby.locale,

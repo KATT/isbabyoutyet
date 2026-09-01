@@ -9,6 +9,9 @@ alwaysApply: true
 
 ## TypeScript & Code Style
 
+When reading or editing TypeScript, follow
+[`.agents/skills/typescript-best-practices/SKILL.md`](.agents/skills/typescript-best-practices/SKILL.md).
+
 ### Type Imports
 
 - **ALWAYS** use `import type` for type-only imports: `@typescript-eslint/consistent-type-imports`
