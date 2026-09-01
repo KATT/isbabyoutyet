@@ -8,7 +8,6 @@ import {
 } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
-import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
@@ -35,6 +34,8 @@ import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth-client";
 import { BABY_FEED_HASH } from "@workspace/convex/src/babyFeedUrl";
 import { useHashScroll } from "@/lib/use-hash-scroll";
+import { useDemoToast } from "@/lib/use-demo-toast";
+import { isHomepageDemoPublicId } from "@workspace/convex/src/seedCredentials";
 import {
   useBabyLoginOverlayNav,
   useBabyPostOverlayNav,
@@ -253,6 +254,10 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
 function BabyPageLayout() {
   const { t } = useI18n();
   const params = Route.useParams();
+  useDemoToast({
+    publicId: params.publicId,
+    enabled: isHomepageDemoPublicId(params.publicId),
+  });
   const matchRoute = useMatchRoute();
   const session = authClient.useSession();
   useHashScroll();
@@ -304,7 +309,6 @@ function BabyPageLayout() {
   return (
     <div className="min-h-screen bg-background bg-dots">
       <div className="pointer-events-none fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-50 mx-auto flex w-auto max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4 sm:left-auto sm:mx-0">
-        <HomepageDemoToast publicId={babyDoc.publicId} />
         {canManage && birthJourney && managerBaby ? (
           <ScheduledNotificationToast
             notifications={loaderData.scheduledNotifications}

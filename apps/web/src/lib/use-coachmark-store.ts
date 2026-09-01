@@ -1,4 +1,4 @@
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffectEvent, useState, useSyncExternalStore } from "react";
 import { isFunction } from "@workspace/runtime/guards";
 
 type Rect = {
@@ -22,7 +22,7 @@ function mobileMediaQuery() {
   return window.matchMedia("(max-width: 767px)");
 }
 
-function createCoachmarkStore(opts: { targetId: string; onDismissRef: { current: () => void } }) {
+function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void }) {
   let snapshot: CoachmarkSnapshot | null = null;
 
   return {
@@ -34,7 +34,7 @@ function createCoachmarkStore(opts: { targetId: string; onDismissRef: { current:
       const mediaQuery = mobileMediaQuery();
 
       function onTargetClick() {
-        opts.onDismissRef.current();
+        opts.onDismiss();
       }
 
       function resolveTarget() {
@@ -126,15 +126,15 @@ function createCoachmarkStore(opts: { targetId: string; onDismissRef: { current:
 /**
  * Subscribes to the coachmark target’s layout. Store init lives in lib
  * (useState) so feature UI avoids both useState and render-time ref access.
- * `onDismiss` is read through a ref so callers may pass a fresh closure.
+ * `onDismiss` is an Effect Event so the store always invokes the latest
+ * closure without reading a ref during render.
  */
 export function useCoachmarkSnapshot(opts: { targetId: string; onDismiss: () => void }) {
-  const onDismissRef = useRef(opts.onDismiss);
-  onDismissRef.current = opts.onDismiss;
+  const onDismiss = useEffectEvent(opts.onDismiss);
   const [store] = useState(() =>
     createCoachmarkStore({
       targetId: opts.targetId,
-      onDismissRef,
+      onDismiss,
     }),
   );
   return useSyncExternalStore(store.subscribe, store.getSnapshot, () => null);
