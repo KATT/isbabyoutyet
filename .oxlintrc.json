@@ -81,6 +81,7 @@
     // Always on — including apps/web/src/lib — so banned hooks cannot be
     // laundered through a local re-export barrel.
     "workspace/no-banned-react-reexport": "error",
+    "workspace/no-undocumented-optional": "error",
     // React Compiler — full set as errors (eslint-plugin-react-hooks
     // recommended + recommended-latest + experimental). Recommended rules
     // already live in `correctness`; the rest sit in restriction/perf and
@@ -284,6 +285,13 @@
       "rules": {
         "workspace/no-use-effect": "off",
         "workspace/no-use-state": "off"
+      }
+    },
+    {
+      // Process env validators, not schema/RPC — absence is "unset in this deploy".
+      "files": ["packages/convex/convex/convex.config.ts"],
+      "rules": {
+        "workspace/no-undocumented-optional": "off"
       }
     },
     {

@@ -24,6 +24,7 @@ export const generateThumbnail = internalAction({
   args: {
     babyId: v.id("baby"),
     photoId: v.id("_storage"),
+    /** @todo Optional until callers pass `null`. */
     updateId: v.optional(v.id("updates")),
   },
   handler: async (ctx: ActionCtx, args) => {
@@ -55,6 +56,7 @@ export const generateBlurDataUrl = internalAction({
   args: {
     babyId: v.id("baby"),
     photoId: v.id("_storage"),
+    /** @todo Optional until callers pass `null`. */
     updateId: v.optional(v.id("updates")),
   },
   handler: async (ctx: ActionCtx, args) => {

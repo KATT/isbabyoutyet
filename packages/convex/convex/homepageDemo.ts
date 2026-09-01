@@ -29,13 +29,17 @@ const RESET_INACTIVITY_MS = 60 * 60_000;
 
 const photoIdsValidator = v.object({
   photoId: v.id("_storage"),
+  /** @todo Optional until callers pass an explicit value or `null`. */
   thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
+  /** @todo Optional until callers pass an explicit value or `null`. */
   pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
+  /** @todo Optional until callers pass an explicit value or `null`. */
   blurDataUrl: v.optional(v.union(v.string(), v.null())),
 });
 
 const photosValidator = v.record(v.string(), photoIdsValidator);
 
+/** @todo Optional until callers pass an explicit locale. */
 const localeArg = v.optional(supportedLocaleValidator);
 
 type DemoPhotos = Record<
@@ -409,6 +413,7 @@ export const clearFeedBatch = internalMutationWithTriggers({
 export const insertFeed = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
+    /** @todo Optional until callers pass `{}`. */
     photos: v.optional(photosValidator),
     locale: localeArg,
   },
@@ -435,6 +440,7 @@ export const insertFeed = internalMutationWithTriggers({
  */
 export const refresh = internalMutationWithTriggers({
   args: {
+    /** @todo Optional until callers pass `{}`. */
     photos: v.optional(photosValidator),
     locale: localeArg,
   },

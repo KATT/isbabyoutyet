@@ -102,6 +102,57 @@ type Props = {
 function load(id: string, visitorId?: string) {}
 ```
 
+### No Convex `v.optional()` except migration transients
+
+Enforced by `workspace/no-undocumented-optional` in `.oxlintrc.json`.
+Do not use `v.optional()` on Convex schema fields or RPC args unless the
+optional is a **temporary** migration hatch. Mark those with JSDoc `@todo`
+(the field is still in use; remaining work is to require the key). `@deprecated`
+also satisfies the lint if you want that signal. Follow
+[`packages/convex/.agents/skills/convex-schema-migration/SKILL.md`](packages/convex/.agents/skills/convex-schema-migration/SKILL.md)
+for backfill vs require-after-backfill deploys.
+
+Prefer a required key with an explicit absence union so callers and rows must
+set the value:
+
+```typescript
+// ✅ CORRECT
+args: {
+  visitorId: v.union(v.string(), v.null()),
+  theme: v.union(v.string(), v.null()),
+}
+
+// ✅ CORRECT — remaining work (still in use; later PR requires the key)
+args: {
+  /** @todo Optional until callers pass `null`. */
+  visitorId: v.optional(v.string()),
+}
+
+// ✅ CORRECT — documented exception that stays optional
+args: {
+  /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
+  dryRun: v.optional(v.boolean()),
+}
+
+// ✅ CORRECT — sparse ctx.db.patch (`update` / `patch*` + `{ id, patch }`)
+export const update = mutation({
+  args: {
+    id: v.id("baby"),
+    patch: v.object({
+      theme: v.optional(v.union(v.string(), v.null())),
+    }),
+  },
+});
+
+// ❌ INCORRECT — banned by lint
+args: {
+  visitorId: v.optional(v.string()),
+}
+```
+
+`packages/convex/convex/convex.config.ts` env validators are exempt (unset env
+is not a schema/RPC omission).
+
 ### Naming Conventions
 
 #### Type Parameters

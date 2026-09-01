@@ -53,7 +53,7 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { getThemeOption, THEME_OPTIONS } from "./utils";
 
-type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
+type BabyPatch = FunctionArgs<typeof api.baby.update>["patch"];
 
 const emptyActionSchema = z.object({});
 

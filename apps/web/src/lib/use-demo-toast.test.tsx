@@ -2,7 +2,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { Toaster, toast } from "sonner";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import { resetDemoToastDismissals, useDemoToast } from "./use-demo-toast";
 import { renderResource } from "@/test/renderResource";
 
@@ -11,10 +11,26 @@ function DemoToastHarness(props: { publicId: string; enabled: boolean }) {
   return <Toaster closeButton />;
 }
 
+/** Sonner `deleteToast` calls `setToasts` after `TIME_BEFORE_UNMOUNT` (200ms). */
+const SONNER_UNMOUNT_FLUSH_MS = 250;
+
+function mountDemoToast(opts: { publicId: string; enabled: boolean }) {
+  const view = renderResource(<DemoToastHarness publicId={opts.publicId} enabled={opts.enabled} />);
+  return makeAsyncResource(view, async () => {
+    toast.dismiss();
+    view[Symbol.dispose]();
+    // Flush the remove timeout while Vitest's jsdom is still alive. Otherwise
+    // sonner setStates after environment teardown (`window is not defined`).
+    await new Promise((resolve) => {
+      setTimeout(resolve, SONNER_UNMOUNT_FLUSH_MS);
+    });
+  });
+}
+
 function renderDemoToast(opts: { publicId: string; enabled: boolean }) {
   resetDemoToastDismissals();
   toast.dismiss();
-  return renderResource(<DemoToastHarness publicId={opts.publicId} enabled={opts.enabled} />);
+  return mountDemoToast(opts);
 }
 
 test("shows a persistent demo toast on the homepage demo baby", async () => {
@@ -91,16 +107,18 @@ test("unmounting does not persist dismiss for that baby", async () => {
   resetDemoToastDismissals();
   toast.dismiss();
   {
-    await using first = renderResource(
-      <DemoToastHarness publicId={HOMEPAGE_DEMO_BABY.publicId} enabled={true} />,
-    );
+    await using first = mountDemoToast({
+      publicId: HOMEPAGE_DEMO_BABY.publicId,
+      enabled: true,
+    });
     void first;
     expect(await screen.findByRole("button", { name: "Got it" })).toBeTruthy();
   }
 
-  await using second = renderResource(
-    <DemoToastHarness publicId={HOMEPAGE_DEMO_BABY.publicId} enabled={true} />,
-  );
+  await using second = mountDemoToast({
+    publicId: HOMEPAGE_DEMO_BABY.publicId,
+    enabled: true,
+  });
   void second;
   expect(await screen.findByRole("button", { name: "Got it" })).toBeTruthy();
 });

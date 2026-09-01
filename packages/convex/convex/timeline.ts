@@ -115,7 +115,7 @@ export type TimelineItem = NonNullable<Awaited<ReturnType<typeof hydrateTimeline
 export const listByBaby = query({
   args: {
     babyId: babyIdOrPublicIdValidator,
-    // The caller's own visitor id, only used to mark their posts with `isMine`
+    /** The caller's visitor id, used to mark their posts with `isMine`. @todo Optional until callers pass `null`. */
     visitorId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },

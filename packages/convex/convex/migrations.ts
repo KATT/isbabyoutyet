@@ -560,12 +560,19 @@ export function parseMigrationRunnerReport<TResult>(result: TResult): MigrationR
 
 export const runAll = internalMutation({
   args: {
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     fn: v.optional(v.string()),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     cursor: v.optional(v.union(v.string(), v.null())),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     batchSize: v.optional(v.number()),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     dryRun: v.optional(v.boolean()),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     next: v.optional(v.array(v.string())),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     reset: v.optional(v.boolean()),
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     oneBatchOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<MigrationRunnerReport> => {
