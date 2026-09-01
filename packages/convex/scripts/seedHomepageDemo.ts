@@ -193,11 +193,7 @@ const execFileErrorSchema = z.object({
   stderr: z.union([z.string(), z.null()]).optional(),
 });
 
-function execFileErrorOutput(error: {
-  message: string;
-  stdout: string | null | undefined;
-  stderr: string | null | undefined;
-}) {
+function execFileErrorOutput(error: z.infer<typeof execFileErrorSchema>) {
   return `${error.message}\n${error.stdout ?? ""}\n${error.stderr ?? ""}`;
 }
 
