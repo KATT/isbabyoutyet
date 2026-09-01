@@ -4,6 +4,7 @@ import {
   convexDeployCliArgs,
   describeConvexDeployPlan,
   interpretEnvGetResult,
+  isConvexPreviewWithoutFunctions,
   isConvexStartPushTimeout,
   isMergeQueueGitRef,
   parseEnvGetOutput,
@@ -351,4 +352,22 @@ test("detects Convex start_push 408 timeouts", () => {
     ),
   ).toBe(false);
   expect(isConvexStartPushTimeout("✔ Deployed Convex functions")).toBe(false);
+});
+
+test("detects a Convex preview with no functions after a skipped or timed-out push", () => {
+  expect(
+    isConvexPreviewWithoutFunctions(
+      '✖ Failed to run function "homepageDemo:hasCompletePhotoSet":\n' +
+        "Error: [Request ID: b414834fe9049b96] Server Error\n" +
+        "Could not find function for 'homepageDemo:hasCompletePhotoSet'. Did you forget to run `npx convex dev`?\n" +
+        "\n" +
+        "No functions found.\n",
+    ),
+  ).toBe(true);
+  expect(isConvexPreviewWithoutFunctions("✖ Error: Preview deployment not found")).toBe(true);
+  expect(
+    isConvexPreviewWithoutFunctions(
+      "Could not find function for 'homepageDemo:hasCompletePhotoSet'. Did you forget to run `npx convex dev`?",
+    ),
+  ).toBe(false);
 });

@@ -197,6 +197,14 @@ export function isConvexStartPushTimeout(output: string) {
   return /\/api\/deploy2\/start_push\s+408\b/i.test(output);
 }
 
+/**
+ * After a merge-queue skip or a preview `start_push` 408, Vercel is still
+ * green and `seed-homepage-photos` runs against a backend with no functions.
+ */
+export function isConvexPreviewWithoutFunctions(output: string) {
+  return /No functions found/i.test(output) || /Preview deployment not found/i.test(output);
+}
+
 export function parseEnvGetOutput(stdout: string) {
   const lines = stdout
     .trim()
