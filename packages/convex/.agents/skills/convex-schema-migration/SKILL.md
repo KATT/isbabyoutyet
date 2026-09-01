@@ -26,6 +26,8 @@ Never combine "write missing keys / strip legacy values" and "make the field req
 
 `workspace/no-undocumented-optional` rejects undocumented `v.optional()`.
 
+Prefer **`@todo`**: the optional is still in use; remaining work is to require the key.
+
 Permanent exceptions (not a follow-up to require the key):
 
 - `migrations.runAll` runner args: keep `@todo Keep mirroring @convex-dev/migrations runner options`.

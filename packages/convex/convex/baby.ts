@@ -298,14 +298,10 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.union(v.string(), v.null()),
-    /** @todo Optional until callers pass an explicit value. */
-    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    publicDueDateText: v.optional(v.union(v.string(), v.null())),
-    /** Optional for stale clients; the document always stores a concrete selection. @todo Optional until callers pass an explicit value. */
-    birthJourney: v.optional(birthJourneyValidator),
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    theme: v.optional(v.union(v.string(), v.null())),
+    dueDateDisplayMode: dueDateDisplayModeValidator,
+    publicDueDateText: v.union(v.string(), v.null()),
+    birthJourney: birthJourneyValidator,
+    theme: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -333,14 +329,12 @@ export const create = mutationWithTriggers({
       dueDateDisplayMode: dueDateDisplay.mode,
       publicDueDateText: dueDateDisplay.text,
       publicId,
-      birthJourney: args.birthJourney ?? "labor",
+      birthJourney: args.birthJourney,
+      theme: args.theme,
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     };
-    const babyId = await ctx.db.insert(
-      "baby",
-      args.theme !== undefined ? { ...babyFields, theme: args.theme } : babyFields,
-    );
+    const babyId = await ctx.db.insert("baby", babyFields);
 
     return { babyId, publicId };
   },
@@ -443,12 +437,11 @@ export const updateThumbnail = internalMutationWithTriggers({
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),
     pushImageId: v.union(v.id("_storage"), v.null()),
-    /** Photo the derivatives were generated from. @todo Optional until callers pass `null`. */
-    photoId: v.optional(v.id("_storage")),
-    /** Timeline update row to also patch. @todo Optional until callers pass `null`. */
-    updateId: v.optional(v.id("updates")),
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    blurDataUrl: v.optional(v.union(v.string(), v.null())),
+    /** Photo the derivatives were generated from. */
+    photoId: v.union(v.id("_storage"), v.null()),
+    /** Timeline update row to also patch. */
+    updateId: v.union(v.id("updates"), v.null()),
+    blurDataUrl: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
@@ -456,12 +449,10 @@ export const updateThumbnail = internalMutationWithTriggers({
     // generating — a newer generation owns the field now.
     const blurDataUrl = args.blurDataUrl;
     if (baby && (!args.photoId || baby.photoId === args.photoId)) {
-      await ctx.db.patch(
-        args.babyId,
-        blurDataUrl === undefined
-          ? { thumbnailId: args.thumbnailId }
-          : { thumbnailId: args.thumbnailId, blurDataUrl },
-      );
+      await ctx.db.patch(args.babyId, {
+        thumbnailId: args.thumbnailId,
+        blurDataUrl,
+      });
     }
 
     if (args.updateId) {
@@ -470,11 +461,9 @@ export const updateThumbnail = internalMutationWithTriggers({
         const updateFields = {
           thumbnailId: args.thumbnailId,
           pushImageId: args.pushImageId ?? update.pushImageId ?? null,
+          blurDataUrl,
         };
-        await ctx.db.patch(
-          args.updateId,
-          blurDataUrl === undefined ? updateFields : { ...updateFields, blurDataUrl },
-        );
+        await ctx.db.patch(args.updateId, updateFields);
       }
     }
   },
@@ -489,8 +478,7 @@ export const updateBlurDataUrl = internalMutationWithTriggers({
     babyId: v.id("baby"),
     photoId: v.id("_storage"),
     blurDataUrl: v.string(),
-    /** @todo Optional until callers pass `null`. */
-    updateId: v.optional(v.id("updates")),
+    updateId: v.union(v.id("updates"), v.null()),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);

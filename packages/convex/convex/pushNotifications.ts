@@ -69,12 +69,9 @@ export const sendNotification = internalAction({
     babyName: v.string(),
     publicId: v.string(), // Still need publicId for the URL
     status: notifiableStatusValidator,
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    customMessage: v.optional(v.union(v.string(), v.null())),
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    photoId: v.optional(v.union(v.id("_storage"), v.null())),
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    updateId: v.optional(v.union(v.id("updates"), v.null())),
+    customMessage: v.union(v.string(), v.null()),
+    photoId: v.union(v.id("_storage"), v.null()),
+    updateId: v.union(v.id("updates"), v.null()),
     locale: supportedLocaleValidator,
   },
   handler: async (ctx, args) => {

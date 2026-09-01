@@ -4,7 +4,7 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
-import { modules, registerComponents } from "./test.setup";
+import { createEncouragementArgs, modules, registerComponents } from "./test.setup";
 import { getCurrentStatus } from "../src/types";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "../src/seedCredentials";
 import {
@@ -85,7 +85,7 @@ test("every locale has copy for every shared feed slot", () => {
 test("refresh creates Juniper Hale as born after a two-day labour with fixture encouragements", async () => {
   const t = await setup();
 
-  const result = await t.mutation(internal.homepageDemo.refresh, {});
+  const result = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
   expect(result.publicId).toBe(HOMEPAGE_DEMO_BABY.publicId);
   expect(result.locale).toBe("en-GB");
 
@@ -112,6 +112,7 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: baby!._id,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(feed.page).toHaveLength(HOMEPAGE_DEMO_FEED.length);
   expect(feed.page[0]?.kind).toBe("encouragement");
@@ -131,21 +132,25 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
 test("refresh is idempotent and wipes visitor encouragements", async () => {
   const t = await setup();
 
-  const first = await t.mutation(internal.homepageDemo.refresh, {});
-  await t.mutation(api.encouragements.create, {
-    babyId: first.babyId,
-    authorName: "Random Visitor",
-    message: "Congrats from the internet!",
-    visitorId: "visitor-spam",
-  });
+  const first = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
+  await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: first.babyId,
+      authorName: "Random Visitor",
+      message: "Congrats from the internet!",
+      visitorId: "visitor-spam",
+    }),
+  );
 
   const before = await t.query(api.timeline.listByBaby, {
     babyId: first.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(before.page).toHaveLength(HOMEPAGE_DEMO_FEED.length + 1);
 
-  const second = await t.mutation(internal.homepageDemo.refresh, {});
+  const second = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
   expect(second.babyId).toBe(first.babyId);
 
   const babies = await t.run(async (ctx) => {
@@ -159,6 +164,7 @@ test("refresh is idempotent and wipes visitor encouragements", async () => {
   const after = await t.query(api.timeline.listByBaby, {
     babyId: second.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(after.page).toHaveLength(HOMEPAGE_DEMO_FEED.length);
   expect(
@@ -173,17 +179,23 @@ test("refresh attaches photos to the matching updates and pins the newborn as th
 
   const photos: Record<
     string,
-    { photoId: Id<"_storage">; thumbnailId: Id<"_storage">; blurDataUrl: string }
+    {
+      photoId: Id<"_storage">;
+      thumbnailId: Id<"_storage">;
+      pushImageId: Id<"_storage"> | null;
+      blurDataUrl: string;
+    }
   > = {};
   for (const key of HOMEPAGE_DEMO_PHOTO_KEYS) {
     photos[key] = {
       photoId: await storeBlob(t, `${key}-photo`),
       thumbnailId: await storeBlob(t, `${key}-thumb`),
+      pushImageId: null,
       blurDataUrl: `data:image/jpeg;base64,${key}`,
     };
   }
 
-  const result = await t.mutation(internal.homepageDemo.refresh, { photos });
+  const result = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
   const baby = await t.query(api.baby.getByPublicId, { id: result.publicId });
   expect(baby?.photoUrl).toBeTruthy();
   expect(baby?.photoId).toBe(photos.born?.photoId);
@@ -192,6 +204,7 @@ test("refresh attaches photos to the matching updates and pins the newborn as th
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: result.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   const photoUpdates = feed.page.filter((item) => item.kind === "update" && item.update.photoUrl);
   expect(photoUpdates).toHaveLength(HOMEPAGE_DEMO_PHOTO_KEYS.length);
@@ -210,7 +223,7 @@ test("daily reset reuses stored photos and ignores recent fixture encouragements
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
   const t = await setup();
   const photos = await storeCompletePhotoSet(t);
-  const first = await t.mutation(internal.homepageDemo.refresh, { photos });
+  const first = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
 
   expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(false);
 
@@ -236,13 +249,16 @@ test("daily reset protects only the baby with a recent visitor encouragement", a
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
   const t = await setup();
   const photos = await storeCompletePhotoSet(t);
-  const demo = await t.mutation(internal.homepageDemo.refresh, { photos });
-  await t.mutation(api.encouragements.create, {
-    babyId: demo.babyId,
-    authorName: "Recent Visitor",
-    message: "Still here!",
-    visitorId: "homepage-demo-spoofed-client",
-  });
+  const demo = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
+  await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: demo.babyId,
+      authorName: "Recent Visitor",
+      message: "Still here!",
+      visitorId: "homepage-demo-spoofed-client",
+    }),
+  );
 
   vi.setSystemTime(new Date("2026-08-20T03:59:00.000Z"));
   const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
@@ -255,6 +271,7 @@ test("daily reset protects only the baby with a recent visitor encouragement", a
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(
     feed.page.some(
@@ -271,12 +288,15 @@ test("daily reset skips when every demo baby has a recent visitor encouragement"
 
   for (const locale of SUPPORTED_LOCALES) {
     const demo = await t.mutation(internal.homepageDemo.refresh, { locale, photos });
-    await t.mutation(api.encouragements.create, {
-      babyId: demo.babyId,
-      authorName: `Recent Visitor ${locale}`,
-      message: "Still here!",
-      visitorId: `visitor-${locale}`,
-    });
+    await t.mutation(
+      api.encouragements.create,
+      createEncouragementArgs({
+        babyId: demo.babyId,
+        authorName: `Recent Visitor ${locale}`,
+        message: "Still here!",
+        visitorId: `visitor-${locale}`,
+      }),
+    );
   }
 
   vi.setSystemTime(new Date("2026-08-20T03:59:00.000Z"));
@@ -291,13 +311,16 @@ test("daily reset clears visitor encouragements once they are older than one hou
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
   const t = await setup();
   const photos = await storeCompletePhotoSet(t);
-  const demo = await t.mutation(internal.homepageDemo.refresh, { photos });
-  await t.mutation(api.encouragements.create, {
-    babyId: demo.babyId,
-    authorName: "Earlier Visitor",
-    message: "Good luck!",
-    visitorId: "real-visitor",
-  });
+  const demo = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
+  await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: demo.babyId,
+      authorName: "Earlier Visitor",
+      message: "Good luck!",
+      visitorId: "real-visitor",
+    }),
+  );
 
   vi.setSystemTime(new Date("2026-08-20T04:01:00.000Z"));
   const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
@@ -306,6 +329,7 @@ test("daily reset clears visitor encouragements once they are older than one hou
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(
     feed.page.some(
@@ -317,10 +341,11 @@ test("daily reset clears visitor encouragements once they are older than one hou
 
 test("daily reset does not wipe a demo when its complete photo sentinel is missing", async () => {
   const t = await setup();
-  const demo = await t.mutation(internal.homepageDemo.refresh, {});
+  const demo = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
   const before = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
 
   expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(false);
@@ -332,6 +357,7 @@ test("daily reset does not wipe a demo when its complete photo sentinel is missi
   const after = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(after.page.map((item) => item._id)).toEqual(before.page.map((item) => item._id));
 });
@@ -358,7 +384,7 @@ test("storePhoto stores JPEG bytes and returns a storage id", async () => {
 
 test("clearFeedBatch reports hasMore until the feed is empty", async () => {
   const t = await setup();
-  const { babyId } = await t.mutation(internal.homepageDemo.refresh, {});
+  const { babyId } = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
 
   let batches = 0;
   let hasMore = true;
@@ -373,6 +399,7 @@ test("clearFeedBatch reports hasMore until the feed is empty", async () => {
   const feed = await t.query(api.timeline.listByBaby, {
     babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(feed.page).toHaveLength(0);
 });
@@ -380,7 +407,7 @@ test("clearFeedBatch reports hasMore until the feed is empty", async () => {
 test("refresh({ locale: 'sv' }) creates Ella Holm with Swedish copy", async () => {
   const t = await setup();
 
-  const result = await t.mutation(internal.homepageDemo.refresh, { locale: "sv" });
+  const result = await t.mutation(internal.homepageDemo.refresh, { locale: "sv", photos: {} });
   expect(result.publicId).toBe(HOMEPAGE_DEMO_BABIES.sv.publicId);
   expect(result.locale).toBe("sv");
 
@@ -397,6 +424,7 @@ test("refresh({ locale: 'sv' }) creates Ella Holm with Swedish copy", async () =
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: baby!._id,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   const svFeed = homepageDemoFeedFor("sv");
   expect(feed.page).toHaveLength(svFeed.length);
@@ -413,11 +441,21 @@ test("refresh({ locale: 'sv' }) creates Ella Holm with Swedish copy", async () =
 test("each locale gets its own baby with the same feed shape and shared photos", async () => {
   const t = await setup();
 
-  const photos: Record<string, { photoId: Id<"_storage">; thumbnailId: Id<"_storage"> }> = {};
+  const photos: Record<
+    string,
+    {
+      photoId: Id<"_storage">;
+      thumbnailId: Id<"_storage">;
+      pushImageId: Id<"_storage"> | null;
+      blurDataUrl: string | null;
+    }
+  > = {};
   for (const key of HOMEPAGE_DEMO_PHOTO_KEYS) {
     photos[key] = {
       photoId: await storeBlob(t, `${key}-photo`),
       thumbnailId: await storeBlob(t, `${key}-thumb`),
+      pushImageId: null,
+      blurDataUrl: null,
     };
   }
 
@@ -440,6 +478,7 @@ test("each locale gets its own baby with the same feed shape and shared photos",
     const feed = await t.query(api.timeline.listByBaby, {
       babyId: result.babyId,
       paginationOpts: FIRST_PAGE,
+      visitorId: null,
     });
     expect(feed.page).toHaveLength(HOMEPAGE_DEMO_FEED_SLOTS.length);
   }
@@ -469,9 +508,9 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
     });
   });
 
-  await expect(t.mutation(internal.homepageDemo.refresh, { locale: "en-US" })).rejects.toThrow(
-    /Refusing to overwrite non-demo baby/,
-  );
+  await expect(
+    t.mutation(internal.homepageDemo.refresh, { locale: "en-US", photos: {} }),
+  ).rejects.toThrow(/Refusing to overwrite non-demo baby/);
 
   const realBaby = await t.run(async (ctx) => ctx.db.get(realBabyId));
   expect(realBaby).toMatchObject({
@@ -495,10 +534,11 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
 test("daily reset rolls back every demo change when a reserved publicId belongs to real data", async () => {
   const t = await setup();
   const photos = await storeCompletePhotoSet(t);
-  const demo = await t.mutation(internal.homepageDemo.refresh, { photos });
+  const demo = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
   const beforeFeed = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
 
   const realBabyId = await t.run(async (ctx) => {
@@ -525,6 +565,7 @@ test("daily reset rolls back every demo change when a reserved publicId belongs 
   const afterFeed = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(afterFeed.page.map((item) => item._id)).toEqual(beforeFeed.page.map((item) => item._id));
   expect(await t.run(async (ctx) => await ctx.db.get(realBabyId))).toEqual(realBabyBefore);
@@ -533,7 +574,7 @@ test("daily reset rolls back every demo change when a reserved publicId belongs 
 test("daily reset leaves non-homepage documents and shared storage untouched", async () => {
   const t = await setup();
   const reusablePhotos = await storeCompletePhotoSet(t);
-  await t.mutation(internal.homepageDemo.refresh, { photos: reusablePhotos });
+  await t.mutation(internal.homepageDemo.refresh, { photos: reusablePhotos, locale: null });
   const divergentPhotos = await storeCompletePhotoSet(t);
   await t.mutation(internal.homepageDemo.refresh, {
     locale: "sv",
@@ -634,7 +675,7 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
     });
   });
 
-  const result = await t.mutation(internal.homepageDemo.refresh, {});
+  const result = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
   expect(result.babyId).toBe(legacyId);
 
   const baby = await t.query(api.baby.getByPublicId, { id: HOMEPAGE_DEMO_BABY.publicId });

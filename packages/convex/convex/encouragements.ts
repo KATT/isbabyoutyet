@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
 import { appIdentity } from "./authIdentity";
@@ -20,12 +21,9 @@ export const create = mutationWithTriggers({
     authorName: v.string(),
     message: v.string(),
     visitorId: v.string(),
-    /** @todo Optional until callers pass `null`. */
-    userAgent: v.optional(v.string()),
-    /** @todo Optional until callers pass `null`. */
-    locale: v.optional(v.string()),
-    /** @todo Optional until callers pass `null`. */
-    timezone: v.optional(v.string()),
+    userAgent: v.union(v.string(), v.null()),
+    locale: v.union(v.string(), v.null()),
+    timezone: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     // Validate baby exists and is not soft-deleted
@@ -54,17 +52,37 @@ export const create = mutationWithTriggers({
       babyId: args.babyId,
       postedAt: createdAt,
     });
-    const encouragementId = await ctx.db.insert("encouragements", {
+    const fields: {
+      babyId: Id<"baby">;
+      authorName: string;
+      message: string;
+      createdAt: number;
+      timelineItemId: Id<"timelineItems">;
+      visitorId: string;
+    } & Partial<{
+      userAgent: string;
+      locale: string;
+      timezone: string;
+    }> = {
       babyId: args.babyId,
       authorName: trimmedName,
       message: trimmedMessage,
       createdAt,
       timelineItemId,
       visitorId: args.visitorId,
-      userAgent: args.userAgent,
-      locale: args.locale,
-      timezone: args.timezone,
-    });
+    };
+    // Schema still uses `v.optional(v.string())`; omit until the backfill
+    // tightens those columns to `v.union(v.string(), v.null())`.
+    if (args.userAgent !== null) {
+      fields.userAgent = args.userAgent;
+    }
+    if (args.locale !== null) {
+      fields.locale = args.locale;
+    }
+    if (args.timezone !== null) {
+      fields.timezone = args.timezone;
+    }
+    const encouragementId = await ctx.db.insert("encouragements", fields);
 
     return encouragementId;
   },
@@ -107,8 +125,8 @@ export const update = mutationWithTriggers({
 export const listByBaby = query({
   args: {
     babyId: v.id("baby"),
-    /** The caller's visitor id, used to mark their posts with `isMine`. @todo Optional until callers pass `null`. */
-    visitorId: v.optional(v.string()),
+    /** The caller's visitor id, used to mark their posts with `isMine`. */
+    visitorId: v.union(v.string(), v.null()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
@@ -127,7 +145,7 @@ export const listByBaby = query({
         authorName: encouragement.authorName,
         message: encouragement.message,
         createdAt: encouragement.createdAt,
-        isMine: args.visitorId !== undefined && encouragement.visitorId === args.visitorId,
+        isMine: args.visitorId != null && encouragement.visitorId === args.visitorId,
       })),
     };
   },
@@ -136,8 +154,7 @@ export const listByBaby = query({
 export const remove = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
-    /** @todo Optional until callers pass `null`. */
-    visitorId: v.optional(v.string()),
+    visitorId: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const encouragement = await ctx.db.get(args.encouragementId);

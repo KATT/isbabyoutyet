@@ -24,8 +24,7 @@ export const generateThumbnail = internalAction({
   args: {
     babyId: v.id("baby"),
     photoId: v.id("_storage"),
-    /** @todo Optional until callers pass `null`. */
-    updateId: v.optional(v.id("updates")),
+    updateId: v.union(v.id("updates"), v.null()),
   },
   handler: async (ctx: ActionCtx, args) => {
     const buffer = await photoBuffer(ctx, args.photoId);
@@ -56,8 +55,7 @@ export const generateBlurDataUrl = internalAction({
   args: {
     babyId: v.id("baby"),
     photoId: v.id("_storage"),
-    /** @todo Optional until callers pass `null`. */
-    updateId: v.optional(v.id("updates")),
+    updateId: v.union(v.id("updates"), v.null()),
   },
   handler: async (ctx: ActionCtx, args) => {
     const blurDataUrl = await renderBlurDataUrl(await photoBuffer(ctx, args.photoId));

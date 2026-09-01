@@ -88,7 +88,7 @@ export const Route = createFileRoute("/baby/$publicId")({
         babyId: publicId,
       }),
       timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
-        args: { babyId: publicId },
+        args: { babyId: publicId, visitorId: null },
         numItems: TIMELINE_PAGE_SIZE,
       }),
       managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {

@@ -2,7 +2,7 @@ import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { seedBabyWithPhoto, seedOwnedBaby } from "@/test/convexTestSeed";
+import { seedBabyWithPhoto, seedOwnedBaby, patchOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
 import { Route } from "@/routes/baby/$publicId/photo";
@@ -23,7 +23,7 @@ test("beforeLoad 404s unknown babies", async () => {
 test("beforeLoad redirects when the public id resolves to a different slug", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Working Title", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
       name: "Final Name",
