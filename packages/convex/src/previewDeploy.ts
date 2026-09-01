@@ -12,6 +12,28 @@ export const SCHEMA_FINGERPRINT_RELATIVE_PATHS = [
   "convex/convex.config.ts",
 ] as const;
 
+/** Baked into merge-queue Vercel builds so Vite has a Convex URL without a push. */
+export const MERGE_QUEUE_PLACEHOLDER_CONVEX_URL = "https://merge-queue.invalid.convex.cloud";
+
+const HEADS_PREFIX = "refs/heads/";
+const MERGE_QUEUE_REF = /^gh-readonly-queue\/.+\/pr-\d+-[0-9a-f]+$/i;
+
+export type ConvexDeployPlan =
+  | { kind: "merge-queue-web-only" }
+  | { kind: "production"; writeEnv: true; seed: "seed:homepage" }
+  | {
+      kind: "preview-recreate";
+      previewName: string;
+      writeEnv: true;
+      seed: "seed:homepage:content";
+    }
+  | {
+      kind: "preview-reuse";
+      previewName: string;
+      writeEnv: boolean;
+      seed: null;
+    };
+
 export function computeSchemaFingerprint(files: ReadonlyArray<{ path: string; contents: string }>) {
   const hash = createHash("sha256");
   for (const file of files) {
@@ -23,34 +45,133 @@ export function computeSchemaFingerprint(files: ReadonlyArray<{ path: string; co
   return hash.digest("hex");
 }
 
-export function shouldRecreatePreview(
-  storedFingerprint: string | null,
-  currentFingerprint: string,
-) {
-  return storedFingerprint !== currentFingerprint;
-}
-
-export function shouldWriteConvexEnv(isPreview: boolean, recreatePreview: boolean) {
-  return !isPreview || recreatePreview;
-}
-
-export function previewDeployCliArgs(branch: string, recreate: boolean) {
-  if (recreate) {
-    return ["--preview-create", branch, "--preview-run", "seed:seedDemoData"];
+function gitBranchFromRef(ref: string) {
+  if (ref.startsWith(HEADS_PREFIX)) {
+    return ref.slice(HEADS_PREFIX.length);
   }
-  return ["--preview-name", branch];
+  return ref;
+}
+
+/** GitHub merge-queue refs are unique per attempt (`…/pr-280-<sha>`). */
+export function isMergeQueueGitRef(ref: string) {
+  return MERGE_QUEUE_REF.test(gitBranchFromRef(ref));
+}
+
+/** Merge-queue Vercel checks only need a web build — do not push or wipe a backend. */
+export function shouldPushConvexBackend(gitRef: string) {
+  return !isMergeQueueGitRef(gitRef);
 }
 
 /** Vercel GitHub deployments set `ref` to a SHA, not `refs/heads/<branch>`. */
 export function previewNameFromGitRef(ref: string) {
-  const headsPrefix = "refs/heads/";
-  if (ref.startsWith(headsPrefix)) {
-    return ref.slice(headsPrefix.length);
-  }
-  if (/^[0-9a-f]{7,40}$/i.test(ref)) {
+  const branch = gitBranchFromRef(ref);
+  if (/^[0-9a-f]{7,40}$/i.test(branch)) {
     return null;
   }
-  return ref;
+  return branch;
+}
+
+function shouldRecreatePreview(opts: {
+  storedFingerprint: string | null;
+  currentFingerprint: string;
+  previewExists: boolean;
+}) {
+  if (!opts.previewExists) {
+    return true;
+  }
+  if (opts.storedFingerprint === null) {
+    return false;
+  }
+  return opts.storedFingerprint !== opts.currentFingerprint;
+}
+
+export function planConvexDeploy(opts: {
+  vercelEnv: "production" | "preview";
+  gitRef: string;
+  currentFingerprint: string;
+  stored: { previewExists: boolean; fingerprint: string | null };
+}): ConvexDeployPlan {
+  if (opts.vercelEnv === "preview" && isMergeQueueGitRef(opts.gitRef)) {
+    return { kind: "merge-queue-web-only" };
+  }
+  if (opts.vercelEnv === "production") {
+    return { kind: "production", writeEnv: true, seed: "seed:homepage" };
+  }
+  const previewName = previewNameFromGitRef(opts.gitRef) ?? opts.gitRef;
+  if (
+    shouldRecreatePreview({
+      storedFingerprint: opts.stored.fingerprint,
+      currentFingerprint: opts.currentFingerprint,
+      previewExists: opts.stored.previewExists,
+    })
+  ) {
+    return {
+      kind: "preview-recreate",
+      previewName,
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    };
+  }
+  return {
+    kind: "preview-reuse",
+    previewName,
+    writeEnv: opts.stored.fingerprint === null,
+    seed: null,
+  };
+}
+
+export function describeConvexDeployPlan(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+      return "GitHub merge queue — skipping Convex push, building web app only";
+    case "production":
+      return "Production — deploying Convex and building the web app";
+    case "preview-recreate":
+      return `Schema changed or preview is new — recreating Convex preview "${plan.previewName}"`;
+    case "preview-reuse":
+      if (plan.writeEnv) {
+        return `Preview exists without a schema fingerprint — pushing functions to existing preview "${plan.previewName}" (no wipe)`;
+      }
+      return `Schema unchanged — pushing functions to existing preview "${plan.previewName}" (no wipe)`;
+  }
+}
+
+export function convexDeployCliArgs(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+    case "production":
+      return [];
+    case "preview-recreate":
+      return ["--preview-create", plan.previewName, "--preview-run", "seed:seedDemoData"];
+    case "preview-reuse":
+      return ["--preview-name", plan.previewName];
+  }
+}
+
+export function previewNameCliArgs(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+    case "production":
+      return [];
+    case "preview-recreate":
+    case "preview-reuse":
+      return ["--preview-name", plan.previewName];
+  }
+}
+
+export function interpretEnvGetResult(opts: { ok: boolean; stdout: string; stderr: string }) {
+  if (opts.ok) {
+    return { previewExists: true, fingerprint: parseEnvGetOutput(opts.stdout) };
+  }
+  if (/Environment variable .* not found/i.test(opts.stderr)) {
+    return { previewExists: true, fingerprint: null };
+  }
+  return { previewExists: false, fingerprint: null };
+}
+
+/** Fresh Convex previews can hang on `start_push` for 5 minutes and 408. */
+export function isConvexStartPushTimeout(output: string) {
+  return /\/api\/deploy2\/start_push\s+408\b/i.test(output);
 }
 
 export function parseEnvGetOutput(stdout: string) {
