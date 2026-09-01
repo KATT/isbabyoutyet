@@ -273,6 +273,14 @@ export function isConvexStartPushTimeout(output: string) {
   return /\/api\/deploy2\/start_push\s+408\b/i.test(output);
 }
 
+/**
+ * Merge-queue Vercel builds never push Convex, so `seed-homepage-photos`
+ * can run against a missing preview or a backend with no functions.
+ */
+export function isConvexPreviewWithoutFunctions(output: string) {
+  return /No functions found/i.test(output) || /Preview deployment not found/i.test(output);
+}
+
 export function parseEnvGetOutput(stdout: string) {
   const lines = stdout
     .trim()

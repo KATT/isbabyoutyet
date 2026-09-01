@@ -9,6 +9,7 @@ import {
   convexSeedNpmScripts,
   describeConvexDeployPlan,
   interpretEnvGetResult,
+  isConvexPreviewWithoutFunctions,
   isConvexStartPushTimeout,
   isMergeQueueGitRef,
   parseEnvGetOutput,
@@ -503,4 +504,22 @@ test("create and recreate run seedDemoData via convex run after push because ret
     }),
   ).toEqual(["seed:homepage"]);
   expect(convexSeedNpmScripts({ kind: "merge-queue-web-only" })).toEqual([]);
+});
+
+test("detects a Convex preview with no functions after a skipped or timed-out push", () => {
+  expect(
+    isConvexPreviewWithoutFunctions(
+      '✖ Failed to run function "homepageDemo:hasCompletePhotoSet":\n' +
+        "Error: [Request ID: b414834fe9049b96] Server Error\n" +
+        "Could not find function for 'homepageDemo:hasCompletePhotoSet'. Did you forget to run `npx convex dev`?\n" +
+        "\n" +
+        "No functions found.\n",
+    ),
+  ).toBe(true);
+  expect(isConvexPreviewWithoutFunctions("✖ Error: Preview deployment not found")).toBe(true);
+  expect(
+    isConvexPreviewWithoutFunctions(
+      "Could not find function for 'homepageDemo:hasCompletePhotoSet'. Did you forget to run `npx convex dev`?",
+    ),
+  ).toBe(false);
 });
