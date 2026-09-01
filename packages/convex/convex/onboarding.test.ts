@@ -2,7 +2,7 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, createBabyArgs, postUpdateArgs } from "./test.setup";
 import { ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
 import { createAuth } from "./auth";
 import { SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
@@ -56,20 +56,26 @@ test("creating a baby auto-completes add_baby; posting auto-completes post_updat
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
 
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Tour Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Tour Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   let progress = await asAlice.query(api.onboarding.getMine, {});
   expect(progress.hasBaby).toBe(true);
   expect(progress.effectiveSteps).toContain("add_baby");
   expect(progress.hasUpdate).toBe(false);
 
-  await asAlice.mutation(api.updates.post, {
-    babyId: created.babyId,
-    message: "Hello from the tour",
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId: created.babyId,
+      message: "Hello from the tour",
+    }),
+  );
 
   progress = await asAlice.query(api.onboarding.getMine, {});
   expect(progress.hasUpdate).toBe(true);
@@ -133,14 +139,20 @@ test("getMine points the tour at the first created baby", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
 
-  await asAlice.mutation(api.baby.create, {
-    name: "First",
-    dueDate: "2026-09-01",
-  });
-  await asAlice.mutation(api.baby.create, {
-    name: "Second",
-    dueDate: "2026-10-01",
-  });
+  await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "First",
+      dueDate: "2026-09-01",
+    }),
+  );
+  await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Second",
+      dueDate: "2026-10-01",
+    }),
+  );
 
   const progress = await asAlice.query(api.onboarding.getMine, {});
   expect(progress.tourBaby?.name).toBe("First");
@@ -151,10 +163,13 @@ test("restart with a baby skips the welcome carousel", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
 
-  await asAlice.mutation(api.baby.create, {
-    name: "Ada",
-    dueDate: "2026-09-01",
-  });
+  await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Ada",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.onboarding.dismissChecklist, {});
   await asAlice.mutation(api.onboarding.restart, {});
 

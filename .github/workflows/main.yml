@@ -14,9 +14,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # PR head/base, or merge-group SHAs. Push to main uses github.sha as HEAD.
-  CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-  CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  # Changed-test / coverage baseline SHAs:
+  # - pull_request: PR base and branch tip
+  # - merge_group: parent of the speculative merge (previous queue entry, or
+  #   the target-branch tip if this is first) and the merge-group HEAD
+  # - push: github.sha as HEAD; CI_BASE_SHA is unused
+  CI_BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+  CI_HEAD_SHA: ${{ github.event.merge_group.head_sha || github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   checks:
@@ -78,7 +82,46 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      # PRs and merge groups: Vitest --changed only (no coverage). Full coverage lives in the codecov job.
+      # PRs and merge groups: Vitest --changed only (no coverage).
+      # Merge queue compares against merge_group.base_sha — the previous queue
+      # commit — so later entries do not re-run the whole queue's tests.
+      - name: Show changed-test range
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: |
+          set -euo pipefail
+          if [ -z "${CI_BASE_SHA}" ]; then
+            echo "CI_BASE_SHA is empty" >&2
+            exit 1
+          fi
+          git rev-parse --verify "${CI_BASE_SHA}^{commit}"
+          git merge-base --is-ancestor "${CI_BASE_SHA}" HEAD
+          PARENT="$(git rev-parse HEAD~1)"
+          {
+            echo "## Changed-test range"
+            echo ""
+            if [ "${{ github.event_name }}" = "merge_group" ]; then
+              echo "Merge queue: \`vitest --changed\` vs previous queue commit (\`merge_group.base_sha\`)."
+              echo "First parent of HEAD: \`${PARENT}\`"
+              if [ "${CI_BASE_SHA}" != "${PARENT}" ]; then
+                echo "Note: payload SHA differs from \`HEAD~1\`; using \`merge_group.base_sha\`."
+              fi
+            else
+              echo "PR: \`vitest --changed\` vs \`pull_request.base.sha\`."
+            fi
+            echo ""
+            echo "- Base: \`${CI_BASE_SHA}\`"
+            echo "- HEAD: \`$(git rev-parse HEAD)\`"
+            echo ""
+            echo '```'
+            git log --oneline "${CI_BASE_SHA}..HEAD"
+            echo '```'
+            echo ""
+            echo "Changed files:"
+            echo '```'
+            git diff --name-only "${CI_BASE_SHA}"
+            echo '```'
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
+
       - name: Test (changed vs base)
         if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         run: |
@@ -88,12 +131,15 @@ jobs:
       - name: Knip
         run: pnpm knip
 
-  # Parallel with `checks`. Full-suite coverage + local ratchet vs PR/merge-group
-  # base SHA (main push or stacked inner-PR tip). Codecov.io upload is history-only.
+  # Parallel with `checks`. Full-suite coverage + local ratchet vs PR base SHA
+  # (main push or stacked inner-PR tip). Codecov.io upload is history-only.
+  # Skip in the merge queue: coverage already ratcheted on the PR, and skipped
+  # jobs still report success for required checks.
   codecov:
+    if: github.event_name != 'merge_group'
     runs-on: ubuntu-latest
-    # Probe/HIT path should stay fast; a hang or MISS-heavy path means fix CI.
-    timeout-minutes: 5
+    # Stacked PRs often MISS the base cache and measure base + head (~5 min).
+    timeout-minutes: 10
     permissions:
       contents: read
       id-token: write
@@ -105,7 +151,6 @@ jobs:
           lfs: true
           fetch-depth: 0
           # On PRs, start from the branch tip (not the merge commit).
-          # Merge groups already are the proposed merge; CI_HEAD_SHA is github.sha.
           ref: ${{ env.CI_HEAD_SHA }}
 
       - name: Setup pnpm
@@ -145,7 +190,7 @@ jobs:
       # Exact SHA only — no restore-keys fallback (would compare against the wrong tip).
       - name: Restore PR base coverage baseline
         id: baseline
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: github.event_name == 'pull_request'
         uses: actions/cache/restore@v6
         with:
           path: .coverage-baseline
@@ -153,7 +198,7 @@ jobs:
 
       # Stacked tips / races: remeasure base when no Actions cache entry exists yet.
       - name: Measure PR base coverage baseline
-        if: (github.event_name == 'pull_request' || github.event_name == 'merge_group') && steps.baseline.outputs.cache-hit != 'true'
+        if: github.event_name == 'pull_request' && steps.baseline.outputs.cache-hit != 'true'
         run: |
           git checkout --force "$CI_BASE_SHA"
           pnpm install --frozen-lockfile
@@ -170,7 +215,7 @@ jobs:
           test -f coverage/coverage-summary.json
 
       - name: Compare coverage with PR base
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: github.event_name == 'pull_request'
         run: |
           test -f .coverage-baseline/coverage-summary.json
           pnpm coverage:compare

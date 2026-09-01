@@ -4,7 +4,7 @@ import { expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, createBabyArgs } from "./test.setup";
 
 const TEST_USER_AGENT =
   "Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/120.0.0.0 Mobile Safari/537.36";
@@ -14,10 +14,13 @@ test("subscription secrets stay internal while managers see the exact count", as
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
   const asBob = t.withIdentity({ subject: "bob" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Push Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Push Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   await t.mutation(api.pushSubscriptions.subscribe, {
     babyId: created.babyId,
@@ -87,10 +90,13 @@ test("internal pagination reaches every subscription without a cap", async () =>
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Popular Push Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Popular Push Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
 
   await t.run(async (ctx) => {
     for (let index = 0; index < 205; index += 1) {
@@ -132,10 +138,13 @@ test("resubscribe rotates credentials and deleted babies reject new subscription
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Rotating Push Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Rotating Push Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   const args = {
     babyId: created.babyId,
     endpoint: "https://push.example/rotating",

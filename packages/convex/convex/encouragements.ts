@@ -82,9 +82,9 @@ export const create = mutationWithTriggers({
     authorName: v.string(),
     message: v.string(),
     visitorId: v.string(),
-    userAgent: v.optional(v.string()),
-    locale: v.optional(v.string()),
-    timezone: v.optional(v.string()),
+    userAgent: v.union(v.string(), v.null()),
+    locale: v.union(v.string(), v.null()),
+    timezone: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     // Validate baby exists and is not soft-deleted
@@ -187,8 +187,8 @@ export const update = mutationWithTriggers({
 export const listByBaby = query({
   args: {
     babyId: v.id("baby"),
-    // The caller's own visitor id, only used to mark their posts with `isMine`
-    visitorId: v.optional(v.string()),
+    /** The caller's visitor id, used to mark their posts with `isMine`. */
+    visitorId: v.union(v.string(), v.null()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
@@ -207,7 +207,7 @@ export const listByBaby = query({
         authorName: encouragement.authorName,
         message: encouragement.message,
         createdAt: encouragement.createdAt,
-        isMine: args.visitorId !== undefined && encouragement.visitorId === args.visitorId,
+        isMine: args.visitorId != null && encouragement.visitorId === args.visitorId,
       })),
     };
   },
@@ -216,7 +216,7 @@ export const listByBaby = query({
 export const remove = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
-    visitorId: v.optional(v.string()),
+    visitorId: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const encouragement = await ctx.db.get(args.encouragementId);

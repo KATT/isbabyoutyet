@@ -3,27 +3,35 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, createBabyArgs, createEncouragementArgs } from "./test.setup";
 
 test("baby and related writes leave a durable targeted purge job", async () => {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
 
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Baby Smith",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.baby.update, {
-    babyId: created.babyId,
-    name: "Baby Jones",
+    id: created.babyId,
+    patch: {
+      name: "Baby Jones",
+    },
   });
-  await t.mutation(api.encouragements.create, {
-    babyId: created.babyId,
-    authorName: "Grandma",
-    message: "We cannot wait!",
-    visitorId: "visitor-1",
-  });
+  await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Grandma",
+      message: "We cannot wait!",
+      visitorId: "visitor-1",
+    }),
+  );
 
   const jobs = await t.run(async (ctx) => {
     return await ctx.db.query("cacheInvalidationJobs").collect();

@@ -27,7 +27,8 @@
         "src/test/routeTestContext.ts!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
-        "scripts/build-web.mjs!"
+        "scripts/build-web.mjs!",
+        "scripts/write-convex-url.mjs!"
       ]
     },
     "packages/convex": {
@@ -40,6 +41,7 @@
         "infer-callback-params.ts!",
         "inline-jsx-callback.ts!",
         "no-banned-react-reexport.ts!",
+        "no-convex-optional.ts!",
         "no-convex-query-hooks.ts!",
         "no-invalid-convex-client.ts!",
         "no-manual-memoization.ts!",
