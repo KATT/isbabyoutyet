@@ -18,6 +18,22 @@ export const MERGE_QUEUE_PLACEHOLDER_CONVEX_URL = "https://merge-queue.invalid.c
 const HEADS_PREFIX = "refs/heads/";
 const MERGE_QUEUE_REF = /^gh-readonly-queue\/.+\/pr-\d+-[0-9a-f]+$/i;
 
+export type ConvexDeployPlan =
+  | { kind: "merge-queue-web-only" }
+  | { kind: "production"; writeEnv: true; seed: "seed:homepage" }
+  | {
+      kind: "preview-recreate";
+      previewName: string;
+      writeEnv: true;
+      seed: "seed:homepage:content";
+    }
+  | {
+      kind: "preview-reuse";
+      previewName: string;
+      writeEnv: boolean;
+      seed: null;
+    };
+
 export function computeSchemaFingerprint(files: ReadonlyArray<{ path: string; contents: string }>) {
   const hash = createHash("sha256");
   for (const file of files) {
@@ -27,38 +43,6 @@ export function computeSchemaFingerprint(files: ReadonlyArray<{ path: string; co
     hash.update("\0");
   }
   return hash.digest("hex");
-}
-
-export function shouldRecreatePreview(opts: {
-  storedFingerprint: string | null;
-  currentFingerprint: string;
-  previewExists: boolean;
-}) {
-  if (!opts.previewExists) {
-    return true;
-  }
-  if (opts.storedFingerprint === null) {
-    return false;
-  }
-  return opts.storedFingerprint !== opts.currentFingerprint;
-}
-
-export function shouldWriteConvexEnv(opts: {
-  isPreview: boolean;
-  recreatePreview: boolean;
-  storedFingerprint: string | null;
-}) {
-  if (!opts.isPreview || opts.recreatePreview) {
-    return true;
-  }
-  return opts.storedFingerprint === null;
-}
-
-export function previewDeployCliArgs(branch: string, recreate: boolean) {
-  if (recreate) {
-    return ["--preview-create", branch, "--preview-run", "seed:seedDemoData"];
-  }
-  return ["--preview-name", branch];
 }
 
 function gitBranchFromRef(ref: string) {
@@ -87,11 +71,95 @@ export function previewNameFromGitRef(ref: string) {
   return branch;
 }
 
-export function interpretEnvGetResult(opts: {
-  ok: boolean;
-  stdout: string;
-  stderr: string;
+function shouldRecreatePreview(opts: {
+  storedFingerprint: string | null;
+  currentFingerprint: string;
+  previewExists: boolean;
 }) {
+  if (!opts.previewExists) {
+    return true;
+  }
+  if (opts.storedFingerprint === null) {
+    return false;
+  }
+  return opts.storedFingerprint !== opts.currentFingerprint;
+}
+
+export function planConvexDeploy(opts: {
+  vercelEnv: "production" | "preview";
+  gitRef: string;
+  currentFingerprint: string;
+  stored: { previewExists: boolean; fingerprint: string | null };
+}): ConvexDeployPlan {
+  if (opts.vercelEnv === "preview" && isMergeQueueGitRef(opts.gitRef)) {
+    return { kind: "merge-queue-web-only" };
+  }
+  if (opts.vercelEnv === "production") {
+    return { kind: "production", writeEnv: true, seed: "seed:homepage" };
+  }
+  const previewName = previewNameFromGitRef(opts.gitRef) ?? opts.gitRef;
+  if (
+    shouldRecreatePreview({
+      storedFingerprint: opts.stored.fingerprint,
+      currentFingerprint: opts.currentFingerprint,
+      previewExists: opts.stored.previewExists,
+    })
+  ) {
+    return {
+      kind: "preview-recreate",
+      previewName,
+      writeEnv: true,
+      seed: "seed:homepage:content",
+    };
+  }
+  return {
+    kind: "preview-reuse",
+    previewName,
+    writeEnv: opts.stored.fingerprint === null,
+    seed: null,
+  };
+}
+
+export function describeConvexDeployPlan(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+      return "GitHub merge queue — skipping Convex push, building web app only";
+    case "production":
+      return "Production — deploying Convex and building the web app";
+    case "preview-recreate":
+      return `Schema changed or preview is new — recreating Convex preview "${plan.previewName}"`;
+    case "preview-reuse":
+      if (plan.writeEnv) {
+        return `Preview exists without a schema fingerprint — pushing functions to existing preview "${plan.previewName}" (no wipe)`;
+      }
+      return `Schema unchanged — pushing functions to existing preview "${plan.previewName}" (no wipe)`;
+  }
+}
+
+export function convexDeployCliArgs(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+    case "production":
+      return [];
+    case "preview-recreate":
+      return ["--preview-create", plan.previewName, "--preview-run", "seed:seedDemoData"];
+    case "preview-reuse":
+      return ["--preview-name", plan.previewName];
+  }
+}
+
+export function previewNameCliArgs(plan: ConvexDeployPlan) {
+  switch (plan.kind) {
+    case "merge-queue-web-only":
+    case "production":
+      return [];
+    case "preview-recreate":
+    case "preview-reuse":
+      return ["--preview-name", plan.previewName];
+  }
+}
+
+export function interpretEnvGetResult(opts: { ok: boolean; stdout: string; stderr: string }) {
   if (opts.ok) {
     return { previewExists: true, fingerprint: parseEnvGetOutput(opts.stdout) };
   }
