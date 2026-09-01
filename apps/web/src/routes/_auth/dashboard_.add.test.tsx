@@ -74,6 +74,7 @@ test("name field explains it can be filled later", async () => {
   await using view = await renderDefaultAddBaby();
 
   expect(view.getByLabelText("Baby name")).toBeTruthy();
+  expect(htmlInput(view.getByLabelText("Baby name")).placeholder).toBe("Enter baby's name");
   expect(
     view.getByText("Optional. Leave it blank for now. You can change it later in Settings."),
   ).toBeTruthy();
@@ -113,6 +114,11 @@ test("journey choices explain visible statuses and privacy", async () => {
     view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
   ).toHaveLength(1);
   expect(view.getByLabelText("Due date")).toBeTruthy();
+  const dueDate = htmlInput(view.getByLabelText("Due date"));
+  expect(dueDate.placeholder).toBe("Pick a date");
+  expect(dueDate.type).toBe("text");
+  fireEvent.focus(dueDate);
+  expect(dueDate.type).toBe("date");
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
 
@@ -236,6 +242,7 @@ test("submits a custom public due date message when provided", async () => {
   });
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
   const publicMessageInput = htmlInput(view.getByLabelText("Public due date message"));
+  expect(publicMessageInput.placeholder).toBe("September baby");
   fireEvent.change(publicMessageInput, {
     target: { value: "  Any day now  " },
   });

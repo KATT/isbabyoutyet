@@ -91,8 +91,11 @@ test("signup has no test-account picker and starts empty", async () => {
 
   expect(screen.queryByLabelText("Test account")).toBeNull();
   expect(htmlInput(screen.getByLabelText("Name")).value).toBe("");
+  expect(htmlInput(screen.getByLabelText("Name")).placeholder).toBe("Your name");
   expect(htmlInput(screen.getByLabelText("Email")).value).toBe("");
+  expect(htmlInput(screen.getByLabelText("Email")).placeholder).toBe("you@example.com");
   expect(htmlInput(screen.getByLabelText("Password")).value).toBe("");
+  expect(htmlInput(screen.getByLabelText("Password")).placeholder).toBe("Password");
   expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/auth/login");
 });
 

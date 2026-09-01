@@ -131,7 +131,8 @@ test("LoginPage wires the real auth client into LoginCard", async () => {
   );
 
   expect(screen.getByLabelText("Email")).toBeTruthy();
-  expect(screen.getByLabelText("Password")).toBeTruthy();
+  expect(htmlInput(screen.getByLabelText("Email")).placeholder).toBe("you@example.com");
+  expect(htmlInput(screen.getByLabelText("Password")).placeholder).toBe("Password");
   expect(screen.getByRole("button", { name: /sign in/i })).toBeTruthy();
 });
 

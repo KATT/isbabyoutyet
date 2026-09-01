@@ -208,7 +208,7 @@ export function LoginCard(props: {
                     <FormItem>
                       <FormLabel>{t("Password")}</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input type="password" placeholder={t("Password")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

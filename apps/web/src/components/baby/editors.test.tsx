@@ -48,6 +48,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   // The form mounted with the current name and the link reassurance
   const input = htmlInput(view.getByLabelText("Baby name"));
   expect(input.value).toBe("Nova");
+  expect(input.placeholder).toBe("Baby name");
   expect(view.getByText(/links you have already shared will keep working/i)).toBeTruthy();
 
   // Save is dirty-gated until the name changes
@@ -69,6 +70,8 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = htmlInput(view.getByLabelText("Due date"));
+  expect(input.placeholder).toBe("Pick a date");
+  expect(input.type).toBe("date");
   expect(input.value).toBe("2026-09-01");
   expect(
     view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
@@ -113,6 +116,7 @@ test("due date editor saves a custom visitor message when provided", async () =>
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
   const publicMessageInput = htmlInput(view.getByLabelText("Public due date message"));
+  expect(publicMessageInput.placeholder).toBe("September baby");
   fireEvent.change(publicMessageInput, { target: { value: "  Any day now  " } });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
   await vi.waitFor(() =>
@@ -209,7 +213,9 @@ test("status editor saves the matching milestone instant", async () => {
   );
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  fireEvent.change(view.getByLabelText("Status date and time"), {
+  const statusDate = htmlInput(view.getByLabelText("Status date and time"));
+  expect(statusDate.placeholder).toBe("Pick a date and time");
+  fireEvent.change(statusDate, {
     target: { value: "2026-08-10T09:30" },
   });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
@@ -229,6 +235,7 @@ test("due date editor localizes its accessible label", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "Editar" }));
   expect(view.getByLabelText("Data prevista")).toBeTruthy();
+  expect(htmlInput(view.getByLabelText("Data prevista")).placeholder).toBe("Escolha uma data");
 });
 
 test("theme selector marks Baby Blue selected", async () => {

@@ -422,6 +422,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                           <FormControl>
                             <Input
                               type="datetime-local"
+                              placeholder={t("Pick a date and time")}
                               max={htmlDateTimeNow(props.baby.timeZone)}
                               className="w-fit"
                               {...field}
@@ -911,7 +912,12 @@ function EncouragementEditForm(props: {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Textarea aria-label={t("Edit your message")} className="min-h-20" {...field} />
+                <Textarea
+                  aria-label={t("Edit your message")}
+                  placeholder={t("Write a message (optional)…")}
+                  className="min-h-20"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

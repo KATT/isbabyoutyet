@@ -265,6 +265,10 @@ test("an empty event-time picker does not post occurredAt", async () => {
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
   const picker = htmlInput(view.getByLabelText(/when did it happen/i));
   expect(picker.value).toBe("");
+  expect(picker.placeholder).toBe("Pick a date and time");
+  expect(picker.type).toBe("text");
+  fireEvent.focus(picker);
+  expect(picker.type).toBe("datetime-local");
   fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
   await vi.waitFor(async () => {
@@ -614,7 +618,8 @@ test("authors can edit their own encouragement within the edit window", async ()
     expect(feed.getByRole("button", { name: "Edit message" })).toBeTruthy();
   });
   fireEvent.click(feed.getByRole("button", { name: "Edit message" }));
-  const textarea = feed.getByLabelText("Edit your message");
+  const textarea = htmlTextArea(feed.getByLabelText("Edit your message"));
+  expect(textarea.placeholder).toBe("Write a message (optional)…");
   fireEvent.change(textarea, { target: { value: "Updated message" } });
   fireEvent.click(feed.getByRole("button", { name: "Save" }));
 
