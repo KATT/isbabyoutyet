@@ -7,32 +7,32 @@ import { formatDueDate, getDaysUntilDueDate, getOverdueDays } from "./utils";
 import { useI18n } from "@/lib/i18n";
 
 type DashboardBabyCardBaby = {
-  name: string;
-  publicId: string;
   dueDate: string | null;
   dueDateDisplayMode: "exact" | "message";
+  name: string;
   publicDueDateText: string | null;
+  publicId: string;
   role: "owner" | "coParent";
   timeZone: string;
 } & Partial<{
-  laborStarted: string | null;
-  wentToHospital: string | null;
   babyBorn: string | null;
   birthJourney: BirthJourney;
+  laborStarted: string | null;
+  wentToHospital: string | null;
 }>;
 
 type DashboardBabyCardProps = {
   baby: DashboardBabyCardBaby;
-  index: number;
   /** Coachmark target for the first-run tour */
   dataTourId: string | undefined;
+  index: number;
 };
 
 const STATUS_EMOJI = {
-  not_yet: "👶",
-  labor_started: "💫",
-  gone_to_hospital: "🏥",
   born: "🎉",
+  gone_to_hospital: "🏥",
+  labor_started: "💫",
+  not_yet: "👶",
 } as const;
 
 function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
@@ -50,8 +50,8 @@ function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
       if (props.baby.dueDateDisplayMode === "message" || !props.baby.dueDate) {
         return (
           <Badge
-            variant="outline"
             className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+            variant="outline"
           >
             {t("Not yet")}
           </Badge>
@@ -73,8 +73,8 @@ function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
       }
       return (
         <Badge
-          variant="outline"
           className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+          variant="outline"
         >
           {t(
             daysUntilDueDate === 1
@@ -104,10 +104,10 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
 
   return (
     <Link
-      to="/baby/$publicId"
-      params={{ publicId: baby.publicId }}
       className="group"
       data-tour-id={props.dataTourId}
+      params={{ publicId: baby.publicId }}
+      to="/baby/$publicId"
     >
       <div
         className={`flex h-full flex-col rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform group-hover:-translate-y-1 ${
@@ -128,8 +128,8 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
         <div className="mt-4 flex flex-wrap gap-2">
           {baby.role === "coParent" ? (
             <Badge
-              variant="outline"
               className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+              variant="outline"
             >
               {t("Shared with you")}
             </Badge>

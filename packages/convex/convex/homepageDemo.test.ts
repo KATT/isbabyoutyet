@@ -16,7 +16,7 @@ import {
 } from "../src/homepageDemoFeed";
 import { SUPPORTED_LOCALES } from "../src/i18n";
 
-const FIRST_PAGE = { numItems: 50, cursor: null };
+const FIRST_PAGE = { cursor: null, numItems: 50 };
 
 const FIXTURE_UPDATES = HOMEPAGE_DEMO_FEED.filter((item) => item.kind === "update");
 const FIXTURE_ENCOURAGEMENTS = HOMEPAGE_DEMO_FEED.filter((item) => item.kind === "encouragement");
@@ -44,18 +44,18 @@ async function storeCompletePhotoSet(t: Awaited<ReturnType<typeof setup>>) {
   const photos: Record<
     string,
     {
-      photoId: Id<"_storage">;
-      thumbnailId: Id<"_storage">;
-      pushImageId: Id<"_storage">;
       blurDataUrl: string;
+      photoId: Id<"_storage">;
+      pushImageId: Id<"_storage">;
+      thumbnailId: Id<"_storage">;
     }
   > = {};
   for (const key of HOMEPAGE_DEMO_PHOTO_KEYS) {
     photos[key] = {
-      photoId: await storeBlob(t, `${key}-photo`),
-      thumbnailId: await storeBlob(t, `${key}-thumb`),
-      pushImageId: await storeBlob(t, `${key}-push`),
       blurDataUrl: `data:image/jpeg;base64,${key}`,
+      photoId: await storeBlob(t, `${key}-photo`),
+      pushImageId: await storeBlob(t, `${key}-push`),
+      thumbnailId: await storeBlob(t, `${key}-thumb`),
     };
   }
   return photos;
@@ -85,17 +85,17 @@ test("every locale has copy for every shared feed slot", () => {
 test("refresh creates Juniper Hale as born after a two-day labour with fixture encouragements", async () => {
   const t = await setup();
 
-  const result = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
+  const result = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos: {} });
   expect(result.publicId).toBe(HOMEPAGE_DEMO_BABY.publicId);
   expect(result.locale).toBe("en-GB");
 
   const baby = await t.query(api.baby.getByPublicId, { id: HOMEPAGE_DEMO_BABY.publicId });
   expect(baby).toMatchObject({
+    demo: true,
+    locale: "en-GB",
     name: HOMEPAGE_DEMO_BABY.name,
     publicId: HOMEPAGE_DEMO_BABY.publicId,
     theme: HOMEPAGE_DEMO_BABY.theme,
-    locale: "en-GB",
-    demo: true,
   });
   expect(baby).not.toHaveProperty("userId");
   expect(baby).not.toHaveProperty("ownerTokenIdentifier");
@@ -132,12 +132,12 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
 test("refresh is idempotent and wipes visitor encouragements", async () => {
   const t = await setup();
 
-  const first = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
+  const first = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos: {} });
   await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: first.babyId,
       authorName: "Random Visitor",
+      babyId: first.babyId,
       message: "Congrats from the internet!",
       visitorId: "visitor-spam",
     }),
@@ -150,7 +150,7 @@ test("refresh is idempotent and wipes visitor encouragements", async () => {
   });
   expect(before.page).toHaveLength(HOMEPAGE_DEMO_FEED.length + 1);
 
-  const second = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
+  const second = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos: {} });
   expect(second.babyId).toBe(first.babyId);
 
   const babies = await t.run(async (ctx) => {
@@ -180,22 +180,22 @@ test("refresh attaches photos to the matching updates and pins the newborn as th
   const photos: Record<
     string,
     {
-      photoId: Id<"_storage">;
-      thumbnailId: Id<"_storage">;
-      pushImageId: Id<"_storage"> | null;
       blurDataUrl: string;
+      photoId: Id<"_storage">;
+      pushImageId: Id<"_storage"> | null;
+      thumbnailId: Id<"_storage">;
     }
   > = {};
   for (const key of HOMEPAGE_DEMO_PHOTO_KEYS) {
     photos[key] = {
-      photoId: await storeBlob(t, `${key}-photo`),
-      thumbnailId: await storeBlob(t, `${key}-thumb`),
-      pushImageId: null,
       blurDataUrl: `data:image/jpeg;base64,${key}`,
+      photoId: await storeBlob(t, `${key}-photo`),
+      pushImageId: null,
+      thumbnailId: await storeBlob(t, `${key}-thumb`),
     };
   }
 
-  const result = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
+  const result = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos });
   const baby = await t.query(api.baby.getByPublicId, { id: result.publicId });
   expect(baby?.photoUrl).toBeTruthy();
   expect(baby?.photoId).toBe(photos.born?.photoId);
@@ -223,13 +223,13 @@ test("daily reset reuses stored photos and ignores recent fixture encouragements
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
   const t = await setup();
   const photos = await storeCompletePhotoSet(t);
-  const first = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
+  const first = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos });
 
   expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(false);
 
   vi.setSystemTime(new Date("2026-08-21T03:00:00.000Z"));
   const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
-  expect(result).toEqual({ status: "reset", resetBabies: SUPPORTED_LOCALES.length });
+  expect(result).toEqual({ resetBabies: SUPPORTED_LOCALES.length, status: "reset" });
   expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(true);
 
   const baby = await t.query(api.baby.getByPublicId, { id: first.publicId });
@@ -249,12 +249,12 @@ test("daily reset protects only the baby with a recent visitor encouragement", a
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
   const t = await setup();
   const photos = await storeCompletePhotoSet(t);
-  const demo = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
+  const demo = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos });
   await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: demo.babyId,
       authorName: "Recent Visitor",
+      babyId: demo.babyId,
       message: "Still here!",
       visitorId: "homepage-demo-spoofed-client",
     }),
@@ -263,8 +263,8 @@ test("daily reset protects only the baby with a recent visitor encouragement", a
   vi.setSystemTime(new Date("2026-08-20T03:59:00.000Z"));
   const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
   expect(result).toEqual({
-    status: "reset",
     resetBabies: SUPPORTED_LOCALES.length - 1,
+    status: "reset",
   });
   expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(true);
 
@@ -291,8 +291,8 @@ test("daily reset skips when every demo baby has a recent visitor encouragement"
     await t.mutation(
       api.encouragements.create,
       createEncouragementArgs({
-        babyId: demo.babyId,
         authorName: `Recent Visitor ${locale}`,
+        babyId: demo.babyId,
         message: "Still here!",
         visitorId: `visitor-${locale}`,
       }),
@@ -301,8 +301,8 @@ test("daily reset skips when every demo baby has a recent visitor encouragement"
 
   vi.setSystemTime(new Date("2026-08-20T03:59:00.000Z"));
   await expect(t.mutation(internal.homepageDemo.resetIfInactive, {})).resolves.toEqual({
-    status: "skipped_recent_encouragement",
     resetBabies: 0,
+    status: "skipped_recent_encouragement",
   });
 });
 
@@ -311,12 +311,12 @@ test("daily reset clears visitor encouragements once they are older than one hou
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
   const t = await setup();
   const photos = await storeCompletePhotoSet(t);
-  const demo = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
+  const demo = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos });
   await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: demo.babyId,
       authorName: "Earlier Visitor",
+      babyId: demo.babyId,
       message: "Good luck!",
       visitorId: "real-visitor",
     }),
@@ -341,7 +341,7 @@ test("daily reset clears visitor encouragements once they are older than one hou
 
 test("daily reset does not wipe a demo when its complete photo sentinel is missing", async () => {
   const t = await setup();
-  const demo = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
+  const demo = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos: {} });
   const before = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
     paginationOpts: FIRST_PAGE,
@@ -350,8 +350,8 @@ test("daily reset does not wipe a demo when its complete photo sentinel is missi
 
   expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(false);
   await expect(t.mutation(internal.homepageDemo.resetIfInactive, {})).resolves.toEqual({
-    status: "skipped_missing_photos",
     resetBabies: 0,
+    status: "skipped_missing_photos",
   });
 
   const after = await t.query(api.timeline.listByBaby, {
@@ -384,7 +384,7 @@ test("storePhoto stores JPEG bytes and returns a storage id", async () => {
 
 test("clearFeedBatch reports hasMore until the feed is empty", async () => {
   const t = await setup();
-  const { babyId } = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
+  const { babyId } = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos: {} });
 
   let batches = 0;
   let hasMore = true;
@@ -413,11 +413,11 @@ test("refresh({ locale: 'sv' }) creates Ella Holm with Swedish copy", async () =
 
   const baby = await t.query(api.baby.getByPublicId, { id: HOMEPAGE_DEMO_BABIES.sv.publicId });
   expect(baby).toMatchObject({
+    demo: true,
+    locale: "sv",
     name: HOMEPAGE_DEMO_BABIES.sv.name,
     publicId: "ella-holm",
-    locale: "sv",
     resolvedLocale: "sv",
-    demo: true,
   });
   expect(getCurrentStatus(baby!)).toMatchObject({ type: "born" });
 
@@ -444,18 +444,18 @@ test("each locale gets its own baby with the same feed shape and shared photos",
   const photos: Record<
     string,
     {
-      photoId: Id<"_storage">;
-      thumbnailId: Id<"_storage">;
-      pushImageId: Id<"_storage"> | null;
       blurDataUrl: string | null;
+      photoId: Id<"_storage">;
+      pushImageId: Id<"_storage"> | null;
+      thumbnailId: Id<"_storage">;
     }
   > = {};
   for (const key of HOMEPAGE_DEMO_PHOTO_KEYS) {
     photos[key] = {
-      photoId: await storeBlob(t, `${key}-photo`),
-      thumbnailId: await storeBlob(t, `${key}-thumb`),
-      pushImageId: null,
       blurDataUrl: null,
+      photoId: await storeBlob(t, `${key}-photo`),
+      pushImageId: null,
+      thumbnailId: await storeBlob(t, `${key}-thumb`),
     };
   }
 
@@ -495,16 +495,16 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
 
   const realBabyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Real Willow",
+      birthJourney: "labor",
       dueDate: "2026-12-01",
       dueDateDisplayMode: "exact",
+      lastActivityAt: 1,
+      name: "Real Willow",
+      ownerTokenIdentifier: "https://convex.test|alice",
       publicDueDateText: null,
       publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
-      birthJourney: "labor",
-      lastActivityAt: 1,
       subscriptionCount: 0,
+      userId: "alice",
     });
   });
 
@@ -514,9 +514,9 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
 
   const realBaby = await t.run(async (ctx) => ctx.db.get(realBabyId));
   expect(realBaby).toMatchObject({
-    userId: "alice",
     name: "Real Willow",
     publicId: "willow-brooks",
+    userId: "alice",
   });
   expect(realBaby?.demo).not.toBe(true);
 
@@ -534,7 +534,7 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
 test("daily reset rolls back every demo change when a reserved publicId belongs to real data", async () => {
   const t = await setup();
   const photos = await storeCompletePhotoSet(t);
-  const demo = await t.mutation(internal.homepageDemo.refresh, { photos, locale: null });
+  const demo = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos });
   const beforeFeed = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
     paginationOpts: FIRST_PAGE,
@@ -543,17 +543,17 @@ test("daily reset rolls back every demo change when a reserved publicId belongs 
 
   const realBabyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Real Willow",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
       birthJourney: "labor",
       demo: true,
+      dueDate: "2026-12-01",
+      dueDateDisplayMode: "exact",
       lastActivityAt: 123,
+      name: "Real Willow",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      publicDueDateText: null,
+      publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
       subscriptionCount: 0,
+      userId: "alice",
     });
   });
   const realBabyBefore = await t.run(async (ctx) => await ctx.db.get(realBabyId));
@@ -574,27 +574,29 @@ test("daily reset rolls back every demo change when a reserved publicId belongs 
 test("daily reset leaves non-homepage documents and shared storage untouched", async () => {
   const t = await setup();
   const reusablePhotos = await storeCompletePhotoSet(t);
-  await t.mutation(internal.homepageDemo.refresh, { photos: reusablePhotos, locale: null });
+  await t.mutation(internal.homepageDemo.refresh, { locale: null, photos: reusablePhotos });
   const divergentPhotos = await storeCompletePhotoSet(t);
   await t.mutation(internal.homepageDemo.refresh, {
     locale: "sv",
     photos: divergentPhotos,
   });
   const sharedPhotoId = divergentPhotos.bump?.photoId;
-  if (!sharedPhotoId) throw new Error("Divergent fixture is missing its bump photo");
+  if (!sharedPhotoId) {
+    throw new Error("Divergent fixture is missing its bump photo");
+  }
 
   const real = await t.run(async (ctx) => {
     const babyId = await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Alice's Baby",
+      birthJourney: "labor",
       dueDate: "2026-12-01",
       dueDateDisplayMode: "exact",
+      lastActivityAt: 123,
+      name: "Alice's Baby",
+      ownerTokenIdentifier: "https://convex.test|alice",
       publicDueDateText: null,
       publicId: "alices-real-baby",
-      birthJourney: "labor",
-      lastActivityAt: 123,
       subscriptionCount: 0,
+      userId: "alice",
     });
     const updateTimelineId = await ctx.db.insert("timelineItems", {
       babyId,
@@ -603,9 +605,9 @@ test("daily reset leaves non-homepage documents and shared storage untouched", a
     });
     const updateId = await ctx.db.insert("updates", {
       babyId,
-      timelineItemId: updateTimelineId,
       message: "A real family update",
       photoId: sharedPhotoId,
+      timelineItemId: updateTimelineId,
     });
     const encouragementTimelineId = await ctx.db.insert("timelineItems", {
       babyId,
@@ -613,29 +615,29 @@ test("daily reset leaves non-homepage documents and shared storage untouched", a
       postedAt: 101,
     });
     const encouragementId = await ctx.db.insert("encouragements", {
-      babyId,
       authorName: "Grandma",
-      message: "For the real family",
+      babyId,
       createdAt: 101,
+      message: "For the real family",
       timelineItemId: encouragementTimelineId,
       visitorId: "real-family-visitor",
     });
     return {
       babyId,
-      updateTimelineId,
-      updateId,
-      encouragementTimelineId,
       encouragementId,
+      encouragementTimelineId,
+      updateId,
+      updateTimelineId,
     };
   });
   const before = await t.run(async (ctx) => {
     return {
       baby: await ctx.db.get(real.babyId),
-      updateTimeline: await ctx.db.get(real.updateTimelineId),
-      update: await ctx.db.get(real.updateId),
-      encouragementTimeline: await ctx.db.get(real.encouragementTimelineId),
       encouragement: await ctx.db.get(real.encouragementId),
+      encouragementTimeline: await ctx.db.get(real.encouragementTimelineId),
       storage: await ctx.db.system.get(sharedPhotoId),
+      update: await ctx.db.get(real.updateId),
+      updateTimeline: await ctx.db.get(real.updateTimelineId),
     };
   });
 
@@ -646,11 +648,11 @@ test("daily reset leaves non-homepage documents and shared storage untouched", a
   const after = await t.run(async (ctx) => {
     return {
       baby: await ctx.db.get(real.babyId),
-      updateTimeline: await ctx.db.get(real.updateTimelineId),
-      update: await ctx.db.get(real.updateId),
-      encouragementTimeline: await ctx.db.get(real.encouragementTimelineId),
       encouragement: await ctx.db.get(real.encouragementId),
+      encouragementTimeline: await ctx.db.get(real.encouragementTimelineId),
       storage: await ctx.db.system.get(sharedPhotoId),
+      update: await ctx.db.get(real.updateId),
+      updateTimeline: await ctx.db.get(real.updateTimelineId),
     };
   });
   expect(after).toEqual(before);
@@ -661,21 +663,21 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
 
   const legacyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
-      userId: HOMEPAGE_DEMO_BABY.ownerUserId,
-      ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_BABY.ownerUserId}`,
-      name: "Juniper Hale",
+      birthJourney: "labor",
       dueDate: "2026-01-01",
       dueDateDisplayMode: "exact",
+      lastActivityAt: 1,
+      name: "Juniper Hale",
+      ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_BABY.ownerUserId}`,
       publicDueDateText: null,
       publicId: HOMEPAGE_DEMO_BABY.publicId,
-      birthJourney: "labor",
-      theme: HOMEPAGE_DEMO_BABY.theme,
-      lastActivityAt: 1,
       subscriptionCount: 0,
+      theme: HOMEPAGE_DEMO_BABY.theme,
+      userId: HOMEPAGE_DEMO_BABY.ownerUserId,
     });
   });
 
-  const result = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
+  const result = await t.mutation(internal.homepageDemo.refresh, { locale: null, photos: {} });
   expect(result.babyId).toBe(legacyId);
 
   const baby = await t.query(api.baby.getByPublicId, { id: HOMEPAGE_DEMO_BABY.publicId });
@@ -687,17 +689,17 @@ test("clearFeedBatch refuses a non-homepage baby even when demo is true", async 
   const t = await setup();
   const babyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Someone Else",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "someone-else",
       birthJourney: "labor",
       demo: true,
+      dueDate: "2026-12-01",
+      dueDateDisplayMode: "exact",
       lastActivityAt: 1,
+      name: "Someone Else",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      publicDueDateText: null,
+      publicId: "someone-else",
       subscriptionCount: 0,
+      userId: "alice",
     });
   });
 

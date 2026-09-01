@@ -35,7 +35,9 @@ const MAX_NAME_LENGTH = 50;
 const STORAGE_KEY_NAME = "encouragement-author-name";
 
 function getStoredAuthorName() {
-  if (globalThis.window === undefined) return "";
+  if (globalThis.window === undefined) {
+    return "";
+  }
   return localStorage.getItem(STORAGE_KEY_NAME) ?? "";
 }
 
@@ -54,13 +56,13 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
       message: z.string().trim().min(1, t("Message is required")),
     })
     .transform((values): FunctionArgs<typeof api.encouragements.create> => ({
-      babyId,
       authorName: values.authorName,
-      message: values.message,
-      visitorId: getVisitorId(),
-      userAgent: globalThis.navigator !== undefined ? navigator.userAgent : null,
+      babyId,
       locale: globalThis.navigator !== undefined ? navigator.language : null,
+      message: values.message,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      userAgent: globalThis.navigator !== undefined ? navigator.userAgent : null,
+      visitorId: getVisitorId(),
     }));
 }
 
@@ -69,13 +71,13 @@ export function EncouragementForm(props: EncouragementFormProps) {
   const sessionDraft = hydrated ? readEncouragementFormDraft(props.babyId) : null;
   return (
     <EncouragementFormFields
-      key={hydrated ? "hydrated" : "server"}
       babyId={props.babyId}
       babyName={props.babyName}
       initialAuthorName={
         sessionDraft?.hasDraft ? sessionDraft.authorName : hydrated ? getStoredAuthorName() : ""
       }
       initialMessage={sessionDraft?.message ?? ""}
+      key={hydrated ? "hydrated" : "server"}
     />
   );
 }
@@ -88,20 +90,20 @@ function EncouragementFormFields(
   const schema = encouragementSchema(t, props.babyId);
 
   const form = useZodForm({
-    schema,
     defaultValues: {
       authorName: props.initialAuthorName,
       message: props.initialMessage,
     },
+    schema,
   });
   const message = useWatch({ control: form.control, name: "message" }) ?? "";
   const authorName = useWatch({ control: form.control, name: "authorName" }) ?? "";
-  useEncouragementMessageDraft({ babyId: props.babyId, authorName, message });
+  useEncouragementMessageDraft({ authorName, babyId: props.babyId, message });
 
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">
-        <p className="text-3xl" aria-hidden="true">
+        <p aria-hidden="true" className="text-3xl">
           💛
         </p>
         <h3 className="mt-2 text-xl font-extrabold text-foreground">{t("Send some love")}</h3>
@@ -124,10 +126,10 @@ function EncouragementFormFields(
           });
 
           toast.promise(promise, {
-            loading: t("Sending your encouragement..."),
-            success: t("Your kind words have been sent! 💕"),
             error: (err) =>
               err instanceof Error ? err.message : t("Failed to send encouragement"),
+            loading: t("Sending your encouragement..."),
+            success: t("Your kind words have been sent! 💕"),
           });
           await promise;
           clearEncouragementMessageDraft(props.babyId);
@@ -142,7 +144,7 @@ function EncouragementFormFields(
               <FormItem>
                 <FormLabel>{t("Your name")}</FormLabel>
                 <FormControl>
-                  <Input placeholder={t("Your name")} maxLength={MAX_NAME_LENGTH} {...field} />
+                  <Input maxLength={MAX_NAME_LENGTH} placeholder={t("Your name")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -157,8 +159,8 @@ function EncouragementFormFields(
                 <FormLabel>{t("Message")}</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder={t("Write your message of encouragement...")}
                     className="min-h-24"
+                    placeholder={t("Write your message of encouragement...")}
                     {...field}
                   />
                 </FormControl>
@@ -168,10 +170,10 @@ function EncouragementFormFields(
           />
 
           <SubmitButton
+            className="w-full"
             form="context"
             IconComponent={PaperPlaneTilt}
             iconPosition="start"
-            className="w-full"
           >
             {t("Send Encouragement")}
           </SubmitButton>

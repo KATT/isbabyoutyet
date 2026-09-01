@@ -36,11 +36,11 @@ export const generateThumbnail = internalAction({
 
     await ctx.runMutation(internal.baby.updateThumbnail, {
       babyId: args.babyId,
-      thumbnailId,
-      photoId: args.photoId,
-      updateId: args.updateId,
-      pushImageId,
       blurDataUrl,
+      photoId: args.photoId,
+      pushImageId,
+      thumbnailId,
+      updateId: args.updateId,
     });
 
     return thumbnailId;
@@ -61,9 +61,9 @@ export const generateBlurDataUrl = internalAction({
     const blurDataUrl = await renderBlurDataUrl(await photoBuffer(ctx, args.photoId));
     await ctx.runMutation(internal.baby.updateBlurDataUrl, {
       babyId: args.babyId,
+      blurDataUrl,
       photoId: args.photoId,
       updateId: args.updateId,
-      blurDataUrl,
     });
     return blurDataUrl;
   },

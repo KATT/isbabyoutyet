@@ -32,7 +32,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/component
 import { Check, Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useFormState, useWatch } from "react-hook-form";
-import * as z from "zod";
+import { z } from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
 import {
   BIRTH_JOURNEYS,
@@ -63,8 +63,8 @@ const emptyActionSchema = z.object({});
 
 type EditorFormProps = {
   baby: BabyData;
-  onUpdate: BabyUpdateHandler;
   onClose: () => void;
+  onUpdate: BabyUpdateHandler;
 };
 
 function EditorActions(props: { isBusy: boolean }) {
@@ -75,15 +75,15 @@ function EditorActions(props: { isBusy: boolean }) {
   const { isDirty } = useFormState();
   return (
     <div className="flex gap-2 justify-end">
-      <PopoverClose render={<FormCancelButton form="context" size="sm" disabled={props.isBusy} />}>
+      <PopoverClose render={<FormCancelButton disabled={props.isBusy} form="context" size="sm" />}>
         {t("Cancel")}
       </PopoverClose>
       <SubmitButton
+        disabled={!isDirty || props.isBusy}
         form="context"
         IconComponent={Check}
         iconPosition="start"
         size="sm"
-        disabled={!isDirty || props.isBusy}
       >
         {t("Save")}
       </SubmitButton>
@@ -100,15 +100,15 @@ function dueDateSchema(t: TranslationFunction) {
   return z
     .object({
       date: htmlDate(t),
-      showExactDueDate: z.boolean(),
       publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
+      showExactDueDate: z.boolean(),
     })
     .superRefine((values, ctx) => {
       if (values.showExactDueDate && !values.date) {
         ctx.addIssue({
           code: "custom",
-          path: ["date"],
           message: t("Pick a date"),
+          path: ["date"],
         });
       }
     })
@@ -129,14 +129,14 @@ export function DueDateEditor(props: DueDateEditorProps) {
     <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm">
+          <Button size="sm" variant="outline">
             {t("Edit")}
           </Button>
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <FormGuardProvider guard={overlay}>
-          <DueDateForm baby={props.baby} onUpdate={props.onUpdate} onClose={overlay.close} />
+          <DueDateForm baby={props.baby} onClose={overlay.close} onUpdate={props.onUpdate} />
         </FormGuardProvider>
       </PopoverContent>
     </Popover>
@@ -147,12 +147,12 @@ function DueDateForm(props: EditorFormProps) {
   const { t } = useI18n();
   const dateCodec = htmlDate(t);
   const form = useZodForm({
-    schema: dueDateSchema(t),
     defaultValues: {
       date: dateCodec.encode(props.baby.dueDate),
-      showExactDueDate: props.baby.dueDateDisplayMode === "exact",
       publicDueDateText: props.baby.publicDueDateText ?? "",
+      showExactDueDate: props.baby.dueDateDisplayMode === "exact",
     },
+    schema: dueDateSchema(t),
   });
   return (
     <Form
@@ -163,12 +163,12 @@ function DueDateForm(props: EditorFormProps) {
       }}
     >
       <DueDateDisplayFields
+        className="mb-3"
         control={form.control}
         dateFieldName="date"
-        showExactDueDateFieldName="showExactDueDate"
         publicDueDateTextFieldName="publicDueDateText"
-        className="mb-3"
         sectionLabelClassName={undefined}
+        showExactDueDateFieldName="showExactDueDate"
         stopPopoverPropagation={true}
       />
       <EditorActions isBusy={false} />
@@ -178,10 +178,10 @@ function DueDateForm(props: EditorFormProps) {
 
 type StatusDateEditorProps = {
   baby: BabyData;
-  status: Milestone;
   currentDate: string;
   onRedate: MilestoneRedateHandler;
   onRemove: MilestoneRemoveHandler;
+  status: Milestone;
 };
 
 function statusDateSchema(t: TranslationFunction, timeZone: string) {
@@ -196,7 +196,7 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
     <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm">
+          <Button size="sm" variant="outline">
             <Clock className="w-4 h-4 mr-2" />
             {t("Edit")}
           </Button>
@@ -206,11 +206,11 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
         <FormGuardProvider guard={overlay}>
           <StatusDateForm
             baby={props.baby}
-            status={props.status}
             currentDate={props.currentDate}
+            onClose={overlay.close}
             onRedate={props.onRedate}
             onRemove={props.onRemove}
-            onClose={overlay.close}
+            status={props.status}
           />
         </FormGuardProvider>
       </PopoverContent>
@@ -220,28 +220,28 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
 
 function StatusDateForm(props: {
   baby: BabyData;
-  status: StatusDateEditorProps["status"];
   currentDate: string;
+  onClose: () => void;
   onRedate: MilestoneRedateHandler;
   onRemove: MilestoneRemoveHandler;
-  onClose: () => void;
+  status: StatusDateEditorProps["status"];
 }) {
   const { t } = useI18n();
   const dateTimeCodec = htmlDateTime(t, props.baby.timeZone);
   const form = useZodForm({
-    schema: statusDateSchema(t, props.baby.timeZone),
     defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
+    schema: statusDateSchema(t, props.baby.timeZone),
   });
   const deleteForm = useZodForm({
-    schema: emptyActionSchema,
     defaultValues: {},
+    schema: emptyActionSchema,
   });
   const { isSubmitting: isDeleting } = useFormState({ control: deleteForm.control });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
   const statusLabel = MILESTONE_LABELS[props.status];
 
   const deleteButton = (
-    <Button type="button" variant="destructive" size="sm" disabled={Boolean(blocker)}>
+    <Button disabled={Boolean(blocker)} size="sm" type="button" variant="destructive">
       <Trash data-icon="inline-start" />
       {t("Delete")}
     </Button>
@@ -272,9 +272,9 @@ function StatusDateForm(props: {
             <FormItem className="mb-3">
               <FormControl>
                 <Input
-                  type="datetime-local"
                   aria-label={t("Status date and time")}
                   max={htmlDateTimeNow(props.baby.timeZone)}
+                  type="datetime-local"
                   {...field}
                 />
               </FormControl>
@@ -288,10 +288,10 @@ function StatusDateForm(props: {
               <TooltipTrigger
                 render={
                   <span
-                    className="inline-flex"
                     aria-label={t("Delete the {{status}} status first", {
                       status: MILESTONE_LABELS[blocker],
                     })}
+                    className="inline-flex"
                   />
                 }
               >
@@ -333,9 +333,9 @@ function StatusDateForm(props: {
                   </AlertDialogCancel>
                   <SubmitButton
                     form={deleteForm}
-                    variant="destructive"
                     IconComponent={Trash}
                     iconPosition="start"
+                    variant="destructive"
                   >
                     {t("Delete status")}
                   </SubmitButton>
@@ -371,14 +371,14 @@ export function NameEditor(props: NameEditorProps) {
     <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm">
+          <Button size="sm" variant="outline">
             {t("Edit")}
           </Button>
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <FormGuardProvider guard={overlay}>
-          <NameForm baby={props.baby} onUpdate={props.onUpdate} onClose={overlay.close} />
+          <NameForm baby={props.baby} onClose={overlay.close} onUpdate={props.onUpdate} />
         </FormGuardProvider>
       </PopoverContent>
     </Popover>
@@ -388,8 +388,8 @@ export function NameEditor(props: NameEditorProps) {
 function NameForm(props: EditorFormProps) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: nameSchema(t),
     defaultValues: { name: props.baby.name },
+    schema: nameSchema(t),
   });
 
   return (
@@ -406,7 +406,7 @@ function NameForm(props: EditorFormProps) {
         render={({ field }) => (
           <FormItem className="mb-3">
             <FormControl>
-              <Input placeholder={t("Baby Name")} aria-label={t("Baby Name")} {...field} />
+              <Input aria-label={t("Baby Name")} placeholder={t("Baby Name")} {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -443,7 +443,7 @@ export function JourneyEditor(props: JourneyEditorProps) {
     <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm" aria-label={t("Edit journey")}>
+          <Button aria-label={t("Edit journey")} size="sm" variant="outline">
             {t("Edit")}
           </Button>
         }
@@ -452,8 +452,8 @@ export function JourneyEditor(props: JourneyEditorProps) {
         <FormGuardProvider guard={overlay}>
           <JourneyForm
             birthJourney={props.birthJourney}
-            onUpdate={props.onUpdate}
             onClose={overlay.close}
+            onUpdate={props.onUpdate}
           />
         </FormGuardProvider>
       </PopoverContent>
@@ -463,12 +463,12 @@ export function JourneyEditor(props: JourneyEditorProps) {
 
 function JourneyForm(props: {
   birthJourney: BirthJourney;
-  onUpdate: BabyUpdateHandler;
   onClose: () => void;
+  onUpdate: BabyUpdateHandler;
 }) {
   const form = useZodForm({
-    schema: journeySchema(),
     defaultValues: { birthJourney: props.birthJourney },
+    schema: journeySchema(),
   });
   const birthJourney = useWatch({ control: form.control, name: "birthJourney" });
 
@@ -499,13 +499,13 @@ type ThemeSelectorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-function ThemeSwatches(props: { colors: readonly string[] }) {
+function ThemeSwatches(props: { colors: ReadonlyArray<string> }) {
   return (
     <span className="flex gap-0.5">
       {props.colors.map((color, index) => (
         <span
-          key={index}
           className="size-4 rounded-sm border border-border/50"
+          key={index}
           style={{ backgroundColor: color }}
         />
       ))}
@@ -514,8 +514,8 @@ function ThemeSwatches(props: { colors: readonly string[] }) {
 }
 
 function ThemeOptionList(props: {
-  selectedValue: string | null | undefined;
   onPick: (theme: string | null) => void;
+  selectedValue: string | null | undefined;
 }) {
   const { t } = useI18n();
   const { isSubmitting } = useFormState();
@@ -527,17 +527,17 @@ function ThemeOptionList(props: {
         const isPending = isSubmitting && pendingTheme === option.value;
         return (
           <Button
-            key={option.value ?? "default"}
-            type="submit"
-            variant={props.selectedValue === option.value ? "default" : "ghost"}
-            aria-pressed={props.selectedValue === option.value}
             aria-busy={isPending}
-            disabled={isSubmitting}
-            size="sm"
+            aria-pressed={props.selectedValue === option.value}
             className="w-full justify-start gap-2"
+            disabled={isSubmitting}
+            key={option.value ?? "default"}
             onClick={() => {
               props.onPick(option.value);
             }}
+            size="sm"
+            type="submit"
+            variant={props.selectedValue === option.value ? "default" : "ghost"}
           >
             <ThemeSwatches colors={option.colors} />
             <span className="min-w-0 flex-1 text-left">{t(option.labelKey)}</span>
@@ -558,19 +558,19 @@ export function ThemeSelector(props: ThemeSelectorProps) {
   const overlay = useFormGuard({ onOpenChange: undefined });
   const selectedTheme = getThemeOption(props.baby.theme);
   const form = useZodForm({
+    defaultValues: { theme: props.baby.theme ?? null },
     schema: z
       .object({
         theme: z.union([z.string(), z.null()]),
       })
       .transform((values): Pick<BabyPatch, "theme"> => values),
-    defaultValues: { theme: props.baby.theme ?? null },
   });
 
   return (
     <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm" className="gap-2" aria-label={t("Change theme")}>
+          <Button aria-label={t("Change theme")} className="gap-2" size="sm" variant="outline">
             {selectedTheme ? (
               <>
                 <ThemeSwatches colors={selectedTheme.colors} />
@@ -592,10 +592,10 @@ export function ThemeSelector(props: ThemeSelectorProps) {
             }}
           >
             <ThemeOptionList
-              selectedValue={selectedTheme?.value}
               onPick={(theme) => {
                 form.setValue("theme", theme, { shouldDirty: true });
               }}
+              selectedValue={selectedTheme?.value}
             />
           </Form>
         </FormGuardProvider>

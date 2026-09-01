@@ -70,11 +70,11 @@ describe("applyCachePolicy", () => {
     const response = applyCachePolicy(
       new Request("https://example.com/og/baby/juniper-hale"),
       new Response(null, {
-        status: 307,
         headers: {
           "Cache-Control": "no-store",
           Location: "https://example.com/og/baby/juniper-hale?v=current",
         },
+        status: 307,
       }),
     );
 

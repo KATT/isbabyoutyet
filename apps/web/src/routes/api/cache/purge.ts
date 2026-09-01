@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { dangerouslyDeleteByTag } from "@vercel/functions";
 import { deriveCachePurgeToken } from "@workspace/convex/src/cacheTags";
-import * as z from "zod";
+import { z } from "zod";
 
 const purgeRequestSchema = z.object({
   tags: z.array(z.string().min(1).max(256)).min(1).max(16),
@@ -25,8 +25,8 @@ export async function handleCachePurge(request: Request, deps: CachePurgeDeps) {
     return Response.json(
       { error: "Cache purge is not configured" },
       {
-        status: 503,
         headers: PRIVATE_HEADERS,
+        status: 503,
       },
     );
   }
@@ -36,8 +36,8 @@ export async function handleCachePurge(request: Request, deps: CachePurgeDeps) {
     return Response.json(
       { error: "Unauthorized" },
       {
-        status: 401,
         headers: PRIVATE_HEADERS,
+        status: 401,
       },
     );
   }
@@ -47,8 +47,8 @@ export async function handleCachePurge(request: Request, deps: CachePurgeDeps) {
     return Response.json(
       { error: "Invalid cache purge request" },
       {
-        status: 400,
         headers: PRIVATE_HEADERS,
+        status: 400,
       },
     );
   }

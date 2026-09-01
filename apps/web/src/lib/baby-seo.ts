@@ -8,21 +8,21 @@ export function getBabySeo(doc: PublicBabyDoc, routePublicId: string) {
   return babySeoHead({
     name: doc.name,
     ...(doc.dueDateDisplayMode === "exact"
-      ? { dueDateDisplayMode: "exact" as const, dueDate: doc.dueDate }
+      ? { dueDate: doc.dueDate, dueDateDisplayMode: "exact" as const }
       : {
           dueDateDisplayMode: "message" as const,
           publicDueDateText: doc.publicDueDateText,
         }),
     // beforeLoad canonicalizes this route parameter. During same-route
     // navigation, reactive query data can briefly belong to the prior slug.
-    publicId: routePublicId,
-    theme: doc.theme,
-    locale: doc.resolvedLocale,
-    timeZone: doc.timeZone,
     babyBorn: doc.babyBorn,
-    wentToHospital: doc.wentToHospital,
     laborStarted: doc.laborStarted,
+    locale: doc.resolvedLocale,
     milestoneVisibility: doc.milestoneVisibility,
     photoId: doc.photoId ?? null,
+    publicId: routePublicId,
+    theme: doc.theme,
+    timeZone: doc.timeZone,
+    wentToHospital: doc.wentToHospital,
   });
 }

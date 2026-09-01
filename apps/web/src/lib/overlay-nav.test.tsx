@@ -23,29 +23,29 @@ type BabyPostOverlayNavRef = {
 test("openOverlayLink preloads through a real link and keeps overlay history", () => {
   expect(
     openOverlayLink({
-      to: "/baby/$publicId/post",
       params: { publicId: "baby-smith" },
+      to: "/baby/$publicId/post",
     }),
   ).toEqual({
-    to: "/baby/$publicId/post",
     params: { publicId: "baby-smith" },
     preload: "viewport",
     resetScroll: false,
     state: { overlay: true },
+    to: "/baby/$publicId/post",
   });
 });
 
 test("closeOverlayLink replaces to the close target without scroll reset", () => {
   expect(
     closeOverlayLink({
-      to: "/baby/$publicId",
       params: { publicId: "baby-smith" },
+      to: "/baby/$publicId",
     }),
   ).toEqual({
-    to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
     replace: true,
     resetScroll: false,
+    to: "/baby/$publicId",
   });
 });
 
@@ -53,18 +53,18 @@ test("dismissOverlay prefers history.back when the overlay was push-opened", () 
   const back = vi.fn<() => void>();
   const navigate = vi.fn<(opts: LinkProps) => void>();
   const closeLink = closeOverlayLink({
-    to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
+    to: "/baby/$publicId",
   });
 
   dismissOverlay({
+    closeLink,
     history: {
-      location: { state: { overlay: true } },
-      canGoBack: () => true,
       back,
+      canGoBack: () => true,
+      location: { state: { overlay: true } },
     },
     navigate,
-    closeLink,
   });
 
   expect(back).toHaveBeenCalledOnce();
@@ -75,18 +75,18 @@ test("dismissOverlay navigates with closeLink without overlay history", () => {
   const back = vi.fn<() => void>();
   const navigate = vi.fn<(opts: LinkProps) => void>();
   const closeLink = closeOverlayLink({
-    to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
+    to: "/baby/$publicId",
   });
 
   dismissOverlay({
+    closeLink,
     history: {
-      location: { state: { overlay: undefined } },
-      canGoBack: () => true,
       back,
+      canGoBack: () => true,
+      location: { state: { overlay: undefined } },
     },
     navigate,
-    closeLink,
   });
 
   expect(back).not.toHaveBeenCalled();
@@ -97,18 +97,18 @@ test("dismissOverlay navigates with closeLink when history cannot go back", () =
   const back = vi.fn<() => void>();
   const navigate = vi.fn<(opts: LinkProps) => void>();
   const closeLink = closeOverlayLink({
-    to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
+    to: "/baby/$publicId",
   });
 
   dismissOverlay({
+    closeLink,
     history: {
-      location: { state: { overlay: true } },
-      canGoBack: () => false,
       back,
+      canGoBack: () => false,
+      location: { state: { overlay: true } },
     },
     navigate,
-    closeLink,
   });
 
   expect(back).not.toHaveBeenCalled();
@@ -116,7 +116,7 @@ test("dismissOverlay navigates with closeLink when history cannot go back", () =
 });
 
 test("useOverlayNav owns enter/exit state and dismisses after animation", async () => {
-  const frames: FrameRequestCallback[] = [];
+  const frames: Array<FrameRequestCallback> = [];
   const requestFrame = vi
     .spyOn(globalThis, "requestAnimationFrame")
     .mockImplementation((callback) => {
@@ -142,9 +142,9 @@ test("useOverlayNav owns enter/exit state and dismisses after animation", async 
     component: Harness,
   });
   const router = createRouter({
-    routeTree: rootRoute,
-    history,
     defaultPendingMinMs: 0,
+    history,
+    routeTree: rootRoute,
   });
   await router.load();
   await using _view = renderResource(<RouterProvider router={router} />);

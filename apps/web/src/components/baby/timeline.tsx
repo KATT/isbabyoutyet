@@ -43,7 +43,7 @@ import type { ReactElement } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
-import * as z from "zod";
+import { z } from "zod";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -86,7 +86,7 @@ const TIMELINE_PRESENCE_MODE = "popLayout" as const;
 const TIMELINE_REDUCED_MOTION = "user" as const;
 const TIMELINE_ITEM_HIDDEN = { opacity: 0, scale: 0.96, y: -12 };
 const TIMELINE_ITEM_VISIBLE = { opacity: 1, scale: 1, y: 0 };
-const TIMELINE_ITEM_TRANSITION = { type: "spring", stiffness: 420, damping: 32 } as const;
+const TIMELINE_ITEM_TRANSITION = { damping: 32, stiffness: 420, type: "spring" } as const;
 
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
@@ -104,9 +104,9 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
 
 function composerSchema(opts: {
-  t: TranslationFunction;
-  allowedMilestones: readonly Milestone[];
+  allowedMilestones: ReadonlyArray<Milestone>;
   babyId: Id<"baby">;
+  t: TranslationFunction;
   timeZone: string;
 }) {
   return z
@@ -146,10 +146,10 @@ function composerSchema(opts: {
 }
 
 const MILESTONE_META = {
-  labor_started: { labelKey: MILESTONE_LABEL_KEYS.labor_started, icon: Heartbeat },
-  gone_to_hospital: { labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital, icon: Hospital },
-  born: { labelKey: MILESTONE_LABEL_KEYS.born, icon: Confetti },
-} as const satisfies Record<Milestone, { labelKey: TranslationKey; icon: typeof Heartbeat }>;
+  born: { icon: Confetti, labelKey: MILESTONE_LABEL_KEYS.born },
+  gone_to_hospital: { icon: Hospital, labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital },
+  labor_started: { icon: Heartbeat, labelKey: MILESTONE_LABEL_KEYS.labor_started },
+} as const satisfies Record<Milestone, { icon: typeof Heartbeat; labelKey: TranslationKey }>;
 
 const uploadResponseSchema = z.object({
   storageId: z.string().refine((value): value is Id<"_storage"> => value.length > 0),
@@ -162,15 +162,15 @@ function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
   const intervals = [
-    { unit: "year" as const, seconds: 31536000 },
-    { unit: "month" as const, seconds: 2592000 },
-    { unit: "week" as const, seconds: 604800 },
-    { unit: "day" as const, seconds: 86400 },
-    { unit: "hour" as const, seconds: 3600 },
-    { unit: "minute" as const, seconds: 60 },
+    { seconds: 31_536_000, unit: "year" as const },
+    { seconds: 2_592_000, unit: "month" as const },
+    { seconds: 604_800, unit: "week" as const },
+    { seconds: 86_400, unit: "day" as const },
+    { seconds: 3600, unit: "hour" as const },
+    { seconds: 60, unit: "minute" as const },
   ];
 
-  for (const { unit, seconds } of intervals) {
+  for (const { seconds, unit } of intervals) {
     const interval = Math.floor(Math.abs(diffInSeconds) / seconds);
     if (interval >= 1) {
       return rtf.format(diffInSeconds > 0 ? interval : -interval, unit);
@@ -185,12 +185,12 @@ function formatOccurredAt(
   opts: { locale: SupportedLocale; timeZone: string },
 ): string {
   return new Date(timestamp).toLocaleString(opts.locale, {
-    timeZone: opts.timeZone,
-    month: "short",
     day: "numeric",
-    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    month: "short",
+    timeZone: opts.timeZone,
+    year: "numeric",
   });
 }
 
@@ -201,8 +201,8 @@ function isWithinEditWindow(createdAt: number): boolean {
 // --- Owner composer ---
 
 type UpdateComposerProps = {
-  babyId: Id<"baby">;
   baby: BabyData;
+  babyId: Id<"baby">;
   babyName: string;
   /** Called after a successful post (e.g. to close the containing dialog) */
   onPosted: () => void;
@@ -217,8 +217,8 @@ type GenerateUploadUrlFn = (
 ) => Promise<FunctionReturnType<typeof api.baby.generateUploadUrl>>;
 
 type UpdateComposerFormProps = UpdateComposerProps & {
-  postUpdate: PostUpdateFn;
   generateUploadUrl: GenerateUploadUrlFn;
+  postUpdate: PostUpdateFn;
 };
 
 /** Hooks into Convex, then delegates to the pure `UpdateComposerForm`. */
@@ -232,8 +232,8 @@ export function UpdateComposer(props: UpdateComposerProps) {
     <UpdateComposerForm
       key={currentStatus.type}
       {...props}
-      postUpdate={postUpdate}
       generateUploadUrl={generateUploadUrl}
+      postUpdate={postUpdate}
     />
   );
 }
@@ -248,9 +248,9 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   const currentStatus = milestonePolicy.currentStatus;
   const futureMilestones = milestonePolicy.visibleMilestones.filter(milestonePolicy.canMark);
   const schema = composerSchema({
-    t,
     allowedMilestones: futureMilestones,
     babyId: props.babyId,
+    t,
     timeZone: props.baby.timeZone,
   });
 
@@ -299,9 +299,9 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
           if (photo) {
             const uploadUrl = await props.generateUploadUrl({ babyId: args.babyId });
             const response = await fetch(uploadUrl, {
-              method: "POST",
-              headers: { "Content-Type": photo.type },
               body: photo,
+              headers: { "Content-Type": photo.type },
+              method: "POST",
             });
             if (!response.ok) {
               throw new Error(t("Failed to upload photo"));
@@ -325,10 +325,10 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               <FormItem>
                 <FormControl>
                   <Textarea
-                    placeholder={t("Write a message (optional)…")}
                     aria-label={t("Update message (optional)")}
                     className="min-h-20"
                     maxLength={MAX_UPDATE_MESSAGE_LENGTH}
+                    placeholder={t("Write a message (optional)…")}
                     {...field}
                   />
                 </FormControl>
@@ -340,20 +340,22 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
           {photoPreviewUrl && (
             <div className="relative w-fit">
               <img
-                src={photoPreviewUrl}
                 alt={t("Photo to post")}
                 className="max-h-40 rounded-lg border border-border object-cover"
+                src={photoPreviewUrl}
               />
               <Button
-                type="button"
-                variant="secondary"
-                size="icon"
+                aria-label={t("Remove photo")}
                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
                 onClick={() => {
                   form.setValue("photo", null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
                 }}
-                aria-label={t("Remove photo")}
+                size="icon"
+                type="button"
+                variant="secondary"
               >
                 <X className="w-3 h-3" />
               </Button>
@@ -362,7 +364,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
 
           {futureMilestones.length > 0 && (
             <div className="space-y-2">
-              <p id="composer-status-label" className="text-xs font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground" id="composer-status-label">
                 {t("Status change (optional)")}
               </p>
               <FormField
@@ -371,13 +373,15 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                 render={(renderProps) => (
                   <RadioGroup
                     aria-labelledby="composer-status-label"
-                    value={selectedMilestone ?? "none"}
+                    className="gap-1.5"
                     onValueChange={(value) => {
                       renderProps.field.onChange(value);
                       // Deselecting forgets any backdate; reselecting starts from "now"
-                      if (value === "none") form.resetField("occurredAt");
+                      if (value === "none") {
+                        form.resetField("occurredAt");
+                      }
                     }}
-                    className="gap-1.5"
+                    value={selectedMilestone ?? "none"}
                   >
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
                       <RadioGroupItem value="none" />
@@ -388,8 +392,8 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                       const MilestoneIcon = meta.icon;
                       return (
                         <label
-                          key={candidate}
                           className="flex items-center gap-2 text-sm cursor-pointer"
+                          key={candidate}
                         >
                           <RadioGroupItem value={candidate} />
                           <MilestoneIcon className="w-3.5 h-3.5 text-muted-foreground" />
@@ -421,9 +425,9 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                           </span>
                           <FormControl>
                             <Input
-                              type="datetime-local"
-                              max={htmlDateTimeNow(props.baby.timeZone)}
                               className="w-fit"
+                              max={htmlDateTimeNow(props.baby.timeZone)}
+                              type="datetime-local"
                               {...field}
                             />
                           </FormControl>
@@ -443,12 +447,13 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
           )}
 
           <input
-            ref={fileInputRef}
-            type="file"
             accept="image/*"
+            className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];
-              if (!file) return;
+              if (!file) {
+                return;
+              }
               if (!file.type.startsWith("image/")) {
                 toast.error(t("Please select an image file"));
                 return;
@@ -459,15 +464,16 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               }
               form.setValue("photo", file, { shouldDirty: true });
             }}
-            className="hidden"
+            ref={fileInputRef}
+            type="file"
           />
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Button
+              onClick={() => fileInputRef.current?.click()}
+              size="sm"
               type="button"
               variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
             >
               <Images className="w-4 h-4" />
               {photoFile ? t("Change photo") : t("Add photo (optional)")}
@@ -493,31 +499,31 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
 // --- Timeline items ---
 
 type UpdateTimelineItemProps = {
-  item: UpdateItemData;
-  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
+  item: UpdateItemData;
   onDelete: (updateId: Id<"updates">) => Promise<void>;
   onSetAsCurrentPhoto: (updateId: Id<"updates">) => Promise<void>;
+  publicId: string;
 };
 
 const MILESTONE_EMOJI = {
-  labor_started: "💫",
-  gone_to_hospital: "🏥",
   born: "🎉",
+  gone_to_hospital: "🏥",
+  labor_started: "💫",
 } satisfies Record<Milestone, string>;
 
 const emptyActionSchema = z.object({});
 
 function PinAsPagePhotoForm(props: {
-  updateId: Id<"updates">;
   onSetAsCurrentPhoto: (updateId: Id<"updates">) => Promise<void>;
+  updateId: Id<"updates">;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: emptyActionSchema,
     defaultValues: {},
+    schema: emptyActionSchema,
   });
 
   return (
@@ -528,31 +534,31 @@ function PinAsPagePhotoForm(props: {
       }}
     >
       <SubmitButton
-        form="context"
-        variant="ghost"
-        size="icon"
+        aria-label={t("Set as page photo")}
         className="h-8 w-8 text-muted-foreground hover:text-foreground"
+        form="context"
         IconComponent={PushPin}
         iconPosition="start"
-        aria-label={t("Set as page photo")}
+        size="icon"
         title={t("Set as page photo")}
+        variant="ghost"
       />
     </Form>
   );
 }
 
 function DeleteUpdateForm(props: {
-  updateId: Id<"updates">;
+  description: string;
   onDelete: (updateId: Id<"updates">) => Promise<void>;
   title: string;
-  description: string;
   trigger: ReactElement;
+  updateId: Id<"updates">;
 }) {
   const { t } = useI18n();
   const overlay = useFormGuard({ onOpenChange: undefined });
   const form = useZodForm({
-    schema: emptyActionSchema,
     defaultValues: {},
+    schema: emptyActionSchema,
   });
 
   return (
@@ -576,9 +582,9 @@ function DeleteUpdateForm(props: {
               </AlertDialogCancel>
               <SubmitButton
                 form="context"
-                variant="destructive"
                 IconComponent={Trash}
                 iconPosition="start"
+                variant="destructive"
               >
                 {t("Delete")}
               </SubmitButton>
@@ -591,16 +597,16 @@ function DeleteUpdateForm(props: {
 }
 
 function DeleteEncouragementForm(props: {
-  encouragementId: Id<"encouragements">;
   authorName: string;
-  visitorId: string | undefined;
+  encouragementId: Id<"encouragements">;
   onDelete: (encouragementId: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
+  visitorId: string | undefined;
 }) {
   const { t } = useI18n();
   const overlay = useFormGuard({ onOpenChange: undefined });
   const form = useZodForm({
-    schema: emptyActionSchema,
     defaultValues: {},
+    schema: emptyActionSchema,
   });
 
   return (
@@ -608,10 +614,10 @@ function DeleteEncouragementForm(props: {
       <AlertDialogTrigger
         render={
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
             aria-label={t("Delete encouragement")}
+            className="h-8 w-8"
+            size="icon"
+            variant="ghost"
           >
             <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
           </Button>
@@ -640,9 +646,9 @@ function DeleteEncouragementForm(props: {
               </AlertDialogCancel>
               <SubmitButton
                 form="context"
-                variant="destructive"
                 IconComponent={Trash}
                 iconPosition="start"
+                variant="destructive"
               >
                 {t("Delete")}
               </SubmitButton>
@@ -671,11 +677,11 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
 
   const deleteButton = (
     <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8"
       aria-label={t("Delete update")}
+      className="h-8 w-8"
       disabled={Boolean(deleteBlocker)}
+      size="icon"
+      variant="ghost"
     >
       <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
     </Button>
@@ -684,8 +690,8 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   return (
     <div className="group flex items-start gap-3">
       <span
-        className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/25 bg-primary/10 text-lg"
         aria-hidden="true"
+        className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/25 bg-primary/10 text-lg"
       >
         {bubbleEmoji}
       </span>
@@ -720,17 +726,17 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 )}
               </Badge>
             ) : update.photoUrl ? (
-              <Badge variant="secondary" className="shrink-0">
+              <Badge className="shrink-0" variant="secondary">
                 <Camera className="w-3 h-3" />
                 {t("New photo")}
               </Badge>
             ) : (
-              <Badge variant="secondary" className="shrink-0">
+              <Badge className="shrink-0" variant="secondary">
                 {t("Update")}
               </Badge>
             )}
             {update.isCurrentPagePhoto && (
-              <Badge variant="outline" className="shrink-0">
+              <Badge className="shrink-0" variant="outline">
                 <PushPin className="w-3 h-3" />
                 {t("Page photo")}
               </Badge>
@@ -751,8 +757,8 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
               {canPinPhoto && (
                 <PinAsPagePhotoForm
-                  updateId={update._id}
                   onSetAsCurrentPhoto={props.onSetAsCurrentPhoto}
+                  updateId={update._id}
                 />
               )}
               {deleteBlocker ? (
@@ -760,10 +766,10 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                   <TooltipTrigger
                     render={
                       <span
-                        className="inline-flex"
                         aria-label={t("Delete the {{status}} status first", {
                           status: MILESTONE_LABELS[deleteBlocker],
                         })}
+                        className="inline-flex"
                       />
                     }
                   >
@@ -777,9 +783,6 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 </Tooltip>
               ) : (
                 <DeleteUpdateForm
-                  updateId={update._id}
-                  onDelete={props.onDelete}
-                  title={t("Delete update?")}
                   description={[
                     update.milestone
                       ? t("This also unmarks the milestone on the status card.")
@@ -793,7 +796,10 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                   ]
                     .filter(Boolean)
                     .join(" ")}
+                  onDelete={props.onDelete}
+                  title={t("Delete update?")}
                   trigger={deleteButton}
+                  updateId={update._id}
                 />
               )}
             </div>
@@ -804,11 +810,11 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             copy doesn't push the image below the fold of the card. */}
         {update.photoUrl && (
           <TimelinePhoto
-            publicId={props.publicId}
-            updateId={update._id}
-            photoUrl={update.photoUrl}
-            thumbnailUrl={update.thumbnailUrl}
             blurDataUrl={update.blurDataUrl}
+            photoUrl={update.photoUrl}
+            publicId={props.publicId}
+            thumbnailUrl={update.thumbnailUrl}
+            updateId={update._id}
           />
         )}
 
@@ -823,11 +829,11 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
 }
 
 type TimelinePhotoProps = {
-  publicId: string;
-  updateId: Id<"updates">;
-  photoUrl: string;
-  thumbnailUrl: string | null;
   blurDataUrl: string | null;
+  photoUrl: string;
+  publicId: string;
+  thumbnailUrl: string | null;
+  updateId: Id<"updates">;
 };
 
 function TimelinePhoto(props: TimelinePhotoProps) {
@@ -845,23 +851,23 @@ function TimelinePhoto(props: TimelinePhotoProps) {
       className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
     >
       <BlurImage
-        src={inlineUrl}
         alt={t("Baby update")}
         blurDataUrl={props.blurDataUrl}
         className="aspect-square max-h-64 w-full object-cover"
         loading="lazy"
+        src={inlineUrl}
       />
     </Link>
   );
 }
 
 type EncouragementTimelineItemProps = {
-  item: EncouragementItemData;
-  isOwner: boolean;
-  timeZone: string;
   currentVisitorId: string;
+  isOwner: boolean;
+  item: EncouragementItemData;
   onDelete: (id: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
   onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
+  timeZone: string;
 };
 
 function encouragementEditSchema(
@@ -882,19 +888,19 @@ function encouragementEditSchema(
  * the current message on every reveal — no reset bookkeeping.
  */
 function EncouragementEditForm(props: {
-  initialMessage: string;
   encouragementId: Id<"encouragements">;
-  visitorId: string;
-  onSave: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
+  initialMessage: string;
   onClose: () => void;
+  onSave: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
+  visitorId: string;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
+    defaultValues: { message: props.initialMessage },
     schema: encouragementEditSchema(t, {
       encouragementId: props.encouragementId,
       visitorId: props.visitorId,
     }),
-    defaultValues: { message: props.initialMessage },
   });
   return (
     <Form
@@ -944,8 +950,8 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   return (
     <div className="group flex items-start gap-3">
       <span
-        className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary/40 text-base font-black text-secondary-foreground"
         aria-hidden="true"
+        className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary/40 text-base font-black text-secondary-foreground"
       >
         {initial}
       </span>
@@ -979,10 +985,10 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                   <PopoverTrigger
                     render={
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
                         aria-label={t("Edit encouragement")}
+                        className="h-8 w-8"
+                        size="icon"
+                        variant="ghost"
                       />
                     }
                   >
@@ -991,11 +997,11 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                   <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
                     <FormGuardProvider guard={overlay}>
                       <EncouragementEditForm
-                        initialMessage={encouragement.message}
                         encouragementId={encouragement._id}
-                        visitorId={props.currentVisitorId}
-                        onSave={props.onUpdate}
+                        initialMessage={encouragement.message}
                         onClose={overlay.close}
+                        onSave={props.onUpdate}
+                        visitorId={props.currentVisitorId}
                       />
                     </FormGuardProvider>
                   </PopoverContent>
@@ -1003,10 +1009,10 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               )}
               {canDelete && (
                 <DeleteEncouragementForm
-                  encouragementId={encouragement._id}
                   authorName={encouragement.authorName}
-                  visitorId={canEdit ? props.currentVisitorId : undefined}
+                  encouragementId={encouragement._id}
                   onDelete={props.onDelete}
+                  visitorId={canEdit ? props.currentVisitorId : undefined}
                 />
               )}
             </div>
@@ -1020,11 +1026,11 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 // --- Feed ---
 
 type TimelineFeedProps = {
-  babyId: Id<"baby">;
-  publicId: string;
   baby: BabyData;
+  babyId: Id<"baby">;
   babyName: string;
   isOwner: boolean;
+  publicId: string;
   /** Prefetched infinite timeline handle from the route loader (SSR first page). */
   timeline:
     | PreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>
@@ -1068,36 +1074,36 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   return (
     <TimelineFeedView
-      publicId={props.publicId}
       baby={props.baby}
       babyName={props.babyName}
-      isOwner={props.isOwner}
-      items={items}
+      currentVisitorId={currentVisitorId}
+      fetchNextPage={timelineQuery.fetchNextPage}
       hasNextPage={timelineQuery.hasNextPage}
       isFetchingNextPage={timelineQuery.isFetchingNextPage}
-      fetchNextPage={timelineQuery.fetchNextPage}
-      currentVisitorId={currentVisitorId}
+      isOwner={props.isOwner}
+      items={items}
+      publicId={props.publicId}
+      removeEncouragement={removeEncouragement}
       removeUpdate={removeUpdate}
       setAsCurrentPhoto={setAsCurrentPhoto}
-      removeEncouragement={removeEncouragement}
       updateEncouragement={updateEncouragement}
     />
   );
 }
 
 type TimelineFeedViewProps = {
-  publicId: string;
   baby: BabyData;
   babyName: string;
-  isOwner: boolean;
-  items: TimelineItemData[];
+  currentVisitorId: string;
+  fetchNextPage: () => void;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
-  fetchNextPage: () => void;
-  currentVisitorId: string;
+  isOwner: boolean;
+  items: Array<TimelineItemData>;
+  publicId: string;
+  removeEncouragement: RemoveEncouragementFn;
   removeUpdate: RemoveUpdateFn;
   setAsCurrentPhoto: SetAsCurrentPhotoFn;
-  removeEncouragement: RemoveEncouragementFn;
   updateEncouragement: UpdateEncouragementFn;
 };
 
@@ -1171,7 +1177,7 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
 
       {props.items.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-border py-10 text-center">
-          <p className="text-3xl" aria-hidden="true">
+          <p aria-hidden="true" className="text-3xl">
             💌
           </p>
           <p className="mt-3 font-bold text-foreground">{t("Nothing here yet")}</p>
@@ -1190,35 +1196,35 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
               const isLiveInsert = liveInsertIds.has(item._id);
               return (
                 <motion.div
+                  data-live-insert={isLiveInsert ? "" : undefined}
                   key={item._id}
                   layout={TIMELINE_ITEM_LAYOUT}
-                  data-live-insert={isLiveInsert ? "" : undefined}
                 >
                   <motion.div
-                    className="origin-top"
-                    initial={isLiveInsert ? TIMELINE_ITEM_HIDDEN : false}
                     animate={TIMELINE_ITEM_VISIBLE}
+                    className="origin-top"
                     exit={TIMELINE_ITEM_HIDDEN}
+                    initial={isLiveInsert ? TIMELINE_ITEM_HIDDEN : false}
                     transition={TIMELINE_ITEM_TRANSITION}
                   >
                     {item.kind === "update" ? (
                       <UpdateTimelineItem
-                        item={item}
-                        publicId={props.publicId}
                         baby={props.baby}
                         babyName={props.babyName}
                         isOwner={props.isOwner}
+                        item={item}
                         onDelete={handleDeleteUpdate}
                         onSetAsCurrentPhoto={handleSetAsCurrentPhoto}
+                        publicId={props.publicId}
                       />
                     ) : (
                       <EncouragementTimelineItem
-                        item={item}
-                        isOwner={props.isOwner}
-                        timeZone={props.baby.timeZone}
                         currentVisitorId={props.currentVisitorId}
+                        isOwner={props.isOwner}
+                        item={item}
                         onDelete={handleDeleteEncouragement}
                         onUpdate={handleUpdateEncouragement}
+                        timeZone={props.baby.timeZone}
                       />
                     )}
                   </motion.div>
@@ -1229,7 +1235,7 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
         </div>
       </MotionConfig>
 
-      <div ref={loadMoreRef} className="py-2">
+      <div className="py-2" ref={loadMoreRef}>
         {isFetchingNextPage ? (
           <div className="text-center text-muted-foreground">
             <Spinner className="mx-auto" />

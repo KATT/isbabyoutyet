@@ -2,9 +2,9 @@ import { commands } from "vitest/browser";
 import { expect, test } from "vitest";
 
 type PageCheckOptions = {
-  path: string;
-  heading: string;
   expectedText: string | null;
+  heading: string;
+  path: string;
 };
 
 type OverflowResult = {
@@ -25,28 +25,28 @@ declare module "vitest/browser" {
 
 const fixtures = [
   {
-    path: "/baby/willow-brooks",
+    expectedText: null,
     heading: "Is Willow Brooks out yet?",
-    expectedText: null,
+    path: "/baby/willow-brooks",
   },
   {
-    path: "/baby/baby-waiting",
+    expectedText: null,
     heading: "Is Baby Waiting out yet?",
-    expectedText: null,
+    path: "/baby/baby-waiting",
   },
   {
-    path: "/baby/baby-born",
-    heading: "Is Baby Born out yet?",
     expectedText: "layout-stress.example",
+    heading: "Is Baby Born out yet?",
+    path: "/baby/baby-born",
   },
 ] as const;
 
 for (const fixture of fixtures) {
   test(`${fixture.path} fits within a 393px viewport`, async () => {
     const result = await commands.measureMobileOverflow({
-      path: fixture.path,
-      heading: fixture.heading,
       expectedText: fixture.expectedText,
+      heading: fixture.heading,
+      path: fixture.path,
     });
 
     expect(

@@ -11,13 +11,13 @@ export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 
 type BabySeoBase = {
+  babyBorn: string | null | undefined;
+  laborStarted: string | null | undefined;
+  locale: SupportedLocale;
   name: string;
   publicId: string;
   theme: string | null | undefined;
-  locale: SupportedLocale;
-  babyBorn: string | null | undefined;
   wentToHospital: string | null | undefined;
-  laborStarted: string | null | undefined;
 } & Partial<{
   milestoneVisibility: MilestoneVisibility | null;
   photoId: string | null;
@@ -25,7 +25,7 @@ type BabySeoBase = {
 }>;
 
 type BabyDueDateDisplay =
-  | { dueDateDisplayMode: "exact"; dueDate: string }
+  | { dueDate: string; dueDateDisplayMode: "exact" }
   | { dueDateDisplayMode: "message"; publicDueDateText: string };
 
 type BabySeoInput = BabySeoBase & Partial<BabyDueDateDisplay>;
@@ -92,7 +92,7 @@ export function babyPageDescription(baby: BabySeoInput) {
   }
 }
 
-export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLocale }) {
+export function babyStatusLabel(opts: { locale: SupportedLocale; status: BabyStatus }) {
   switch (opts.status.type) {
     case "born":
       return translate(opts.locale, "Yes! Baby is out");
@@ -118,14 +118,14 @@ export function babyStatusDetail(opts: {
     return translate(locale, "Yes! Baby is out");
   }
   if (opts.status.type !== "not_yet") {
-    return babyStatusLabel({ status: opts.status, locale });
+    return babyStatusLabel({ locale, status: opts.status });
   }
   if (opts.baby.dueDateDisplayMode === "message") {
     const message = opts.baby.publicDueDateText?.trim() ?? "";
     if (message) {
       return message;
     }
-    return babyStatusLabel({ status: opts.status, locale });
+    return babyStatusLabel({ locale, status: opts.status });
   }
   if (opts.baby.dueDateDisplayMode === "exact" && opts.baby.dueDate) {
     const timeZone = opts.baby.timeZone ?? DEFAULT_TIME_ZONE;
@@ -144,14 +144,14 @@ export function babyStatusDetail(opts: {
       { count: daysUntil },
     );
   }
-  return babyStatusLabel({ status: opts.status, locale });
+  return babyStatusLabel({ locale, status: opts.status });
 }
 
 function babyOgImagePath(publicId: string) {
   return `/og/baby/${publicId}`;
 }
 
-function babyOgImageVersion(opts: { baby: BabySeoInput; title: string; description: string }) {
+function babyOgImageVersion(opts: { baby: BabySeoInput; description: string; title: string }) {
   const source = JSON.stringify([
     "baby-og-v2",
     opts.title,
@@ -169,12 +169,12 @@ function babyOgImageVersion(opts: { baby: BabySeoInput; title: string; descripti
     opts.baby.milestoneVisibility?.showHospital ?? null,
     opts.baby.photoId ?? null,
   ]);
-  let first = 0x811c9dc5;
-  let second = 0x9e3779b9;
+  let first = 0x81_1c_9d_c5;
+  let second = 0x9e_37_79_b9;
   for (let index = 0; index < source.length; index++) {
     const code = source.charCodeAt(index);
-    first = Math.imul(first ^ code, 0x01000193);
-    second = Math.imul(second ^ code, 0x85ebca6b);
+    first = Math.imul(first ^ code, 0x01_00_01_93);
+    second = Math.imul(second ^ code, 0x85_eb_ca_6b);
   }
   return `${(first >>> 0).toString(36)}${(second >>> 0).toString(36)}`;
 }
@@ -191,15 +191,15 @@ export function homepageOgImagePath() {
   return "/og";
 }
 
-export function openGraphImageMeta(opts: { imageUrl: string; alt: string }) {
+export function openGraphImageMeta(opts: { alt: string; imageUrl: string }) {
   return [
-    { property: "og:image", content: opts.imageUrl },
-    { property: "og:image:width", content: String(OG_IMAGE_WIDTH) },
-    { property: "og:image:height", content: String(OG_IMAGE_HEIGHT) },
-    { property: "og:image:alt", content: opts.alt },
-    { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:image", content: opts.imageUrl },
-    { name: "twitter:image:alt", content: opts.alt },
+    { content: opts.imageUrl, property: "og:image" },
+    { content: String(OG_IMAGE_WIDTH), property: "og:image:width" },
+    { content: String(OG_IMAGE_HEIGHT), property: "og:image:height" },
+    { content: opts.alt, property: "og:image:alt" },
+    { content: "summary_large_image", name: "twitter:card" },
+    { content: opts.imageUrl, name: "twitter:image" },
+    { content: opts.alt, name: "twitter:image:alt" },
   ];
 }
 
@@ -207,20 +207,20 @@ export function babySeoHead(baby: BabySeoInput) {
   const title = babyPageTitle(baby);
   const description = babyPageDescription(baby);
   const pagePath = `/baby/${baby.publicId}`;
-  const imageVersion = babyOgImageVersion({ baby, title, description });
+  const imageVersion = babyOgImageVersion({ baby, description, title });
   const imageUrl = babyOgImageUrl(baby.publicId, imageVersion);
   const themeColor = getThemePrimaryColor(baby.theme);
 
   return {
-    title,
-    description,
-    themeColor,
     canonical: canonicalUrl(pagePath),
-    ogUrl: canonicalUrl(pagePath),
-    imageUrl,
+    description,
     imageAlt: title,
-    locale: baby.locale,
+    imageUrl,
     indexable: isIndexableBabyPublicId(baby.publicId),
+    locale: baby.locale,
+    ogUrl: canonicalUrl(pagePath),
+    themeColor,
+    title,
   };
 }
 

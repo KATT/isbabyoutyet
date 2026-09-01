@@ -6,7 +6,7 @@ import { DEMO_EMPTY_USER, DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/
 import { modules, registerComponents } from "./test.setup";
 import { parseAuthUserPage } from "./admin";
 
-const FIRST_PAGE = { numItems: 20, cursor: null };
+const FIRST_PAGE = { cursor: null, numItems: 20 };
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -17,23 +17,23 @@ async function setup() {
 test("Better Auth user pagination validates adapter output", () => {
   expect(
     parseAuthUserPage({
-      page: [{ _id: "user-1", email: "user@example.com" }],
-      isDone: true,
       continueCursor: "cursor",
+      isDone: true,
+      page: [{ _id: "user-1", email: "user@example.com" }],
     }),
   ).toEqual({
-    page: [{ _id: "user-1", email: "user@example.com" }],
-    isDone: true,
     continueCursor: "cursor",
+    isDone: true,
+    page: [{ _id: "user-1", email: "user@example.com" }],
   });
 
   for (const invalid of [
     null,
     "not an object",
     {},
-    { page: [null], isDone: true, continueCursor: "cursor" },
-    { page: [], isDone: "yes", continueCursor: "cursor" },
-    { page: [], isDone: true, continueCursor: null },
+    { continueCursor: "cursor", isDone: true, page: [null] },
+    { continueCursor: "cursor", isDone: "yes", page: [] },
+    { continueCursor: null, isDone: true, page: [] },
   ]) {
     expect(() => parseAuthUserPage(invalid)).toThrow(/invalid user (page|pagination)/);
   }
@@ -49,10 +49,10 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
   ).rejects.toThrow("Not authorized");
   await expect(
     asAlice.query(api.admin.listBabies, {
-      sortBy: "created",
-      sortOrder: "desc",
       hideDemo: true,
       paginationOpts: FIRST_PAGE,
+      sortBy: "created",
+      sortOrder: "desc",
     }),
   ).rejects.toThrow("Not authorized");
   await expect(asAlice.query(api.admin.listUsers, { paginationOpts: FIRST_PAGE })).rejects.toThrow(
@@ -72,16 +72,16 @@ test("seedDemoData marks the demo user as admin", async () => {
   const asDemo = t.withIdentity({ subject: seeded.userId });
 
   expect(await asDemo.query(api.profile.get, {})).toMatchObject({
-    locale: "en-GB",
     isAdmin: true,
+    locale: "en-GB",
   });
 
   await t.mutation(internal.seed.seedDemoData, {});
   expect(await asDemo.query(api.profile.get, {})).toMatchObject({ isAdmin: true });
 
   const sameSubjectFromAnotherIssuer = t.withIdentity({
-    subject: seeded.userId,
     issuer: "https://other-issuer.test",
+    subject: seeded.userId,
   });
   await expect(
     sameSubjectFromAnotherIssuer.query(api.admin.listLanguageRequests, {
@@ -108,13 +108,13 @@ test("admins can list language requests with requester emails", async () => {
     expect.arrayContaining([
       expect.objectContaining({
         requestedLocale: "French",
-        userId: "bob",
         userEmail: null,
+        userId: "bob",
       }),
       expect.objectContaining({
         requestedLocale: "German",
-        userId: "bob",
         userEmail: null,
+        userId: "bob",
       }),
     ]),
   );
@@ -132,83 +132,85 @@ test("admins can list babies sorted by created or updated with manager emails", 
       .withIndex("by_publicId", (q) => q.eq("publicId", "baby-waiting"))
       .unique();
   });
-  if (!waiting) throw new Error("missing waiting baby");
+  if (!waiting) {
+    throw new Error("missing waiting baby");
+  }
 
   await t.run(async (ctx) => {
     const now = Date.now();
     await ctx.db.insert("babyCoParents", {
+      addedAt: Date.now(),
+      addedByUserId: seeded.userId,
       babyId: waiting._id,
-      userId: "co-parent-user",
-      tokenIdentifier: "https://convex.test|co-parent-user",
       email: "coparent@example.com",
       name: "Co",
-      addedByUserId: seeded.userId,
-      addedAt: Date.now(),
+      tokenIdentifier: "https://convex.test|co-parent-user",
+      userId: "co-parent-user",
     });
     await ctx.db.insert("babyCoParents", {
+      addedAt: Date.now(),
+      addedByUserId: seeded.userId,
       babyId: waiting._id,
-      userId: "gone-user",
-      tokenIdentifier: "https://convex.test|gone-user",
+      deletedAt: Date.now(),
       email: "gone@example.com",
       name: "Gone",
-      addedByUserId: seeded.userId,
-      addedAt: Date.now(),
-      deletedAt: Date.now(),
+      tokenIdentifier: "https://convex.test|gone-user",
+      userId: "gone-user",
     });
     await ctx.db.insert("babyCoParents", {
+      addedAt: Date.now(),
+      addedByUserId: seeded.userId,
       babyId: waiting._id,
-      userId: "dup-owner",
-      tokenIdentifier: "https://convex.test|dup-owner",
       email: DEMO_USER.email,
       name: "Dup",
-      addedByUserId: seeded.userId,
-      addedAt: Date.now(),
+      tokenIdentifier: "https://convex.test|dup-owner",
+      userId: "dup-owner",
     });
     await ctx.db.insert("baby", {
-      userId: "unknown-owner",
-      ownerTokenIdentifier: "https://convex.test|unknown-owner",
-      name: "Deleted",
+      birthJourney: "labor",
+      deletedAt: Date.now(),
       dueDate: "2026-12-01",
       dueDateDisplayMode: "exact",
+      lastActivityAt: now,
+      name: "Deleted",
+      ownerTokenIdentifier: "https://convex.test|unknown-owner",
       publicDueDateText: null,
       publicId: "baby-deleted",
-      birthJourney: "labor",
-      lastActivityAt: now,
       subscriptionCount: 0,
-      deletedAt: Date.now(),
+      userId: "unknown-owner",
     });
     await ctx.db.insert("baby", {
-      userId: "unknown-owner",
-      ownerTokenIdentifier: "https://convex.test|unknown-owner",
-      name: "Quiet",
+      birthJourney: "labor",
       dueDate: "2026-12-01",
       dueDateDisplayMode: "message",
+      lastActivityAt: now,
+      name: "Quiet",
+      ownerTokenIdentifier: "https://convex.test|unknown-owner",
       publicDueDateText: "Any day now",
       publicId: "baby-quiet",
-      birthJourney: "labor",
-      lastActivityAt: now,
       subscriptionCount: 0,
+      userId: "unknown-owner",
     });
     await ctx.db.insert("baby", {
-      userId: HOMEPAGE_DEMO_OWNER_USER_ID,
-      ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_OWNER_USER_ID}`,
-      name: "Juniper Hale",
-      dueDate: "2026-08-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "juniper-hale",
       birthJourney: "labor",
       demo: true,
+      dueDate: "2026-08-01",
+      dueDateDisplayMode: "exact",
       lastActivityAt: now,
+      name: "Juniper Hale",
+      ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_OWNER_USER_ID}`,
+      publicDueDateText: null,
+      publicId: "juniper-hale",
       subscriptionCount: 0,
+      userId: HOMEPAGE_DEMO_OWNER_USER_ID,
     });
   });
 
   const byCreated = await asDemo.query(api.admin.listBabies, {
-    sortBy: "created",
-    sortOrder: "desc",
     hideDemo: false,
     paginationOpts: FIRST_PAGE,
+    sortBy: "created",
+    sortOrder: "desc",
   });
   expect(byCreated.page.some((row) => row.publicId === "baby-deleted")).toBe(false);
   expect(byCreated.page.some((row) => row.publicId === "baby-quiet")).toBe(true);
@@ -219,20 +221,20 @@ test("admins can list babies sorted by created or updated with manager emails", 
   }
 
   const hiddenDemos = await asDemo.query(api.admin.listBabies, {
-    sortBy: "created",
-    sortOrder: "desc",
     hideDemo: true,
     paginationOpts: FIRST_PAGE,
+    sortBy: "created",
+    sortOrder: "desc",
   });
   expect(hiddenDemos.page.every((row) => row.demo === false)).toBe(true);
   expect(hiddenDemos.page.some((row) => row.publicId === "juniper-hale")).toBe(false);
   expect(hiddenDemos.page.some((row) => row.publicId === "baby-quiet")).toBe(true);
 
   const byCreatedAsc = await asDemo.query(api.admin.listBabies, {
-    sortBy: "created",
-    sortOrder: "asc",
     hideDemo: false,
     paginationOpts: FIRST_PAGE,
+    sortBy: "created",
+    sortOrder: "asc",
   });
   expect(byCreatedAsc.page.map((row) => row._id)).toEqual(
     [...byCreated.page].toReversed().map((row) => row._id),
@@ -251,10 +253,10 @@ test("admins can list babies sorted by created or updated with manager emails", 
     publicDueDateText: "Any day now",
   });
   const byUpdated = await asDemo.query(api.admin.listBabies, {
-    sortBy: "updated",
-    sortOrder: "desc",
     hideDemo: false,
     paginationOpts: FIRST_PAGE,
+    sortBy: "updated",
+    sortOrder: "desc",
   });
   expect(byUpdated.page.length).toBe(byCreated.page.length);
   for (let i = 1; i < byUpdated.page.length; i++) {
@@ -263,28 +265,28 @@ test("admins can list babies sorted by created or updated with manager emails", 
 
   // Tiny pages prove continueCursor pagination works.
   const page1 = await asDemo.query(api.admin.listBabies, {
+    hideDemo: false,
+    paginationOpts: { cursor: null, numItems: 2 },
     sortBy: "created",
     sortOrder: "desc",
-    hideDemo: false,
-    paginationOpts: { numItems: 2, cursor: null },
   });
   expect(page1.page).toHaveLength(2);
   expect(page1.isDone).toBe(false);
   const page2 = await asDemo.query(api.admin.listBabies, {
+    hideDemo: false,
+    paginationOpts: { cursor: page1.continueCursor, numItems: 2 },
     sortBy: "created",
     sortOrder: "desc",
-    hideDemo: false,
-    paginationOpts: { numItems: 2, cursor: page1.continueCursor },
   });
   expect(page2.page.length).toBeGreaterThan(0);
   expect(page2.page[0]!._id).not.toBe(page1.page[0]!._id);
 
   await expect(
     asDemo.query(api.admin.listBabies, {
+      hideDemo: false,
+      paginationOpts: { cursor: "nope", numItems: 2 },
       sortBy: "created",
       sortOrder: "desc",
-      hideDemo: false,
-      paginationOpts: { numItems: 2, cursor: "nope" },
     }),
   ).rejects.toThrow(/not valid JSON/i);
 
@@ -292,12 +294,12 @@ test("admins can list babies sorted by created or updated with manager emails", 
   await asDemoRequester.mutation(api.profile.requestLanguage, { requestedLocale: "Welsh" });
   await asDemoRequester.mutation(api.profile.requestLanguage, { requestedLocale: "Irish" });
   const requests = await asDemo.query(api.admin.listLanguageRequests, {
-    paginationOpts: { numItems: 1, cursor: null },
+    paginationOpts: { cursor: null, numItems: 1 },
   });
   expect(requests.page).toHaveLength(1);
   expect(requests.isDone).toBe(false);
   const requestsPage2 = await asDemo.query(api.admin.listLanguageRequests, {
-    paginationOpts: { numItems: 1, cursor: requests.continueCursor },
+    paginationOpts: { cursor: requests.continueCursor, numItems: 1 },
   });
   expect(requestsPage2.page).toHaveLength(1);
   expect(requestsPage2.page[0]!._id).not.toBe(requests.page[0]!._id);
@@ -315,17 +317,17 @@ test("admins can list recently signed up users newest first", async () => {
   const asDemo = t.withIdentity({ subject: seeded.userId });
   await t.run(async (ctx) => {
     await ctx.db.insert("baby", {
-      userId: seeded.userId,
-      ownerTokenIdentifier: `https://convex.test|${seeded.userId}`,
-      name: "Deleted owned baby",
+      birthJourney: "labor",
+      deletedAt: Date.now(),
       dueDate: "2026-12-01",
       dueDateDisplayMode: "exact",
+      lastActivityAt: Date.now(),
+      name: "Deleted owned baby",
+      ownerTokenIdentifier: `https://convex.test|${seeded.userId}`,
       publicDueDateText: null,
       publicId: "deleted-owned-baby",
-      birthJourney: "labor",
-      lastActivityAt: Date.now(),
       subscriptionCount: 0,
-      deletedAt: Date.now(),
+      userId: seeded.userId,
     });
   });
 
@@ -349,12 +351,12 @@ test("admins can list recently signed up users newest first", async () => {
   }
 
   const page1 = await asDemo.query(api.admin.listUsers, {
-    paginationOpts: { numItems: 1, cursor: null },
+    paginationOpts: { cursor: null, numItems: 1 },
   });
   expect(page1.page).toHaveLength(1);
   expect(page1.isDone).toBe(false);
   const page2 = await asDemo.query(api.admin.listUsers, {
-    paginationOpts: { numItems: 1, cursor: page1.continueCursor },
+    paginationOpts: { cursor: page1.continueCursor, numItems: 1 },
   });
   expect(page2.page).toHaveLength(1);
   expect(page2.page[0]!._id).not.toBe(page1.page[0]!._id);

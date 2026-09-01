@@ -13,17 +13,17 @@ test("loginRedirectQuery reads the query string", () => {
 });
 
 test.each([
-  { redirect: "/baby/baby-waiting", publicId: "baby-waiting" },
-  { redirect: "/baby/juniper-hale", publicId: "juniper-hale" },
+  { publicId: "baby-waiting", redirect: "/baby/baby-waiting" },
+  { publicId: "juniper-hale", redirect: "/baby/juniper-hale" },
 ])("allowlists the baby page $redirect", (testCase) => {
   expect(parseBabyLoginPublicId(testCase.redirect)).toBe(testCase.publicId);
   expect(babyLoginSuccessTarget(testCase.redirect)).toEqual({
-    to: "/baby/$publicId",
     params: { publicId: testCase.publicId },
+    to: "/baby/$publicId",
   });
   expect(babyLoginHomeLink(testCase.redirect)).toEqual({
-    to: "/baby/$publicId",
     params: { publicId: testCase.publicId },
+    to: "/baby/$publicId",
   });
 });
 
@@ -42,7 +42,7 @@ test.each([
   "/baby/%2e%2e",
   "/baby/",
   "/baby/foo.bar",
-  "/baby/baby\\waiting",
+  String.raw`/baby/baby\waiting`,
   "baby-waiting",
 ])("rejects %s as a login redirect", (redirect) => {
   expect(parseBabyLoginPublicId(redirect)).toBeNull();

@@ -12,7 +12,7 @@ export const Route = createFileRoute("/robots.txt")({
               "Content-Type": "text/plain; charset=utf-8",
             },
           }),
-          { maxAgeSeconds: 3_600, tags: ["discovery"] },
+          { maxAgeSeconds: 3600, tags: ["discovery"] },
         ),
     },
   },

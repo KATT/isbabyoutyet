@@ -4,7 +4,7 @@ import { patchOwnedBaby, seedOwnedBaby } from "@/test/convexTestSeed";
 
 test("patchOwnedBaby throws when the baby row is gone", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await harness.t.run(async (ctx) => {
     await ctx.db.delete(baby.babyId);
   });
@@ -19,7 +19,7 @@ test("patchOwnedBaby throws when the baby row is gone", async () => {
 
 test("seedOwnedBaby without a due date uses the custom-message display mode", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: null });
+  const baby = await seedOwnedBaby(harness, { dueDate: null, name: "Baby Smith" });
   const stored = await harness.t.run(async (ctx) => ctx.db.get(baby.babyId));
   expect(stored).toMatchObject({
     dueDate: null,

@@ -13,20 +13,20 @@ test("homepage OG image returns a PNG response", async () => {
 
 test("baby OG image includes status-aware card as PNG", async () => {
   const response = await createBabyOgImage({
-    name: "Juniper",
+    babyBorn: null,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
-    theme: "sunny-days",
-    locale: "en-GB",
-    babyBorn: null,
-    wentToHospital: null,
     laborStarted: null,
+    locale: "en-GB",
+    name: "Juniper",
     photoUrl: null,
+    theme: "sunny-days",
+    wentToHospital: null,
   });
   expect(response.status).toBe(200);
   expect(response.headers.get("content-type")).toContain("image/png");
   expect(response.headers.get("cache-control")).toBeNull();
   const bytes = new Uint8Array(await response.arrayBuffer());
   expect(Array.from(bytes.slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
-  expect(bytes.byteLength).toBeGreaterThan(5_000);
+  expect(bytes.byteLength).toBeGreaterThan(5000);
 }, 30_000);

@@ -1,9 +1,8 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import path from "node:path";
 import { convexRun, seedHomepageDemoPhotos } from "./seedHomepageDemo";
 
-const convexPackageDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const convexPackageDir = path.resolve(import.meta.dirname, "..");
 export const HOMEPAGE_DEMO_PHOTOS_PENDING_MARKER = path.join(
   convexPackageDir,
   ".seed-photos-pending.local",
@@ -13,18 +12,18 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForConvexReady(extraConvexArgs: string[]) {
+async function waitForConvexReady(extraConvexArgs: Array<string>) {
   const maxAttempts = 120;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       convexRun({
-        functionName: "homepageDemo:ensureBaby",
         args: {},
         extraConvexArgs,
+        functionName: "homepageDemo:ensureBaby",
       });
       return;
     } catch {
-      await sleep(1_000);
+      await sleep(1000);
     }
   }
   throw new Error("Timed out waiting for Convex dev backend before seeding homepage photos");
@@ -42,7 +41,7 @@ export async function seedHomepagePhotosDeferred() {
   console.log("Homepage demo photos seeded.");
 }
 
-const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const isCli = process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename;
 if (isCli) {
   await seedHomepagePhotosDeferred();
 }

@@ -3,40 +3,40 @@ import type { TranslationKey } from "@/lib/i18n";
 
 export const JOURNEY_PRESET_OPTIONS = [
   {
-    value: "labor",
-    labelKey: "Labour",
     descriptionKey: "Visitors see: Labour started → Gone to hospital → Baby born",
+    labelKey: "Labour",
+    value: "labor",
   },
   {
-    value: "home_birth",
-    labelKey: "Home birth",
     descriptionKey: "Visitors see: Labour started → Baby born",
+    labelKey: "Home birth",
+    value: "home_birth",
   },
   {
-    value: "planned_c_section",
-    labelKey: "Planned C-section",
     descriptionKey: "Visitors see: Gone to hospital → Baby born",
+    labelKey: "Planned C-section",
+    value: "planned_c_section",
   },
 ] as const satisfies ReadonlyArray<{
-  value: PresetBirthJourney;
-  labelKey: TranslationKey;
   descriptionKey: TranslationKey;
+  labelKey: TranslationKey;
+  value: PresetBirthJourney;
 }>;
 
 export const JOURNEY_OPTION_BY_VALUE = {
-  labor: JOURNEY_PRESET_OPTIONS[0],
-  home_birth: JOURNEY_PRESET_OPTIONS[1],
-  planned_c_section: JOURNEY_PRESET_OPTIONS[2],
   custom: {
-    value: "custom",
-    labelKey: "Custom",
     descriptionKey: "Visitors see: Baby born",
+    labelKey: "Custom",
+    value: "custom",
   },
+  home_birth: JOURNEY_PRESET_OPTIONS[1],
+  labor: JOURNEY_PRESET_OPTIONS[0],
+  planned_c_section: JOURNEY_PRESET_OPTIONS[2],
 } as const satisfies Record<
   BirthJourney,
   {
-    value: BirthJourney;
-    labelKey: TranslationKey;
     descriptionKey: TranslationKey;
+    labelKey: TranslationKey;
+    value: BirthJourney;
   }
 >;

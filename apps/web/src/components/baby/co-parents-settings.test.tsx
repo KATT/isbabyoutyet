@@ -8,7 +8,7 @@ import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 
 test("CoParentsSettings lists co-parents seeded through convex-test", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await harness.client.mutation(api.coParents.invite, {
     babyId: baby.babyId,
@@ -30,7 +30,7 @@ test("CoParentsSettings lists co-parents seeded through convex-test", async () =
 
 test("owner can invite a co-parent by email through real mutations", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const listing = await harness.convexPreloader.ensureQueryData(api.coParents.listForBaby, {
     babyId: baby.babyId,
   });
@@ -56,17 +56,17 @@ test("owner can remove co-parents and cancel pending invites", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const aliceId = await signUpTestUser(harness, {
     email: "alice@example.com",
-    password: "password123",
     name: "Alice",
+    password: "password123",
   });
   await signUpTestUser(harness, {
     email: "bob@example.com",
-    password: "password123",
     name: "Bob",
+    password: "password123",
   });
 
   harness.withIdentity({ subject: aliceId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await harness.client.mutation(api.coParents.invite, {
     babyId: baby.babyId,
@@ -105,17 +105,17 @@ test("co-parents see a read-only list without invite form", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const aliceId = await signUpTestUser(harness, {
     email: "alice@example.com",
-    password: "password123",
     name: "Alice",
+    password: "password123",
   });
   const bobId = await signUpTestUser(harness, {
     email: "bob@example.com",
-    password: "password123",
     name: "Bob",
+    password: "password123",
   });
 
   harness.withIdentity({ subject: aliceId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await harness.client.mutation(api.coParents.invite, {
     babyId: baby.babyId,
     email: "bob@example.com",

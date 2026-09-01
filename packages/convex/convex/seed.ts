@@ -36,30 +36,30 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
         if (baby.demo !== true) {
           await ctx.db.patch(baby._id, { demo: true });
         }
-        await seedEncouragements({ ctx, babyId: baby._id, now, spec });
+        await seedEncouragements({ babyId: baby._id, ctx, now, spec });
       }
     }
     return {
-      success: true,
-      message: "Seed data already exists",
-      userId,
-      email: DEMO_USER.email,
       count: existingBabies.length,
-      emptyUserId,
+      email: DEMO_USER.email,
       emptyUserEmail: DEMO_EMPTY_USER.email,
+      emptyUserId,
+      message: "Seed data already exists",
+      success: true,
+      userId,
     };
   }
 
   const babies = await seedBabiesForUser(ctx, userId);
 
   return {
-    success: true,
-    message: "Seed data created successfully",
-    userId,
-    email: DEMO_USER.email,
     babies,
-    emptyUserId,
+    email: DEMO_USER.email,
     emptyUserEmail: DEMO_EMPTY_USER.email,
+    emptyUserId,
+    message: "Seed data created successfully",
+    success: true,
+    userId,
   };
 }
 
@@ -73,18 +73,18 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
     // Demo login is the preview/local staff account — mark as admin so
     // /dashboard/admin is available on staging without a separate promote step.
     await ctx.db.insert("userProfiles", {
-      userId,
-      tokenIdentifier,
+      isAdmin: true,
       locale: "en-GB",
       timeZone: DEFAULT_TIME_ZONE,
-      isAdmin: true,
+      tokenIdentifier,
+      userId,
     });
     return;
   }
   await ctx.db.patch(existing._id, {
-    tokenIdentifier,
-    timeZone: existing.timeZone ?? DEFAULT_TIME_ZONE,
     isAdmin: true,
+    timeZone: existing.timeZone ?? DEFAULT_TIME_ZONE,
+    tokenIdentifier,
   });
 }
 
@@ -109,7 +109,7 @@ export const seedPreviewData = internalMutationWithTriggers({
 
 async function ensureAuthUser(
   ctx: MutationCtx,
-  user: { email: string; password: string; name: string },
+  user: { email: string; name: string; password: string },
 ) {
   const existing = await ctx.runQuery(components.betterAuth.adapter.findOne, {
     model: "user",
@@ -124,8 +124,8 @@ async function ensureAuthUser(
   const result = await auth.api.signUpEmail({
     body: {
       email: user.email,
-      password: user.password,
       name: user.name,
+      password: user.password,
     },
   });
 
@@ -133,63 +133,28 @@ async function ensureAuthUser(
 }
 
 type SeedBabyExtras = {
-  dueDateOffsetDays: number;
-  laborStartedMessage?: string;
-  hospitalMessage?: string;
   babyBornMessage?: string;
-  hoursAgo?: {
-    laborStarted?: number;
-    wentToHospital?: number;
-    babyBorn?: number;
-  };
+  dueDateOffsetDays: number;
   encouragements?: Array<{
     authorName: string;
     message: string;
     minutesAgo: number;
   }>;
+  hospitalMessage?: string;
+  hoursAgo?: {
+    babyBorn?: number;
+    laborStarted?: number;
+    wentToHospital?: number;
+  };
+  laborStartedMessage?: string;
 };
 
 type SeedBabySpec = (typeof DEMO_BABIES)[number] & SeedBabyExtras;
 
 /** Fixture details keyed by publicId — identity fields come from DEMO_BABIES. */
 const SEED_BABY_EXTRAS = {
-  "baby-waiting": {
-    dueDateOffsetDays: 14,
-    encouragements: [
-      {
-        authorName: "Grandma",
-        message: "We can't wait to meet you, little one!",
-        minutesAgo: 60 * 26,
-      },
-      {
-        authorName: "Uncle Bob",
-        message: "Any day now! Sending love.",
-        minutesAgo: 60 * 3,
-      },
-    ],
-  },
-  "baby-in-labor": {
-    dueDateOffsetDays: 3,
-    laborStartedMessage: "It's happening! Bags are packed and we're timing contractions.",
-    hoursAgo: { laborStarted: 2 },
-    encouragements: [
-      {
-        authorName: "Aunt Meg",
-        message: "Good luck!! You've got this ❤️",
-        minutesAgo: 90,
-      },
-      {
-        authorName: "Grandpa Jim",
-        message: "Thinking of you all. Keep us posted!",
-        minutesAgo: 45,
-      },
-    ],
-  },
   "baby-at-hospital": {
     dueDateOffsetDays: 1,
-    laborStartedMessage: "Contractions got serious. Heading in!",
-    hospitalMessage: "Checked in and getting comfy.",
-    hoursAgo: { laborStarted: 8, wentToHospital: 3 },
     encouragements: [
       {
         authorName: "Sister Sam",
@@ -197,13 +162,13 @@ const SEED_BABY_EXTRAS = {
         minutesAgo: 60,
       },
     ],
+    hospitalMessage: "Checked in and getting comfy.",
+    hoursAgo: { laborStarted: 8, wentToHospital: 3 },
+    laborStartedMessage: "Contractions got serious. Heading in!",
   },
   "baby-born": {
-    dueDateOffsetDays: -2,
-    laborStartedMessage: "Here we go!",
-    hospitalMessage: "At hospital. Let's do this.",
     babyBornMessage: "Baby's here! Everyone's healthy and doing brilliantly.",
-    hoursAgo: { laborStarted: 30, wentToHospital: 24, babyBorn: 12 },
+    dueDateOffsetDays: -2,
     encouragements: [
       {
         authorName: "Cousin Pat",
@@ -256,10 +221,45 @@ const SEED_BABY_EXTRAS = {
         minutesAgo: 40,
       },
     ],
+    hospitalMessage: "At hospital. Let's do this.",
+    hoursAgo: { babyBorn: 12, laborStarted: 30, wentToHospital: 24 },
+    laborStartedMessage: "Here we go!",
+  },
+  "baby-in-labor": {
+    dueDateOffsetDays: 3,
+    encouragements: [
+      {
+        authorName: "Aunt Meg",
+        message: "Good luck!! You've got this ❤️",
+        minutesAgo: 90,
+      },
+      {
+        authorName: "Grandpa Jim",
+        message: "Thinking of you all. Keep us posted!",
+        minutesAgo: 45,
+      },
+    ],
+    hoursAgo: { laborStarted: 2 },
+    laborStartedMessage: "It's happening! Bags are packed and we're timing contractions.",
+  },
+  "baby-waiting": {
+    dueDateOffsetDays: 14,
+    encouragements: [
+      {
+        authorName: "Grandma",
+        message: "We can't wait to meet you, little one!",
+        minutesAgo: 60 * 26,
+      },
+      {
+        authorName: "Uncle Bob",
+        message: "Any day now! Sending love.",
+        minutesAgo: 60 * 3,
+      },
+    ],
   },
 } satisfies Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBabyExtras>;
 
-const SEED_BABIES: SeedBabySpec[] = DEMO_BABIES.map((baby) => ({
+const SEED_BABIES: Array<SeedBabySpec> = DEMO_BABIES.map((baby) => ({
   ...baby,
   ...SEED_BABY_EXTRAS[baby.publicId],
 }));
@@ -274,8 +274,8 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
   const created: Array<{
     id: Id<"baby">;
     name: string;
-    state: SeedBabySpec["state"];
     publicId: string;
+    state: SeedBabySpec["state"];
   }> = [];
 
   for (const spec of SEED_BABIES) {
@@ -288,37 +288,37 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
 
     // Fixture messages live only on the timeline rows via seedMilestoneUpdates.
     const babyId = await ctx.db.insert("baby", {
-      userId,
-      ownerTokenIdentifier,
-      name: spec.name,
+      birthJourney: "labor",
+      demo: true,
       dueDate: dueDate.toISOString(),
       dueDateDisplayMode: "exact",
+      lastActivityAt: now.getTime(),
+      name: spec.name,
+      ownerTokenIdentifier,
       publicDueDateText: null,
       publicId: spec.publicId,
-      birthJourney: "labor",
-      theme: null,
-      demo: true,
       subscriptionCount: 0,
-      lastActivityAt: now.getTime(),
+      theme: null,
+      userId,
     });
 
     await seedMilestoneUpdates(ctx, {
-      babyId,
-      laborStarted,
-      wentToHospital,
       babyBorn,
-      laborStartedMessage: spec.laborStartedMessage ?? null,
-      hospitalMessage: spec.hospitalMessage ?? null,
       babyBornMessage: spec.babyBornMessage ?? null,
+      babyId,
+      hospitalMessage: spec.hospitalMessage ?? null,
+      laborStarted,
+      laborStartedMessage: spec.laborStartedMessage ?? null,
+      wentToHospital,
     });
 
-    await seedEncouragements({ ctx, babyId, now, spec });
+    await seedEncouragements({ babyId, ctx, now, spec });
 
     created.push({
       id: babyId,
       name: spec.name,
-      state: spec.state,
       publicId: spec.publicId,
+      state: spec.state,
     });
   }
 
@@ -326,8 +326,8 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
 }
 
 async function seedEncouragements(options: {
-  ctx: MutationCtx;
   babyId: Id<"baby">;
+  ctx: MutationCtx;
   now: Date;
   spec: SeedBabySpec;
 }) {
@@ -338,8 +338,10 @@ async function seedEncouragements(options: {
   const existingVisitorIds = new Set(existing.map((encouragement) => encouragement.visitorId));
 
   for (const encouragement of options.spec.encouragements ?? []) {
-    const visitorId = `seed-visitor-${encouragement.authorName.toLowerCase().replace(/\s+/g, "-")}`;
-    if (existingVisitorIds.has(visitorId)) continue;
+    const visitorId = `seed-visitor-${encouragement.authorName.toLowerCase().replaceAll(/\s+/g, "-")}`;
+    if (existingVisitorIds.has(visitorId)) {
+      continue;
+    }
 
     const createdAt = options.now.getTime() - encouragement.minutesAgo * 60_000;
     const timelineItemId = await insertEncouragementTimelineItem(options.ctx, {
@@ -347,10 +349,10 @@ async function seedEncouragements(options: {
       postedAt: createdAt,
     });
     await options.ctx.db.insert("encouragements", {
-      babyId: options.babyId,
       authorName: encouragement.authorName,
-      message: encouragement.message,
+      babyId: options.babyId,
       createdAt,
+      message: encouragement.message,
       timelineItemId,
       visitorId,
     });
@@ -358,7 +360,9 @@ async function seedEncouragements(options: {
 }
 
 function hoursAgoIso(now: Date, hoursAgo: number | undefined) {
-  if (hoursAgo === undefined) return null;
+  if (hoursAgo === undefined) {
+    return null;
+  }
   const date = new Date(now);
   date.setHours(date.getHours() - hoursAgo);
   return date.toISOString();
@@ -367,46 +371,48 @@ function hoursAgoIso(now: Date, hoursAgo: number | undefined) {
 async function seedMilestoneUpdates(
   ctx: MutationCtx,
   opts: {
-    babyId: Id<"baby">;
-    laborStarted: string | null;
-    wentToHospital: string | null;
     babyBorn: string | null;
-    laborStartedMessage: string | null;
-    hospitalMessage: string | null;
     babyBornMessage: string | null;
+    babyId: Id<"baby">;
+    hospitalMessage: string | null;
+    laborStarted: string | null;
+    laborStartedMessage: string | null;
+    wentToHospital: string | null;
   },
 ) {
   const milestones: Array<{
-    milestone: Milestone;
     iso: string | null;
     message: string | null;
+    milestone: Milestone;
   }> = [
     {
-      milestone: "labor_started",
       iso: opts.laborStarted,
       message: opts.laborStartedMessage,
+      milestone: "labor_started",
     },
     {
-      milestone: "gone_to_hospital",
       iso: opts.wentToHospital,
       message: opts.hospitalMessage,
+      milestone: "gone_to_hospital",
     },
     {
-      milestone: "born",
       iso: opts.babyBorn,
       message: opts.babyBornMessage,
+      milestone: "born",
     },
   ];
 
   for (const entry of milestones) {
-    if (!entry.iso) continue;
+    if (!entry.iso) {
+      continue;
+    }
     const occurredAt = Date.parse(entry.iso);
     await insertUpdateWithTimelineItem(ctx, {
       babyId: opts.babyId,
-      postedAt: occurredAt,
-      occurredAt,
-      milestone: entry.milestone,
       message: entry.message,
+      milestone: entry.milestone,
+      occurredAt,
+      postedAt: occurredAt,
     });
   }
 }

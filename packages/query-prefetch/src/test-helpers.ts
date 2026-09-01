@@ -30,7 +30,7 @@ export function testPreloadedQuery<TFactory extends QueryOptionsFactory>(
   ...input: QueryInputArgs<TFactory>
 ): PreloadedQuery<TFactory> {
   // SAFETY: Handle brands are type-only; input/initialData are the runtime fields.
-  return { input: input[0], initialData } as PreloadedQuery<TFactory>;
+  return { initialData, input: input[0] } as PreloadedQuery<TFactory>;
 }
 
 /** Infinite-query counterpart of {@link testInitiatedQuery}. */
@@ -49,5 +49,5 @@ export function testPreloadedInfiniteQuery<TFactory extends QueryOptionsFactory>
   ...input: QueryInputArgs<TFactory>
 ): PreloadedInfiniteQuery<TFactory> {
   // SAFETY: Handle brands are type-only; input/initialData are the runtime fields.
-  return { input: input[0], initialData } as PreloadedInfiniteQuery<TFactory>;
+  return { initialData, input: input[0] } as PreloadedInfiniteQuery<TFactory>;
 }

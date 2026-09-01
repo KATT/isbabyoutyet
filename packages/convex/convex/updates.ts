@@ -43,7 +43,7 @@ export const post = mutationWithTriggers({
     photoId: v.union(v.id("_storage"), v.null()),
   },
   handler: async (ctx, args) => {
-    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
+    const { baby, identity } = await requireBabyManager(ctx, args.babyId);
 
     const message = args.message?.trim() || null;
     const milestone = args.milestone ?? null;
@@ -68,7 +68,7 @@ export const post = mutationWithTriggers({
       }
       const existing = await findMilestoneUpdate(ctx, {
         babyId: args.babyId,
-        milestone: milestone,
+        milestone,
       });
       if (existing) {
         throw new Error("This milestone is already marked");
@@ -91,9 +91,9 @@ export const post = mutationWithTriggers({
 
     const { updateId } = await insertUpdateWithTimelineItem(ctx, {
       babyId: args.babyId,
-      postedAt,
       message,
       milestone,
+      postedAt,
       // Settings can still redate occurredAt later without moving the feed position
       occurredAt,
       photoId,
@@ -106,21 +106,21 @@ export const post = mutationWithTriggers({
 
     if (milestone) {
       await syncStatusNotifications(ctx, {
+        customMessageByMilestone: {
+          born: milestone === "born" ? message : null,
+          gone_to_hospital: milestone === "gone_to_hospital" ? message : null,
+          labor_started: milestone === "labor_started" ? message : null,
+        },
+        photoId,
         statusBefore,
         updatedBaby: baby,
-        photoId,
         updateId,
-        customMessageByMilestone: {
-          labor_started: milestone === "labor_started" ? message : null,
-          gone_to_hospital: milestone === "gone_to_hospital" ? message : null,
-          born: milestone === "born" ? message : null,
-        },
       });
     } else {
       await schedulePushNotification(ctx, {
         baby,
-        notificationType: photoId ? "photo_added" : "update_posted",
         customMessage: message,
+        notificationType: photoId ? "photo_added" : "update_posted",
         photoId,
         updateId,
       });
@@ -139,18 +139,24 @@ export const setAsCurrentPhoto = mutationWithTriggers({
   args: { updateId: v.id("updates") },
   handler: async (ctx, args) => {
     const update = await ctx.db.get(args.updateId);
-    if (!update || !isActive(update)) throw new Error("Update not found");
-    if (!update.photoId) throw new Error("This update has no photo");
+    if (!update || !isActive(update)) {
+      throw new Error("Update not found");
+    }
+    if (!update.photoId) {
+      throw new Error("This update has no photo");
+    }
 
     await requireBabyManager(ctx, update.babyId);
 
     const baby = await ctx.db.get(update.babyId);
-    if (!baby || !isActive(baby)) throw new Error("Baby not found");
+    if (!baby || !isActive(baby)) {
+      throw new Error("Baby not found");
+    }
 
     await ctx.db.patch(baby._id, {
+      blurDataUrl: update.blurDataUrl ?? null,
       photoId: update.photoId,
       thumbnailId: update.thumbnailId ?? null,
-      blurDataUrl: update.blurDataUrl ?? null,
     });
 
     if (!update.thumbnailId || !update.pushImageId || !update.blurDataUrl) {
@@ -173,7 +179,6 @@ export const redateMilestone = mutationWithTriggers({
     milestone: milestoneValidator,
     occurredAt: v.number(),
   },
-  returns: v.null(),
   handler: async (ctx, args) => {
     await requireBabyManager(ctx, args.babyId);
     if (!isValidDateTimestamp(args.occurredAt)) {
@@ -187,11 +192,14 @@ export const redateMilestone = mutationWithTriggers({
       babyId: args.babyId,
       milestone: args.milestone,
     });
-    if (!update) throw new Error("Milestone update not found");
+    if (!update) {
+      throw new Error("Milestone update not found");
+    }
 
     await ctx.db.patch(update._id, { occurredAt: args.occurredAt });
     return null;
   },
+  returns: v.null(),
 });
 
 /**
@@ -203,18 +211,20 @@ export const unmarkMilestone = mutationWithTriggers({
     babyId: v.id("baby"),
     milestone: milestoneValidator,
   },
-  returns: v.null(),
   handler: async (ctx, args) => {
     const { baby } = await requireBabyManager(ctx, args.babyId);
     const update = await findMilestoneUpdate(ctx, {
       babyId: args.babyId,
       milestone: args.milestone,
     });
-    if (!update) throw new Error("Milestone update not found");
+    if (!update) {
+      throw new Error("Milestone update not found");
+    }
 
     await removeManagedUpdate(ctx, { baby, update });
     return null;
   },
+  returns: v.null(),
 });
 
 /**
@@ -226,7 +236,9 @@ export const remove = mutationWithTriggers({
   args: { updateId: v.id("updates") },
   handler: async (ctx, args) => {
     const update = await ctx.db.get(args.updateId);
-    if (!update || !isActive(update)) throw new Error("Update not found");
+    if (!update || !isActive(update)) {
+      throw new Error("Update not found");
+    }
 
     const { baby } = await requireBabyManager(ctx, update.babyId);
     await removeManagedUpdate(ctx, { baby, update });
@@ -254,23 +266,25 @@ async function removeManagedUpdate(
   if (update.photoId && update.photoId === opts.baby.photoId) {
     const fallback = await findLatestRemainingPhotoUpdate(ctx, update);
     await ctx.db.patch(opts.baby._id, {
+      blurDataUrl: fallback?.blurDataUrl ?? null,
       photoId: fallback?.photoId ?? null,
       thumbnailId: fallback?.thumbnailId ?? null,
-      blurDataUrl: fallback?.blurDataUrl ?? null,
     });
   }
 
   if (update.milestone) {
     const updatedBaby = await ctx.db.get(opts.baby._id);
-    if (!updatedBaby) throw new Error("Baby not found after update");
+    if (!updatedBaby) {
+      throw new Error("Baby not found after update");
+    }
 
     // Status can only move backward here: cancels pending notifications
     await syncStatusNotifications(ctx, {
+      customMessageByMilestone: { born: null, gone_to_hospital: null, labor_started: null },
+      photoId: null,
       statusBefore,
       updatedBaby,
-      photoId: null,
       updateId: null,
-      customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
     });
   }
 }
@@ -282,13 +296,17 @@ async function findLatestRemainingPhotoUpdate(ctx: MutationCtx, removed: Doc<"up
     .order("desc")
     .take(256);
 
-  let latest: { update: Doc<"updates">; postedAt: number } | null = null;
+  let latest: { postedAt: number; update: Doc<"updates"> } | null = null;
   for (const candidate of photoUpdates) {
-    if (candidate._id === removed._id || !candidate.photoId || !isActive(candidate)) continue;
+    if (candidate._id === removed._id || !candidate.photoId || !isActive(candidate)) {
+      continue;
+    }
     const timelineItem = await ctx.db.get(candidate.timelineItemId);
-    if (!timelineItem || !isActive(timelineItem)) continue;
+    if (!timelineItem || !isActive(timelineItem)) {
+      continue;
+    }
     if (!latest || timelineItem.postedAt > latest.postedAt) {
-      latest = { update: candidate, postedAt: timelineItem.postedAt };
+      latest = { postedAt: timelineItem.postedAt, update: candidate };
     }
   }
   return latest?.update ?? null;

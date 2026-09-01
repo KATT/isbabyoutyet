@@ -21,9 +21,9 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
     const token = await authenticateManagerOverlaySsr(opts.context);
     if (globalThis.window === undefined && !token) {
       throw redirect({
-        to: "/baby/$publicId",
         params: { publicId: opts.params.publicId },
         resetScroll: false,
+        to: "/baby/$publicId",
       });
     }
 
@@ -36,24 +36,24 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
     }
     if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
-        to: "/baby/$publicId/settings",
         params: { publicId: babyDoc.publicId },
         replace: true,
+        to: "/baby/$publicId/settings",
       });
     }
-    return token ? { token, isAuthenticated: true } : undefined;
+    return token ? { isAuthenticated: true, token } : undefined;
   },
   loader: async (opts) => {
     const babyRef = opts.params.publicId;
     const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, babyRef);
     const data = await allKeyed({
+      coParentsList: opts.context.convexPreloader.ensureQueryData(api.coParents.listForBaby, {
+        babyId: babyRef,
+      }),
       managerBaby: opts.context.convexPreloader.ensureQueryData(api.baby.getManagerBaby, {
         babyId: babyRef,
       }),
       myAccess: opts.context.convexPreloader.ensureQueryData(api.coParents.myAccess, {
-        babyId: babyRef,
-      }),
-      coParentsList: opts.context.convexPreloader.ensureQueryData(api.coParents.listForBaby, {
         babyId: babyRef,
       }),
       profile: opts.context.convexPreloader.ensureQueryData(api.profile.get, {}),
@@ -64,9 +64,9 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
     });
     if (!data.myAccess.initialData.canManage || data.managerBaby.initialData === FORBIDDEN) {
       throw redirect({
-        to: "/baby/$publicId",
         params: { publicId: babyRef },
         resetScroll: false,
+        to: "/baby/$publicId",
       });
     }
     // oxlint-disable-next-line workspace/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
@@ -98,11 +98,24 @@ export function BabySettingsOverlay() {
     <SettingsPanel
       baby={baby}
       birthJourney={managerBabyDoc.birthJourney}
-      profileLocale={loaderData.profile.initialData?.locale ?? locale}
-      onUpdate={async (update) => {
-        await updateBaby({ id: managerBabyDoc._id, patch: update });
-        await router.invalidate();
+      coParents={{
+        babyId: managerBabyDoc._id,
+        isOwner,
+        listing: loaderData.coParentsList,
       }}
+      messagePush={{
+        babyId: managerBabyDoc._id,
+        browserPush: loaderData.browserPush,
+        vapidPublicKey: loaderData.vapidPublicKey,
+      }}
+      onDelete={
+        isOwner
+          ? async () => {
+              await removeBaby({ babyId: managerBabyDoc._id });
+              void navigate({ to: "/dashboard" });
+            }
+          : null
+      }
       onMilestoneRedate={async (milestone, occurredAt) => {
         await redateMilestone({
           babyId: managerBabyDoc._id,
@@ -115,27 +128,14 @@ export function BabySettingsOverlay() {
         await unmarkMilestone({ babyId: managerBabyDoc._id, milestone });
         await router.invalidate();
       }}
-      onDelete={
-        isOwner
-          ? async () => {
-              await removeBaby({ babyId: managerBabyDoc._id });
-              void navigate({ to: "/dashboard" });
-            }
-          : null
-      }
-      coParents={{
-        babyId: managerBabyDoc._id,
-        isOwner,
-        listing: loaderData.coParentsList,
-      }}
-      messagePush={{
-        babyId: managerBabyDoc._id,
-        vapidPublicKey: loaderData.vapidPublicKey,
-        browserPush: loaderData.browserPush,
-      }}
-      open={settings.open}
       onOpenChange={settings.onOpenChange}
       onOpenChangeComplete={settings.onOpenChangeComplete}
+      onUpdate={async (update) => {
+        await updateBaby({ id: managerBabyDoc._id, patch: update });
+        await router.invalidate();
+      }}
+      open={settings.open}
+      profileLocale={loaderData.profile.initialData?.locale ?? locale}
     />
   );
 }

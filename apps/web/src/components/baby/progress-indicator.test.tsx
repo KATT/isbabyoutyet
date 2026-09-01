@@ -13,21 +13,21 @@ function useFakeTimersResource(now: Date) {
 }
 
 const waitingBaby: BabyData = {
-  name: "Baby Smith",
-  timeZone: "Europe/London",
+  babyBorn: null,
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
-  publicDueDateText: null,
   laborStarted: null,
+  name: "Baby Smith",
+  publicDueDateText: null,
+  timeZone: "Europe/London",
   wentToHospital: null,
-  babyBorn: null,
 };
 
 const bornBaby: BabyData = {
   ...waitingBaby,
+  babyBorn: "2026-08-11T10:00:00.000Z",
   laborStarted: "2026-08-11T03:00:00.000Z",
   wentToHospital: "2026-08-11T08:00:00.000Z",
-  babyBorn: "2026-08-11T10:00:00.000Z",
 };
 
 test("shows all three milestones without dates while waiting", async () => {
@@ -56,9 +56,9 @@ test("marks every stage complete with its relative time once born", async () => 
 
 const atHospitalBaby: BabyData = {
   ...waitingBaby,
+  babyBorn: null,
   laborStarted: "2026-08-11T03:00:00.000Z",
   wentToHospital: "2026-08-11T08:00:00.000Z",
-  babyBorn: null,
 };
 
 test("fills only the path into reached milestones while still in hospital", async () => {
@@ -77,7 +77,7 @@ test("recalculates progress when labour is hidden", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
   const hospitalPage: BabyData = {
     ...waitingBaby,
-    milestoneVisibility: { showLabor: false, showHospital: true },
+    milestoneVisibility: { showHospital: true, showLabor: false },
     wentToHospital: "2026-08-11T08:00:00.000Z",
   };
   await using view = renderResource(
@@ -94,8 +94,8 @@ test("recalculates progress when hospital is hidden", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
   const labourPage: BabyData = {
     ...waitingBaby,
-    milestoneVisibility: { showLabor: true, showHospital: false },
     laborStarted: "2026-08-11T08:00:00.000Z",
+    milestoneVisibility: { showHospital: false, showLabor: true },
   };
   await using view = renderResource(
     <ProgressIndicator baby={labourPage} currentStatus={getCurrentStatus(labourPage)} />,

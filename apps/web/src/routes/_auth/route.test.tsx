@@ -11,34 +11,34 @@ test("auth layout is wired as the route component", () => {
 });
 
 type GuardCtx = {
-  queryClient: QueryClient;
   convexClient:
     | { setAuth: (fetchToken: () => Promise<string | null>) => void }
     | Record<string, never>;
+  convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
   convexQueryClient: {
     serverHttpClient: { setAuth: (token: string) => void };
   };
-  convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+  queryClient: QueryClient;
   token: string | null;
 };
 
 type ProfileSnapshot = {
+  isAdmin: boolean;
   locale: string;
   timeZone: string;
-  isAdmin: boolean;
 };
 
 function makeGuardCtx() {
   const queryFn = vi.fn<() => Promise<null | ProfileSnapshot>>(() => Promise.resolve(null));
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, queryFn } },
+    defaultOptions: { queries: { queryFn, retry: false } },
   });
   const setServerAuth = vi.fn<(token: string) => void>();
   const context: GuardCtx = {
-    queryClient,
     convexClient: {},
-    convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
     convexPreloader: getConvexQueryPreloader(queryClient),
+    convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
+    queryClient,
     token: null,
   };
   return { context, queryClient, queryFn, setServerAuth };
@@ -69,7 +69,7 @@ async function expectRedirectHome(run: () => Promise<GuardRunResult>) {
 
 function withoutBrowserWindow(run: () => Promise<void>) {
   const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
-  Object.defineProperty(globalThis, "window", { value: undefined, configurable: true });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: undefined });
   return run().finally(() => {
     if (windowDescriptor) {
       Object.defineProperty(globalThis, "window", windowDescriptor);
@@ -81,14 +81,14 @@ test("client navigations reuse a cached profile without an auth round-trip", asy
   const fetchToken = vi.fn<() => Promise<string | null>>();
   const guard = makeGuardCtx();
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
+    isAdmin: false,
     locale: "sv",
     timeZone: "Europe/London",
-    isAdmin: false,
   });
 
   const result = await runGuard({ context: guard.context, fetchToken });
 
-  expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
+  expect(result).toMatchObject({ isAuthenticated: true, locale: "sv" });
   expect(fetchToken).not.toHaveBeenCalled();
   expect(guard.queryFn).not.toHaveBeenCalled();
 });
@@ -103,12 +103,12 @@ test("a fresh login retries the profile without taking auth ownership from the p
   guard.queryClient.setQueryData(convexQuery(api.baby.listByUser, {}).queryKey, []);
   guard.queryFn
     .mockResolvedValueOnce(null)
-    .mockResolvedValueOnce({ locale: "en-US", timeZone: "Europe/London", isAdmin: false });
+    .mockResolvedValueOnce({ isAdmin: false, locale: "en-US", timeZone: "Europe/London" });
   guard.context.convexClient = { setAuth };
 
   const result = await runGuard({ context: guard.context, fetchToken });
 
-  expect(result).toMatchObject({ locale: "en-US", isAuthenticated: true });
+  expect(result).toMatchObject({ isAuthenticated: true, locale: "en-US" });
   expect(setAuth).not.toHaveBeenCalled();
   expect(
     guard.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey),
@@ -140,13 +140,13 @@ test("client navigations redirect when an authenticated profile cannot be read",
 
 test("client navigations keep the cached profile", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>();
-  const cachedProfile = { locale: "sv", timeZone: "Europe/London", isAdmin: false };
+  const cachedProfile = { isAdmin: false, locale: "sv", timeZone: "Europe/London" };
   const guard = makeGuardCtx();
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, cachedProfile);
 
   const result = await runGuard({ context: guard.context, fetchToken });
 
-  expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
+  expect(result).toMatchObject({ isAuthenticated: true, locale: "sv" });
   expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toEqual(
     cachedProfile,
   );
@@ -168,9 +168,9 @@ test("server render reuses the layout token without calling getAuthToken", async
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const guard = makeGuardCtx();
   guard.queryFn.mockResolvedValueOnce({
+    isAdmin: false,
     locale: "en-GB",
     timeZone: "Europe/London",
-    isAdmin: false,
   });
   guard.context.token = "ssr-token";
   guard.context.convexClient = { setAuth };
@@ -179,9 +179,9 @@ test("server render reuses the layout token without calling getAuthToken", async
     const result = await runGuard({ context: guard.context, fetchToken });
 
     expect(result).toMatchObject({
+      isAuthenticated: true,
       locale: "en-GB",
       token: "ssr-token",
-      isAuthenticated: true,
     });
     expect(fetchToken).not.toHaveBeenCalled();
     expect(guard.setServerAuth).toHaveBeenCalledWith("ssr-token");

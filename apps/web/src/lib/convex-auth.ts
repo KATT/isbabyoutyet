@@ -10,15 +10,15 @@ type SessionAtom = {
 
 /** The subset of `authClient` that `setupClientConvexAuth` depends on. */
 export type ConvexAuthClient = {
-  convex: {
-    token: (opts: {
-      fetchOptions: { throw: boolean };
-    }) => Promise<{ data: { token: string } | null } | null>;
-  };
   $store: {
     atoms: {
       session: SessionAtom | undefined;
     };
+  };
+  convex: {
+    token: (opts: {
+      fetchOptions: { throw: boolean };
+    }) => Promise<{ data: { token: string } | null } | null>;
   };
 };
 
@@ -48,9 +48,9 @@ export type ConvexAuthClient = {
  * @internal Exported for tests.
  */
 export function setupClientConvexAuthWithClient(opts: {
+  authClient: ConvexAuthClient;
   convexQueryClient: ConvexQueryClient;
   queryClient: QueryClient;
-  authClient: ConvexAuthClient;
 }) {
   opts.convexQueryClient.convexClient.setAuth(async () => {
     const result = await opts.authClient.convex
@@ -106,13 +106,13 @@ export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionA
 /** @internal Exported for tests. */
 export function compatibleConvexAuthClient(client: typeof authClient): ConvexAuthClient {
   return {
-    convex: {
-      token: (opts) => client.convex.token(opts),
-    },
     $store: {
       atoms: {
         session: readSessionAtom(client.$store.atoms),
       },
+    },
+    convex: {
+      token: (opts) => client.convex.token(opts),
     },
   };
 }
@@ -125,8 +125,8 @@ export function setupClientConvexAuth(
   // so it structurally lacks the named `session` property `ConvexAuthClient`
   // declares for tests — narrow it explicitly here.
   setupClientConvexAuthWithClient({
+    authClient: compatibleConvexAuthClient(authClient),
     convexQueryClient,
     queryClient,
-    authClient: compatibleConvexAuthClient(authClient),
   });
 }

@@ -32,35 +32,35 @@ import { useI18n } from "@/lib/i18n";
 function addBabySchema(t: TranslationFunction) {
   return z
     .object({
-      name: z.string().trim().min(2, t("Name is required")),
-      dueDate: htmlDate(t),
-      showExactDueDate: z.boolean(),
-      publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
       birthJourney: z.union([
         z.literal("labor"),
         z.literal("home_birth"),
         z.literal("planned_c_section"),
         z.literal("custom"),
       ]),
-      theme: z.union([z.string(), z.null()]),
+      dueDate: htmlDate(t),
+      name: z.string().trim().min(2, t("Name is required")),
       notifyOnMessages: z.boolean(),
+      publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
+      showExactDueDate: z.boolean(),
+      theme: z.union([z.string(), z.null()]),
     })
     .superRefine((values, ctx) => {
       if (values.showExactDueDate && !values.dueDate) {
         ctx.addIssue({
           code: "custom",
-          path: ["dueDate"],
           message: t("Pick a date"),
+          path: ["dueDate"],
         });
       }
     })
     .transform((values) => ({
       create: {
-        name: values.name,
+        birthJourney: values.birthJourney,
         dueDate: values.dueDate,
         dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
+        name: values.name,
         publicDueDateText: values.publicDueDateText || null,
-        birthJourney: values.birthJourney,
         theme: values.theme,
       } satisfies FunctionArgs<typeof api.baby.create>,
       notifyOnMessages: values.notifyOnMessages,
@@ -90,10 +90,10 @@ export function AddBabyPage() {
         const vapidPublicKey = await convex.query(api.pushSubscriptions.getPublicKey, {});
         const keys = await ensureWebPushSubscription(vapidPublicKey);
         await subscribeAsOwner({
+          auth: keys.auth,
           babyId,
           endpoint: keys.endpoint,
           p256dh: keys.p256dh,
-          auth: keys.auth,
           userAgent: navigator.userAgent,
         });
       }}
@@ -116,16 +116,16 @@ export function AddBabyPageView(props: {
   const overlay = useFormGuard({ onOpenChange: undefined });
 
   const form = useZodForm({
-    schema: addBabySchema(t),
     defaultValues: {
-      name: "",
-      dueDate: "",
-      showExactDueDate: true,
-      publicDueDateText: "",
       birthJourney: "labor" as const,
-      theme: null,
+      dueDate: "",
+      name: "",
       notifyOnMessages: false,
+      publicDueDateText: "",
+      showExactDueDate: true,
+      theme: null,
     },
+    schema: addBabySchema(t),
   });
 
   return (
@@ -133,18 +133,18 @@ export function AddBabyPageView(props: {
       <div className="min-h-screen bg-background bg-dots">
         <div className="mx-auto max-w-xl px-6 py-10">
           <Button
-            variant="outline"
-            size="sm"
             className="mb-8 rounded-full border-2 font-bold"
-            render={<Link to="/dashboard" />}
             nativeButton={false}
+            render={<Link to="/dashboard" />}
+            size="sm"
+            variant="outline"
           >
             <ArrowLeft className="w-4 h-4" />
             {t("Back to Dashboard")}
           </Button>
 
           <div className="mb-8 text-center">
-            <p className="text-5xl" aria-hidden="true">
+            <p aria-hidden="true" className="text-5xl">
               🎉
             </p>
             <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground md:text-5xl">
@@ -177,8 +177,8 @@ export function AddBabyPageView(props: {
                   }
 
                   await props.navigate({
-                    to: "/baby/$publicId",
                     params: { publicId: result.publicId },
+                    to: "/baby/$publicId",
                   });
                 }}
               >
@@ -203,28 +203,28 @@ export function AddBabyPageView(props: {
                   />
 
                   <DueDateDisplayFields
+                    className={undefined}
                     control={form.control}
                     dateFieldName="dueDate"
-                    showExactDueDateFieldName="showExactDueDate"
                     publicDueDateTextFieldName="publicDueDateText"
-                    className={undefined}
                     sectionLabelClassName="font-bold"
+                    showExactDueDateFieldName="showExactDueDate"
                     stopPopoverPropagation={false}
                   />
 
                   <OwnerMessageNotifyFormField control={form.control} name="notifyOnMessages" />
 
                   <AddBabyOptionalSettings
-                    control={form.control}
                     birthJourneyFieldName="birthJourney"
+                    control={form.control}
                     themeFieldName="theme"
                   />
 
                   <SubmitButton
+                    className="w-full rounded-full font-extrabold pop-shadow"
                     form="context"
                     IconComponent="🍼"
                     iconPosition="end"
-                    className="w-full rounded-full font-extrabold pop-shadow"
                     size="lg"
                   >
                     {t("Add Baby")}

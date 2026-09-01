@@ -49,7 +49,9 @@ test("seedBabiesForUser creates one baby per status with timeline content", asyn
   expect(born?.babyBorn).toBeTruthy();
 
   const updates = await t.run(async (ctx) => {
-    if (!born) throw new Error("missing born baby");
+    if (!born) {
+      throw new Error("missing born baby");
+    }
     return await ctx.db
       .query("updates")
       .withIndex("by_babyId", (q) => q.eq("babyId", born._id))
@@ -74,7 +76,9 @@ test("born demo feed includes noisy encouragements that stress mobile layout", a
     return await seedBabiesForUser(ctx, "layout-stress-user");
   });
   const born = babies.find((baby) => baby.publicId === "baby-born");
-  if (!born) throw new Error("missing born baby");
+  if (!born) {
+    throw new Error("missing born baby");
+  }
 
   const encouragements = await t.run(async (ctx) => {
     return await ctx.db
@@ -117,17 +121,17 @@ test("seedDemoData creates the demo user and is idempotent", async () => {
       .unique();
   });
   expect(onboarding).toMatchObject({
-    welcomeDismissed: true,
     checklistDismissed: true,
+    welcomeDismissed: true,
   });
   expect(onboarding?.completedSteps.length).toBeGreaterThan(0);
 
   const second = await t.mutation(internal.seed.seedDemoData, {});
   expect(second).toMatchObject({
-    success: true,
-    message: "Seed data already exists",
     count: 4,
     email: DEMO_USER.email,
+    message: "Seed data already exists",
+    success: true,
   });
 
   const babyCount = await t.run(async (ctx) => {
@@ -172,7 +176,7 @@ test("seedDemoData creates an empty demo user with no babies", async () => {
       .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
       .unique();
   });
-  expect(profile).toMatchObject({ locale: "en-GB", isAdmin: false });
+  expect(profile).toMatchObject({ isAdmin: false, locale: "en-GB" });
 
   const onboarding = await t.run(async (ctx) => {
     return await ctx.db
@@ -213,16 +217,16 @@ test("empty demo user stays on the first-run tour after seed and skipTour", asyn
 
   const asEmpty = t.withIdentity({ subject: seeded.emptyUserId });
   expect(await asEmpty.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: false,
-    checklistDismissed: false,
     allDone: false,
+    checklistDismissed: false,
     completedSteps: [],
+    welcomeDismissed: false,
   });
 
   const asDemo = t.withIdentity({ subject: seeded.userId });
   expect(await asDemo.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: true,
     checklistDismissed: true,
+    welcomeDismissed: true,
   });
 });
 
@@ -235,7 +239,9 @@ test("seedDemoData restores missing fixture encouragements", async () => {
       .withIndex("by_publicId", (q) => q.eq("publicId", "baby-born"))
       .unique();
   });
-  if (!born) throw new Error("missing born baby");
+  if (!born) {
+    throw new Error("missing born baby");
+  }
 
   await t.run(async (ctx) => {
     const encouragements = await ctx.db
@@ -243,7 +249,9 @@ test("seedDemoData restores missing fixture encouragements", async () => {
       .withIndex("by_babyId", (q) => q.eq("babyId", born._id))
       .collect();
     const missing = encouragements.find((row) => row.message.includes("layout-stress.example"));
-    if (!missing) throw new Error("missing stress encouragement");
+    if (!missing) {
+      throw new Error("missing stress encouragement");
+    }
     await ctx.db.delete(missing._id);
     await ctx.db.delete(missing.timelineItemId);
   });

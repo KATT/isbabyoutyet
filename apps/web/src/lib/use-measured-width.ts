@@ -7,10 +7,14 @@ import { useState } from "react";
 export function useMeasuredWidth() {
   const [width, setWidth] = useState<number | null>(null);
   function ref(node: HTMLSpanElement | null) {
-    if (!node) return;
+    if (!node) {
+      return;
+    }
     let active = true;
     const measure = () => {
-      if (active) setWidth(node.offsetWidth);
+      if (active) {
+        setWidth(node.offsetWidth);
+      }
     };
     measure();
     window.addEventListener("resize", measure);

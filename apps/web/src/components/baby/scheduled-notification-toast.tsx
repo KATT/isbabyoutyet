@@ -9,7 +9,7 @@ import {
 import { useMutation as useTanstackMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { toast } from "sonner";
-import * as z from "zod";
+import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -55,18 +55,20 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
     subscriptionCountQuery.data === FORBIDDEN ? 0 : subscriptionCountQuery.data;
   const tickEnabled = notifications.length > 0;
   const currentSecond = useCurrentSecond(tickEnabled);
-  if (!tickEnabled || currentSecond === null) return null;
+  if (!tickEnabled || currentSecond === null) {
+    return null;
+  }
 
   const currentTime = currentSecond * 1000;
 
   return (
-    <aside className="pointer-events-auto flex w-full flex-col gap-2" aria-live="polite">
+    <aside aria-live="polite" className="pointer-events-auto flex w-full flex-col gap-2">
       {notifications.map((notification) => (
         <ScheduledNotificationItem
+          currentTime={currentTime}
           key={notification._id}
           notification={notification}
           subscriptionCount={subscriptionCount}
-          currentTime={currentTime}
         />
       ))}
     </aside>
@@ -79,9 +81,9 @@ type ScheduledNotification = Exclude<
 >[number];
 
 function ScheduledNotificationItem(props: {
+  currentTime: number;
   notification: ScheduledNotification;
   subscriptionCount: number;
-  currentTime: number;
 }) {
   const { t } = useI18n();
   const sentRecently = useTimedTransition({
@@ -94,20 +96,22 @@ function ScheduledNotificationItem(props: {
   if (props.notification.status === "pending") {
     return (
       <NotificationToastContent
+        currentTime={props.currentTime}
         notificationId={props.notification._id}
         notificationType={props.notification.notificationType}
         scheduledFor={props.notification.scheduledFor}
         subscriptionCount={props.subscriptionCount}
-        currentTime={props.currentTime}
       />
     );
   }
-  if (!sentRecently) return null;
+  if (!sentRecently) {
+    return null;
+  }
 
   return (
     <Item
-      variant="outline"
       className="w-full min-w-0 flex-nowrap border-green-500/50 bg-background shadow-lg"
+      variant="outline"
     >
       <ItemMedia className="size-10 rounded-full bg-green-500/10">
         <Check className="size-5 text-green-500" />
@@ -124,11 +128,11 @@ function ScheduledNotificationItem(props: {
 }
 
 type NotificationToastContentProps = {
+  currentTime: number;
   notificationId: Id<"scheduledNotifications">;
   notificationType: NotifiableStatus;
   scheduledFor: number;
   subscriptionCount: number;
-  currentTime: number;
 };
 
 function NotificationToastContent(props: NotificationToastContentProps) {
@@ -139,14 +143,16 @@ function NotificationToastContent(props: NotificationToastContentProps) {
     mutationFn: useConvexMutation(api.baby.cancelScheduledNotification),
   });
   const form = useZodForm({
-    schema: emptyActionSchema,
     defaultValues: {},
+    schema: emptyActionSchema,
   });
 
-  if (cancelMutation.isSuccess) return null;
+  if (cancelMutation.isSuccess) {
+    return null;
+  }
 
   return (
-    <Item variant="outline" className="w-full min-w-0 flex-nowrap bg-background shadow-lg">
+    <Item className="w-full min-w-0 flex-nowrap bg-background shadow-lg" variant="outline">
       <ItemMedia className="size-10 rounded-full bg-primary/10 tabular-nums text-lg font-semibold text-primary">
         {seconds}
       </ItemMedia>
@@ -166,12 +172,12 @@ function NotificationToastContent(props: NotificationToastContentProps) {
           }}
         >
           <SubmitButton
-            form="context"
-            variant="outline"
-            size="default"
             className="relative after:absolute after:-inset-3 after:content-['']"
+            form="context"
             IconComponent={X}
             iconPosition="start"
+            size="default"
+            variant="outline"
           >
             {t("Cancel")}
           </SubmitButton>

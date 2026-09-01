@@ -4,7 +4,7 @@ import { authenticateManagerOverlaySsrWithToken } from "@/lib/managerOverlayAuth
 
 function withoutBrowserWindowResource() {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
-  Object.defineProperty(globalThis, "window", { value: undefined, configurable: true });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: undefined });
   return makeResource({}, () => {
     if (descriptor) {
       Object.defineProperty(globalThis, "window", descriptor);
@@ -17,11 +17,11 @@ function authContext() {
   const setClientAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   return {
     context: {
-      convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
       convexClient: { setAuth: setClientAuth },
+      convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
     },
-    setServerAuth,
     setClientAuth,
+    setServerAuth,
   };
 }
 

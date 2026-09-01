@@ -3,20 +3,20 @@ import { allKeyed } from "./allKeyed.js";
 
 test("allKeyed resolves values by key", async () => {
   const result = await allKeyed({
-    form: Promise.resolve("circle"),
     color: Promise.resolve("blue"),
+    form: Promise.resolve("circle"),
     mass: 12,
   });
 
-  expect(result).toEqual({ form: "circle", color: "blue", mass: 12 });
+  expect(result).toEqual({ color: "blue", form: "circle", mass: 12 });
   expect(Object.getPrototypeOf(result)).toBeNull();
 });
 
 test("allKeyed rejects when any input rejects", async () => {
   await expect(
     allKeyed({
-      ok: Promise.resolve(1),
       bad: Promise.reject(new Error("nope")),
+      ok: Promise.resolve(1),
     }),
   ).rejects.toThrow("nope");
 });
@@ -24,8 +24,8 @@ test("allKeyed rejects when any input rejects", async () => {
 test("allKeyed preserves symbol keys", async () => {
   const token = Symbol("token");
   const result = await allKeyed({
-    [token]: Promise.resolve("secret"),
     name: Promise.resolve("ada"),
+    [token]: Promise.resolve("secret"),
   });
 
   expect(result[token]).toBe("secret");

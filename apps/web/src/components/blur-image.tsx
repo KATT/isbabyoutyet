@@ -29,21 +29,31 @@ function numericDimension(value: BlurImageProps["width"] | BlurImageProps["heigh
 }
 
 function placeholderObjectFit(props: BlurImageProps) {
-  if (props.style?.objectFit) return props.style.objectFit;
+  if (props.style?.objectFit) {
+    return props.style.objectFit;
+  }
 
   const className = ` ${props.className ?? ""} `;
-  if (className.includes(" object-contain ")) return "contain";
-  if (className.includes(" object-fill ")) return "fill";
-  if (className.includes(" object-none ")) return "none";
-  if (className.includes(" object-scale-down ")) return "scale-down";
+  if (className.includes(" object-contain ")) {
+    return "contain";
+  }
+  if (className.includes(" object-fill ")) {
+    return "fill";
+  }
+  if (className.includes(" object-none ")) {
+    return "none";
+  }
+  if (className.includes(" object-scale-down ")) {
+    return "scale-down";
+  }
   return "cover";
 }
 
 type BlurSvgOptions = {
-  width: number | undefined;
-  height: number | undefined;
   blurDataUrl: string;
+  height: number | undefined;
   objectFit: CSSProperties["objectFit"];
+  width: number | undefined;
 };
 
 /**
@@ -88,40 +98,42 @@ function imgPropsWithoutBlur(props: BlurImageProps) {
  */
 export function BlurImage(props: BlurImageProps) {
   const srcKey = imageSrcKey(props.src);
-  const { imgRef, loaded, showAltText, onLoad, onError } = useBlurImageLoad({
-    srcKey,
-    onLoad: props.onLoad,
+  const { imgRef, loaded, onError, onLoad, showAltText } = useBlurImageLoad({
     onError: props.onError,
+    onLoad: props.onLoad,
+    srcKey,
   });
 
   const objectFit = placeholderObjectFit(props);
   const placeholderSrc =
     props.blurDataUrl && !loaded
       ? `data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
-          width: numericDimension(props.width),
-          height: numericDimension(props.height),
           blurDataUrl: props.blurDataUrl,
+          height: numericDimension(props.height),
           objectFit,
+          width: numericDimension(props.width),
         })}`
       : null;
 
   const image = (
     <img
       {...imgPropsWithoutBlur(props)}
-      ref={imgRef}
       alt={props.alt}
       decoding={props.decoding ?? "async"}
+      onError={onError}
+      onLoad={onLoad}
+      ref={imgRef}
+      src={props.src}
       style={{
         color: showAltText ? undefined : "transparent",
         ...props.style,
       }}
-      onLoad={onLoad}
-      onError={onError}
-      src={props.src}
     />
   );
 
-  if (!props.blurDataUrl) return image;
+  if (!props.blurDataUrl) {
+    return image;
+  }
 
   return (
     <span
@@ -132,8 +144,8 @@ export function BlurImage(props: BlurImageProps) {
       {image}
       {placeholderSrc ? (
         <img
-          aria-hidden="true"
           alt=""
+          aria-hidden="true"
           className={props.className}
           data-blur-image-placeholder=""
           src={placeholderSrc}

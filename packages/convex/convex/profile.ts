@@ -8,9 +8,9 @@ import { appIdentity } from "./authIdentity";
 import { mutationWithTriggers } from "./triggers";
 
 const profileResultValidator = v.object({
+  isAdmin: v.boolean(),
   locale: supportedLocaleValidator,
   timeZone: v.string(),
-  isAdmin: v.boolean(),
 });
 
 async function requireIdentity(ctx: Pick<QueryCtx, "auth">) {
@@ -29,18 +29,17 @@ async function getProfileHandler(ctx: Pick<QueryCtx, "db">, tokenIdentifier: str
 }
 
 function toProfileResult(
-  profile: { locale: string; isAdmin: boolean } & Partial<{ timeZone: string }>,
+  profile: { isAdmin: boolean; locale: string } & Partial<{ timeZone: string }>,
 ) {
   return {
+    isAdmin: profile.isAdmin,
     locale: resolveSupportedLocale(profile.locale),
     timeZone: resolveTimeZone(profile.timeZone),
-    isAdmin: profile.isAdmin,
   };
 }
 
 export const get = query({
   args: {},
-  returns: v.union(profileResultValidator, v.null()),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -50,15 +49,15 @@ export const get = query({
     const profile = await getProfileHandler(ctx, caller.tokenIdentifier);
     return profile
       ? toProfileResult(profile)
-      : { locale: DEFAULT_LOCALE, timeZone: DEFAULT_TIME_ZONE, isAdmin: false };
+      : { isAdmin: false, locale: DEFAULT_LOCALE, timeZone: DEFAULT_TIME_ZONE };
   },
+  returns: v.union(profileResultValidator, v.null()),
 });
 
 export const updateLocale = mutationWithTriggers({
   args: {
     locale: supportedLocaleValidator,
   },
-  returns: profileResultValidator,
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     const caller = appIdentity(identity);
@@ -69,27 +68,27 @@ export const updateLocale = mutationWithTriggers({
         tokenIdentifier: caller.tokenIdentifier,
       });
       return {
+        isAdmin: existing.isAdmin,
         locale: args.locale,
         timeZone: resolveTimeZone(existing.timeZone),
-        isAdmin: existing.isAdmin,
       };
     }
     await ctx.db.insert("userProfiles", {
-      userId: caller.authUserId,
-      tokenIdentifier: caller.tokenIdentifier,
+      isAdmin: false,
       locale: args.locale,
       timeZone: DEFAULT_TIME_ZONE,
-      isAdmin: false,
+      tokenIdentifier: caller.tokenIdentifier,
+      userId: caller.authUserId,
     });
-    return { locale: args.locale, timeZone: DEFAULT_TIME_ZONE, isAdmin: false };
+    return { isAdmin: false, locale: args.locale, timeZone: DEFAULT_TIME_ZONE };
   },
+  returns: profileResultValidator,
 });
 
 export const updateTimeZone = mutation({
   args: {
     timeZone: v.string(),
   },
-  returns: profileResultValidator,
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     if (!isValidTimeZone(args.timeZone)) {
@@ -103,27 +102,27 @@ export const updateTimeZone = mutation({
         tokenIdentifier: caller.tokenIdentifier,
       });
       return {
+        isAdmin: existing.isAdmin,
         locale: resolveSupportedLocale(existing.locale),
         timeZone: args.timeZone,
-        isAdmin: existing.isAdmin,
       };
     }
     await ctx.db.insert("userProfiles", {
-      userId: caller.authUserId,
-      tokenIdentifier: caller.tokenIdentifier,
+      isAdmin: false,
       locale: DEFAULT_LOCALE,
       timeZone: args.timeZone,
-      isAdmin: false,
+      tokenIdentifier: caller.tokenIdentifier,
+      userId: caller.authUserId,
     });
-    return { locale: DEFAULT_LOCALE, timeZone: args.timeZone, isAdmin: false };
+    return { isAdmin: false, locale: DEFAULT_LOCALE, timeZone: args.timeZone };
   },
+  returns: profileResultValidator,
 });
 
 export const requestLanguage = mutation({
   args: {
     requestedLocale: v.string(),
   },
-  returns: v.id("languageRequests"),
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     const requestedLocale = args.requestedLocale.trim();
@@ -131,9 +130,10 @@ export const requestLanguage = mutation({
       throw new Error("Enter a language name or language code");
     }
     return await ctx.db.insert("languageRequests", {
-      userId: appIdentity(identity).authUserId,
-      requestedLocale,
       createdAt: Date.now(),
+      requestedLocale,
+      userId: appIdentity(identity).authUserId,
     });
   },
+  returns: v.id("languageRequests"),
 });

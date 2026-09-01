@@ -9,14 +9,14 @@ function envResource() {
   });
 }
 
-function purgeRequest(opts: { token: string; tags: string[] }) {
+function purgeRequest(opts: { tags: Array<string>; token: string }) {
   return new Request("https://example.com/api/cache/purge", {
-    method: "POST",
+    body: JSON.stringify({ tags: opts.tags }),
     headers: {
       Authorization: `Bearer ${opts.token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ tags: opts.tags }),
+    method: "POST",
   });
 }
 
@@ -25,7 +25,7 @@ test("rejects callers without the deployment-derived bearer token", async () => 
   vi.stubEnv("BETTER_AUTH_SECRET", "test-secret");
   const deleteByTag = vi.fn();
 
-  const response = await handleCachePurge(purgeRequest({ token: "wrong", tags: ["baby-id:123"] }), {
+  const response = await handleCachePurge(purgeRequest({ tags: ["baby-id:123"], token: "wrong" }), {
     deleteByTag,
   });
 
@@ -42,7 +42,7 @@ test("deletes matching Vercel cache tags in the foreground", async () => {
   const deleteByTag = vi.fn();
 
   const response = await handleCachePurge(
-    purgeRequest({ token, tags: ["baby-id:123", "baby-public-id:baby-smith"] }),
+    purgeRequest({ tags: ["baby-id:123", "baby-public-id:baby-smith"], token }),
     { deleteByTag },
   );
 

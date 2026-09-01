@@ -49,10 +49,10 @@ export function usePreloadedConvexInfiniteQuery<TQuery extends PaginatedQueryRef
   > = useSuspenseInfiniteQuery(optionsWithInitialData);
 
   useLiveConvexInfinitePages({
-    queryKey: options.queryKey,
-    funcRef,
     args,
+    funcRef,
     pageParams: result.data.pageParams,
+    queryKey: options.queryKey,
   });
 
   return result;

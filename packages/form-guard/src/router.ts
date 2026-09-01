@@ -16,8 +16,8 @@ import type { FormGuardHandle } from "./use-form-guard.js";
 export function useFormNavigationGuard(guard: FormGuardHandle) {
   const store = guard.store;
   return useBlocker({
-    shouldBlockFn: () => store.isDirty(),
     enableBeforeUnload: () => store.isDirty(),
+    shouldBlockFn: () => store.isDirty(),
     withResolver: true,
   });
 }

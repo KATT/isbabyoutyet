@@ -9,15 +9,15 @@ test("renders the photo and delegates the close control to overlay navigation", 
   await using _view = renderResource(
     <LocaleProvider locale="en-GB">
       <PhotoLightbox
-        photoUrl="https://cdn.example/full.jpg"
-        blurDataUrl="data:image/jpeg;base64,abc"
         alt="Photo of Nova"
+        blurDataUrl="data:image/jpeg;base64,abc"
         overlay={{
-          open: true,
           close,
           onOpenChange: vi.fn<(open: boolean) => void>(),
           onOpenChangeComplete: vi.fn<(open: boolean) => void>(),
+          open: true,
         }}
+        photoUrl="https://cdn.example/full.jpg"
       />
     </LocaleProvider>,
   );

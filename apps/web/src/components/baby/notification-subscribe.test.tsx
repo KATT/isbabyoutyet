@@ -28,21 +28,21 @@ type BrowserPushCapability =
   | { kind: "serviceWorkerTimeout" }
   | { kind: "unsubscribed" }
   | {
-      kind: "subscribed";
-      subscription: PushSubscription;
       family: boolean;
+      kind: "subscribed";
       messages: boolean;
+      subscription: PushSubscription;
     };
 
 type BrowserPushStub = {
-  userAgent: string;
-  standalone: boolean;
   displayModeStandalone: boolean;
-  hasPushManager: boolean;
   hasNotification: boolean;
+  hasPushManager: boolean;
   hasServiceWorker: boolean;
-  subscription: PushSubscription | null;
   serviceWorkerReady: Promise<ServiceWorkerRegistration>;
+  standalone: boolean;
+  subscription: PushSubscription | null;
+  userAgent: string;
 };
 
 // SAFETY: Seeded convex-test document id.
@@ -53,7 +53,7 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
 
   function replaceProperty<$Target extends object>(
     target: $Target,
-    opts: { key: string; descriptor: PropertyDescriptor },
+    opts: { descriptor: PropertyDescriptor; key: string },
   ) {
     const existing = Object.getOwnPropertyDescriptor(target, opts.key);
     Object.defineProperty(target, opts.key, { configurable: true, ...opts.descriptor });
@@ -67,25 +67,25 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
   }
 
   if (stub.userAgent !== undefined) {
-    replaceProperty(navigator, { key: "userAgent", descriptor: { get: () => stub.userAgent } });
+    replaceProperty(navigator, { descriptor: { get: () => stub.userAgent }, key: "userAgent" });
   }
   replaceProperty(navigator, {
-    key: "standalone",
     descriptor: { value: stub.standalone ?? false },
+    key: "standalone",
   });
 
   const originalMatchMedia = window.matchMedia;
   window.matchMedia = (query: string) =>
     // SAFETY: Test fixture is a subset of the production type.
     ({
+      addEventListener: () => {},
+      addListener: () => {},
+      dispatchEvent: () => false,
       matches: query === "(display-mode: standalone)" && Boolean(stub.displayModeStandalone),
       media: query,
       onchange: null,
-      addEventListener: () => {},
       removeEventListener: () => {},
-      addListener: () => {},
       removeListener: () => {},
-      dispatchEvent: () => false,
     }) as MediaQueryList;
   restore.push(() => {
     window.matchMedia = originalMatchMedia;
@@ -93,8 +93,8 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
 
   if (stub.hasPushManager) {
     replaceProperty(window, {
-      key: "PushManager",
       descriptor: { value: function PushManager() {} },
+      key: "PushManager",
     });
   } else if ("PushManager" in window) {
     const existing = Object.getOwnPropertyDescriptor(window, "PushManager");
@@ -108,8 +108,8 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
 
   if (stub.hasNotification) {
     replaceProperty(window, {
-      key: "Notification",
       descriptor: { value: function Notification() {} },
+      key: "Notification",
     });
   } else if ("Notification" in window) {
     const existing = Object.getOwnPropertyDescriptor(window, "Notification");
@@ -129,12 +129,12 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
       },
     } as ServiceWorkerRegistration;
     replaceProperty(navigator, {
-      key: "serviceWorker",
       descriptor: {
         value: {
           ready: stub.serviceWorkerReady ?? Promise.resolve(registration),
         },
       },
+      key: "serviceWorker",
     });
   }
 
@@ -149,7 +149,6 @@ function queryClientResource(isSubscribedInConvex = true) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        retry: false,
         queryFn: (ctx) => {
           const name = String(ctx.queryKey[1]);
           if (name === "pushSubscriptions:isSubscribed") {
@@ -160,6 +159,7 @@ function queryClientResource(isSubscribedInConvex = true) {
           }
           return Promise.reject(new Error(`unexpected query ${name}`));
         },
+        retry: false,
       },
     },
   });
@@ -172,8 +172,8 @@ async function renderSubscribe(capability: BrowserPushCapability, audience: "vis
   const harnessCtx = await createConvexTestHarness({ identity: null });
   await signUpTestUser(harnessCtx, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   const vapid = await harnessCtx.convexPreloader.ensureQueryData(
     api.pushSubscriptions.getPublicKey,
@@ -184,14 +184,14 @@ async function renderSubscribe(capability: BrowserPushCapability, audience: "vis
     ui: (
       <TooltipProvider>
         <NotificationSubscribe
+          audience={audience}
           babyId={babyId}
-          vapidPublicKey={vapid}
           browserPush={testPreloadedQuery(
             (ref) => browserPushQueryOptions(harnessCtx.queryClient, ref),
             capability,
             babyRef,
           )}
-          audience={audience}
+          vapidPublicKey={vapid}
         />
       </TooltipProvider>
     ),
@@ -214,12 +214,12 @@ test("reports unsupported when the browser has no push APIs", async () => {
 test("asks iOS Safari to install as a PWA before offering push", async () => {
   await using queryClient = queryClientResource();
   await using _env = stubBrowserPush({
-    userAgent: IPHONE_SAFARI_UA,
-    standalone: false,
     displayModeStandalone: false,
-    hasPushManager: true,
     hasNotification: true,
+    hasPushManager: true,
     hasServiceWorker: true,
+    standalone: false,
+    userAgent: IPHONE_SAFARI_UA,
   });
 
   const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
@@ -230,8 +230,8 @@ test("asks iOS Safari to install as a PWA before offering push", async () => {
 test("reports unsupported when PushManager is missing", async () => {
   await using queryClient = queryClientResource();
   await using _env = stubBrowserPush({
-    hasPushManager: false,
     hasNotification: true,
+    hasPushManager: false,
     hasServiceWorker: true,
   });
 
@@ -243,8 +243,8 @@ test("reports unsupported when PushManager is missing", async () => {
 test("treats a ready browser with no push subscription as unsubscribed", async () => {
   await using queryClient = queryClientResource();
   await using _env = stubBrowserPush({
-    hasPushManager: true,
     hasNotification: true,
+    hasPushManager: true,
     hasServiceWorker: true,
     subscription: null,
   });
@@ -261,8 +261,8 @@ test("returns the existing browser push subscription and Convex isSubscribed", a
     endpoint: "https://push.example/subscription",
   } as PushSubscription;
   await using _env = stubBrowserPush({
-    hasPushManager: true,
     hasNotification: true,
+    hasPushManager: true,
     hasServiceWorker: true,
     subscription,
   });
@@ -270,22 +270,22 @@ test("returns the existing browser push subscription and Convex isSubscribed", a
   const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
   expect(capability).toEqual({
-    kind: "subscribed",
-    subscription,
     family: true,
+    kind: "subscribed",
     messages: true,
+    subscription,
   });
 });
 
 test("lets an installed iOS PWA subscribe instead of showing the install guide", async () => {
   await using queryClient = queryClientResource();
   await using _env = stubBrowserPush({
-    userAgent: IPHONE_SAFARI_UA,
-    standalone: true,
-    hasPushManager: true,
     hasNotification: true,
+    hasPushManager: true,
     hasServiceWorker: true,
+    standalone: true,
     subscription: null,
+    userAgent: IPHONE_SAFARI_UA,
   });
 
   const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
@@ -300,8 +300,8 @@ test("times out if the service worker is not ready in 5 seconds", async () => {
   });
   await using queryClient = queryClientResource();
   await using _env = stubBrowserPush({
-    hasPushManager: true,
     hasNotification: true,
+    hasPushManager: true,
     hasServiceWorker: true,
     serviceWorkerReady: new Promise<ServiceWorkerRegistration>(() => {}),
   });
@@ -317,8 +317,8 @@ test("treats a service worker failure as unsubscribed", async () => {
   const serviceWorkerReady = Promise.reject(new Error("service worker unavailable"));
   void serviceWorkerReady.catch(() => {});
   await using _env = stubBrowserPush({
-    hasPushManager: true,
     hasNotification: true,
+    hasPushManager: true,
     hasServiceWorker: true,
     serviceWorkerReady,
   });
@@ -342,8 +342,8 @@ test("keeps a stable query key scoped by baby for loader prefetch and useQuery",
 test("prefetches capability and isSubscribed into the query cache in the browser", async () => {
   await using queryClient = queryClientResource(true);
   await using _env = stubBrowserPush({
-    hasPushManager: true,
     hasNotification: true,
+    hasPushManager: true,
     hasServiceWorker: true,
     // SAFETY: Test fixture is a subset of the production type.
     subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
@@ -356,10 +356,10 @@ test("prefetches capability and isSubscribed into the query cache in the browser
     expect(
       queryClient.getQueryData(browserPushQueryOptions(queryClient, babyRef).queryKey),
     ).toEqual({
-      kind: "subscribed",
-      subscription: { endpoint: "https://push.example/sub" },
       family: true,
+      kind: "subscribed",
       messages: true,
+      subscription: { endpoint: "https://push.example/sub" },
     });
   });
 });
@@ -415,11 +415,11 @@ test("offers subscribe when push is unsupported", async () => {
 test("shows unsubscribe when Convex reports an active subscription", async () => {
   await using view = await renderSubscribe(
     {
+      family: true,
       kind: "subscribed",
+      messages: false,
       // SAFETY: Test fixture is a subset of the production type.
       subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-      family: true,
-      messages: false,
     },
     "visitor",
   );
@@ -430,11 +430,11 @@ test("shows unsubscribe when Convex reports an active subscription", async () =>
 test("offers subscribe when the browser is subscribed but Convex is not", async () => {
   await using view = await renderSubscribe(
     {
+      family: false,
       kind: "subscribed",
+      messages: false,
       // SAFETY: Test fixture is a subset of the production type.
       subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-      family: false,
-      messages: false,
     },
     "visitor",
   );
@@ -478,11 +478,11 @@ test("managers pick status and message alerts in a chooser", async () => {
 test("manager chooser defaults match the current subscription", async () => {
   await using view = await renderSubscribe(
     {
+      family: true,
       kind: "subscribed",
+      messages: false,
       // SAFETY: Test fixture is a subset of the production type.
       subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-      family: true,
-      messages: false,
     },
     "manager",
   );
@@ -505,9 +505,9 @@ test("saving the manager chooser reports the selected alerts", async () => {
     <TooltipProvider>
       <ManagerNotificationChooserView
         familyDefault={true}
-        messagesDefault={true}
-        isSubscribed={false}
         isPending={false}
+        isSubscribed={false}
+        messagesDefault={true}
         onSubmit={onSubmit}
       />
     </TooltipProvider>,
@@ -530,9 +530,9 @@ test("saving both channels off reports an unsubscribe selection", async () => {
     <TooltipProvider>
       <ManagerNotificationChooserView
         familyDefault={true}
-        messagesDefault={true}
-        isSubscribed={true}
         isPending={false}
+        isSubscribed={true}
+        messagesDefault={true}
         onSubmit={onSubmit}
       />
     </TooltipProvider>,
@@ -560,9 +560,9 @@ test("chooser Save waits for the mutation before closing", async () => {
     <TooltipProvider>
       <ManagerNotificationChooserView
         familyDefault={true}
-        messagesDefault={true}
-        isSubscribed={false}
         isPending={false}
+        isSubscribed={false}
+        messagesDefault={true}
         onSubmit={onSubmit}
       />
     </TooltipProvider>,
@@ -590,9 +590,9 @@ test("dirty chooser dismiss asks to discard unsaved changes", async () => {
     <TooltipProvider>
       <ManagerNotificationChooserView
         familyDefault={true}
-        messagesDefault={true}
-        isSubscribed={false}
         isPending={false}
+        isSubscribed={false}
+        messagesDefault={true}
         onSubmit={onSubmit}
       />
     </TooltipProvider>,
@@ -625,7 +625,7 @@ function ownerPushSubscription() {
     endpoint: OWNER_ENDPOINT,
     toJSON: (): PushSubscriptionJSON => ({
       endpoint: OWNER_ENDPOINT,
-      keys: { p256dh: "p256", auth: "auth" },
+      keys: { auth: "auth", p256dh: "p256" },
     }),
   } as PushSubscription;
 }
@@ -636,7 +636,7 @@ function stubGrantedOwnerPush() {
 
   function replaceProperty<$Target extends object>(
     target: $Target,
-    property: { key: string; descriptor: PropertyDescriptor },
+    property: { descriptor: PropertyDescriptor; key: string },
   ) {
     const existing = Object.getOwnPropertyDescriptor(target, property.key);
     Object.defineProperty(target, property.key, { configurable: true, ...property.descriptor });
@@ -655,8 +655,8 @@ function stubGrantedOwnerPush() {
     get: () => "granted",
   });
   replaceProperty(globalThis, {
-    key: "Notification",
     descriptor: { value: NotificationStub },
+    key: "Notification",
   });
   // SAFETY: Test fixture is a subset of the production type.
   const registration = {
@@ -666,8 +666,8 @@ function stubGrantedOwnerPush() {
     },
   } as ServiceWorkerRegistration;
   replaceProperty(navigator, {
-    key: "serviceWorker",
     descriptor: { value: { ready: Promise.resolve(registration) } },
+    key: "serviceWorker",
   });
 
   return makeResource({}, () => {
@@ -680,12 +680,12 @@ function stubGrantedOwnerPush() {
 test("visitor Get Notifications does not drop owner message alerts", async () => {
   await using _env = stubGrantedOwnerPush();
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await harness.client.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "auth",
     babyId: baby.babyId,
     endpoint: OWNER_ENDPOINT,
     p256dh: "p256",
-    auth: "auth",
     userAgent: "vitest",
   });
   harness.withIdentity(null);
@@ -699,19 +699,19 @@ test("visitor Get Notifications does not drop owner message alerts", async () =>
     ui: (
       <TooltipProvider>
         <NotificationSubscribe
+          audience="visitor"
           babyId={baby.babyId}
-          vapidPublicKey={vapid}
           browserPush={testPreloadedQuery(
             (ref) => browserPushQueryOptions(harness.queryClient, ref),
             {
-              kind: "subscribed",
-              subscription: ownerPushSubscription(),
               family: false,
+              kind: "subscribed",
               messages: true,
+              subscription: ownerPushSubscription(),
             },
             baby.publicId,
           )}
-          audience="visitor"
+          vapidPublicKey={vapid}
         />
       </TooltipProvider>
     ),

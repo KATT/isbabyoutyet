@@ -13,12 +13,12 @@ import { useBabyPhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 
 type PhotoAvatarProps = {
-  publicId: string | null;
   babyName: string;
-  photoUrl: string | null;
-  thumbnailUrl: string | null;
   blurDataUrl: string | null;
   fallbackEmoji: string;
+  photoUrl: string | null;
+  publicId: string | null;
+  thumbnailUrl: string | null;
   variant: "default" | "born";
 };
 
@@ -39,7 +39,7 @@ function PhotoAvatar(props: PhotoAvatarProps) {
   if (!avatarImageUrl && !props.photoUrl) {
     return (
       <div className={`${baseClasses} ${variantClasses}`}>
-        <span className="text-6xl md:text-7xl" aria-hidden="true">
+        <span aria-hidden="true" className="text-6xl md:text-7xl">
           {props.fallbackEmoji}
         </span>
       </div>
@@ -48,12 +48,12 @@ function PhotoAvatar(props: PhotoAvatarProps) {
 
   const avatarImage = avatarImageUrl ? (
     <BlurImage
-      src={avatarImageUrl}
       alt={t("Photo of {{name}}", { name: props.babyName })}
-      width={160}
-      height={160}
       blurDataUrl={props.blurDataUrl}
       className="h-full w-full object-cover"
+      height={160}
+      src={avatarImageUrl}
+      width={160}
     />
   ) : null;
 
@@ -82,13 +82,13 @@ type LatestUpdateMessage = {
 };
 
 type StatusDisplayProps = {
-  publicId: string | null;
   baby: BabyData;
-  currentStatus: BabyStatus;
-  photoUrl: string | null;
-  thumbnailUrl: string | null;
   blurDataUrl: string | null;
+  currentStatus: BabyStatus;
   latestUpdate: LatestUpdateMessage | null;
+  photoUrl: string | null;
+  publicId: string | null;
+  thumbnailUrl: string | null;
 };
 
 function LatestUpdateBox(props: { latestUpdate: LatestUpdateMessage | null }) {
@@ -115,22 +115,22 @@ function LatestUpdateBox(props: { latestUpdate: LatestUpdateMessage | null }) {
 }
 
 const STATUS_META = {
-  not_yet: { emoji: "👶", answerKey: "Not yet", sublineKey: "Baby is still on the way" },
-  labor_started: {
-    emoji: "💫",
-    answerKey: "Labour started!",
-    sublineKey: "Not gone to hospital yet",
-  },
-  gone_to_hospital: {
-    emoji: "🏥",
-    answerKey: "Gone to hospital!",
-    sublineKey: "Almost there now",
-  },
   born: {
-    emoji: "🎉",
     answerKey: "Yes! Baby is out",
+    emoji: "🎉",
     sublineKey: "Welcome to the world, little one",
   },
+  gone_to_hospital: {
+    answerKey: "Gone to hospital!",
+    emoji: "🏥",
+    sublineKey: "Almost there now",
+  },
+  labor_started: {
+    answerKey: "Labour started!",
+    emoji: "💫",
+    sublineKey: "Not gone to hospital yet",
+  },
+  not_yet: { answerKey: "Not yet", emoji: "👶", sublineKey: "Baby is still on the way" },
 } as const;
 
 export function StatusDisplay(props: StatusDisplayProps) {
@@ -156,12 +156,12 @@ export function StatusDisplay(props: StatusDisplayProps) {
   return (
     <div className="flex flex-col items-center py-8">
       <PhotoAvatar
-        publicId={props.publicId}
         babyName={props.baby.name}
-        photoUrl={props.photoUrl}
-        thumbnailUrl={props.thumbnailUrl}
         blurDataUrl={props.blurDataUrl}
         fallbackEmoji={meta.emoji}
+        photoUrl={props.photoUrl}
+        publicId={props.publicId}
+        thumbnailUrl={props.thumbnailUrl}
         variant={isBorn ? "born" : "default"}
       />
 

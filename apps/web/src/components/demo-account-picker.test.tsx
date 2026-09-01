@@ -5,15 +5,15 @@ import { DemoAccountPicker } from "./demo-account-picker";
 import { renderResource } from "@/test/renderResource";
 
 function renderPicker(opts: {
-  onPrefill: (account: (typeof DEMO_ACCOUNTS)[number]) => void;
   enabled: boolean;
+  onPrefill: (account: (typeof DEMO_ACCOUNTS)[number]) => void;
 }) {
-  return renderResource(<DemoAccountPicker onPrefill={opts.onPrefill} enabled={opts.enabled} />);
+  return renderResource(<DemoAccountPicker enabled={opts.enabled} onPrefill={opts.onPrefill} />);
 }
 
 test("lists seeded test accounts and reports the chosen one", async () => {
   const onPrefill = vi.fn<(account: (typeof DEMO_ACCOUNTS)[number]) => void>();
-  await using _view = renderPicker({ onPrefill, enabled: true });
+  await using _view = renderPicker({ enabled: true, onPrefill });
 
   for (const account of DEMO_ACCOUNTS) {
     expect(screen.getByRole("option", { name: account.label })).toBeTruthy();
@@ -26,15 +26,15 @@ test("lists seeded test accounts and reports the chosen one", async () => {
   expect(onPrefill).toHaveBeenCalledWith(
     expect.objectContaining({
       email: DEMO_EMPTY_USER.email,
-      password: DEMO_EMPTY_USER.password,
       name: DEMO_EMPTY_USER.name,
+      password: DEMO_EMPTY_USER.password,
     }),
   );
   expect(onPrefill).toHaveBeenCalledTimes(1);
 });
 
 test("hides entirely when demo login is disabled", async () => {
-  await using _view = renderPicker({ onPrefill: () => {}, enabled: false });
+  await using _view = renderPicker({ enabled: false, onPrefill: () => {} });
 
   expect(screen.queryByLabelText("Test account")).toBeNull();
 });

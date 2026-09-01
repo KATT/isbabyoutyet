@@ -36,22 +36,22 @@ type DisabledReason = "unsupported" | "needsIosInstall";
 function ownerMessageNotifyCopy(opts: { checked: boolean; disabledReason: DisabledReason | null }) {
   if (opts.disabledReason === "needsIosInstall") {
     return {
-      title: "Message notifications",
       description:
         "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.",
+      title: "Message notifications",
     } as const;
   }
   if (opts.disabledReason === "unsupported") {
     return {
-      title: "Message notifications",
       description: "Push notifications are not supported in this browser.",
+      title: "Message notifications",
     } as const;
   }
   return {
-    title: "Message notifications",
     description: opts.checked
       ? "You'll get a push when someone leaves a message on this page."
       : "Get notified when someone leaves a message",
+    title: "Message notifications",
   } as const;
 }
 
@@ -85,7 +85,7 @@ function MessageNotifySwitch(
       <IosPwaInstallPrompt
         audience="owner"
         trigger={
-          <Button type="button" variant="outline" size="sm" id={props.switchId ?? undefined}>
+          <Button id={props.switchId ?? undefined} size="sm" type="button" variant="outline">
             {t("Get Notifications")}
           </Button>
         }
@@ -94,13 +94,13 @@ function MessageNotifySwitch(
   }
   return (
     <Switch
-      id={props.switchId ?? undefined}
+      aria-labelledby={props.labelledBy}
       checked={props.checked}
       disabled={props.disabled || props.onCheckedChange === null}
+      id={props.switchId ?? undefined}
       onCheckedChange={(checked) => {
         props.onCheckedChange?.(checked);
       }}
-      aria-labelledby={props.labelledBy}
     />
   );
 }
@@ -128,17 +128,17 @@ function SettingsMessageNotifyRow(props: SwitchViewProps) {
 
 function FormMessageNotifyRow(props: SwitchViewProps) {
   const { t } = useI18n();
-  const { formItemId, formDescriptionId } = useFormField();
+  const { formDescriptionId, formItemId } = useFormField();
   const copy = ownerMessageNotifyCopy(props);
   const titleId = `${formItemId}-title`;
 
   return (
-    <label htmlFor={formItemId} className="flex items-center justify-between gap-4">
+    <label className="flex items-center justify-between gap-4" htmlFor={formItemId}>
       <div className="flex flex-col gap-1">
-        <span id={titleId} className="text-sm leading-none font-bold">
+        <span className="text-sm leading-none font-bold" id={titleId}>
           {t(copy.title)}
         </span>
-        <span id={formDescriptionId} className="text-muted-foreground text-sm">
+        <span className="text-muted-foreground text-sm" id={formDescriptionId}>
           {t(copy.description)}
         </span>
       </div>
@@ -169,8 +169,8 @@ export function OwnerMessageNotifyFormField<
             checked={Boolean(renderProps.field.value)}
             disabled={false}
             disabledReason={null}
-            onCheckedChange={renderProps.field.onChange}
             layout="form"
+            onCheckedChange={renderProps.field.onChange}
           />
         </FormItem>
       )}
@@ -184,8 +184,8 @@ function browserPushCapabilityFactory(queryClient: QueryClient) {
 
 type OwnerMessageNotifyLiveSwitchProps = {
   babyId: Id<"baby">;
-  vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
   browserPush: InitiatedQuery<BrowserPushCapabilityFactory>;
+  vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
 };
 
 export function OwnerMessageNotifyLiveSwitch(props: OwnerMessageNotifyLiveSwitchProps) {
@@ -208,10 +208,10 @@ export function OwnerMessageNotifyLiveSwitch(props: OwnerMessageNotifyLiveSwitch
       }
       const keys = await ensureWebPushSubscription(vapidPublicKey);
       await subscribeAsOwnerMutationFn({
+        auth: keys.auth,
         babyId: props.babyId,
         endpoint: keys.endpoint,
         p256dh: keys.p256dh,
-        auth: keys.auth,
         userAgent: navigator.userAgent,
       });
     },
@@ -227,10 +227,10 @@ export function OwnerMessageNotifyLiveSwitch(props: OwnerMessageNotifyLiveSwitch
         return;
       }
       await unsubscribeAsOwnerMutationFn({
+        auth: keys.auth,
         babyId: props.babyId,
         endpoint: keys.endpoint,
         p256dh: keys.p256dh,
-        auth: keys.auth,
       });
     },
     onSuccess: () => {
@@ -260,24 +260,24 @@ export function OwnerMessageNotifyLiveSwitch(props: OwnerMessageNotifyLiveSwitch
         capability.kind === "serviceWorkerTimeout"
       }
       disabledReason={disabledReason}
+      layout="settings"
       onCheckedChange={(nextChecked) => {
         if (nextChecked) {
           toast.promise(subscribeMutation.mutateAsync(), {
-            loading: t("Subscribing to notifications..."),
-            success: t("Subscribed to notifications!"),
             error: (error) =>
               error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
+            loading: t("Subscribing to notifications..."),
+            success: t("Subscribed to notifications!"),
           });
           return;
         }
         toast.promise(unsubscribeMutation.mutateAsync(), {
-          loading: t("Unsubscribing from notifications..."),
-          success: t("Unsubscribed from notifications!"),
           error: (error) =>
             error instanceof Error ? error.message : t("Failed to unsubscribe from notifications"),
+          loading: t("Unsubscribing from notifications..."),
+          success: t("Unsubscribed from notifications!"),
         });
       }}
-      layout="settings"
     />
   );
 }

@@ -4,26 +4,27 @@ import { useCompleteImageLoad } from "@/lib/use-complete-image-load";
 
 type HandleLoadingOptions = {
   loadedSrcRef: RefObject<string | null>;
-  srcKey: string;
-  setLoadedSrc: Dispatch<SetStateAction<string | null>>;
   onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"];
+  setLoadedSrc: Dispatch<SetStateAction<string | null>>;
+  srcKey: string;
 };
 
 function callOnLoad(img: HTMLImageElement, onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"]) {
-  if (!onLoad) return;
+  if (!onLoad) {
+    return;
+  }
 
   const nativeEvent = new Event("load");
-  Object.defineProperty(nativeEvent, "target", { writable: false, value: img });
+  Object.defineProperty(nativeEvent, "target", { value: img, writable: false });
   let prevented = false;
   let stopped = false;
 
   onLoad({
     ...nativeEvent,
-    nativeEvent,
     currentTarget: img,
-    target: img,
     isDefaultPrevented: () => prevented,
     isPropagationStopped: () => stopped,
+    nativeEvent,
     persist: () => {},
     preventDefault: () => {
       prevented = true;
@@ -33,6 +34,7 @@ function callOnLoad(img: HTMLImageElement, onLoad: ImgHTMLAttributes<HTMLImageEl
       stopped = true;
       nativeEvent.stopPropagation();
     },
+    target: img,
   });
 }
 
@@ -42,14 +44,18 @@ function callOnLoad(img: HTMLImageElement, onLoad: ImgHTMLAttributes<HTMLImageEl
  * @see https://github.com/vercel/next.js/blob/78b11c37e6eafb92030612c08de4adb5bb5c8a28/packages/next/src/client/image-component.tsx
  */
 function handleLoading(img: HTMLImageElement, options: HandleLoadingOptions) {
-  if (options.loadedSrcRef.current === img.src) return;
+  if (options.loadedSrcRef.current === img.src) {
+    return;
+  }
   options.loadedSrcRef.current = img.src;
 
   const decode = "decode" in img ? img.decode() : Promise.resolve();
   void decode
     .catch(() => {})
     .then(() => {
-      if (!img.parentElement || !img.isConnected) return;
+      if (!img.parentElement || !img.isConnected) {
+        return;
+      }
       options.setLoadedSrc(options.srcKey);
       callOnLoad(img, options.onLoad);
     });
@@ -60,9 +66,9 @@ function handleLoading(img: HTMLImageElement, options: HandleLoadingOptions) {
  * useState (audited seam under no-use-state).
  */
 export function useBlurImageLoad(opts: {
-  srcKey: string;
-  onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"];
   onError: ImgHTMLAttributes<HTMLImageElement>["onError"];
+  onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"];
+  srcKey: string;
 }) {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const loadedSrcRef = useRef<string | null>(null);
@@ -73,23 +79,23 @@ export function useBlurImageLoad(opts: {
 
   useCompleteImageLoad({
     imgRef,
-    srcKey: opts.srcKey,
     onComplete: (img) => {
       handleLoading(img, {
         loadedSrcRef,
-        srcKey: opts.srcKey,
-        setLoadedSrc,
         onLoad: opts.onLoad,
+        setLoadedSrc,
+        srcKey: opts.srcKey,
       });
     },
+    srcKey: opts.srcKey,
   });
 
   function onLoad(event: SyntheticEvent<HTMLImageElement>) {
     handleLoading(event.currentTarget, {
       loadedSrcRef,
-      srcKey: opts.srcKey,
-      setLoadedSrc,
       onLoad: opts.onLoad,
+      setLoadedSrc,
+      srcKey: opts.srcKey,
     });
   }
 
@@ -102,8 +108,8 @@ export function useBlurImageLoad(opts: {
   return {
     imgRef,
     loaded,
-    showAltText,
-    onLoad,
     onError,
+    onLoad,
+    showAltText,
   };
 }

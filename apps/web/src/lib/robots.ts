@@ -63,13 +63,13 @@ export function isIndexableBabyPublicId(publicId: string) {
 export function searchRobotsMeta(opts: { index: boolean }) {
   if (opts.index) {
     return [
-      { name: "robots", content: "index, follow" },
-      { name: "googlebot", content: "index, follow" },
+      { content: "index, follow", name: "robots" },
+      { content: "index, follow", name: "googlebot" },
     ];
   }
   return [
-    { name: "robots", content: "noindex, nofollow" },
-    { name: "googlebot", content: "noindex, nofollow" },
+    { content: "noindex, nofollow", name: "robots" },
+    { content: "noindex, nofollow", name: "googlebot" },
   ];
 }
 

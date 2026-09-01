@@ -15,7 +15,9 @@ export function useCompleteImageLoad(opts: {
 }) {
   useIsomorphicLayoutEffect(() => {
     const img = opts.imgRef.current;
-    if (!img || !img.complete) return;
+    if (!img || !img.complete) {
+      return;
+    }
     opts.onComplete(img);
   }, [opts.imgRef, opts.onComplete, opts.srcKey]);
 }

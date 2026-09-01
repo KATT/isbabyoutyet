@@ -42,7 +42,9 @@ async function resolveCallerProfile(ctx: QueryCtx | MutationCtx, userId: string)
     };
   }
   const byId = await findUserById(ctx, userId);
-  if (!byId?.email) return null;
+  if (!byId?.email) {
+    return null;
+  }
   return {
     email: normalizeEmail(String(byId.email)),
     name: parseOptionalString(byId.name),
@@ -88,20 +90,20 @@ export const myAccess = query({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      return { isOwner: false, isCoParent: false, canManage: false };
+      return { canManage: false, isCoParent: false, isOwner: false };
     }
     const caller = appIdentity(identity);
 
     const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
     if (!baby || !isActive(baby)) {
-      return { isOwner: false, isCoParent: false, canManage: false };
+      return { canManage: false, isCoParent: false, isOwner: false };
     }
 
     const babyId = baby._id;
     const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
     const isCoParent =
       !isOwner && (await findActiveCoParent(ctx, { babyId, identity: caller })) != null;
-    return { isOwner, isCoParent, canManage: isOwner || isCoParent };
+    return { canManage: isOwner || isCoParent, isCoParent, isOwner };
   },
 });
 
@@ -127,14 +129,14 @@ export const listForBaby = query({
     return {
       coParents: coParents.map((row) => ({
         _id: row._id,
+        addedAt: row.addedAt,
         email: row.email,
         name: row.name ?? null,
-        addedAt: row.addedAt,
       })),
       invites: invites.map((row) => ({
         _id: row._id,
-        email: row.email,
         createdAt: row.createdAt,
+        email: row.email,
       })),
     };
   },
@@ -150,7 +152,7 @@ export const invite = mutation({
     email: v.string(),
   },
   handler: async (ctx, args) => {
-    const { identity, baby } = await requireBabyOwner(ctx, args.babyId);
+    const { baby, identity } = await requireBabyOwner(ctx, args.babyId);
     const email = normalizeEmail(args.email);
     if (!email.includes("@")) {
       throw new Error("Enter a valid email address");
@@ -186,13 +188,13 @@ export const invite = mutation({
       }
 
       await ctx.db.insert("babyCoParents", {
+        addedAt: Date.now(),
+        addedByUserId: identity.authUserId,
         babyId: args.babyId,
-        userId,
-        tokenIdentifier,
         email,
         name: parseOptionalString(existingUser.name),
-        addedByUserId: identity.authUserId,
-        addedAt: Date.now(),
+        tokenIdentifier,
+        userId,
       });
       return { status: "added" as const };
     }
@@ -204,9 +206,9 @@ export const invite = mutation({
 
     await ctx.db.insert("babyCoParentInvites", {
       babyId: args.babyId,
+      createdAt: Date.now(),
       email,
       invitedByUserId: identity.authUserId,
-      createdAt: Date.now(),
     });
     return { status: "invited" as const };
   },
@@ -247,7 +249,9 @@ export const leave = mutation({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
     const caller = appIdentity(identity);
 
     const membership = await findActiveCoParent(ctx, {
@@ -275,9 +279,9 @@ export async function claimPendingInvitesForCaller(ctx: MutationCtx, caller: App
     return 0;
   }
   return await claimPendingInvitesForAuthUser(ctx, {
-    userId: caller.authUserId,
     email: profile.email,
     name: profile.name,
+    userId: caller.authUserId,
   });
 }
 
@@ -287,7 +291,6 @@ export async function claimPendingInvitesForCaller(ctx: MutationCtx, caller: App
  */
 export const claimPendingInvites = mutation({
   args: {},
-  returns: v.object({ claimed: v.number() }),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     // After signup the first dashboard load can race the session cookie —
@@ -298,6 +301,7 @@ export const claimPendingInvites = mutation({
     const claimed = await claimPendingInvitesForCaller(ctx, appIdentity(identity));
     return { claimed };
   },
+  returns: v.object({ claimed: v.number() }),
 });
 
 /**
@@ -329,9 +333,13 @@ export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
   }
 
   for (const membership of memberships.filter(isActive)) {
-    if (seen.has(membership.babyId)) continue;
+    if (seen.has(membership.babyId)) {
+      continue;
+    }
     const baby = await ctx.db.get(membership.babyId);
-    if (!baby || !isActive(baby)) continue;
+    if (!baby || !isActive(baby)) {
+      continue;
+    }
     seen.add(baby._id);
     shared.push({ ...(await toManagerBabyDto(ctx, baby)), role: "coParent" });
   }

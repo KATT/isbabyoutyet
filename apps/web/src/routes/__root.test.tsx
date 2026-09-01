@@ -22,7 +22,7 @@ function renderProgress(ui: ReactElement) {
 
 function withoutBrowserWindow(run: () => Promise<void>) {
   const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
-  Object.defineProperty(globalThis, "window", { value: undefined, configurable: true });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: undefined });
   return run().finally(() => {
     if (windowDescriptor) {
       Object.defineProperty(globalThis, "window", windowDescriptor);

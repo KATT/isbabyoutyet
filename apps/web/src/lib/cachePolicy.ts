@@ -11,7 +11,7 @@ const VERSIONED_IMAGE_MAX_AGE_SECONDS = 31_536_000;
 
 export type PublicCachePolicy = {
   maxAgeSeconds: number;
-  tags: readonly string[];
+  tags: ReadonlyArray<string>;
 };
 
 const PUBLIC_BABY_ROUTE_IDS = new Set([
@@ -24,17 +24,17 @@ const PUBLIC_BABY_ROUTE_IDS = new Set([
 function publicCacheHeaders(policy: PublicCachePolicy) {
   return {
     "Cache-Control": PUBLIC_BROWSER_CACHE_CONTROL,
-    "Vercel-CDN-Cache-Control": `public, s-maxage=${policy.maxAgeSeconds}, stale-while-revalidate=${PUBLIC_STALE_SECONDS}`,
-    "Vercel-Cache-Tag": policy.tags.join(","),
     Vary: "Accept-Language, Cookie",
+    "Vercel-Cache-Tag": policy.tags.join(","),
+    "Vercel-CDN-Cache-Control": `public, s-maxage=${policy.maxAgeSeconds}, stale-while-revalidate=${PUBLIC_STALE_SECONDS}`,
   };
 }
 
 export function privateCacheHeaders() {
   return {
     "Cache-Control": PRIVATE_CACHE_CONTROL,
-    "Vercel-CDN-Cache-Control": PRIVATE_CACHE_CONTROL,
     Vary: "Cookie",
+    "Vercel-CDN-Cache-Control": PRIVATE_CACHE_CONTROL,
   };
 }
 
@@ -47,7 +47,7 @@ export function previewCacheHeaders() {
 }
 
 export function authPageCacheHeaders() {
-  return publicCacheHeaders({ maxAgeSeconds: 3_600, tags: ["auth-pages"] });
+  return publicCacheHeaders({ maxAgeSeconds: 3600, tags: ["auth-pages"] });
 }
 
 function babyPageCacheHeaders(publicId: string) {
@@ -57,7 +57,7 @@ function babyPageCacheHeaders(publicId: string) {
   });
 }
 
-export function babyRouteCacheHeaders(opts: { publicId: string; routeIds: readonly string[] }) {
+export function babyRouteCacheHeaders(opts: { publicId: string; routeIds: ReadonlyArray<string> }) {
   const isPublicRoute = opts.routeIds.some((routeId) => PUBLIC_BABY_ROUTE_IDS.has(routeId));
   return isPublicRoute ? babyPageCacheHeaders(opts.publicId) : privateCacheHeaders();
 }
@@ -70,7 +70,7 @@ export function withPublicCache(response: Response, policy: PublicCachePolicy) {
   return responseWithHeaders(response, headers);
 }
 
-export function withVersionedImageCache(response: Response, tags: readonly string[]) {
+export function withVersionedImageCache(response: Response, tags: ReadonlyArray<string>) {
   const headers = new Headers(response.headers);
   headers.set("Cache-Control", `public, max-age=${VERSIONED_IMAGE_MAX_AGE_SECONDS}, immutable`);
   headers.set(
@@ -90,10 +90,10 @@ function publicPagePolicy(pathname: string): PublicCachePolicy | null {
     return { maxAgeSeconds: 86_400, tags: ["preview"] };
   }
   if (pathname === "/auth/login" || pathname === "/auth/signup") {
-    return { maxAgeSeconds: 3_600, tags: ["auth-pages"] };
+    return { maxAgeSeconds: 3600, tags: ["auth-pages"] };
   }
   if (pathname === "/robots.txt" || pathname === "/sitemap.xml") {
-    return { maxAgeSeconds: 3_600, tags: ["discovery"] };
+    return { maxAgeSeconds: 3600, tags: ["discovery"] };
   }
   if (pathname === "/og") {
     return { maxAgeSeconds: 86_400, tags: ["homepage"] };
@@ -130,7 +130,7 @@ function publicPagePolicy(pathname: string): PublicCachePolicy | null {
   return null;
 }
 
-function mergeVary(headers: Headers, values: readonly string[]) {
+function mergeVary(headers: Headers, values: ReadonlyArray<string>) {
   const existing = headers
     .get("Vary")
     ?.split(",")

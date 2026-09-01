@@ -5,7 +5,7 @@ test("lazyGetter creates its value once on the first property read", () => {
   let calls = 0;
   const value = lazyGetter(() => {
     calls += 1;
-    return { name: "Ada", count: 3 };
+    return { count: 3, name: "Ada" };
   });
 
   expect(calls).toBe(0);

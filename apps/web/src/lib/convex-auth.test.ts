@@ -17,7 +17,7 @@ const profileKey = convexQuery(api.profile.get, {}).queryKey;
 const babyListKey = convexQuery(api.baby.listByUser, {}).queryKey;
 
 function makeAuthClient() {
-  const listeners: SessionListener[] = [];
+  const listeners: Array<SessionListener> = [];
   const token =
     vi.fn<
       (opts: {
@@ -25,7 +25,6 @@ function makeAuthClient() {
       }) => Promise<{ data: { token: string } | null } | null>
     >();
   const authClient: ConvexAuthClient = {
-    convex: { token },
     $store: {
       atoms: {
         session: {
@@ -36,30 +35,31 @@ function makeAuthClient() {
         },
       },
     },
+    convex: { token },
   };
   const emit = (session: SessionSnapshot) => {
     for (const listener of listeners) {
       listener(session);
     }
   };
-  return { authClient, token, emit };
+  return { authClient, emit, token };
 }
 
 function makeClients() {
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const convexQueryClient = { convexClient: { setAuth } };
   const queryClient = new QueryClient();
-  return { setAuth, convexQueryClient, queryClient };
+  return { convexQueryClient, queryClient, setAuth };
 }
 
 test("setup establishes auth immediately: token for signed-in, null for anonymous", async () => {
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
+    authClient: auth.authClient,
     // @ts-expect-error — stand-in only implements setAuth
     convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
-    authClient: auth.authClient,
   });
 
   expect(clients.setAuth).toHaveBeenCalledTimes(1);
@@ -87,10 +87,10 @@ test("setup tolerates a missing session atom", () => {
   auth.authClient.$store.atoms.session = undefined;
 
   setupClientConvexAuthWithClient({
+    authClient: auth.authClient,
     // @ts-expect-error — stand-in only implements setAuth
     convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
-    authClient: auth.authClient,
   });
 
   expect(clients.setAuth).toHaveBeenCalledTimes(1);
@@ -98,9 +98,9 @@ test("setup tolerates a missing session atom", () => {
 
 function seedCachedQueries(queryClient: QueryClient) {
   queryClient.setQueryData(profileKey, {
+    isAdmin: false,
     locale: "sv",
     timeZone: "Europe/London",
-    isAdmin: false,
   });
   queryClient.setQueryData(babyListKey, []);
 }
@@ -109,10 +109,10 @@ test("pending and the first settled session leave the query cache (SSR / reload)
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
+    authClient: auth.authClient,
     // @ts-expect-error — stand-in only implements setAuth
     convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
-    authClient: auth.authClient,
   });
   seedCachedQueries(clients.queryClient);
 
@@ -131,10 +131,10 @@ test("a settled sign-out after a signed-in session clears the query cache", () =
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
+    authClient: auth.authClient,
     // @ts-expect-error — stand-in only implements setAuth
     convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
-    authClient: auth.authClient,
   });
   seedCachedQueries(clients.queryClient);
 
@@ -150,10 +150,10 @@ test("a settled sign-in after an anonymous session clears the query cache", () =
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
+    authClient: auth.authClient,
     // @ts-expect-error — stand-in only implements setAuth
     convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
-    authClient: auth.authClient,
   });
   seedCachedQueries(clients.queryClient);
 

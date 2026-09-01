@@ -13,7 +13,7 @@ import type { ConvexQueryClient } from "@convex-dev/react-query";
 import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
-import * as React from "react";
+import type { ReactNode } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { ThemeProvider } from "next-themes";
 import appCss from "../../../../packages/ui/src/styles/globals.css?url";
@@ -54,8 +54,8 @@ export async function resolveRootBeforeLoad(opts: {
   // then Accept-Language) via the server function.
   if (globalThis.window === undefined) {
     return {
-      locale: await opts.detectLocale(),
       isAuthenticated: false,
+      locale: await opts.detectLocale(),
       token: null,
     };
   }
@@ -65,19 +65,19 @@ export async function resolveRootBeforeLoad(opts: {
   // show the top progress bar. Paraglide resolves the same cookie →
   // preferredLanguage chain locally.
   return {
-    locale: opts.getClientLocale(),
     isAuthenticated: false,
+    locale: opts.getClientLocale(),
     token: null,
   };
 }
 
 export const Route = createRootRouteWithContext<{
-  queryClient: QueryClient;
-  convexQueryClient: ConvexQueryClient;
   convexClient: ConvexReactClient;
   convexPreloader: ConvexQueryPreloader;
-  locale: SupportedLocale;
+  convexQueryClient: ConvexQueryClient;
   isAuthenticated: boolean;
+  locale: SupportedLocale;
+  queryClient: QueryClient;
   token: string | null | undefined;
 }>()({
   beforeLoad: async () =>
@@ -93,82 +93,84 @@ export const Route = createRootRouteWithContext<{
     );
     const title = m.app_name({}, { locale });
     return {
+      links: [
+        {
+          href: nunitoCss,
+          rel: "stylesheet",
+        },
+        {
+          href: appCss,
+          rel: "stylesheet",
+        },
+        {
+          href: typeCss,
+          rel: "stylesheet",
+        },
+        {
+          href: "/apple-touch-icon.png",
+          rel: "apple-touch-icon",
+        },
+        {
+          href: "/favicon-32x32.png",
+          rel: "icon",
+          sizes: "32x32",
+          type: "image/png",
+        },
+        {
+          href: "/favicon-16x16.png",
+          rel: "icon",
+          sizes: "16x16",
+          type: "image/png",
+        },
+      ],
       meta: [
         {
+          // HTML meta charset is the IANA name `utf-8`, not Node's `utf8`.
+          // oxlint-disable-next-line unicorn/text-encoding-identifier-case
           charSet: "utf-8",
         },
         {
-          name: "viewport",
           content: "width=device-width, initial-scale=1",
+          name: "viewport",
         },
         {
           title,
         },
         {
-          name: "description",
           content: description,
+          name: "description",
         },
         {
-          property: "og:locale",
           content: locale.replace("-", "_"),
+          property: "og:locale",
         },
         {
-          property: "og:site_name",
           content: title,
+          property: "og:site_name",
         },
         {
-          property: "og:type",
           content: "website",
+          property: "og:type",
         },
         {
-          name: "twitter:card",
           content: "summary_large_image",
+          name: "twitter:card",
         },
         {
-          name: "theme-color",
           content: "#ea580c",
+          name: "theme-color",
         },
         {
+          content: "yes",
           name: "mobile-web-app-capable",
-          content: "yes",
         },
         {
+          content: "yes",
           name: "apple-mobile-web-app-capable",
-          content: "yes",
         },
         {
-          name: "apple-mobile-web-app-status-bar-style",
           content: "black-translucent",
-        },
-      ],
-      links: [
-        {
-          rel: "stylesheet",
-          href: nunitoCss,
-        },
-        {
-          rel: "stylesheet",
-          href: appCss,
-        },
-        {
-          rel: "stylesheet",
-          href: typeCss,
-        },
-        {
-          rel: "apple-touch-icon",
-          href: "/apple-touch-icon.png",
-        },
-        {
-          rel: "icon",
-          type: "image/png",
-          sizes: "32x32",
-          href: "/favicon-32x32.png",
-        },
-        {
-          rel: "icon",
-          type: "image/png",
-          sizes: "16x16",
-          href: "/favicon-16x16.png",
+          name: "apple-mobile-web-app-status-bar-style",
         },
       ],
     };
@@ -223,8 +225,8 @@ function RootComponent() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ConvexBetterAuthProvider
-        client={context.convexQueryClient.convexClient}
         authClient={convexAuthClient}
+        client={context.convexQueryClient.convexClient}
         initialToken={token}
       >
         <ConvexAuthObserver />
@@ -266,20 +268,20 @@ export function RootErrorComponent(props: { error: Error }) {
         ) : null}
         <div className="flex justify-center gap-3">
           <Button
-            size="lg"
             className="rounded-full"
             onClick={() => {
               window.location.reload();
             }}
+            size="lg"
           >
             {t("Reload page")}
           </Button>
           <Button
+            className="rounded-full"
+            nativeButton={false}
+            render={<Link to="/" />}
             size="lg"
             variant="outline"
-            className="rounded-full"
-            render={<Link to="/" />}
-            nativeButton={false}
           >
             {t("Go Home")}
           </Button>
@@ -302,7 +304,7 @@ export function NotFoundComponent() {
         <p className="text-muted-foreground font-medium">
           {t("Looks like this page hasn't arrived yet. Let's get you back home!")}
         </p>
-        <Button size="lg" className="rounded-full" render={<Link to="/" />} nativeButton={false}>
+        <Button className="rounded-full" nativeButton={false} render={<Link to="/" />} size="lg">
           {t("Go Home")}
         </Button>
       </div>
@@ -336,8 +338,8 @@ export function NavigationProgress() {
 export function NavigationProgressBar(props: { isNavigating: boolean }) {
   const { t } = useI18n();
   const showBar = useDelayedBoolean({
-    value: props.isNavigating,
     delayMs: NAVIGATION_PROGRESS_DELAY_MS,
+    value: props.isNavigating,
   });
 
   if (!showBar) {
@@ -345,25 +347,25 @@ export function NavigationProgressBar(props: { isNavigating: boolean }) {
   }
   return (
     <Progress
-      value={null}
       aria-label={t("Loading")}
       className={cn(
         "pointer-events-none fixed inset-x-0 top-0 z-50",
         "[&_[data-slot=progress-indicator]]:w-1/4 [&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-indicator]]:animate-progress-indeterminate",
         "motion-reduce:[&_[data-slot=progress-indicator]]:w-full motion-reduce:[&_[data-slot=progress-indicator]]:animate-none",
       )}
+      value={null}
     />
   );
 }
 
 /** @internal exported for tests — document shell without Convex/auth providers. */
-export function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
+export function RootDocument(props: { children: ReactNode; locale: SupportedLocale }) {
   // Inlined env gate (not `hasDemoLogin`) so Vite DCE drops DevBar and
   // TanStack Devtools in prod. Same expression as the Vite strip flag:
   // preview sets VITE_HAS_DEMO_LOGIN; production leaves it unset.
   const showPreviewDevTools = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
   return (
-    <html lang={props.locale} dir="ltr">
+    <html dir="ltr" lang={props.locale}>
       <head>
         <HeadContent />
       </head>

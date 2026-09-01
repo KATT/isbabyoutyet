@@ -29,9 +29,9 @@ function renderSettings(opts: {
         languageSettings={opts.languageSettings}
         onSignOut={opts.onSignOut}
         overlay={{
-          open: true,
           onOpenChange: () => undefined,
           onOpenChangeComplete: () => undefined,
+          open: true,
         }}
       />
     </LocaleProvider>,
@@ -80,8 +80,8 @@ test("DashboardSettingsSheet wires the preloaded profile into the view", async (
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "ada@example.com",
-    password: "password123",
     name: "Ada",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
 
@@ -119,8 +119,8 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "admin@example.com",
-    password: "password123",
     name: "Admin",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
 

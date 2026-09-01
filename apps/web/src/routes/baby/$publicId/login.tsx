@@ -23,9 +23,9 @@ export const Route = createFileRoute("/baby/$publicId/login")({
     }
     if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
-        to: "/baby/$publicId/login",
         params: { publicId: babyDoc.publicId },
         replace: true,
+        to: "/baby/$publicId/login",
       });
     }
   },
@@ -39,9 +39,9 @@ export function BabyLoginOverlay() {
 
   return (
     <Dialog
-      open={login.open}
       onOpenChange={login.onOpenChange}
       onOpenChangeComplete={login.onOpenChangeComplete}
+      open={login.open}
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="sr-only">
@@ -50,22 +50,22 @@ export function BabyLoginOverlay() {
         </DialogHeader>
         <LoginCard
           demoLoginEnabled={hasDemoLogin}
-          variant="dialog"
-          homeLink={{ to: "/baby/$publicId", params: { publicId: params.publicId } }}
+          homeLink={{ params: { publicId: params.publicId }, to: "/baby/$publicId" }}
           onSignIn={(values) =>
             signInAndHandoff(values, {
+              failedMessage: t("Failed to sign in"),
+              headers: () => loginAuthAdapter.headers(),
+              navigate: async () => {
+                login.dismiss();
+              },
               signIn: async (body, fetchOptions) => {
                 const result = await loginAuthAdapter.signInEmail(body, fetchOptions);
                 return { errorMessage: result.error ? (result.error.message ?? "") : null };
               },
-              headers: () => loginAuthAdapter.headers(),
               waitForAuth: () => loginAuthAdapter.waitForAuth(),
-              navigate: async () => {
-                login.dismiss();
-              },
-              failedMessage: t("Failed to sign in"),
             })
           }
+          variant="dialog"
         />
       </DialogContent>
     </Dialog>

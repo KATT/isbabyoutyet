@@ -3,7 +3,7 @@ import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
-import * as z from "zod";
+import { z } from "zod";
 import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -46,7 +46,7 @@ export function DashboardSettingsRoute() {
   return <DashboardSettingsSheet profile={authContext.profile} queryClient={queryClient} />;
 }
 
-function SettingsSection(props: { title: string; children: ReactNode }) {
+function SettingsSection(props: { children: ReactNode; title: string }) {
   return (
     <section className="flex flex-col gap-2">
       <h3 className="px-0.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -60,9 +60,9 @@ function SettingsSection(props: { title: string; children: ReactNode }) {
 }
 
 type OverlayControl = {
-  open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenChangeComplete: (open: boolean) => void;
+  open: boolean;
 };
 
 /**
@@ -91,21 +91,21 @@ export function DashboardSettingsSheet(props: {
   return (
     <DashboardSettingsSheetView
       isAdmin={profileQuery.data?.isAdmin === true}
-      overlay={settings}
-      languageSettings={<LanguageSettings profile={props.profile} className="justify-start" />}
+      languageSettings={<LanguageSettings className="justify-start" profile={props.profile} />}
       onSignOut={async () => {
         props.queryClient.clear();
         await settingsAuthAdapter.signOut({
           fetchOptions: {
-            onSuccess: () => {
-              window.location.href = "/";
-            },
             onError: (error) => {
               toast.error(error.error.message);
+            },
+            onSuccess: () => {
+              window.location.href = "/";
             },
           },
         });
       }}
+      overlay={settings}
     />
   );
 }
@@ -118,9 +118,9 @@ export function DashboardSettingsSheet(props: {
  */
 export function DashboardSettingsSheetView(props: {
   isAdmin: boolean;
-  overlay: OverlayControl;
   languageSettings: ReactNode;
   onSignOut: () => void | Promise<void>;
+  overlay: OverlayControl;
 }) {
   const { t } = useI18n();
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -133,10 +133,10 @@ export function DashboardSettingsSheetView(props: {
       onOpenChangeComplete={props.overlay.onOpenChangeComplete}
     >
       <SheetContent
-        ref={contentRef}
-        initialFocus={contentRef}
-        side="right"
         className="w-full sm:max-w-sm"
+        initialFocus={contentRef}
+        ref={contentRef}
+        side="right"
       >
         <FormGuardProvider guard={formOverlay}>
           <SheetHeader>
@@ -170,7 +170,7 @@ export function DashboardSettingsSheetView(props: {
               <SettingsSection title={t("Admin")}>
                 <Item
                   render={
-                    <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
+                    <Link preload="viewport" search={ADMIN_DEFAULT_SEARCH} to="/dashboard/admin" />
                   }
                 >
                   <ItemMedia variant="icon">
@@ -196,8 +196,8 @@ export function DashboardSettingsSheetView(props: {
 function SignOutForm(props: { onSignOut: () => void | Promise<void> }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: z.object({}),
     defaultValues: {},
+    schema: z.object({}),
   });
 
   return (

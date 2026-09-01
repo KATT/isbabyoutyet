@@ -2,17 +2,17 @@ import { useEffectEvent, useState, useSyncExternalStore } from "react";
 import { isFunction } from "@workspace/runtime/guards";
 
 type Rect = {
-  top: number;
-  left: number;
-  width: number;
   height: number;
+  left: number;
+  top: number;
+  width: number;
 };
 
 type CoachmarkSnapshot = {
-  rect: Rect;
-  placement: "above" | "below";
-  viewportWidth: number;
   isMobile: boolean;
+  placement: "above" | "below";
+  rect: Rect;
+  viewportWidth: number;
 };
 
 function mobileMediaQuery() {
@@ -22,11 +22,21 @@ function mobileMediaQuery() {
   return window.matchMedia("(max-width: 767px)");
 }
 
-function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void }) {
+function isHtmlElement(value: Element | null): value is HTMLElement {
+  return value !== null && Object.prototype.isPrototypeOf.call(HTMLElement.prototype, value);
+}
+
+function noop() {}
+
+function createCoachmarkStore(opts: { targetId: string }) {
   let snapshot: CoachmarkSnapshot | null = null;
+  let onDismiss = noop;
 
   return {
     getSnapshot: () => snapshot,
+    setOnDismiss: (next: () => void) => {
+      onDismiss = next;
+    },
     subscribe: (notify: () => void) => {
       let target: HTMLElement | null = null;
       let resizeObserver: ResizeObserver | null = null;
@@ -34,13 +44,15 @@ function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void })
       const mediaQuery = mobileMediaQuery();
 
       function onTargetClick() {
-        opts.onDismiss();
+        onDismiss();
       }
 
       function resolveTarget() {
         const element = document.querySelector(`[data-tour-id="${opts.targetId}"]`);
-        const nextTarget = element instanceof HTMLElement ? element : null;
-        if (target === nextTarget) return target;
+        const nextTarget = isHtmlElement(element) ? element : null;
+        if (target === nextTarget) {
+          return target;
+        }
         if (target) {
           target.removeEventListener("click", onTargetClick);
         }
@@ -55,7 +67,7 @@ function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void })
         }
         if (target && scrolledTarget !== target) {
           scrolledTarget = target;
-          target.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+          target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
         }
         return target;
       }
@@ -80,11 +92,11 @@ function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void })
           return;
         }
         const next: CoachmarkSnapshot = {
-          rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+          isMobile: mediaQuery?.matches === true,
           placement:
             window.innerHeight - rect.bottom < 160 ? ("above" as const) : ("below" as const),
+          rect: { height: rect.height, left: rect.left, top: rect.top, width: rect.width },
           viewportWidth: window.innerWidth,
-          isMobile: mediaQuery?.matches === true,
         };
         if (
           snapshot?.rect.top === next.rect.top &&
@@ -126,16 +138,13 @@ function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void })
 /**
  * Subscribes to the coachmark target’s layout. Store init lives in lib
  * (useState) so feature UI avoids both useState and render-time ref access.
- * `onDismiss` is an Effect Event so the store always invokes the latest
- * closure without reading a ref during render.
+ * `onDismiss` is an Effect Event assigned onto the store each render so click
+ * handlers always invoke the latest closure without passing the event into
+ * the one-shot initializer.
  */
-export function useCoachmarkSnapshot(opts: { targetId: string; onDismiss: () => void }) {
+export function useCoachmarkSnapshot(opts: { onDismiss: () => void; targetId: string }) {
   const onDismiss = useEffectEvent(opts.onDismiss);
-  const [store] = useState(() =>
-    createCoachmarkStore({
-      targetId: opts.targetId,
-      onDismiss,
-    }),
-  );
+  const [store] = useState(() => createCoachmarkStore({ targetId: opts.targetId }));
+  store.setOnDismiss(onDismiss);
   return useSyncExternalStore(store.subscribe, store.getSnapshot, () => null);
 }

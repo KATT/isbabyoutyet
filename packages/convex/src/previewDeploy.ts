@@ -23,27 +23,27 @@ export const MERGE_QUEUE_REF_MARKER = "gh-readonly-queue";
 
 export type ConvexDeployPlan =
   | { kind: "merge-queue-web-only" }
-  | { kind: "production"; writeEnv: true; seed: "seed:homepage" }
+  | { kind: "production"; seed: "seed:homepage"; writeEnv: true }
   | {
       kind: "preview-create";
       previewName: string;
-      writeEnv: true;
       seed: "seed:homepage:content";
+      writeEnv: true;
     }
   | {
       kind: "preview-recreate";
       previewName: string;
-      writeEnv: true;
       seed: "seed:homepage:content";
+      writeEnv: true;
     }
   | {
       kind: "preview-reuse";
       previewName: string;
-      writeEnv: boolean;
       seed: null;
+      writeEnv: boolean;
     };
 
-export function computeSchemaFingerprint(files: ReadonlyArray<{ path: string; contents: string }>) {
+export function computeSchemaFingerprint(files: ReadonlyArray<{ contents: string; path: string }>) {
   const hash = createHash("sha256");
   for (const file of files) {
     hash.update(file.path);
@@ -79,9 +79,9 @@ export function shouldPushConvexBackend(gitRef: string) {
  * `refs/heads/gh-readonly-queue/…`.
  */
 export function shouldSkipPreviewPhotoSeed(opts: {
-  githubRef: string;
-  deploymentRef: string;
   deploymentEnvironment: string;
+  deploymentRef: string;
+  githubRef: string;
   resolvedBranch: string | null;
 }) {
   const refs = [opts.githubRef, opts.deploymentRef, opts.deploymentEnvironment];
@@ -101,9 +101,9 @@ export function previewNameFromGitRef(ref: string) {
 }
 
 function shouldWipePreview(opts: {
-  storedFingerprint: string | null;
   currentFingerprint: string;
   previewExists: boolean;
+  storedFingerprint: string | null;
 }) {
   if (!opts.previewExists) {
     return false;
@@ -115,45 +115,45 @@ function shouldWipePreview(opts: {
 }
 
 export function planConvexDeploy(opts: {
-  vercelEnv: "production" | "preview";
-  gitRef: string;
   currentFingerprint: string;
-  stored: { previewExists: boolean; fingerprint: string | null };
+  gitRef: string;
+  stored: { fingerprint: string | null; previewExists: boolean };
+  vercelEnv: "production" | "preview";
 }): ConvexDeployPlan {
   if (opts.vercelEnv === "preview" && isMergeQueueGitRef(opts.gitRef)) {
     return { kind: "merge-queue-web-only" };
   }
   if (opts.vercelEnv === "production") {
-    return { kind: "production", writeEnv: true, seed: "seed:homepage" };
+    return { kind: "production", seed: "seed:homepage", writeEnv: true };
   }
   const previewName = previewNameFromGitRef(opts.gitRef) ?? opts.gitRef;
   if (!opts.stored.previewExists) {
     return {
       kind: "preview-create",
       previewName,
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     };
   }
   if (
     shouldWipePreview({
-      storedFingerprint: opts.stored.fingerprint,
       currentFingerprint: opts.currentFingerprint,
       previewExists: opts.stored.previewExists,
+      storedFingerprint: opts.stored.fingerprint,
     })
   ) {
     return {
       kind: "preview-recreate",
       previewName,
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     };
   }
   return {
     kind: "preview-reuse",
     previewName,
-    writeEnv: opts.stored.fingerprint === null,
     seed: null,
+    writeEnv: opts.stored.fingerprint === null,
   };
 }
 
@@ -209,7 +209,7 @@ export function convexDeployRetryCliArgs(plan: ConvexDeployPlan) {
  */
 export const CONVEX_DEPLOY_URL_CMD = "node ../../apps/web/scripts/write-convex-url.mjs";
 
-export function convexDeployArgv(extraArgs: string[]) {
+export function convexDeployArgv(extraArgs: Array<string>) {
   return [
     "deploy",
     "--cmd-url-env-var-name",
@@ -258,14 +258,14 @@ export function previewNameCliArgs(plan: ConvexDeployPlan) {
   }
 }
 
-export function interpretEnvGetResult(opts: { ok: boolean; stdout: string; stderr: string }) {
+export function interpretEnvGetResult(opts: { ok: boolean; stderr: string; stdout: string }) {
   if (opts.ok) {
-    return { previewExists: true, fingerprint: parseEnvGetOutput(opts.stdout) };
+    return { fingerprint: parseEnvGetOutput(opts.stdout), previewExists: true };
   }
   if (/Environment variable .* not found/i.test(opts.stderr)) {
-    return { previewExists: true, fingerprint: null };
+    return { fingerprint: null, previewExists: true };
   }
-  return { previewExists: false, fingerprint: null };
+  return { fingerprint: null, previewExists: false };
 }
 
 /** Fresh Convex previews can hang on `start_push` for 5 minutes and 408. */
@@ -287,7 +287,7 @@ export function parseEnvGetOutput(stdout: string) {
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
-  const value = lines[lines.length - 1];
+  const value = lines.at(-1);
   if (value === undefined) {
     return null;
   }

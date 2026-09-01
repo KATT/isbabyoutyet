@@ -4,8 +4,8 @@ import type { FormGuardStore, FormStateFlags, OverlayDismissEventDetails } from 
 
 function dismissEvent(reason: string) {
   const cancel = vi.fn();
-  const eventDetails: OverlayDismissEventDetails = { reason, cancel };
-  return { eventDetails, cancel };
+  const eventDetails: OverlayDismissEventDetails = { cancel, reason };
+  return { cancel, eventDetails };
 }
 
 function attachActions(store: FormGuardStore) {
@@ -15,12 +15,12 @@ function attachActions(store: FormGuardStore) {
 }
 
 function flags(partial: Partial<FormStateFlags>): FormStateFlags {
-  return { isDirty: false, isSubmitting: false, isSubmitSuccessful: false, ...partial };
+  return { isDirty: false, isSubmitSuccessful: false, isSubmitting: false, ...partial };
 }
 
 test("clean store allows user dismissal without cancelling", () => {
   const store = createFormGuardStore();
-  const { eventDetails, cancel } = dismissEvent("escape-key");
+  const { cancel, eventDetails } = dismissEvent("escape-key");
 
   expect(store.handleOpenChange(false, eventDetails)).toBe("allow");
   expect(cancel).not.toHaveBeenCalled();
@@ -73,7 +73,7 @@ test("dirty store confirms dismissal and opens its own prompt", () => {
   const store = createFormGuardStore();
   store.setFormState("note", flags({ isDirty: true }));
 
-  const { eventDetails, cancel } = dismissEvent("outside-press");
+  const { cancel, eventDetails } = dismissEvent("outside-press");
   expect(store.handleOpenChange(false, eventDetails)).toBe("confirm");
   expect(cancel).toHaveBeenCalled();
   expect(store.isPromptOpen()).toBe(true);

@@ -75,9 +75,9 @@ export function createBabyArgs(
     Partial<FunctionArgs<typeof api.baby.create>>,
 ): FunctionArgs<typeof api.baby.create> {
   return {
+    birthJourney: "labor",
     dueDateDisplayMode: opts.dueDate ? "exact" : "message",
     publicDueDateText: null,
-    birthJourney: "labor",
     theme: null,
     ...opts,
   };
@@ -106,9 +106,9 @@ export function createEncouragementArgs(
     Partial<FunctionArgs<typeof api.encouragements.create>>,
 ): FunctionArgs<typeof api.encouragements.create> {
   return {
-    userAgent: null,
     locale: null,
     timezone: null,
+    userAgent: null,
     ...opts,
   };
 }

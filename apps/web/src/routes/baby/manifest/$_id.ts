@@ -30,37 +30,37 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
         const permanentUrl = `/baby/${baby._id}`;
 
         const manifest = {
-          name,
-          short_name: name,
-          id: permanentUrl,
-          start_url: permanentUrl,
-          scope: "/baby/",
-          lang: locale,
+          background_color: "#0f172a",
           description: translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
             name: baby.name,
           }),
           display: "standalone",
-          theme_color: themeColor,
-          background_color: "#0f172a",
           icons: [
             {
-              src: "/favicon.ico",
               sizes: "64x64 32x32 24x24 16x16",
+              src: "/favicon.ico",
               type: "image/x-icon",
             },
             {
-              src: "/android-chrome-192x192.png",
-              sizes: "192x192",
-              type: "image/png",
               purpose: "any maskable",
+              sizes: "192x192",
+              src: "/android-chrome-192x192.png",
+              type: "image/png",
             },
             {
-              src: "/android-chrome-512x512.png",
-              sizes: "512x512",
-              type: "image/png",
               purpose: "any maskable",
+              sizes: "512x512",
+              src: "/android-chrome-512x512.png",
+              type: "image/png",
             },
           ],
+          id: permanentUrl,
+          lang: locale,
+          name,
+          scope: "/baby/",
+          short_name: name,
+          start_url: permanentUrl,
+          theme_color: themeColor,
         };
 
         return withPublicCache(

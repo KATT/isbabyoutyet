@@ -86,9 +86,9 @@ export const getByPublicId = query({
 
     return {
       ...(await toBabyDto(ctx, baby)),
+      blurDataUrl,
       photoUrl,
       thumbnailUrl,
-      blurDataUrl,
     };
   },
 });
@@ -133,7 +133,7 @@ export async function applyPhotoSideEffects(
   const baby = opts.baby;
 
   // Update the current photo (retain old photos in storage + feed for history)
-  await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null, blurDataUrl: null });
+  await ctx.db.patch(baby._id, { blurDataUrl: null, photoId: opts.photoId, thumbnailId: null });
 
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
     babyId: baby._id,
@@ -150,8 +150,8 @@ export async function schedulePushNotification(
   ctx: MutationCtx,
   opts: {
     baby: Doc<"baby">;
-    notificationType: NotifiableStatus;
     customMessage: string | null;
+    notificationType: NotifiableStatus;
     photoId: Id<"_storage"> | null;
     updateId: Id<"updates"> | null;
   },
@@ -161,13 +161,13 @@ export async function schedulePushNotification(
 
   const notificationId = await ctx.db.insert("scheduledNotifications", {
     babyId: baby._id,
-    status: "pending",
-    scheduledFor,
-    notificationType: opts.notificationType,
-    customMessage: opts.customMessage,
-    photoId: opts.photoId,
-    updateId: opts.updateId,
     createdAt: Date.now(),
+    customMessage: opts.customMessage,
+    notificationType: opts.notificationType,
+    photoId: opts.photoId,
+    scheduledFor,
+    status: "pending",
+    updateId: opts.updateId,
   });
 
   const preferences = await resolveBabyPreferences(ctx.db, baby);
@@ -175,15 +175,15 @@ export async function schedulePushNotification(
     scheduledFor,
     internal.pushNotifications.sendNotification,
     {
-      notificationId,
       babyId: baby._id,
       babyName: baby.name,
+      customMessage: opts.customMessage,
+      locale: preferences.resolvedLocale,
+      notificationId,
+      photoId: opts.photoId,
       publicId: baby.publicId,
       status: opts.notificationType,
-      customMessage: opts.customMessage,
-      photoId: opts.photoId,
       updateId: opts.updateId,
-      locale: preferences.resolvedLocale,
     },
   );
 
@@ -197,27 +197,27 @@ export const updatePhoto = mutationWithTriggers({
     photoId: v.union(v.id("_storage"), v.null()),
   },
   handler: async (ctx, args) => {
-    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
+    const { baby, identity } = await requireBabyManager(ctx, args.babyId);
 
     if (!args.photoId) {
       // Removing the current photo only affects the baby doc; photo updates
       // already posted to the timeline keep their own copies.
-      await ctx.db.patch(args.babyId, { photoId: null, thumbnailId: null, blurDataUrl: null });
+      await ctx.db.patch(args.babyId, { blurDataUrl: null, photoId: null, thumbnailId: null });
       return;
     }
 
     const { updateId } = await insertUpdateWithTimelineItem(ctx, {
       babyId: args.babyId,
-      postedAt: Date.now(),
       photoId: args.photoId,
+      postedAt: Date.now(),
       postedByUserId: identity.authUserId,
     });
 
     await applyPhotoSideEffects(ctx, { baby, photoId: args.photoId, updateId });
     await schedulePushNotification(ctx, {
       baby,
-      notificationType: "photo_added",
       customMessage: null,
+      notificationType: "photo_added",
       photoId: args.photoId,
       updateId,
     });
@@ -228,15 +228,15 @@ function slugify(name: string): string {
   return name
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replaceAll(/[^\w\s-]/g, "")
+    .replaceAll(/[\s_-]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
 }
 
 async function isPublicIdTaken(opts: {
   db: DatabaseReader;
-  publicId: string;
   excludeTokenIdentifier: string;
+  publicId: string;
 }): Promise<boolean> {
   // Reserved for the seeded homepage live demos — never let a real user claim them.
   if (isHomepageDemoPublicId(opts.publicId)) {
@@ -272,8 +272,8 @@ async function isPublicIdTaken(opts: {
 }
 
 async function generateUniquePublicId(opts: {
-  db: DatabaseReader;
   baseName: string;
+  db: DatabaseReader;
   excludeTokenIdentifier: string;
 }): Promise<string> {
   const slug = slugify(opts.baseName);
@@ -283,8 +283,8 @@ async function generateUniquePublicId(opts: {
   while (
     await isPublicIdTaken({
       db: opts.db,
-      publicId,
       excludeTokenIdentifier: opts.excludeTokenIdentifier,
+      publicId,
     })
   ) {
     tries++;
@@ -296,11 +296,11 @@ async function generateUniquePublicId(opts: {
 
 export const create = mutationWithTriggers({
   args: {
-    name: v.string(),
+    birthJourney: birthJourneyValidator,
     dueDate: v.union(v.string(), v.null()),
     dueDateDisplayMode: dueDateDisplayModeValidator,
+    name: v.string(),
     publicDueDateText: v.union(v.string(), v.null()),
-    birthJourney: birthJourneyValidator,
     theme: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
@@ -316,23 +316,23 @@ export const create = mutationWithTriggers({
     });
 
     const publicId = await generateUniquePublicId({
-      db: ctx.db,
       baseName: args.name,
+      db: ctx.db,
       excludeTokenIdentifier: caller.tokenIdentifier,
     });
 
     const babyFields = {
-      userId: caller.authUserId,
-      ownerTokenIdentifier: caller.tokenIdentifier,
-      name: args.name,
+      birthJourney: args.birthJourney,
       dueDate: dueDateDisplay.dueDate,
       dueDateDisplayMode: dueDateDisplay.mode,
+      lastActivityAt: Date.now(),
+      name: args.name,
+      ownerTokenIdentifier: caller.tokenIdentifier,
       publicDueDateText: dueDateDisplay.text,
       publicId,
-      birthJourney: args.birthJourney,
-      theme: args.theme,
       subscriptionCount: 0,
-      lastActivityAt: Date.now(),
+      theme: args.theme,
+      userId: caller.authUserId,
     };
     const babyId = await ctx.db.insert("baby", babyFields);
 
@@ -435,13 +435,13 @@ export const markNotificationSent = internalMutation({
 export const updateThumbnail = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    thumbnailId: v.id("_storage"),
     pushImageId: v.union(v.id("_storage"), v.null()),
+    thumbnailId: v.id("_storage"),
     /** Photo the derivatives were generated from. */
     photoId: v.union(v.id("_storage"), v.null()),
     /** Timeline update row to also patch. */
-    updateId: v.union(v.id("updates"), v.null()),
     blurDataUrl: v.union(v.string(), v.null()),
+    updateId: v.union(v.id("updates"), v.null()),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
@@ -450,8 +450,8 @@ export const updateThumbnail = internalMutationWithTriggers({
     const blurDataUrl = args.blurDataUrl;
     if (baby && (!args.photoId || baby.photoId === args.photoId)) {
       await ctx.db.patch(args.babyId, {
-        thumbnailId: args.thumbnailId,
         blurDataUrl,
+        thumbnailId: args.thumbnailId,
       });
     }
 
@@ -459,9 +459,9 @@ export const updateThumbnail = internalMutationWithTriggers({
       const update = await ctx.db.get(args.updateId);
       if (update && (!args.photoId || update.photoId === args.photoId)) {
         const updateFields = {
-          thumbnailId: args.thumbnailId,
-          pushImageId: args.pushImageId ?? update.pushImageId ?? null,
           blurDataUrl,
+          pushImageId: args.pushImageId ?? update.pushImageId ?? null,
+          thumbnailId: args.thumbnailId,
         };
         await ctx.db.patch(args.updateId, updateFields);
       }
@@ -476,8 +476,8 @@ export const updateThumbnail = internalMutationWithTriggers({
 export const updateBlurDataUrl = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    photoId: v.id("_storage"),
     blurDataUrl: v.string(),
+    photoId: v.id("_storage"),
     updateId: v.union(v.id("updates"), v.null()),
   },
   handler: async (ctx, args) => {
@@ -501,10 +501,9 @@ export const updateBlurDataUrl = internalMutationWithTriggers({
  */
 export const resolveNotificationImage = internalQuery({
   args: {
-    updateId: v.union(v.id("updates"), v.null()),
     photoId: v.union(v.id("_storage"), v.null()),
+    updateId: v.union(v.id("updates"), v.null()),
   },
-  returns: v.union(v.id("_storage"), v.null()),
   handler: async (ctx, args) => {
     if (args.updateId) {
       const update = await ctx.db.get(args.updateId);
@@ -514,6 +513,7 @@ export const resolveNotificationImage = internalQuery({
     }
     return args.photoId;
   },
+  returns: v.union(v.id("_storage"), v.null()),
 });
 
 /**
@@ -525,11 +525,11 @@ export const resolveNotificationImage = internalQuery({
 export async function syncStatusNotifications(
   ctx: MutationCtx,
   opts: {
-    statusBefore: BabyStatus;
-    updatedBaby: Doc<"baby">;
     /** Message to attach to the push, per notifiable milestone. */
     customMessageByMilestone: Record<Milestone, string | null>;
     photoId: Id<"_storage"> | null;
+    statusBefore: BabyStatus;
+    updatedBaby: Doc<"baby">;
     updateId: Id<"updates"> | null;
   },
 ) {
@@ -564,12 +564,14 @@ export async function syncStatusNotifications(
     await ctx.db.patch(notification._id, { status: "cancelled" });
   }
 
-  if (!movedForward) return;
+  if (!movedForward) {
+    return;
+  }
 
   await schedulePushNotification(ctx, {
     baby: updatedBaby,
-    notificationType: statusAfter.type,
     customMessage: opts.customMessageByMilestone[statusAfter.type],
+    notificationType: statusAfter.type,
     photoId: opts.photoId,
     updateId: opts.updateId,
   });
@@ -579,19 +581,19 @@ export const update = mutationWithTriggers({
   args: {
     id: v.id("baby"),
     patch: v.object({
+      birthJourney: v.optional(birthJourneyValidator),
       dueDate: v.optional(v.union(v.string(), v.null())),
       dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-      publicDueDateText: v.optional(v.union(v.string(), v.null())),
-      name: v.optional(v.string()),
-      theme: v.optional(v.union(v.string(), v.null())),
       locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-      birthJourney: v.optional(birthJourneyValidator),
+      name: v.optional(v.string()),
+      publicDueDateText: v.optional(v.union(v.string(), v.null())),
+      theme: v.optional(v.union(v.string(), v.null())),
     }),
   },
   handler: async (ctx, args) => {
     const babyId = args.id;
     const patch = { ...args.patch };
-    const { identity, baby } = await requireBabyManager(ctx, babyId);
+    const { baby, identity } = await requireBabyManager(ctx, babyId);
     if (
       patch.dueDate !== undefined ||
       patch.dueDateDisplayMode !== undefined ||
@@ -616,8 +618,8 @@ export const update = mutationWithTriggers({
       if (newSlugifiedName !== baby.publicId) {
         const oldPublicId = baby.publicId;
         publicId = await generateUniquePublicId({
-          db: ctx.db,
           baseName: patch.name,
+          db: ctx.db,
           excludeTokenIdentifier: identity.tokenIdentifier,
         });
         await ctx.db.insert("babyPublicIdHistory", {

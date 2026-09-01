@@ -19,40 +19,40 @@ test("auth identity migrations remain idempotent after backfill", async () => {
 
   const ids = await t.run(async (ctx) => {
     const babyId = await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Migration Baby",
+      birthJourney: "labor",
       dueDate: "2026-09-01",
       dueDateDisplayMode: "exact",
+      lastActivityAt: 1,
+      name: "Migration Baby",
+      ownerTokenIdentifier: "https://convex.test|alice",
       publicDueDateText: null,
       publicId: "migration-baby",
-      birthJourney: "labor",
-      lastActivityAt: 1,
       subscriptionCount: 99,
+      userId: "alice",
     });
     const profileId = await ctx.db.insert("userProfiles", {
-      userId: "alice",
-      tokenIdentifier: "https://convex.test|alice",
-      locale: "en-GB",
       isAdmin: false,
+      locale: "en-GB",
+      tokenIdentifier: "https://convex.test|alice",
+      userId: "alice",
     });
     const onboardingId = await ctx.db.insert("userOnboarding", {
-      userId: "alice",
-      tokenIdentifier: "https://convex.test|alice",
-      completedSteps: ["share_link"],
-      welcomeDismissed: false,
       checklistDismissed: false,
+      completedSteps: ["share_link"],
       minimized: false,
+      tokenIdentifier: "https://convex.test|alice",
+      userId: "alice",
+      welcomeDismissed: false,
     });
     const coParentId = await ctx.db.insert("babyCoParents", {
-      babyId,
-      userId: "bob",
-      tokenIdentifier: "https://convex.test|bob",
-      email: "bob@example.com",
-      addedByUserId: "alice",
       addedAt: 1,
+      addedByUserId: "alice",
+      babyId,
+      email: "bob@example.com",
+      tokenIdentifier: "https://convex.test|bob",
+      userId: "bob",
     });
-    return { babyId, profileId, onboardingId, coParentId };
+    return { babyId, coParentId, onboardingId, profileId };
   });
 
   await t.run(async (ctx) => {
@@ -88,9 +88,9 @@ test("auth identity migrations remain idempotent after backfill", async () => {
   const migrated = await t.run(async (ctx) => {
     return {
       baby: await ctx.db.get(ids.babyId),
-      profile: await ctx.db.get(ids.profileId),
-      onboarding: await ctx.db.get(ids.onboardingId),
       coParent: await ctx.db.get(ids.coParentId),
+      onboarding: await ctx.db.get(ids.onboardingId),
+      profile: await ctx.db.get(ids.profileId),
     };
   });
 
@@ -110,25 +110,29 @@ test("due date display migration preserves and normalizes existing messages", as
   const t = convexTest(schema, modules);
   const babyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Migration Baby",
+      birthJourney: "labor",
       dueDate: "2026-09-01",
       dueDateDisplayMode: "message",
+      lastActivityAt: 1,
+      name: "Migration Baby",
+      ownerTokenIdentifier: "https://convex.test|alice",
       publicDueDateText: "  Any day now  ",
       publicId: "message-migration-baby",
-      birthJourney: "labor",
-      lastActivityAt: 1,
       subscriptionCount: 0,
+      userId: "alice",
     });
   });
 
   await t.run(async (ctx) => {
     const baby = await ctx.db.get(babyId);
-    if (!baby) throw new Error("Migration fixture missing");
+    if (!baby) {
+      throw new Error("Migration fixture missing");
+    }
     await backfillBabyDueDateDisplayDoc(ctx, baby);
     const migrated = await ctx.db.get(babyId);
-    if (!migrated) throw new Error("Migrated baby missing");
+    if (!migrated) {
+      throw new Error("Migrated baby missing");
+    }
     await backfillBabyDueDateDisplayDoc(ctx, migrated);
   });
 

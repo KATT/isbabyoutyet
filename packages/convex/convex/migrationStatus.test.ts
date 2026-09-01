@@ -9,12 +9,12 @@ test("deployment status waits for every required table migration", async () => {
   await registerMigrationsComponent(t);
 
   expect(await t.query(internal.migrations.deploymentStatus, {})).toEqual({
-    isDone: false,
     failed: [],
+    isDone: false,
   });
   expect(await t.query(internal.migrations.historicalDeploymentStatus, {})).toEqual({
-    isDone: false,
     failed: [],
+    isDone: false,
   });
 });
 

@@ -7,10 +7,10 @@ const metrics = ["statements", "branches", "functions", "lines"] as const;
 type CoverageMetric = (typeof metrics)[number];
 type CoverageSummary = { total: JsonObject };
 type CoverageResult = {
-  metric: CoverageMetric;
   baseline: number;
-  current: number;
   change: number;
+  current: number;
+  metric: CoverageMetric;
 };
 
 const baselinePath = process.argv[2];
@@ -61,7 +61,7 @@ function getPercentage(
   return percentage;
 }
 
-function buildStepSummary(results: CoverageResult[]) {
+function buildStepSummary(results: Array<CoverageResult>) {
   const rows = results
     .map(
       (result) =>
@@ -79,7 +79,7 @@ function buildStepSummary(results: CoverageResult[]) {
   ].join("\n");
 }
 
-function emitAnnotations(results: CoverageResult[], regressions: CoverageResult[]) {
+function emitAnnotations(results: Array<CoverageResult>, regressions: Array<CoverageResult>) {
   for (const result of results) {
     console.log(
       `::notice title=Coverage ${result.metric}::${formatPct(result.current)} (${formatChange(result.change)}) vs PR base ${formatPct(result.baseline)}`,
@@ -118,10 +118,10 @@ const results = metrics.map((metric) => {
   });
 
   return {
-    metric,
     baseline: baselinePercentage,
-    current: currentPercentage,
     change: currentPercentage - baselinePercentage,
+    current: currentPercentage,
+    metric,
   };
 });
 

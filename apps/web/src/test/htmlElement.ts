@@ -1,38 +1,45 @@
 /**
  * Parses a Testing Library / DOM node to a concrete HTML element.
- * instanceof is the boundary check; tests should not assert these.
+ * Prototype checks are the boundary; tests should not assert these.
  */
 
+function isHtml<T extends Element>(
+  node: EventTarget | Node | null,
+  ctor: { prototype: T },
+): node is T {
+  return node !== null && Object.prototype.isPrototypeOf.call(ctor.prototype, node);
+}
+
 export function htmlButton(node: EventTarget | Node | null) {
-  if (node instanceof HTMLButtonElement) {
+  if (isHtml(node, HTMLButtonElement)) {
     return node;
   }
   throw new Error("expected HTMLButtonElement");
 }
 
 export function htmlInput(node: EventTarget | Node | null) {
-  if (node instanceof HTMLInputElement) {
+  if (isHtml(node, HTMLInputElement)) {
     return node;
   }
   throw new Error("expected HTMLInputElement");
 }
 
 export function htmlTextArea(node: EventTarget | Node | null) {
-  if (node instanceof HTMLTextAreaElement) {
+  if (isHtml(node, HTMLTextAreaElement)) {
     return node;
   }
   throw new Error("expected HTMLTextAreaElement");
 }
 
 export function htmlImage(node: EventTarget | Node | null) {
-  if (node instanceof HTMLImageElement) {
+  if (isHtml(node, HTMLImageElement)) {
     return node;
   }
   throw new Error("expected HTMLImageElement");
 }
 
 export function htmlElement(node: EventTarget | Node | null) {
-  if (node instanceof HTMLElement) {
+  if (isHtml(node, HTMLElement)) {
     return node;
   }
   throw new Error("expected HTMLElement");

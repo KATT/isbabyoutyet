@@ -41,15 +41,15 @@ test("copyTextToClipboard falls back to execCommand when writeText fails", async
   const originalExecCommand = document.execCommand;
   Object.defineProperty(document, "execCommand", {
     configurable: true,
-    writable: true,
     value: execCommand,
+    writable: true,
   });
   await using _exec = makeResource({}, () => {
     if (hadExecCommand) {
       Object.defineProperty(document, "execCommand", {
         configurable: true,
-        writable: true,
         value: originalExecCommand,
+        writable: true,
       });
       return;
     }
@@ -83,15 +83,15 @@ test("copyTextToClipboard throws when both strategies fail", async () => {
   const originalExecCommand = document.execCommand;
   Object.defineProperty(document, "execCommand", {
     configurable: true,
-    writable: true,
     value: execCommand,
+    writable: true,
   });
   await using _exec = makeResource({}, () => {
     if (hadExecCommand) {
       Object.defineProperty(document, "execCommand", {
         configurable: true,
-        writable: true,
         value: originalExecCommand,
+        writable: true,
       });
       return;
     }

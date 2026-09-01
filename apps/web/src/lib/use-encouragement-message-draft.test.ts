@@ -13,11 +13,11 @@ function sessionStorageResource() {
     getItem(key: string) {
       return store.get(key) ?? null;
     },
-    setItem(key: string, value: string) {
-      store.set(key, value);
-    },
     removeItem(key: string) {
       store.delete(key);
+    },
+    setItem(key: string, value: string) {
+      store.set(key, value);
     },
   };
   vi.stubGlobal("sessionStorage", storage);
@@ -36,8 +36,8 @@ test("debounces draft writes to sessionStorage", async () => {
   const hook = renderHook(
     (props) =>
       useEncouragementMessageDraft({
-        babyId,
         authorName: props.authorName,
+        babyId,
         message: props.message,
       }),
     { initialProps: { authorName: "", message: "" } },

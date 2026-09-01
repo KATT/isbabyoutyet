@@ -2,8 +2,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 
 type ObjectUrlStore = {
   getSnapshot: () => string | null;
-  subscribe: (notify: () => void) => () => void;
   setUrl: (next: string | null) => void;
+  subscribe: (notify: () => void) => () => void;
 };
 
 function createObjectUrlStore(): ObjectUrlStore {
@@ -11,18 +11,20 @@ function createObjectUrlStore(): ObjectUrlStore {
   const listeners = new Set<() => void>();
   return {
     getSnapshot: () => url,
+    setUrl: (next) => {
+      if (url === next) {
+        return;
+      }
+      url = next;
+      for (const listener of listeners) {
+        listener();
+      }
+    },
     subscribe: (notify) => {
       listeners.add(notify);
       return () => {
         listeners.delete(notify);
       };
-    },
-    setUrl: (next) => {
-      if (url === next) return;
-      url = next;
-      for (const listener of listeners) {
-        listener();
-      }
     },
   };
 }
