@@ -67,13 +67,13 @@ async function hydrateUpdate(
  * `locale` / `timezone` metadata. `isMine` is computed from the
  * caller-supplied visitorId so the client can offer edit/delete.
  */
-function toPublicEncouragement(encouragement: Doc<"encouragements">, visitorId?: string) {
+function toPublicEncouragement(encouragement: Doc<"encouragements">, visitorId: string | null) {
   return {
     _id: encouragement._id,
     authorName: encouragement.authorName,
     message: encouragement.message,
     createdAt: encouragement.createdAt,
-    isMine: visitorId !== undefined && encouragement.visitorId === visitorId,
+    isMine: visitorId != null && encouragement.visitorId === visitorId,
   };
 }
 
@@ -81,7 +81,7 @@ async function hydrateTimelineItem(
   ctx: QueryCtx,
   opts: {
     item: Doc<"timelineItems">;
-    visitorId?: string;
+    visitorId: string | null;
     currentPhotoId: Id<"_storage"> | null;
   },
 ) {
@@ -115,8 +115,8 @@ export type TimelineItem = NonNullable<Awaited<ReturnType<typeof hydrateTimeline
 export const listByBaby = query({
   args: {
     babyId: babyIdOrPublicIdValidator,
-    // The caller's own visitor id, only used to mark their posts with `isMine`
-    visitorId: v.optional(v.string()),
+    /** The caller's visitor id, used to mark their posts with `isMine`. */
+    visitorId: v.union(v.string(), v.null()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {

@@ -61,7 +61,10 @@ export type PreviewBabyData = BabyData & BabyPreviewMessages;
  * Partial update to baby data - used by editors
  */
 export type BabyUpdate = Partial<
-  Pick<BabyData, "name" | "dueDate" | "theme" | "locale"> & {
+  Pick<
+    BabyData,
+    "name" | "dueDate" | "dueDateDisplayMode" | "publicDueDateText" | "theme" | "locale"
+  > & {
     birthJourney: BirthJourney;
   }
 >;

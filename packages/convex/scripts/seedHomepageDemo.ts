@@ -175,7 +175,7 @@ function refreshHomepageDemoLocales(opts: {
 }) {
   const results = [];
   for (const locale of homepageDemoLocales()) {
-    const args = opts.photos ? { photos: opts.photos, locale } : { locale };
+    const args = { photos: opts.photos ?? {}, locale };
     const result = convexRun({
       functionName: "homepageDemo:refresh",
       args,

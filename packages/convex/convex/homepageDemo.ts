@@ -29,22 +29,22 @@ const RESET_INACTIVITY_MS = 60 * 60_000;
 
 const photoIdsValidator = v.object({
   photoId: v.id("_storage"),
-  thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
-  pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
-  blurDataUrl: v.optional(v.union(v.string(), v.null())),
+  thumbnailId: v.union(v.id("_storage"), v.null()),
+  pushImageId: v.union(v.id("_storage"), v.null()),
+  blurDataUrl: v.union(v.string(), v.null()),
 });
 
 const photosValidator = v.record(v.string(), photoIdsValidator);
 
-const localeArg = v.optional(supportedLocaleValidator);
+const localeArg = v.union(supportedLocaleValidator, v.null());
 
 type DemoPhotos = Record<
   string,
   {
     photoId: Id<"_storage">;
-    thumbnailId?: Id<"_storage"> | null;
-    pushImageId?: Id<"_storage"> | null;
-    blurDataUrl?: string | null;
+    thumbnailId: Id<"_storage"> | null;
+    pushImageId: Id<"_storage"> | null;
+    blurDataUrl: string | null;
   }
 >;
 
@@ -57,7 +57,7 @@ type CompleteDemoPhoto = {
 
 type CompleteDemoPhotos = Record<HomepageDemoPhotoKey, CompleteDemoPhoto>;
 
-function resolveDemoLocale(locale: SupportedLocale | undefined) {
+function resolveDemoLocale(locale: SupportedLocale | null) {
   return locale ?? DEFAULT_LOCALE;
 }
 
@@ -409,13 +409,13 @@ export const clearFeedBatch = internalMutationWithTriggers({
 export const insertFeed = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    photos: v.optional(photosValidator),
+    photos: photosValidator,
     locale: localeArg,
   },
   handler: async (ctx, args) => {
     return await insertFeedDocs(ctx, {
       babyId: args.babyId,
-      photos: args.photos ?? {},
+      photos: args.photos,
       now: Date.now(),
       locale: resolveDemoLocale(args.locale),
     });
@@ -435,12 +435,12 @@ export const insertFeed = internalMutationWithTriggers({
  */
 export const refresh = internalMutationWithTriggers({
   args: {
-    photos: v.optional(photosValidator),
+    photos: photosValidator,
     locale: localeArg,
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const photos = args.photos ?? {};
+    const photos = args.photos;
     const locale = resolveDemoLocale(args.locale);
     const babyId = await ensureBabyDoc(ctx, { now, locale });
     await clearAllFeed(ctx, babyId);

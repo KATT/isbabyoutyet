@@ -58,8 +58,8 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
       authorName: values.authorName,
       message: values.message,
       visitorId: getVisitorId(),
-      userAgent: globalThis.navigator !== undefined ? navigator.userAgent : undefined,
-      locale: globalThis.navigator !== undefined ? navigator.language : undefined,
+      userAgent: globalThis.navigator !== undefined ? navigator.userAgent : null,
+      locale: globalThis.navigator !== undefined ? navigator.language : null,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     }));
 }

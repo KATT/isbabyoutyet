@@ -298,11 +298,10 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.union(v.string(), v.null()),
-    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-    publicDueDateText: v.optional(v.union(v.string(), v.null())),
-    // Optional for stale clients; the document always stores a concrete selection.
-    birthJourney: v.optional(birthJourneyValidator),
-    theme: v.optional(v.union(v.string(), v.null())),
+    dueDateDisplayMode: dueDateDisplayModeValidator,
+    publicDueDateText: v.union(v.string(), v.null()),
+    birthJourney: birthJourneyValidator,
+    theme: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -330,14 +329,12 @@ export const create = mutationWithTriggers({
       dueDateDisplayMode: dueDateDisplay.mode,
       publicDueDateText: dueDateDisplay.text,
       publicId,
-      birthJourney: args.birthJourney ?? "labor",
+      birthJourney: args.birthJourney,
+      theme: args.theme,
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     };
-    const babyId = await ctx.db.insert(
-      "baby",
-      args.theme !== undefined ? { ...babyFields, theme: args.theme } : babyFields,
-    );
+    const babyId = await ctx.db.insert("baby", babyFields);
 
     return { babyId, publicId };
   },
@@ -440,9 +437,11 @@ export const updateThumbnail = internalMutationWithTriggers({
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),
     pushImageId: v.union(v.id("_storage"), v.null()),
-    photoId: v.optional(v.id("_storage")), // photo the derivatives were generated from
-    updateId: v.optional(v.id("updates")), // timeline update row to also patch
-    blurDataUrl: v.optional(v.union(v.string(), v.null())),
+    /** Photo the derivatives were generated from. */
+    photoId: v.union(v.id("_storage"), v.null()),
+    /** Timeline update row to also patch. */
+    updateId: v.union(v.id("updates"), v.null()),
+    blurDataUrl: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
@@ -450,12 +449,10 @@ export const updateThumbnail = internalMutationWithTriggers({
     // generating — a newer generation owns the field now.
     const blurDataUrl = args.blurDataUrl;
     if (baby && (!args.photoId || baby.photoId === args.photoId)) {
-      await ctx.db.patch(
-        args.babyId,
-        blurDataUrl === undefined
-          ? { thumbnailId: args.thumbnailId }
-          : { thumbnailId: args.thumbnailId, blurDataUrl },
-      );
+      await ctx.db.patch(args.babyId, {
+        thumbnailId: args.thumbnailId,
+        blurDataUrl,
+      });
     }
 
     if (args.updateId) {
@@ -464,11 +461,9 @@ export const updateThumbnail = internalMutationWithTriggers({
         const updateFields = {
           thumbnailId: args.thumbnailId,
           pushImageId: args.pushImageId ?? update.pushImageId ?? null,
+          blurDataUrl,
         };
-        await ctx.db.patch(
-          args.updateId,
-          blurDataUrl === undefined ? updateFields : { ...updateFields, blurDataUrl },
-        );
+        await ctx.db.patch(args.updateId, updateFields);
       }
     }
   },
@@ -483,7 +478,7 @@ export const updateBlurDataUrl = internalMutationWithTriggers({
     babyId: v.id("baby"),
     photoId: v.id("_storage"),
     blurDataUrl: v.string(),
-    updateId: v.optional(v.id("updates")),
+    updateId: v.union(v.id("updates"), v.null()),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
@@ -582,17 +577,20 @@ export async function syncStatusNotifications(
 
 export const update = mutationWithTriggers({
   args: {
-    babyId: v.id("baby"),
-    dueDate: v.optional(v.union(v.string(), v.null())),
-    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-    publicDueDateText: v.optional(v.union(v.string(), v.null())),
-    name: v.optional(v.string()),
-    theme: v.optional(v.union(v.string(), v.null())),
-    locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-    birthJourney: v.optional(birthJourneyValidator),
+    id: v.id("baby"),
+    patch: v.object({
+      dueDate: v.optional(v.union(v.string(), v.null())),
+      dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
+      publicDueDateText: v.optional(v.union(v.string(), v.null())),
+      name: v.optional(v.string()),
+      theme: v.optional(v.union(v.string(), v.null())),
+      locale: v.optional(v.union(supportedLocaleValidator, v.null())),
+      birthJourney: v.optional(birthJourneyValidator),
+    }),
   },
   handler: async (ctx, args) => {
-    const { babyId, ...patch } = args;
+    const babyId = args.id;
+    const patch = { ...args.patch };
     const { identity, baby } = await requireBabyManager(ctx, babyId);
     if (
       patch.dueDate !== undefined ||

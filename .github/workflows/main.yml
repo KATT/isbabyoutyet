@@ -138,8 +138,8 @@ jobs:
   codecov:
     if: github.event_name != 'merge_group'
     runs-on: ubuntu-latest
-    # Probe/HIT path should stay fast; a hang or MISS-heavy path means fix CI.
-    timeout-minutes: 5
+    # Stacked PRs often MISS the base cache and measure base + head (~5 min).
+    timeout-minutes: 10
     permissions:
       contents: read
       id-token: write

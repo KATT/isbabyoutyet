@@ -50,7 +50,7 @@ Fill `.github/pull_request_template.md`. Do not duplicate the template here.
 
 ## Stack table
 
-Put this table at the **top** of every stacked PR description, under `## Stack`. Columns are only **PR** and **Description**. Omit this section on non-stack PRs.
+Put this at the **top** of every stacked PR description, under `## Stack`. Columns are only **PR** and **Description**. Omit this section on non-stack PRs.
 
 ```markdown
 | PR | Description |
@@ -60,19 +60,33 @@ Put this table at the **top** of every stacked PR description, under `## Stack`.
 | #125 3/3 | Follow-up cleanup |
 ```
 
-Use the actual PR numbers once known. Before numbers exist, still put the table at the top (use `(1/3)` in the PR cell) and update after `gh pr create`.
+Use the actual PR numbers once known (`#123`, never a markdown link or repo URL — GitHub autolinks `#123` on the current repo, so the table cannot point at a stale owner path). Before numbers exist, still put the table at the top (use `(1/3)` in the PR cell) and update after `gh pr create`.
 
 Mark the current PR in the **PR** column only: bold the cell and prefix `👉`. Do not add a third column. Do not put `← this PR` in Description.
 
+When the stack cannot land in one batch, split into `###` subheadings — one table per merge batch. Put merge-when in the heading, not in Description. Example: lint + RPC + backfill merge together; the required-schema PR waits until the backfill has run on the target backend:
+
 ```markdown
+### Merge together (1 → 2 → 3)
+
 | PR | Description |
 | --- | --- |
-| [#123](https://github.com/KATT/isbabyoutyet/pull/123) 1/3 | Backfill existing data |
-| **👉 [#124](https://github.com/KATT/isbabyoutyet/pull/124) 2/3** | Add the UI |
-| [#125](https://github.com/KATT/isbabyoutyet/pull/125) 3/3 | Follow-up cleanup |
+| #123 1/4 | Lint + `@todo` |
+| **👉 #124 2/4** | Require RPC args |
+| #125 3/4 | Backfill omitted keys |
+
+### Hold until #125 backfill has run
+
+Convex validates existing documents against the new schema before migrations run. Wait until `migrations.deploymentStatus` is done.
+
+| PR | Description |
+| --- | --- |
+| #126 4/4 | Require schema keys |
 ```
 
-After creating all PRs, edit earlier PR bodies so every table has real numbers and links for the whole stack.
+If every PR in the stack can merge together, use a single table and skip the subheadings.
+
+After creating all PRs, edit earlier PR bodies so every table has real `#n` references for the whole stack.
 
 ## Plan the stack
 
@@ -135,7 +149,7 @@ EOF
 
 Capture each PR number from `gh pr create` output (or `gh pr view --json number,url`).
 
-Then rebuild the table with real numbers and links, and write it to **every** PR:
+Then rebuild the table with real `#n` references (no URLs), and write it to **every** PR:
 
 ```bash
 gh pr edit <n> --body "$(cat <<'EOF'
@@ -143,9 +157,9 @@ gh pr edit <n> --body "$(cat <<'EOF'
 
 | PR | Description |
 | --- | --- |
-| [#123](https://github.com/KATT/isbabyoutyet/pull/123) 1/3 | Backfill existing data |
-| **👉 [#124](https://github.com/KATT/isbabyoutyet/pull/124) 2/3** | Add the UI |
-| [#125](https://github.com/KATT/isbabyoutyet/pull/125) 3/3 | Follow-up cleanup |
+| #123 1/3 | Backfill existing data |
+| **👉 #124 2/3** | Add the UI |
+| #125 3/3 | Follow-up cleanup |
 
 ## Why
 
