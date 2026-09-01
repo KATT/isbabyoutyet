@@ -434,12 +434,14 @@ test("deploy argv uses a tiny --cmd so start_push is not blocked by the web buil
     "seed:seedDemoData",
   ]);
   expect(
-    convexDeployArgv(convexDeployRetryCliArgs({
-      kind: "preview-create",
-      previewName: "feat/demo",
-      writeEnv: true,
-      seed: "seed:homepage:content",
-    })),
+    convexDeployArgv(
+      convexDeployRetryCliArgs({
+        kind: "preview-create",
+        previewName: "feat/demo",
+        writeEnv: true,
+        seed: "seed:homepage:content",
+      }),
+    ),
   ).toEqual([
     "deploy",
     "--cmd-url-env-var-name",
