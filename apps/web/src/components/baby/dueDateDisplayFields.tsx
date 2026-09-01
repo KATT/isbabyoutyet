@@ -60,7 +60,6 @@ export function DueDateDisplayFields<
                   <FormControl>
                     <Input
                       type="date"
-                      placeholder={t("Pick a date")}
                       onMouseDown={
                         props.stopPopoverPropagation
                           ? (event) => event.stopPropagation()

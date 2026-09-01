@@ -70,8 +70,6 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = htmlInput(view.getByLabelText("Due date"));
-  expect(input.placeholder).toBe("Pick a date");
-  expect(input.type).toBe("date");
   expect(input.value).toBe("2026-09-01");
   expect(
     view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
@@ -225,9 +223,7 @@ test("status editor saves the matching milestone instant", async () => {
   );
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  const statusDate = htmlInput(view.getByLabelText("Status date and time"));
-  expect(statusDate.placeholder).toBe("Pick a date and time");
-  fireEvent.change(statusDate, {
+  fireEvent.change(view.getByLabelText("Status date and time"), {
     target: { value: "2026-08-10T09:30" },
   });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
@@ -247,7 +243,6 @@ test("due date editor localizes its accessible label", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "Editar" }));
   expect(view.getByLabelText("Data prevista")).toBeTruthy();
-  expect(htmlInput(view.getByLabelText("Data prevista")).placeholder).toBe("Escolha uma data");
 });
 
 test("theme selector marks Baby Blue selected", async () => {

@@ -265,10 +265,6 @@ test("an empty event-time picker does not post occurredAt", async () => {
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
   const picker = htmlInput(view.getByLabelText(/when did it happen/i));
   expect(picker.value).toBe("");
-  expect(picker.placeholder).toBe("Pick a date and time");
-  expect(picker.type).toBe("text");
-  fireEvent.focus(picker);
-  expect(picker.type).toBe("datetime-local");
   fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
   await vi.waitFor(async () => {

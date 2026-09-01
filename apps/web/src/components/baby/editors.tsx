@@ -274,7 +274,6 @@ function StatusDateForm(props: {
                 <Input
                   type="datetime-local"
                   aria-label={t("Status date and time")}
-                  placeholder={t("Pick a date and time")}
                   max={htmlDateTimeNow(props.baby.timeZone)}
                   {...field}
                 />

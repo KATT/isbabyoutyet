@@ -422,7 +422,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                           <FormControl>
                             <Input
                               type="datetime-local"
-                              placeholder={t("Pick a date and time")}
                               max={htmlDateTimeNow(props.baby.timeZone)}
                               className="w-fit"
                               {...field}

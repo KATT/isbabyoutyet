@@ -126,11 +126,6 @@ test("journey choices explain visible statuses and privacy", async () => {
     view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
   ).toHaveLength(1);
   expect(view.getByLabelText("Due date")).toBeTruthy();
-  const dueDate = htmlInput(view.getByLabelText("Due date"));
-  expect(dueDate.placeholder).toBe("Pick a date");
-  expect(dueDate.type).toBe("text");
-  fireEvent.focus(dueDate);
-  expect(dueDate.type).toBe("date");
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
 
