@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import {
   computeSchemaFingerprint,
+  interpretEnvGetResult,
   isMergeQueueGitRef,
   parseEnvGetOutput,
   previewDeployCliArgs,
@@ -31,22 +32,91 @@ test("fingerprint is stable for the same files", () => {
   expect(computeSchemaFingerprint(files)).toBe(computeSchemaFingerprint(files));
 });
 
-test("recreates the preview when no fingerprint is stored yet", () => {
-  expect(shouldRecreatePreview(null, "abc")).toBe(true);
+test("recreates the preview only when it is missing or the schema fingerprint changed", () => {
+  expect(
+    shouldRecreatePreview({
+      storedFingerprint: null,
+      currentFingerprint: "abc",
+      previewExists: false,
+    }),
+  ).toBe(true);
+  expect(
+    shouldRecreatePreview({
+      storedFingerprint: null,
+      currentFingerprint: "abc",
+      previewExists: true,
+    }),
+  ).toBe(false);
+  expect(
+    shouldRecreatePreview({
+      storedFingerprint: "abc",
+      currentFingerprint: "abc",
+      previewExists: true,
+    }),
+  ).toBe(false);
+  expect(
+    shouldRecreatePreview({
+      storedFingerprint: "old",
+      currentFingerprint: "new",
+      previewExists: true,
+    }),
+  ).toBe(true);
 });
 
-test("reuses the preview when the schema fingerprint matches", () => {
-  expect(shouldRecreatePreview("abc", "abc")).toBe(false);
+test("writes Convex env on production, recreate, or first fingerprint write", () => {
+  expect(
+    shouldWriteConvexEnv({
+      isPreview: false,
+      recreatePreview: false,
+      storedFingerprint: null,
+    }),
+  ).toBe(true);
+  expect(
+    shouldWriteConvexEnv({
+      isPreview: true,
+      recreatePreview: true,
+      storedFingerprint: null,
+    }),
+  ).toBe(true);
+  expect(
+    shouldWriteConvexEnv({
+      isPreview: true,
+      recreatePreview: false,
+      storedFingerprint: null,
+    }),
+  ).toBe(true);
+  expect(
+    shouldWriteConvexEnv({
+      isPreview: true,
+      recreatePreview: false,
+      storedFingerprint: "abc",
+    }),
+  ).toBe(false);
 });
 
-test("recreates the preview when the schema fingerprint changed", () => {
-  expect(shouldRecreatePreview("old", "new")).toBe(true);
-});
-
-test("writes Convex env on production and on preview recreate, not on reuse", () => {
-  expect(shouldWriteConvexEnv(false, false)).toBe(true);
-  expect(shouldWriteConvexEnv(true, true)).toBe(true);
-  expect(shouldWriteConvexEnv(true, false)).toBe(false);
+test("env get treats a missing variable as an existing preview", () => {
+  expect(
+    interpretEnvGetResult({
+      ok: false,
+      stdout: "",
+      stderr:
+        '✖ Environment variable "PREVIEW_SCHEMA_FINGERPRINT" not found (on preview deployment keen-herring-537)',
+    }),
+  ).toEqual({ previewExists: true, fingerprint: null });
+  expect(
+    interpretEnvGetResult({
+      ok: false,
+      stdout: "",
+      stderr: "✖ Error: Preview deployment not found",
+    }),
+  ).toEqual({ previewExists: false, fingerprint: null });
+  expect(
+    interpretEnvGetResult({
+      ok: true,
+      stdout: "deadbeef\n",
+      stderr: "",
+    }),
+  ).toEqual({ previewExists: true, fingerprint: "deadbeef" });
 });
 
 test("preview deploy flags wipe and seed only when recreating", () => {

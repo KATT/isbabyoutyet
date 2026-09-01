@@ -29,15 +29,29 @@ export function computeSchemaFingerprint(files: ReadonlyArray<{ path: string; co
   return hash.digest("hex");
 }
 
-export function shouldRecreatePreview(
-  storedFingerprint: string | null,
-  currentFingerprint: string,
-) {
-  return storedFingerprint !== currentFingerprint;
+export function shouldRecreatePreview(opts: {
+  storedFingerprint: string | null;
+  currentFingerprint: string;
+  previewExists: boolean;
+}) {
+  if (!opts.previewExists) {
+    return true;
+  }
+  if (opts.storedFingerprint === null) {
+    return false;
+  }
+  return opts.storedFingerprint !== opts.currentFingerprint;
 }
 
-export function shouldWriteConvexEnv(isPreview: boolean, recreatePreview: boolean) {
-  return !isPreview || recreatePreview;
+export function shouldWriteConvexEnv(opts: {
+  isPreview: boolean;
+  recreatePreview: boolean;
+  storedFingerprint: string | null;
+}) {
+  if (!opts.isPreview || opts.recreatePreview) {
+    return true;
+  }
+  return opts.storedFingerprint === null;
 }
 
 export function previewDeployCliArgs(branch: string, recreate: boolean) {
@@ -71,6 +85,20 @@ export function previewNameFromGitRef(ref: string) {
     return null;
   }
   return branch;
+}
+
+export function interpretEnvGetResult(opts: {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+}) {
+  if (opts.ok) {
+    return { previewExists: true, fingerprint: parseEnvGetOutput(opts.stdout) };
+  }
+  if (/Environment variable .* not found/i.test(opts.stderr)) {
+    return { previewExists: true, fingerprint: null };
+  }
+  return { previewExists: false, fingerprint: null };
 }
 
 export function parseEnvGetOutput(stdout: string) {

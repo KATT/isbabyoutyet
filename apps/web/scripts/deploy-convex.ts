@@ -8,10 +8,11 @@
  *    with the deployment URL exposed as VITE_CONVEX_URL. On Vercel it
  *    automatically targets production or a per-branch preview deployment
  *    based on the CONVEX_DEPLOY_KEY. Preview backends are wiped with
- *    `--preview-create` only when `schema.ts` / `convex.config.ts` change
- *    (fingerprint stored as PREVIEW_SCHEMA_FINGERPRINT). Otherwise
- *    `--preview-name` reuses the branch backend so deploys skip seed and
- *    photo uploads. GitHub merge-queue refs (`gh-readonly-queue/…`) skip
+ *    `--preview-create` only when the preview is missing or
+ *    `schema.ts` / `convex.config.ts` change (fingerprint stored as
+ *    PREVIEW_SCHEMA_FINGERPRINT). A missing fingerprint on an existing
+ *    preview reuses `--preview-name` instead of wiping — create/wipe is
+ *    what 408s `start_push`. GitHub merge-queue refs (`gh-readonly-queue/…`) skip
  *    the Convex push entirely — the required Vercel check only needs the
  *    web build, and a queue-specific backend would be created and thrown
  *    away. `--preview-run` reseeds demo login on a fresh backend
@@ -37,7 +38,7 @@ import {
   SCHEMA_FINGERPRINT_ENV,
   SCHEMA_FINGERPRINT_RELATIVE_PATHS,
   computeSchemaFingerprint,
-  parseEnvGetOutput,
+  interpretEnvGetResult,
   previewDeployCliArgs,
   shouldPushConvexBackend,
   shouldRecreatePreview,
@@ -100,6 +101,33 @@ function convexCliOutput(args: string[]) {
   });
 }
 
+function convexCliCaptured(args: string[]) {
+  console.log(`\n$ convex ${args.join(" ")}`);
+  try {
+    const stdout = execFileSync("pnpm", ["convex", ...args], {
+      cwd: convexPackageDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: convexDeployEnv(),
+    });
+    return { ok: true, stdout, stderr: "" };
+  } catch (error) {
+    if (
+      error !== null &&
+      typeof error === "object" &&
+      "stdout" in error &&
+      "stderr" in error
+    ) {
+      return {
+        ok: false,
+        stdout: String(error.stdout ?? ""),
+        stderr: String(error.stderr ?? ""),
+      };
+    }
+    throw error;
+  }
+}
+
 function readCurrentSchemaFingerprint() {
   const files = SCHEMA_FINGERPRINT_RELATIVE_PATHS.map((relativePath) => ({
     path: relativePath,
@@ -109,13 +137,9 @@ function readCurrentSchemaFingerprint() {
 }
 
 function readStoredSchemaFingerprint(previewName: string) {
-  try {
-    return parseEnvGetOutput(
-      convexCliOutput(["env", "get", SCHEMA_FINGERPRINT_ENV, "--preview-name", previewName]),
-    );
-  } catch {
-    return null;
-  }
+  return interpretEnvGetResult(
+    convexCliCaptured(["env", "get", SCHEMA_FINGERPRINT_ENV, "--preview-name", previewName]),
+  );
 }
 
 if (isPreview && !shouldPushConvexBackend(env.VERCEL_GIT_COMMIT_REF)) {
@@ -131,17 +155,25 @@ if (isPreview && !shouldPushConvexBackend(env.VERCEL_GIT_COMMIT_REF)) {
   const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
 
   const currentFingerprint = readCurrentSchemaFingerprint();
+  const storedPreview = isPreview
+    ? readStoredSchemaFingerprint(env.VERCEL_GIT_COMMIT_REF)
+    : { previewExists: false, fingerprint: null };
   const recreatePreview =
     isPreview &&
-    shouldRecreatePreview(
-      readStoredSchemaFingerprint(env.VERCEL_GIT_COMMIT_REF),
+    shouldRecreatePreview({
+      storedFingerprint: storedPreview.fingerprint,
       currentFingerprint,
-    );
+      previewExists: storedPreview.previewExists,
+    });
 
   if (isPreview) {
     if (recreatePreview) {
       console.log(
         `\nSchema changed or preview is new — recreating Convex preview "${env.VERCEL_GIT_COMMIT_REF}"`,
+      );
+    } else if (storedPreview.fingerprint === null) {
+      console.log(
+        `\nPreview exists without a schema fingerprint — reusing "${env.VERCEL_GIT_COMMIT_REF}"`,
       );
     } else {
       console.log(`\nSchema unchanged — reusing Convex preview "${env.VERCEL_GIT_COMMIT_REF}"`);
@@ -161,7 +193,13 @@ if (isPreview && !shouldPushConvexBackend(env.VERCEL_GIT_COMMIT_REF)) {
   // commands need it passed explicitly.
   const previewArgs = isPreview ? ["--preview-name", env.VERCEL_GIT_COMMIT_REF] : [];
 
-  if (shouldWriteConvexEnv(isPreview, recreatePreview)) {
+  if (
+    shouldWriteConvexEnv({
+      isPreview,
+      recreatePreview,
+      storedFingerprint: storedPreview.fingerprint,
+    })
+  ) {
     for (const [key, value] of Object.entries(convexEnv)) {
       convexCli(["env", "set", key, value, ...previewArgs]);
     }
