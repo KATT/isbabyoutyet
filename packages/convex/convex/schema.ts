@@ -89,7 +89,7 @@ export default defineSchema({
   scheduledNotifications: defineTable({
     babyId: v.id("baby"), // Reference to the baby
     /** Convex scheduler job ID, set after scheduling. @todo Optional until every row sets this key. */
-    scheduledId: v.optional(v.id("_scheduled_functions")),
+    scheduledId: v.optional(v.union(v.id("_scheduled_functions"), v.null())),
     status: v.union(v.literal("pending"), v.literal("sent"), v.literal("cancelled")), // Current status
     scheduledFor: v.number(), // Timestamp when notification will be sent
     notificationType: notifiableStatusValidator, // Type of notification
@@ -115,11 +115,11 @@ export default defineSchema({
     /** Server-controlled marker for seeded homepage-demo encouragements. @todo Optional until every row sets this key. */
     demoFixture: v.optional(v.boolean()),
     /** @todo Optional until every row sets this key. */
-    userAgent: v.optional(v.string()),
+    userAgent: v.optional(v.union(v.string(), v.null())),
     /** Browser locale (e.g. "en-US"). @todo Optional until every row sets this key. */
-    locale: v.optional(v.string()),
+    locale: v.optional(v.union(v.string(), v.null())),
     /** IANA timezone (e.g. "America/New_York"). @todo Optional until every row sets this key. */
-    timezone: v.optional(v.string()),
+    timezone: v.optional(v.union(v.string(), v.null())),
     /** Soft delete: ms epoch when deleted, null when active. @todo Optional until every row sets this key. */
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })

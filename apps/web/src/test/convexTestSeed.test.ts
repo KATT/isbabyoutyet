@@ -16,3 +16,14 @@ test("patchOwnedBaby throws when the baby row is gone", async () => {
     }),
   ).rejects.toThrow("Baby not found");
 });
+
+test("seedOwnedBaby without a due date uses the custom-message display mode", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: null });
+  const stored = await harness.t.run(async (ctx) => ctx.db.get(baby.babyId));
+  expect(stored).toMatchObject({
+    dueDate: null,
+    dueDateDisplayMode: "message",
+    publicDueDateText: null,
+  });
+});

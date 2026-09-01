@@ -63,6 +63,17 @@ test("visitors can create encouragements and list them", async () => {
   ]);
   expect(result.page[0]).not.toHaveProperty("visitorId");
   expect(result.page[0]).not.toHaveProperty("userAgent");
+
+  const stored = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("encouragements")
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+      .collect();
+  });
+  expect(stored).toMatchObject([
+    { userAgent: null, locale: null, timezone: null },
+    { userAgent: null, locale: null, timezone: null },
+  ]);
 });
 
 test("create persists visitor metadata when provided", async () => {
@@ -85,6 +96,60 @@ test("create persists visitor metadata when provided", async () => {
     locale: "en-US",
     timezone: "Europe/Stockholm",
   });
+});
+
+test("create rejects a missing baby, blank name, overlong name, and blank message", async () => {
+  const { t, babyId } = await setupWithBaby();
+
+  await t.run(async (ctx) => {
+    await ctx.db.delete(babyId);
+  });
+  await expect(
+    t.mutation(
+      api.encouragements.create,
+      createEncouragementArgs({
+        babyId,
+        authorName: "Grandma",
+        message: "Hi!",
+        visitorId: "visitor-1",
+      }),
+    ),
+  ).rejects.toThrow("Baby not found");
+
+  const { t: t2, babyId: babyId2 } = await setupWithBaby();
+  await expect(
+    t2.mutation(
+      api.encouragements.create,
+      createEncouragementArgs({
+        babyId: babyId2,
+        authorName: "   ",
+        message: "Hi!",
+        visitorId: "visitor-1",
+      }),
+    ),
+  ).rejects.toThrow("Name is required");
+  await expect(
+    t2.mutation(
+      api.encouragements.create,
+      createEncouragementArgs({
+        babyId: babyId2,
+        authorName: "x".repeat(51),
+        message: "Hi!",
+        visitorId: "visitor-1",
+      }),
+    ),
+  ).rejects.toThrow("Name must be 50 characters or less");
+  await expect(
+    t2.mutation(
+      api.encouragements.create,
+      createEncouragementArgs({
+        babyId: babyId2,
+        authorName: "Grandma",
+        message: "   ",
+        visitorId: "visitor-1",
+      }),
+    ),
+  ).rejects.toThrow("Message is required");
 });
 
 test("the author can edit their encouragement within the edit window", async () => {
