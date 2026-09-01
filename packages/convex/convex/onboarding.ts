@@ -53,6 +53,8 @@ async function getOrCreateOnboarding(ctx: MutationCtx, identity: AppIdentity) {
     welcomeDismissed: false,
     checklistDismissed: false,
     minimized: false,
+    activeCoachmarkStepId: null,
+    restartHintVisible: false,
   });
   const doc = await ctx.db.get(id);
   if (!doc) {

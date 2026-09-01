@@ -161,6 +161,7 @@ export async function schedulePushNotification(
 
   const notificationId = await ctx.db.insert("scheduledNotifications", {
     babyId: baby._id,
+    scheduledId: null,
     status: "pending",
     scheduledFor,
     notificationType: opts.notificationType,
@@ -331,8 +332,14 @@ export const create = mutationWithTriggers({
       publicId,
       birthJourney: args.birthJourney,
       theme: args.theme,
+      locale: null,
+      photoId: null,
+      thumbnailId: null,
+      blurDataUrl: null,
+      demo: false,
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
+      deletedAt: null,
     };
     const babyId = await ctx.db.insert("baby", babyFields);
 

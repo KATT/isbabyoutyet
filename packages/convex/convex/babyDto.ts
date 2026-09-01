@@ -18,6 +18,7 @@ async function toBabyBaseDto(ctx: QueryCtx, baby: Doc<"baby">) {
     dueDate: _dueDate,
     dueDateDisplayMode: _dueDateDisplayMode,
     publicDueDateText: _publicDueDateText,
+    deletedAt: _deletedAt,
     ...publicBaby
   } = baby;
   return {

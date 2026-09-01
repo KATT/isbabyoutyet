@@ -20,24 +20,24 @@ export default defineSchema({
       v.literal("planned_c_section"),
       v.literal("custom"),
     ),
-    /** Theme preset name (e.g. "violet-bloom"). @todo Optional until every row sets this key. */
-    theme: v.optional(v.union(v.string(), v.null())),
-    /** Language override; null inherits the owner's profile. @todo Optional until every row sets this key. */
-    locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-    /** Convex storage ID for the baby photo. @todo Optional until every row sets this key. */
-    photoId: v.optional(v.union(v.id("_storage"), v.null())),
-    /** Convex storage ID for the baby photo thumbnail. @todo Optional until every row sets this key. */
-    thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
-    /** Tiny JPEG data URL shown while the page photo loads. @todo Optional until every row sets this key. */
-    blurDataUrl: v.optional(v.union(v.string(), v.null())),
-    /** Homepage live-demo babies only. @todo Optional until every row sets this key (`false` for non-demo). */
-    demo: v.optional(v.boolean()),
+    /** Theme preset name (e.g. "violet-bloom"). */
+    theme: v.union(v.string(), v.null()),
+    /** Language override; null inherits the owner's profile. */
+    locale: v.union(supportedLocaleValidator, v.null()),
+    /** Convex storage ID for the baby photo. */
+    photoId: v.union(v.id("_storage"), v.null()),
+    /** Convex storage ID for the baby photo thumbnail. */
+    thumbnailId: v.union(v.id("_storage"), v.null()),
+    /** Tiny JPEG data URL shown while the page photo loads. */
+    blurDataUrl: v.union(v.string(), v.null()),
+    /** Homepage live-demo babies only. */
+    demo: v.boolean(),
     // Denormalized exact Web Push subscriber count, maintained with subscription writes.
     subscriptionCount: v.number(),
     // Latest timeline activity, materialized for bounded admin sorting.
     lastActivityAt: v.number(),
-    /** Soft delete: ms epoch when deleted, null when active. @todo Optional until every row sets this key. */
-    deletedAt: v.optional(v.union(v.number(), v.null())),
+    /** Soft delete: ms epoch when deleted, null when active. */
+    deletedAt: v.union(v.number(), v.null()),
   })
     .index("by_userId", ["userId"])
     .index("by_ownerTokenIdentifier", ["ownerTokenIdentifier"])
@@ -47,8 +47,8 @@ export default defineSchema({
     userId: v.string(), // Better Auth user ID
     tokenIdentifier: v.string(), // Stable Convex auth identity
     locale: supportedLocaleValidator,
-    /** IANA zone; legacy profiles fall back to Europe/London. @todo Optional until every row sets this key. */
-    timeZone: v.optional(v.string()),
+    /** IANA zone; missing rows were backfilled to Europe/London. */
+    timeZone: v.string(),
     // Platform staff flag, backfilled before this final schema tightening.
     isAdmin: v.boolean(),
   })
@@ -80,25 +80,24 @@ export default defineSchema({
     p256dh: v.string(), // Public key for encryption
     auth: v.string(), // Authentication secret
     createdAt: v.number(), // Timestamp
-    /** Recorded at subscribe/resubscribe for future payload gating. @todo Optional until every row sets this key. */
-    userAgent: v.optional(v.union(v.string(), v.null())),
+    /** Recorded at subscribe/resubscribe for future payload gating. */
+    userAgent: v.union(v.string(), v.null()),
   })
     .index("by_babyId", ["babyId"])
     .index("by_endpoint", ["endpoint"])
     .index("by_babyId_and_endpoint", ["babyId", "endpoint"]),
   scheduledNotifications: defineTable({
     babyId: v.id("baby"), // Reference to the baby
-    /** Convex scheduler job ID, set after scheduling. @todo Optional until every row sets this key. */
-    scheduledId: v.optional(v.union(v.id("_scheduled_functions"), v.null())),
+    /** Convex scheduler job ID, set after scheduling. */
+    scheduledId: v.union(v.id("_scheduled_functions"), v.null()),
     status: v.union(v.literal("pending"), v.literal("sent"), v.literal("cancelled")), // Current status
     scheduledFor: v.number(), // Timestamp when notification will be sent
     notificationType: notifiableStatusValidator, // Type of notification
-    /** Optional custom push body. @todo Optional until every row sets this key. */
-    customMessage: v.optional(v.union(v.string(), v.null())),
-    /** Original photo; send prefers the update's 1350×675 push image when ready. @todo Optional until every row sets this key. */
-    photoId: v.optional(v.union(v.id("_storage"), v.null())),
-    /** @todo Optional until every row sets this key. */
-    updateId: v.optional(v.union(v.id("updates"), v.null())),
+    /** Custom push body; null uses the default template. */
+    customMessage: v.union(v.string(), v.null()),
+    /** Original photo; send prefers the update's 1350×675 push image when ready. */
+    photoId: v.union(v.id("_storage"), v.null()),
+    updateId: v.union(v.id("updates"), v.null()),
     createdAt: v.number(), // Creation timestamp
   })
     .index("by_babyId", ["babyId"])
@@ -112,16 +111,15 @@ export default defineSchema({
     timelineItemId: v.id("timelineItems"), // Binding to the timeline feed
     // Metadata
     visitorId: v.string(), // Unique visitor ID (stored in localStorage)
-    /** Server-controlled marker for seeded homepage-demo encouragements. @todo Optional until every row sets this key. */
-    demoFixture: v.optional(v.boolean()),
-    /** @todo Optional until every row sets this key. */
-    userAgent: v.optional(v.union(v.string(), v.null())),
-    /** Browser locale (e.g. "en-US"). @todo Optional until every row sets this key. */
-    locale: v.optional(v.union(v.string(), v.null())),
-    /** IANA timezone (e.g. "America/New_York"). @todo Optional until every row sets this key. */
-    timezone: v.optional(v.union(v.string(), v.null())),
-    /** Soft delete: ms epoch when deleted, null when active. @todo Optional until every row sets this key. */
-    deletedAt: v.optional(v.union(v.number(), v.null())),
+    /** Server-controlled marker for seeded homepage-demo encouragements. */
+    demoFixture: v.boolean(),
+    userAgent: v.union(v.string(), v.null()),
+    /** Browser locale (e.g. "en-US"). */
+    locale: v.union(v.string(), v.null()),
+    /** IANA timezone (e.g. "America/New_York"). */
+    timezone: v.union(v.string(), v.null()),
+    /** Soft delete: ms epoch when deleted, null when active. */
+    deletedAt: v.union(v.number(), v.null()),
   })
     .index("by_babyId", ["babyId"])
     .index("by_babyId_and_createdAt", ["babyId", "createdAt"])
@@ -134,39 +132,33 @@ export default defineSchema({
     babyId: v.id("baby"),
     kind: v.union(v.literal("update"), v.literal("encouragement")),
     postedAt: v.number(), // ms epoch; feed sort key (when posted/announced)
-    /** Soft delete: ms epoch when deleted, null when active. @todo Optional until every row sets this key. */
-    deletedAt: v.optional(v.union(v.number(), v.null())),
+    /** Soft delete: ms epoch when deleted, null when active. */
+    deletedAt: v.union(v.number(), v.null()),
   }).index("by_babyId_and_postedAt", ["babyId", "postedAt"]),
   // Owner-posted feed content: a message and/or a photo, optionally marking a
   // milestone. Each photo change is its own row, so old photos are never lost.
   updates: defineTable({
     babyId: v.id("baby"),
     timelineItemId: v.id("timelineItems"),
-    /** @todo Optional until every row sets this key. */
-    message: v.optional(v.union(v.string(), v.null())),
-    /** @todo Optional until every row sets this key. */
-    milestone: v.optional(
-      v.union(
-        v.literal("labor_started"),
-        v.literal("gone_to_hospital"),
-        v.literal("born"),
-        v.null(),
-      ),
+    message: v.union(v.string(), v.null()),
+    milestone: v.union(
+      v.literal("labor_started"),
+      v.literal("gone_to_hospital"),
+      v.literal("born"),
+      v.null(),
     ),
-    /** Milestone event time (ms). Display-only; null for non-milestone updates. @todo Optional until every row sets this key. */
-    occurredAt: v.optional(v.union(v.number(), v.null())),
-    /** @todo Optional until every row sets this key. */
-    photoId: v.optional(v.union(v.id("_storage"), v.null())),
-    /** @todo Optional until every row sets this key. */
-    thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
-    /** Tiny JPEG data URL shown while the update photo loads. @todo Optional until every row sets this key. */
-    blurDataUrl: v.optional(v.union(v.string(), v.null())),
-    /** 1350×675 JPEG for Chromium Notification.image. @todo Optional until every row sets this key. */
-    pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
-    /** Who posted this update. @todo Optional until backfill makes this required. */
-    postedByUserId: v.optional(v.union(v.string(), v.null())),
-    /** Soft delete: ms epoch when deleted, null when active. @todo Optional until every row sets this key. */
-    deletedAt: v.optional(v.union(v.number(), v.null())),
+    /** Milestone event time (ms). Display-only; null for non-milestone updates. */
+    occurredAt: v.union(v.number(), v.null()),
+    photoId: v.union(v.id("_storage"), v.null()),
+    thumbnailId: v.union(v.id("_storage"), v.null()),
+    /** Tiny JPEG data URL shown while the update photo loads. */
+    blurDataUrl: v.union(v.string(), v.null()),
+    /** 1350×675 JPEG for Chromium Notification.image. */
+    pushImageId: v.union(v.id("_storage"), v.null()),
+    /** Who posted this update. */
+    postedByUserId: v.union(v.string(), v.null()),
+    /** Soft delete: ms epoch when deleted, null when active. */
+    deletedAt: v.union(v.number(), v.null()),
   })
     .index("by_babyId", ["babyId"])
     // Milestone lookups (one row per marked stage) without scanning all of a
@@ -185,16 +177,10 @@ export default defineSchema({
     checklistDismissed: v.boolean(),
     /** Checklist collapsed to a small chip */
     minimized: v.boolean(),
-    /**
-     * Open coachmark tip for a tour step (null = none).
-     * @todo Optional until every row sets this key.
-     */
-    activeCoachmarkStepId: v.optional(v.union(onboardingStepIdValidator, v.null())),
-    /**
-     * One-shot tip pointing at the restart control after checklist dismiss.
-     * @todo Optional until every row sets this key.
-     */
-    restartHintVisible: v.optional(v.boolean()),
+    /** Open coachmark tip for a tour step (null = none). */
+    activeCoachmarkStepId: v.union(onboardingStepIdValidator, v.null()),
+    /** One-shot tip pointing at the restart control after checklist dismiss. */
+    restartHintVisible: v.boolean(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_userId", ["userId"]),
@@ -204,12 +190,11 @@ export default defineSchema({
     userId: v.string(), // Better Auth user id
     tokenIdentifier: v.string(), // Stable Convex auth identity
     email: v.string(), // Denormalized for settings display
-    /** @todo Optional until every row sets this key. */
-    name: v.optional(v.union(v.string(), v.null())),
+    name: v.union(v.string(), v.null()),
     addedByUserId: v.string(),
     addedAt: v.number(),
-    /** Soft delete: ms epoch when deleted, null when active. @todo Optional until every row sets this key. */
-    deletedAt: v.optional(v.union(v.number(), v.null())),
+    /** Soft delete: ms epoch when deleted, null when active. */
+    deletedAt: v.union(v.number(), v.null()),
   })
     .index("by_babyId", ["babyId"])
     .index("by_userId", ["userId"])
@@ -221,8 +206,8 @@ export default defineSchema({
     email: v.string(), // Normalized lowercase
     invitedByUserId: v.string(),
     createdAt: v.number(),
-    /** Soft delete: ms epoch when deleted, null when active. @todo Optional until every row sets this key. */
-    deletedAt: v.optional(v.union(v.number(), v.null())),
+    /** Soft delete: ms epoch when deleted, null when active. */
+    deletedAt: v.union(v.number(), v.null()),
   })
     .index("by_babyId", ["babyId"])
     .index("by_email", ["email"])

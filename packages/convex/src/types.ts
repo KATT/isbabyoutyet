@@ -49,6 +49,10 @@ export type BabyData = Omit<
   | "_id"
   | "_creationTime"
   | "birthJourney"
+  | "deletedAt"
+  | "demo"
+  | "thumbnailId"
+  | "blurDataUrl"
 > & {
   /** IANA time zone inherited from the owning profile. */
   timeZone: string;

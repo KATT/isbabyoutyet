@@ -40,13 +40,9 @@ export async function ensureUserProfileForAuthUser(
   const tokenIdentifier = tokenIdentifierForAuthUserId(opts.userId);
   const existing = await getProfileByTokenIdentifier(ctx, tokenIdentifier);
   if (existing) {
-    const timeZone = resolveTimeZone(existing.timeZone ?? opts.timeZoneHint);
-    if (existing.timeZone === undefined) {
-      await ctx.db.patch(existing._id, { timeZone });
-    }
     return {
       locale: resolveSupportedLocale(existing.locale),
-      timeZone,
+      timeZone: resolveTimeZone(existing.timeZone),
       isAdmin: existing.isAdmin,
     };
   }

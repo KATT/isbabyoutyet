@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules, registerComponents, createEncouragementArgs } from "./test.setup";
+import { modules, registerComponents, createEncouragementArgs, testBabyInsert } from "./test.setup";
 
 const FIRST_PAGE = { numItems: 10, cursor: null };
 
@@ -11,18 +11,21 @@ async function setupWithBaby() {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const babyId: Id<"baby"> = await t.run(async (ctx) => {
-    return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Baby Smith",
-      dueDate: "2026-09-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "baby-smith",
-      birthJourney: "labor",
-      lastActivityAt: 1,
-      subscriptionCount: 0,
-    });
+    return await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Baby Smith",
+        dueDate: "2026-09-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: "baby-smith",
+        birthJourney: "labor",
+        lastActivityAt: 1,
+        subscriptionCount: 0,
+      }),
+    );
   });
   return { t, babyId };
 }

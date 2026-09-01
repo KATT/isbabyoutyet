@@ -3,7 +3,13 @@ import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { createAuth } from "./auth";
-import { modules, registerComponents, createBabyArgs, postUpdateArgs } from "./test.setup";
+import {
+  modules,
+  registerComponents,
+  createBabyArgs,
+  postUpdateArgs,
+  testInviteInsert,
+} from "./test.setup";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -338,12 +344,15 @@ test("claimPendingInvites clears pending invites addressed to the page owner", a
   );
 
   const inviteId = await t.run(async (ctx) => {
-    return await ctx.db.insert("babyCoParentInvites", {
-      babyId: created.babyId,
-      email: "owner-invite@example.com",
-      invitedByUserId: "someone-else",
-      createdAt: Date.now(),
-    });
+    return await ctx.db.insert(
+      "babyCoParentInvites",
+      testInviteInsert({
+        babyId: created.babyId,
+        email: "owner-invite@example.com",
+        invitedByUserId: "someone-else",
+        createdAt: Date.now(),
+      }),
+    );
   });
 
   await asAlice.mutation(api.coParents.claimPendingInvites, {});

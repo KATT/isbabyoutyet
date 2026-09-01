@@ -4,7 +4,7 @@ import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import schema from "./schema";
 import { backfillUserProfileIsAdminDoc } from "./migrations";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, testProfileInsert } from "./test.setup";
 
 /** Pre-migration row: `isAdmin` is `| undefined` so deleting it is a known field, not a widened bag. */
 type LegacyUserProfile = {
@@ -71,12 +71,15 @@ test("admin profiles preserve their flag across locale updates", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
   await t.run(async (ctx) => {
-    await ctx.db.insert("userProfiles", {
-      userId: "alice",
-      tokenIdentifier: "https://convex.test|alice",
-      locale: "en-GB",
-      isAdmin: true,
-    });
+    await ctx.db.insert(
+      "userProfiles",
+      testProfileInsert({
+        userId: "alice",
+        tokenIdentifier: "https://convex.test|alice",
+        locale: "en-GB",
+        isAdmin: true,
+      }),
+    );
   });
 
   expect(await asAlice.query(api.profile.get, {})).toEqual({
@@ -166,18 +169,24 @@ test("profile mutations require authentication", async () => {
 test("backfillUserProfileIsAdmin fills missing isAdmin and leaves set values alone", async () => {
   const t = await setup();
   const ids = await t.run(async (ctx) => {
-    const admin = await ctx.db.insert("userProfiles", {
-      userId: "already-admin",
-      tokenIdentifier: "https://convex.test|already-admin",
-      locale: "en-GB",
-      isAdmin: true,
-    });
-    const nonAdmin = await ctx.db.insert("userProfiles", {
-      userId: "already-false",
-      tokenIdentifier: "https://convex.test|already-false",
-      locale: "sv",
-      isAdmin: false,
-    });
+    const admin = await ctx.db.insert(
+      "userProfiles",
+      testProfileInsert({
+        userId: "already-admin",
+        tokenIdentifier: "https://convex.test|already-admin",
+        locale: "en-GB",
+        isAdmin: true,
+      }),
+    );
+    const nonAdmin = await ctx.db.insert(
+      "userProfiles",
+      testProfileInsert({
+        userId: "already-false",
+        tokenIdentifier: "https://convex.test|already-false",
+        locale: "sv",
+        isAdmin: false,
+      }),
+    );
     return { admin, nonAdmin };
   });
 

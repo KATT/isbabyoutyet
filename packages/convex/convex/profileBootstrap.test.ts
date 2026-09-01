@@ -91,61 +91,6 @@ test("sign-in ensures a profile exists for legacy users", async () => {
   });
 });
 
-test("sign-in fills a missing time zone without replacing the saved language", async () => {
-  const t = await setup();
-  const userId = await t.run(async (ctx) => {
-    const auth = createAuth(ctx);
-    const result = await auth.api.signUpEmail({
-      body: {
-        email: "missing-time-zone@example.com",
-        password: "password123",
-        name: "Missing Time Zone",
-      },
-      headers: {
-        "accept-language": "sv-SE",
-      },
-    });
-    return result.user.id;
-  });
-
-  await t.run(async (ctx) => {
-    const tokenIdentifier = `https://convex.test|${userId}`;
-    const profile = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", tokenIdentifier))
-      .unique();
-    if (!profile) {
-      throw new Error("expected sign-up profile");
-    }
-    await ctx.db.replace("userProfiles", profile._id, {
-      userId: profile.userId,
-      tokenIdentifier: profile.tokenIdentifier,
-      locale: profile.locale,
-      isAdmin: profile.isAdmin,
-    });
-  });
-
-  await t.run(async (ctx) => {
-    const auth = createAuth(ctx);
-    await auth.api.signInEmail({
-      body: {
-        email: "missing-time-zone@example.com",
-        password: "password123",
-      },
-      headers: {
-        "accept-language": "es-MX",
-        "x-time-zone": "Asia/Tokyo",
-      },
-    });
-  });
-
-  expect(await t.withIdentity({ subject: userId }).query(api.profile.get, {})).toEqual({
-    locale: "sv",
-    timeZone: "Asia/Tokyo",
-    isAdmin: false,
-  });
-});
-
 test("sign-in does not replace saved browser preferences", async () => {
   const t = await setup();
   const userId = await t.run(async (ctx) => {

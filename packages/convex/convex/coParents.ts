@@ -192,6 +192,7 @@ export const invite = mutation({
         name: parseOptionalString(existingUser.name),
         addedByUserId: identity.authUserId,
         addedAt: Date.now(),
+        deletedAt: null,
       });
       return { status: "added" as const };
     }
@@ -206,6 +207,7 @@ export const invite = mutation({
       email,
       invitedByUserId: identity.authUserId,
       createdAt: Date.now(),
+      deletedAt: null,
     });
     return { status: "invited" as const };
   },

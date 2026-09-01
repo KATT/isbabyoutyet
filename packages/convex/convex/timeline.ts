@@ -240,7 +240,7 @@ async function advanceBabyActivity(
   opts: { babyId: Id<"baby">; activityAt: number },
 ) {
   const baby = await ctx.db.get(opts.babyId);
-  if (baby && (baby.lastActivityAt === undefined || opts.activityAt > baby.lastActivityAt)) {
+  if (baby && opts.activityAt > baby.lastActivityAt) {
     await ctx.db.patch(opts.babyId, { lastActivityAt: opts.activityAt });
   }
 }
@@ -269,6 +269,7 @@ export async function insertUpdateWithTimelineItem(
     babyId: opts.babyId,
     kind: "update",
     postedAt: opts.postedAt,
+    deletedAt: null,
   });
   const updateId = await ctx.db.insert("updates", {
     babyId: opts.babyId,
@@ -281,6 +282,7 @@ export async function insertUpdateWithTimelineItem(
     blurDataUrl: opts.blurDataUrl ?? null,
     pushImageId: opts.pushImageId ?? null,
     postedByUserId: opts.postedByUserId ?? null,
+    deletedAt: null,
   });
   await advanceBabyActivity(ctx, {
     babyId: opts.babyId,
@@ -392,6 +394,7 @@ export async function insertEncouragementTimelineItem(
     babyId: opts.babyId,
     kind: "encouragement",
     postedAt: opts.postedAt,
+    deletedAt: null,
   });
   await advanceBabyActivity(ctx, {
     babyId: opts.babyId,

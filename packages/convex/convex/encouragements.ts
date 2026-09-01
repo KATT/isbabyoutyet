@@ -58,9 +58,11 @@ export const create = mutationWithTriggers({
       createdAt,
       timelineItemId,
       visitorId: args.visitorId,
+      demoFixture: false,
       userAgent: args.userAgent,
       locale: args.locale,
       timezone: args.timezone,
+      deletedAt: null,
     });
 
     return encouragementId;

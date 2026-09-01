@@ -14,7 +14,13 @@ import {
 } from "./migrations";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
-import { modules, registerComponents, createBabyArgs } from "./test.setup";
+import {
+  modules,
+  registerComponents,
+  createBabyArgs,
+  testTimelineItemInsert,
+  testUpdateInsert,
+} from "./test.setup";
 
 async function jpegBytes(opts: {
   width: number;
@@ -86,17 +92,23 @@ test("generateThumbnail stores a blur data URL on the baby and update", async ()
   });
   const updateId = await t.run(async (ctx) => {
     await ctx.db.patch(created.babyId, { photoId });
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      photoId,
-      postedByUserId: "alice",
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        photoId,
+        postedByUserId: "alice",
+      }),
+    );
   });
 
   await t.action(internal.babyThumbnails.generateThumbnail, {
@@ -210,17 +222,23 @@ test("send prefers the push image, then the page thumbnail, then the original", 
     return await ctx.storage.store(new Blob(["push-image"], { type: "image/jpeg" }));
   });
   const updateId = await t.run(async (ctx) => {
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      photoId: original,
-      postedByUserId: "alice",
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        photoId: original,
+        postedByUserId: "alice",
+      }),
+    );
   });
 
   expect(
@@ -296,42 +314,60 @@ test("push image backfill only schedules photo updates that still need a derivat
   });
 
   const alreadyDone = await t.run(async (ctx) => {
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      photoId: photo,
-      pushImageId: pushImage,
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        photoId: photo,
+        pushImageId: pushImage,
+      }),
+    );
   });
   const deleted = await t.run(async (ctx) => {
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      photoId: photo,
-      deletedAt: Date.now(),
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        photoId: photo,
+        deletedAt: Date.now(),
+      }),
+    );
   });
   const messageOnly = await t.run(async (ctx) => {
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      message: "No photo",
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        message: "No photo",
+      }),
+    );
   });
 
   await t.run(async (ctx) => {
@@ -361,42 +397,60 @@ test("blur data URL backfill only schedules photo updates that still need a plac
   });
 
   const alreadyDone = await t.run(async (ctx) => {
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      photoId: photo,
-      blurDataUrl: "data:image/jpeg;base64,already",
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        photoId: photo,
+        blurDataUrl: "data:image/jpeg;base64,already",
+      }),
+    );
   });
   const deleted = await t.run(async (ctx) => {
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      photoId: photo,
-      deletedAt: Date.now(),
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        photoId: photo,
+        deletedAt: Date.now(),
+      }),
+    );
   });
   const messageOnly = await t.run(async (ctx) => {
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      message: "No photo",
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        message: "No photo",
+      }),
+    );
   });
 
   await t.run(async (ctx) => {
@@ -438,16 +492,22 @@ test("updateThumbnail ignores stale generation after the photo changes", async (
   });
   const updateId = await t.run(async (ctx) => {
     await ctx.db.patch(created.babyId, { photoId: photoB });
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      photoId: photoB,
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        photoId: photoB,
+      }),
+    );
   });
 
   await t.mutation(internal.baby.updateThumbnail, {
