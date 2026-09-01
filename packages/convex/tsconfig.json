@@ -1,7 +1,4 @@
 {
   "extends": "@workspace/tsconfig/node.json",
-  "include": ["scripts/**/*.ts", "src/**/*.ts"],
-  "compilerOptions": {
-    "types": ["node"]
-  }
+  "include": ["scripts/**/*.ts", "src/**/*.ts"]
 }

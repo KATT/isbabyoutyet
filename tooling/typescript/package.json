@@ -9,5 +9,12 @@
     "./base.json": "./base.json",
     "./react.json": "./react.json",
     "./node.json": "./node.json"
+  },
+  "scripts": {
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "oxfmt": "catalog:"
   }
 }

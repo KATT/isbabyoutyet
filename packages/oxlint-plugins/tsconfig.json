@@ -1,9 +1,10 @@
 {
-  "extends": "@workspace/tsconfig/node.json",
+  "extends": "@workspace/tsconfig/base.json",
   "include": ["**/*.ts", "vitest.config.ts"],
   "exclude": ["**/*.test.ts", "tsdown.config.mjs", "dist", "node_modules"],
   "compilerOptions": {
     /* Oxlint visitor APIs are untyped; typed wrappers would be fiction. */
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "rewriteRelativeImportExtensions": true
   }
 }

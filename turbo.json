@@ -25,7 +25,11 @@
       "persistent": true
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "outputs": [
+        "node_modules/.cache/tsbuildinfo.json",
+        "node_modules/.cache/tsbuildinfo.convex.json"
+      ]
     },
     "test": {},
     "lint": {
@@ -47,6 +51,7 @@
         "$TURBO_ROOT$/vitest.config.ts",
         "$TURBO_ROOT$/apps/**",
         "$TURBO_ROOT$/packages/**",
+        "$TURBO_ROOT$/tooling/**",
         "!$TURBO_ROOT$/packages/oxlint-plugins/*.ts",
         "!$TURBO_ROOT$/**/node_modules/**",
         "!$TURBO_ROOT$/**/.turbo/**",

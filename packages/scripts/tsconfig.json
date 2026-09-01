@@ -1,7 +1,4 @@
 {
   "extends": "@workspace/tsconfig/node.json",
-  "include": ["src"],
-  "compilerOptions": {
-    "types": ["node"]
-  }
+  "include": ["src"]
 }

@@ -9,9 +9,10 @@
     "target": "ESNext",
     "lib": ["ES2023", "dom", "ESNext.Disposable"],
     "module": "ESNext",
-    "moduleResolution": "Bundler",
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    /* Keep incremental info out of the functions dir the Convex bundler walks. */
+    "tsBuildInfoFile": "${configDir}/../node_modules/.cache/tsbuildinfo.convex.json"
   },
   "include": ["./**/*"],
   "exclude": ["./_generated"]
