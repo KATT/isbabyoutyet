@@ -47,10 +47,10 @@
     "web-push": "catalog:"
   },
   "devDependencies": {
-    "@workspace/tsconfig": "workspace:*",
     "@edge-runtime/vm": "catalog:",
     "@types/node": "catalog:",
     "@types/web-push": "catalog:",
+    "@workspace/tsconfig": "workspace:*",
     "convex-test": "catalog:",
     "npm-run-all": "catalog:",
     "oxfmt": "catalog:",

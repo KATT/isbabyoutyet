@@ -15,8 +15,8 @@
     "@workspace/runtime": "workspace:*"
   },
   "devDependencies": {
-    "@workspace/tsconfig": "workspace:*",
     "@types/node": "catalog:",
+    "@workspace/tsconfig": "workspace:*",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "tsdown": "catalog:",

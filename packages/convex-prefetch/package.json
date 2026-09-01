@@ -16,11 +16,11 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@workspace/tsconfig": "workspace:*",
     "@convex-dev/react-query": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
+    "@workspace/tsconfig": "workspace:*",
     "convex": "catalog:",
     "jsdom": "catalog:",
     "oxfmt": "catalog:",

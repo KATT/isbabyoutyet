@@ -60,7 +60,6 @@
   "devDependencies": {
     "@edge-runtime/vm": "catalog:",
     "@inlang/paraglide-js": "catalog:",
-    "@workspace/tsconfig": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/devtools-vite": "catalog:",
     "@testing-library/dom": "catalog:",
@@ -70,6 +69,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/browser-playwright": "catalog:",
+    "@workspace/tsconfig": "workspace:*",
     "convex-test": "catalog:",
     "jsdom": "catalog:",
     "nitro": "latest",

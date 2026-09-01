@@ -19,10 +19,10 @@
     "@workspace/runtime": "workspace:*"
   },
   "devDependencies": {
-    "@workspace/tsconfig": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
+    "@workspace/tsconfig": "workspace:*",
     "jsdom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
