@@ -1,15 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { isFunction, isPlainObject, isString } from "@workspace/runtime/guards";
 import { applyNotificationClickUrl, NOTIFICATION_CLICK_MESSAGE } from "@/lib/notification-click";
 
 /**
  * Scrolls to `location.hash` on load, hashchange, and service-worker
  * notification-click messages. Owns those window subscriptions so feature
- * routes stay free of effects.
+ * routes stay free of effects. `scrollToHash` is read through `useEffectEvent`
+ * so listeners always invoke the latest closure without listing it as a
+ * dependency.
  */
 export function useHashScroll() {
-  const scrollToHashRef = useRef(() => {});
-  scrollToHashRef.current = () => {
+  const scrollToHash = useEffectEvent(() => {
     const hash = window.location.hash.replace(/^#/, "");
     if (!hash) {
       return;
@@ -25,12 +26,12 @@ export function useHashScroll() {
       behavior: reducedMotion ? "auto" : "smooth",
       block: "start",
     });
-  };
+  });
 
   useEffect(() => {
-    scrollToHashRef.current();
+    scrollToHash();
     function onHashChange() {
-      scrollToHashRef.current();
+      scrollToHash();
     }
     function onMessage(event: MessageEvent) {
       if (!isPlainObject(event.data)) {
@@ -40,7 +41,7 @@ export function useHashScroll() {
         if (isString(event.data.url)) {
           applyNotificationClickUrl(event.data.url);
         }
-        scrollToHashRef.current();
+        scrollToHash();
       }
     }
     window.addEventListener("hashchange", onHashChange);
