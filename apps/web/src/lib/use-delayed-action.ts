@@ -1,18 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { isFunction } from "@workspace/runtime/guards";
 
 /**
  * Delayed action after elapsed time. Callers supply domain-level actions;
  * this hook owns timer cleanup. Effects are allowed under `apps/web/src/lib`
- * so feature components stay free of synchronization effects.
+ * so feature components stay free of synchronization effects. `action` is
+ * read through `useEffectEvent` so the timer always invokes the latest
+ * closure without listing it as a dependency.
  */
 export function useDelayedAction(opts: { action: () => void; delayMs: number; enabled: boolean }) {
-  const actionRef = useRef(opts.action);
-  actionRef.current = opts.action;
+  const onAction = useEffectEvent(opts.action);
   useEffect(() => {
     if (!opts.enabled) return;
     const timeout = window.setTimeout(() => {
-      actionRef.current();
+      onAction();
     }, opts.delayMs);
     return () => window.clearTimeout(timeout);
   }, [opts.delayMs, opts.enabled]);
