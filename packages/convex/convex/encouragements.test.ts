@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules, registerComponents, createEncouragementArgs } from "./test.setup";
+import { modules, registerComponents, createBabyArgs, createEncouragementArgs } from "./test.setup";
 
 const FIRST_PAGE = { numItems: 10, cursor: null };
 
@@ -285,10 +285,13 @@ test("visitor messages notify opted-in owners; deletes retract the push instead 
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Notify Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Notify Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
     babyId: created.babyId,
     endpoint: "https://push.example/owner-inbox",
@@ -297,12 +300,15 @@ test("visitor messages notify opted-in owners; deletes retract the push instead 
     userAgent: "Mozilla/5.0",
   });
 
-  const encouragementId = await t.mutation(api.encouragements.create, {
-    babyId: created.babyId,
-    authorName: "Grandma",
-    message: "Thinking of you!",
-    visitorId: "visitor-1",
-  });
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Grandma",
+      message: "Thinking of you!",
+      visitorId: "visitor-1",
+    }),
+  );
   await t.finishInProgressScheduledFunctions();
   expect(
     await t.query(api.pushSubscriptions.isOwnerSubscribed, {
@@ -319,6 +325,7 @@ test("visitor messages notify opted-in owners; deletes retract the push instead 
   await t.finishInProgressScheduledFunctions();
   const afterEdit = await t.query(api.encouragements.listByBaby, {
     babyId: created.babyId,
+    visitorId: "visitor-1",
     paginationOpts: FIRST_PAGE,
   });
   expect(afterEdit.page).toMatchObject([{ message: "Thinking of you both!" }]);
@@ -330,6 +337,7 @@ test("visitor messages notify opted-in owners; deletes retract the push instead 
   await t.finishInProgressScheduledFunctions();
   const afterDelete = await t.query(api.encouragements.listByBaby, {
     babyId: created.babyId,
+    visitorId: "visitor-1",
     paginationOpts: FIRST_PAGE,
   });
   expect(afterDelete.page).toEqual([]);
@@ -339,10 +347,13 @@ test("a manager posting or deleting a message does not notify owners", async () 
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Quiet Delete Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Quiet Delete Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
     babyId: created.babyId,
     endpoint: "https://push.example/owner-inbox",
@@ -351,28 +362,41 @@ test("a manager posting or deleting a message does not notify owners", async () 
     userAgent: "Mozilla/5.0",
   });
 
-  const managerPostId = await asAlice.mutation(api.encouragements.create, {
-    babyId: created.babyId,
-    authorName: "Alice",
-    message: "Owner note",
-    visitorId: "owner-visitor",
-  });
+  const managerPostId = await asAlice.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Alice",
+      message: "Owner note",
+      visitorId: "owner-visitor",
+    }),
+  );
   await t.finishInProgressScheduledFunctions();
 
-  const encouragementId = await t.mutation(api.encouragements.create, {
-    babyId: created.babyId,
-    authorName: "Stranger",
-    message: "Please delete me",
-    visitorId: "visitor-x",
-  });
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Stranger",
+      message: "Please delete me",
+      visitorId: "visitor-x",
+    }),
+  );
   await t.finishInProgressScheduledFunctions();
 
-  await asAlice.mutation(api.encouragements.remove, { encouragementId });
-  await asAlice.mutation(api.encouragements.remove, { encouragementId: managerPostId });
+  await asAlice.mutation(api.encouragements.remove, {
+    encouragementId,
+    visitorId: null,
+  });
+  await asAlice.mutation(api.encouragements.remove, {
+    encouragementId: managerPostId,
+    visitorId: null,
+  });
   await t.finishInProgressScheduledFunctions();
 
   const listed = await t.query(api.encouragements.listByBaby, {
     babyId: created.babyId,
+    visitorId: null,
     paginationOpts: FIRST_PAGE,
   });
   expect(listed.page).toEqual([]);

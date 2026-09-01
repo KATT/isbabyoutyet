@@ -211,10 +211,13 @@ test("managers can opt into message alerts without changing the family subscribe
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
   const asBob = t.withIdentity({ subject: "bob" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Owner Push Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Owner Push Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   const ownerArgs = {
     babyId: created.babyId,
     endpoint: "https://push.example/owner",
@@ -317,10 +320,13 @@ test("removeByEndpoint clears owner message subscriptions for that browser", asy
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Owner Endpoint Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Owner Endpoint Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
     babyId: created.babyId,
     endpoint: "https://push.example/shared-endpoint",

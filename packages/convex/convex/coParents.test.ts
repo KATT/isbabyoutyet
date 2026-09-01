@@ -373,10 +373,13 @@ test("leaving a page drops that co-parent's message-notification subscriptions",
   });
   const asAlice = t.withIdentity({ subject: aliceId });
   const asBob = t.withIdentity({ subject: bobId });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Shared Notify Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Shared Notify Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.coParents.invite, {
     babyId: created.babyId,
     email: "coparent-push@example.com",
@@ -418,10 +421,13 @@ test("removing a co-parent drops their message-notification subscriptions", asyn
   });
   const asAlice = t.withIdentity({ subject: aliceId });
   const asBob = t.withIdentity({ subject: bobId });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Remove Notify Baby",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Remove Notify Baby",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.coParents.invite, {
     babyId: created.babyId,
     email: "coparent-remove-push@example.com",

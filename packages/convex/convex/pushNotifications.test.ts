@@ -2,7 +2,7 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
-import { modules, registerComponents, createBabyArgs } from "./test.setup";
+import { modules, registerComponents, createBabyArgs, createEncouragementArgs } from "./test.setup";
 
 test("sending a photo notification resolves the image URL and marks the job sent", async () => {
   const t = convexTest(schema, modules);
@@ -82,10 +82,13 @@ test("owner message notifications page manager subscriptions without marking fam
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Baby Smith",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
     babyId: created.babyId,
     endpoint: "https://push.example/owner-sub",
@@ -95,12 +98,15 @@ test("owner message notifications page manager subscriptions without marking fam
       "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
   });
 
-  const encouragementId = await t.mutation(api.encouragements.create, {
-    babyId: created.babyId,
-    authorName: "Grandma",
-    message: "Hello from the waiting room",
-    visitorId: "visitor-1",
-  });
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Grandma",
+      message: "Hello from the waiting room",
+      visitorId: "visitor-1",
+    }),
+  );
 
   await t.action(internal.pushNotifications.sendOwnerMessageNotification, {
     babyId: created.babyId,
@@ -130,10 +136,13 @@ test("dismissing an owner message push pages the same manager subscriptions", as
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Baby Smith",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: "2026-09-01",
+    }),
+  );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
     babyId: created.babyId,
     endpoint: "https://push.example/owner-sub",
@@ -142,12 +151,15 @@ test("dismissing an owner message push pages the same manager subscriptions", as
     userAgent:
       "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
   });
-  const encouragementId = await t.mutation(api.encouragements.create, {
-    babyId: created.babyId,
-    authorName: "Grandma",
-    message: "Please ignore this",
-    visitorId: "visitor-1",
-  });
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId: created.babyId,
+      authorName: "Grandma",
+      message: "Please ignore this",
+      visitorId: "visitor-1",
+    }),
+  );
 
   await t.action(internal.pushNotifications.dismissOwnerMessageNotification, {
     babyId: created.babyId,

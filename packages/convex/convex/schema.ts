@@ -96,6 +96,7 @@ export default defineSchema({
     p256dh: v.string(),
     auth: v.string(),
     createdAt: v.number(),
+    /** Recorded at subscribe/resubscribe for future payload gating. @todo Optional until every row sets this key. */
     userAgent: v.optional(v.union(v.string(), v.null())),
   })
     .index("by_babyId", ["babyId"])
