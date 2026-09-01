@@ -49,10 +49,10 @@ export function DashboardPage(props: DashboardLoaderData) {
   return (
     <div className="flex min-h-screen flex-col bg-background bg-dots">
       <OnboardingHost
-        surface="dashboard"
-        onboarding={props.onboarding}
         enabled={undefined}
+        onboarding={props.onboarding}
         spotlight={undefined}
+        surface="dashboard"
       />
       <DashboardHeader />
 
@@ -84,8 +84,8 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
         <Link
-          to="/"
           className="flex items-center gap-2 rounded-full bg-background/85 py-1.5 pl-2 pr-4 shadow-sm backdrop-blur-md transition-transform hover:-rotate-2"
+          to="/"
         >
           <span className="flex size-7 items-center justify-center rounded-full bg-primary/15">
             <BabyIcon className="size-4 text-primary" />
@@ -94,23 +94,23 @@ export function DashboardHeader() {
         </Link>
         <div className="flex items-center gap-1 rounded-full bg-background/85 p-1 shadow-sm backdrop-blur-md">
           <Button
-            size="sm"
             className="rounded-full font-bold"
-            render={<Link to="/dashboard/add" />}
             nativeButton={false}
+            render={<Link to="/dashboard/add" />}
+            size="sm"
           >
             <Plus data-icon="inline-start" />
             {t("Add Baby")}
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            render={<Link {...settings.openLink} />}
-            nativeButton={false}
             aria-label={t("Settings")}
+            className="rounded-full"
+            nativeButton={false}
+            render={<Link {...settings.openLink} />}
+            size="icon"
+            variant="ghost"
           >
-            <Avatar size="sm" className="after:border-0">
+            <Avatar className="after:border-0" size="sm">
               <AvatarFallback>
                 <User />
               </AvatarFallback>
@@ -124,22 +124,22 @@ export function DashboardHeader() {
 
 type DashboardBaby = {
   _id: Id<"baby">;
-  name: string;
-  publicId: string;
   dueDate: string | null;
   dueDateDisplayMode: "exact" | "message";
+  name: string;
   publicDueDateText: string | null;
+  publicId: string;
   role: "owner" | "coParent";
   timeZone: string;
 } & Partial<{
-  laborStarted: string | null;
-  wentToHospital: string | null;
   babyBorn: string | null;
   birthJourney: BirthJourney;
+  laborStarted: string | null;
+  wentToHospital: string | null;
 }>;
 
 export function DashboardBabyList(props: {
-  babies: DashboardBaby[];
+  babies: Array<DashboardBaby>;
   tourBabyPublicId: string | undefined;
 }) {
   const { t } = useI18n();
@@ -147,7 +147,7 @@ export function DashboardBabyList(props: {
   if (props.babies.length === 0) {
     return (
       <div className="mx-auto max-w-xl rounded-[2rem] border-2 border-dashed border-border bg-card/60 py-14 text-center">
-        <p className="text-5xl" aria-hidden="true">
+        <p aria-hidden="true" className="text-5xl">
           🍼
         </p>
         <h3 className="mt-4 text-2xl font-black text-foreground">{t("No babies added yet")}</h3>
@@ -155,11 +155,11 @@ export function DashboardBabyList(props: {
           {t("Get started by adding your first baby to track their journey")}
         </p>
         <Button
-          size="lg"
           className="mt-6 rounded-full font-extrabold pop-shadow"
-          render={<Link to="/dashboard/add" />}
-          nativeButton={false}
           data-tour-id="add_baby"
+          nativeButton={false}
+          render={<Link to="/dashboard/add" />}
+          size="lg"
         >
           <Plus className="w-4 h-4" />
           {t("Add Your First Baby")}
@@ -172,10 +172,10 @@ export function DashboardBabyList(props: {
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
       {props.babies.map((baby, index) => (
         <DashboardBabyCard
-          key={baby._id}
           baby={baby}
-          index={index}
           dataTourId={props.tourBabyPublicId === baby.publicId ? "tour_baby" : undefined}
+          index={index}
+          key={baby._id}
         />
       ))}
     </div>

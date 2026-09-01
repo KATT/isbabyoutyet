@@ -2,130 +2,130 @@ import type { NotifiableStatus } from "./types";
 import type { SupportedLocale } from "./i18n";
 
 type PushCopy = {
-  title: (babyName: string) => string;
   body: string;
+  title: (babyName: string) => string;
 };
 
 const copy = {
   "en-GB": {
-    labor_started: {
-      title: (name) => `${name}: Labour's started!`,
-      body: "It's happening! Tap for the latest.",
+    born: {
+      body: "The wait is over. Tap for the happy news.",
+      title: (name) => `${name} is here! 🎉`,
     },
     gone_to_hospital: {
-      title: (name) => `${name} is heading to hospital!`,
       body: "They're heading in. Tap for the latest.",
+      title: (name) => `${name} is heading to hospital!`,
     },
-    born: {
-      title: (name) => `${name} is here! 🎉`,
-      body: "The wait is over. Tap for the happy news.",
+    labor_started: {
+      body: "It's happening! Tap for the latest.",
+      title: (name) => `${name}: Labour's started!`,
     },
     photo_added: {
-      title: (name) => `${name}: New photo! 📸`,
       body: "Tap to have a look!",
+      title: (name) => `${name}: New photo! 📸`,
     },
     update_posted: {
-      title: (name) => `${name}: New update`,
       body: "Tap for the latest.",
+      title: (name) => `${name}: New update`,
     },
   },
   "en-US": {
-    labor_started: {
-      title: (name) => `${name}: Labor's started!`,
-      body: "It's happening! Tap for the latest.",
-    },
-    gone_to_hospital: {
-      title: (name) => `${name} is heading to the hospital!`,
-      body: "They're heading in. Tap for the latest.",
-    },
     born: {
-      title: (name) => `${name} is here! 🎉`,
       body: "The wait is over. Tap for the happy news.",
-    },
-    photo_added: {
-      title: (name) => `${name}: New photo! 📸`,
-      body: "Tap to take a look!",
-    },
-    update_posted: {
-      title: (name) => `${name}: New update`,
-      body: "Tap for the latest.",
-    },
-  },
-  sv: {
-    labor_started: {
-      title: (name) => `${name}: Förlossningen är igång!`,
-      body: "Värkarna har börjat. Kika in för senaste nytt!",
+      title: (name) => `${name} is here! 🎉`,
     },
     gone_to_hospital: {
-      title: (name) => `${name}: Nu åker familjen in!`,
-      body: "På väg till förlossningen. Kika in för senaste nytt!",
+      body: "They're heading in. Tap for the latest.",
+      title: (name) => `${name} is heading to the hospital!`,
     },
-    born: {
-      title: (name) => `${name} är här! 🎉`,
-      body: "Nu är bäbisen här. Kika in för senaste nytt!",
+    labor_started: {
+      body: "It's happening! Tap for the latest.",
+      title: (name) => `${name}: Labor's started!`,
     },
     photo_added: {
-      title: (name) => `Nytt foto på ${name}! 📸`,
-      body: "Kika in och ta en titt!",
+      body: "Tap to take a look!",
+      title: (name) => `${name}: New photo! 📸`,
     },
     update_posted: {
-      title: (name) => `${name}: Ny uppdatering`,
-      body: "Kika in för senaste nytt!",
+      body: "Tap for the latest.",
+      title: (name) => `${name}: New update`,
     },
   },
   es: {
-    labor_started: {
-      title: (name) => `${name}: ¡ya empezó el parto!`,
-      body: "El parto ya empezó. Entra para ver las novedades.",
+    born: {
+      body: "¡El bebé ya nació! Entra para ver las novedades.",
+      title: (name) => `¡${name} ya está aquí! 🎉`,
     },
     gone_to_hospital: {
-      title: (name) => `¡${name} ya va camino al hospital!`,
       body: "Ya van camino al hospital. Entra para ver las novedades.",
+      title: (name) => `¡${name} ya va camino al hospital!`,
     },
-    born: {
-      title: (name) => `¡${name} ya está aquí! 🎉`,
-      body: "¡El bebé ya nació! Entra para ver las novedades.",
+    labor_started: {
+      body: "El parto ya empezó. Entra para ver las novedades.",
+      title: (name) => `${name}: ¡ya empezó el parto!`,
     },
     photo_added: {
-      title: (name) => `${name}: ¡nueva foto! 📸`,
       body: "Hay una foto nueva. ¡Entra a verla!",
+      title: (name) => `${name}: ¡nueva foto! 📸`,
     },
     update_posted: {
-      title: (name) => `${name}: nueva novedad`,
       body: "Entra para ver las novedades.",
+      title: (name) => `${name}: nueva novedad`,
     },
   },
   "pt-BR": {
-    labor_started: {
-      title: (name) => `${name}: o trabalho de parto começou!`,
-      body: "As contrações começaram. Vem ver as novidades!",
+    born: {
+      body: "O bebê nasceu! Vem ver as novidades!",
+      title: (name) => `${name} chegou! 🎉`,
     },
     gone_to_hospital: {
-      title: (name) => `${name} está a caminho do hospital!`,
       body: "Já estão a caminho do hospital. Vem ver as novidades!",
+      title: (name) => `${name} está a caminho do hospital!`,
     },
-    born: {
-      title: (name) => `${name} chegou! 🎉`,
-      body: "O bebê nasceu! Vem ver as novidades!",
+    labor_started: {
+      body: "As contrações começaram. Vem ver as novidades!",
+      title: (name) => `${name}: o trabalho de parto começou!`,
     },
     photo_added: {
-      title: (name) => `Foto nova de ${name}! 📸`,
       body: "Acabaram de postar uma foto nova. Vem ver!",
+      title: (name) => `Foto nova de ${name}! 📸`,
     },
     update_posted: {
-      title: (name) => `${name}: novidade nova`,
       body: "Vem ver as novidades!",
+      title: (name) => `${name}: novidade nova`,
+    },
+  },
+  sv: {
+    born: {
+      body: "Nu är bäbisen här. Kika in för senaste nytt!",
+      title: (name) => `${name} är här! 🎉`,
+    },
+    gone_to_hospital: {
+      body: "På väg till förlossningen. Kika in för senaste nytt!",
+      title: (name) => `${name}: Nu åker familjen in!`,
+    },
+    labor_started: {
+      body: "Värkarna har börjat. Kika in för senaste nytt!",
+      title: (name) => `${name}: Förlossningen är igång!`,
+    },
+    photo_added: {
+      body: "Kika in och ta en titt!",
+      title: (name) => `Nytt foto på ${name}! 📸`,
+    },
+    update_posted: {
+      body: "Kika in för senaste nytt!",
+      title: (name) => `${name}: Ny uppdatering`,
     },
   },
 } satisfies Record<SupportedLocale, Record<NotifiableStatus, PushCopy>>;
 
 export function getPushMessage(opts: {
+  babyName: string;
   locale: SupportedLocale;
   status: NotifiableStatus;
-  babyName: string;
 }) {
   const message = copy[opts.locale][opts.status];
-  return { title: message.title(opts.babyName), body: message.body };
+  return { body: message.body, title: message.title(opts.babyName) };
 }
 
 export type OwnerMessagePushEvent = "created" | "updated";
@@ -133,62 +133,62 @@ export type OwnerMessagePushEvent = "created" | "updated";
 const OWNER_PUSH_BODY_MAX_LENGTH = 180;
 
 type OwnerPushCopy = {
-  title: (babyName: string, authorName: string) => string;
   body: (authorName: string, snippet: string) => string;
+  title: (babyName: string, authorName: string) => string;
 };
 
 const ownerCopy = {
   "en-GB": {
     created: {
-      title: (babyName) => `New message for ${babyName}`,
       body: (authorName, snippet) => `${authorName}: ${snippet}`,
+      title: (babyName) => `New message for ${babyName}`,
     },
     updated: {
-      title: (babyName, authorName) => `${authorName} updated their message on ${babyName}'s page`,
       body: (_authorName, snippet) => snippet,
+      title: (babyName, authorName) => `${authorName} updated their message on ${babyName}'s page`,
     },
   },
   "en-US": {
     created: {
+      body: (authorName, snippet) => `${authorName}: ${snippet}`,
       title: (babyName) => `New message for ${babyName}`,
-      body: (authorName, snippet) => `${authorName}: ${snippet}`,
     },
     updated: {
+      body: (_authorName, snippet) => snippet,
       title: (babyName, authorName) => `${authorName} updated their message on ${babyName}'s page`,
-      body: (_authorName, snippet) => snippet,
-    },
-  },
-  sv: {
-    created: {
-      title: (babyName) => `Ny hälsning till ${babyName}`,
-      body: (authorName, snippet) => `${authorName}: ${snippet}`,
-    },
-    updated: {
-      title: (babyName, authorName) =>
-        `${authorName} uppdaterade sin hälsning på ${babyName}s sida`,
-      body: (_authorName, snippet) => snippet,
     },
   },
   es: {
     created: {
-      title: (babyName) => `Nuevo mensaje para ${babyName}`,
       body: (authorName, snippet) => `${authorName}: ${snippet}`,
+      title: (babyName) => `Nuevo mensaje para ${babyName}`,
     },
     updated: {
+      body: (_authorName, snippet) => snippet,
       title: (babyName, authorName) =>
         `${authorName} actualizó su mensaje en la página de ${babyName}`,
-      body: (_authorName, snippet) => snippet,
     },
   },
   "pt-BR": {
     created: {
-      title: (babyName) => `Nova mensagem para ${babyName}`,
       body: (authorName, snippet) => `${authorName}: ${snippet}`,
+      title: (babyName) => `Nova mensagem para ${babyName}`,
     },
     updated: {
+      body: (_authorName, snippet) => snippet,
       title: (babyName, authorName) =>
         `${authorName} atualizou a mensagem na página de ${babyName}`,
+    },
+  },
+  sv: {
+    created: {
+      body: (authorName, snippet) => `${authorName}: ${snippet}`,
+      title: (babyName) => `Ny hälsning till ${babyName}`,
+    },
+    updated: {
       body: (_authorName, snippet) => snippet,
+      title: (babyName, authorName) =>
+        `${authorName} uppdaterade sin hälsning på ${babyName}s sida`,
     },
   },
 } satisfies Record<SupportedLocale, Record<OwnerMessagePushEvent, OwnerPushCopy>>;
@@ -201,16 +201,16 @@ export function truncateOwnerPushBody(text: string) {
 }
 
 export function getOwnerPushMessage(opts: {
-  locale: SupportedLocale;
-  event: OwnerMessagePushEvent;
-  babyName: string;
   authorName: string;
+  babyName: string;
+  event: OwnerMessagePushEvent;
+  locale: SupportedLocale;
   message: string;
 }) {
   const message = ownerCopy[opts.locale][opts.event];
   const snippet = truncateOwnerPushBody(opts.message);
   return {
-    title: message.title(opts.babyName, opts.authorName),
     body: message.body(opts.authorName, snippet),
+    title: message.title(opts.babyName, opts.authorName),
   };
 }

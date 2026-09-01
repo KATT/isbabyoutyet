@@ -7,12 +7,12 @@ import { withPublicCache } from "@/lib/cachePolicy";
 function sitemapXml() {
   const today = new Date().toISOString().slice(0, 10);
   const urls = [
-    { loc: `${CANONICAL_ORIGIN}/`, changefreq: "weekly", priority: "1.0" },
+    { changefreq: "weekly", loc: `${CANONICAL_ORIGIN}/`, priority: "1.0" },
     ...SUPPORTED_LOCALES.map((locale) => {
       const publicId = HOMEPAGE_DEMO_BABIES[locale].publicId;
       return {
-        loc: `${CANONICAL_ORIGIN}/baby/${publicId}`,
         changefreq: "daily",
+        loc: `${CANONICAL_ORIGIN}/baby/${publicId}`,
         priority: "0.8",
       };
     }),
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/sitemap.xml")({
               "Content-Type": "application/xml; charset=utf-8",
             },
           }),
-          { maxAgeSeconds: 3_600, tags: ["discovery"] },
+          { maxAgeSeconds: 3600, tags: ["discovery"] },
         ),
     },
   },

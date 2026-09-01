@@ -21,9 +21,9 @@ export const FORBIDDEN = "forbidden" as const;
  * query params.
  */
 export type MilestoneDates = {
+  babyBorn: string | null;
   laborStarted: string | null;
   wentToHospital: string | null;
-  babyBorn: string | null;
 };
 
 /**
@@ -31,9 +31,9 @@ export type MilestoneDates = {
  * the homepage preview still passes these as query params.
  */
 export type BabyPreviewMessages = {
-  laborStartedMessage: string | null;
-  hospitalMessage: string | null;
   babyBornMessage: string | null;
+  hospitalMessage: string | null;
+  laborStartedMessage: string | null;
 };
 
 /**
@@ -84,20 +84,20 @@ export type MilestoneRedateHandler = (
 export type MilestoneRemoveHandler = (milestone: Milestone) => void | Promise<void>;
 
 export type MilestoneVisibility = {
-  showLabor: boolean;
   showHospital: boolean;
+  showLabor: boolean;
 };
 
 export const DEFAULT_MILESTONE_VISIBILITY = {
-  showLabor: true,
   showHospital: true,
+  showLabor: true,
 } as const satisfies MilestoneVisibility;
 
 export const MILESTONE_VISIBILITY_PRESETS = {
+  custom: { showHospital: false, showLabor: false },
+  home_birth: { showHospital: false, showLabor: true },
   labor: DEFAULT_MILESTONE_VISIBILITY,
-  home_birth: { showLabor: true, showHospital: false },
-  planned_c_section: { showLabor: false, showHospital: true },
-  custom: { showLabor: false, showHospital: false },
+  planned_c_section: { showHospital: true, showLabor: false },
 } as const satisfies Record<BirthJourney, MilestoneVisibility>;
 
 export type MilestoneVisibilityPreset = PresetBirthJourney;
@@ -128,15 +128,15 @@ export function isPresetBirthJourney(journey: BirthJourney): journey is PresetBi
  */
 export type BabyStatus =
   | { type: "not_yet" }
-  | { type: "labor_started"; date: string }
-  | { type: "gone_to_hospital"; date: string }
-  | { type: "born"; date: string };
+  | { date: string; type: "labor_started" }
+  | { date: string; type: "gone_to_hospital" }
+  | { date: string; type: "born" };
 
 export const STATUS_ORDER = {
-  not_yet: 0,
-  labor_started: 1,
-  gone_to_hospital: 2,
   born: 3,
+  gone_to_hospital: 2,
+  labor_started: 1,
+  not_yet: 0,
 } as const;
 
 export type NotifiableStatus =
@@ -147,9 +147,9 @@ export type NotifiableStatus =
   | "update_posted";
 
 export const MILESTONE_LABELS = {
-  labor_started: "Labour started",
-  gone_to_hospital: "Gone to hospital",
   born: "Born",
+  gone_to_hospital: "Gone to hospital",
+  labor_started: "Labour started",
 } as const satisfies Record<Milestone, string>;
 
 /**
@@ -157,36 +157,37 @@ export const MILESTONE_LABELS = {
  * its legacy per-stage message.
  */
 export const MILESTONE_FIELDS = {
-  labor_started: { date: "laborStarted", message: "laborStartedMessage" },
-  gone_to_hospital: { date: "wentToHospital", message: "hospitalMessage" },
   born: { date: "babyBorn", message: "babyBornMessage" },
+  gone_to_hospital: { date: "wentToHospital", message: "hospitalMessage" },
+  labor_started: { date: "laborStarted", message: "laborStartedMessage" },
 } as const satisfies Record<
   Milestone,
   { date: keyof MilestoneDates; message: keyof BabyPreviewMessages }
 >;
 
-function isMilestone(value: string): value is Milestone {
-  return value === "labor_started" || value === "gone_to_hospital" || value === "born";
-}
-
-export const MILESTONES = Object.keys(MILESTONE_FIELDS).filter(isMilestone);
+/** Chronological order — independent of `MILESTONE_FIELDS` key insertion order. */
+export const MILESTONES = [
+  "labor_started",
+  "gone_to_hospital",
+  "born",
+] as const satisfies ReadonlyArray<Milestone>;
 
 type MilestonePolicyInput = {
   babyBorn?: string | null;
-  wentToHospital?: string | null;
-  laborStarted?: string | null;
   birthJourney?: BirthJourney | null;
+  laborStarted?: string | null;
   milestoneVisibility?: MilestoneVisibility | null;
+  wentToHospital?: string | null;
 };
 
 export type MilestonePolicy = {
-  visibility: MilestoneVisibility;
-  visibleMilestones: readonly Milestone[];
-  currentStatus: BabyStatus;
-  isVisible: (milestone: Milestone) => boolean;
-  isReached: (milestone: Milestone) => boolean;
   canMark: (milestone: Milestone) => boolean;
+  currentStatus: BabyStatus;
+  isReached: (milestone: Milestone) => boolean;
+  isVisible: (milestone: Milestone) => boolean;
   progressPercent: number;
+  visibility: MilestoneVisibility;
+  visibleMilestones: ReadonlyArray<Milestone>;
 };
 
 /**
@@ -207,7 +208,7 @@ export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy 
   for (const milestone of [...visibleMilestones].toReversed()) {
     const date = baby[MILESTONE_FIELDS[milestone].date];
     if (date) {
-      currentStatus = { type: milestone, date };
+      currentStatus = { date, type: milestone };
       break;
     }
   }
@@ -219,14 +220,14 @@ export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy 
   const reachedCount = visibleMilestones.filter(isReached).length;
 
   return {
-    visibility,
-    visibleMilestones,
-    currentStatus,
-    isVisible,
-    isReached,
     canMark: (milestone) =>
       isVisible(milestone) && STATUS_ORDER[milestone] > STATUS_ORDER[currentStatus.type],
+    currentStatus,
+    isReached,
+    isVisible,
     progressPercent: (reachedCount / visibleMilestones.length) * 100,
+    visibility,
+    visibleMilestones,
   };
 }
 

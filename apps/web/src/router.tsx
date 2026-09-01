@@ -63,22 +63,22 @@ export function getRouter() {
     // pages via the ensureQueryData prefetchers.
     ...routerPreloadOptions,
     // Friendly recoverable fallback for any route error (reload / go home).
-    defaultErrorComponent: RootErrorComponent,
     context: {
-      queryClient,
-      convexQueryClient,
       convexClient: convexQueryClient.convexClient,
       convexPreloader,
-      locale: getDetectedLocale(),
+      convexQueryClient,
       isAuthenticated: false,
+      locale: getDetectedLocale(),
+      queryClient,
       token: null,
     },
+    defaultErrorComponent: RootErrorComponent,
     Wrap: (props) => (
       <ConvexProvider client={convexQueryClient.convexClient}>{props.children}</ConvexProvider>
     ),
   });
 
-  setupRouterSsrQueryIntegration({ router, queryClient });
+  setupRouterSsrQueryIntegration({ queryClient, router });
 
   return router;
 }

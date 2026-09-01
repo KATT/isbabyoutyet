@@ -1,14 +1,18 @@
 {
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
   // Closely matches `oxlint --init`, plus the stricter `suspicious` category.
-  // Pedantic/style/restriction stay off — too noisy for a blanket enable.
-  "plugins": ["typescript", "unicorn", "oxc", "vitest", "react"],
+  // Pedantic/style/restriction stay off as categories — nkzw rules below are
+  // enabled individually (https://github.com/nkzw-tech/oxlint-config).
+  "plugins": ["typescript", "unicorn", "oxc", "vitest", "react", "import"],
   "categories": {
     "correctness": "error",
     "suspicious": "error"
   },
   "env": {
-    "builtin": true
+    "builtin": true,
+    "browser": true,
+    "es2024": true,
+    "node": true
   },
   // Generated code is not ours to lint
   "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "packages/oxlint-plugins/**/*.ts"],
@@ -24,6 +28,18 @@
     {
       "name": "workspace",
       "specifier": "./packages/oxlint-plugins/dist/workspace.js"
+    },
+    {
+      "name": "@nkzw",
+      "specifier": "@nkzw/eslint-plugin"
+    },
+    {
+      "name": "no-only-tests",
+      "specifier": "eslint-plugin-no-only-tests"
+    },
+    {
+      "name": "perfectionist",
+      "specifier": "eslint-plugin-perfectionist"
     }
   ],
   "settings": {
@@ -107,9 +123,231 @@
     "react/capitalized-calls": "error",
     "react/exhaustive-effect-dependencies": "error",
     "react/hooks": "error",
-    "react/memo-dependencies": "error"
+    "react/memo-dependencies": "error",
+    // From @nkzw/oxlint-config (https://github.com/nkzw-tech/oxlint-config)
+    "@nkzw/ensure-relay-types": "error",
+    "@nkzw/no-instanceof": "error",
+    "@nkzw/require-use-effect-arguments": "error",
+    "@typescript-eslint/array-type": ["error", { "default": "generic" }],
+    "@typescript-eslint/no-duplicate-enum-values": "error",
+    "@typescript-eslint/no-empty-object-type": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-extra-non-null-assertion": "error",
+    "@typescript-eslint/no-misused-new": "error",
+    "@typescript-eslint/no-non-null-asserted-nullish-coalescing": "error",
+    "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
+    "@typescript-eslint/no-require-imports": "error",
+    "@typescript-eslint/no-unnecessary-parameter-property-assignment": "error",
+    "@typescript-eslint/no-unnecessary-type-constraint": "error",
+    "@typescript-eslint/no-unsafe-declaration-merging": "error",
+    "@typescript-eslint/no-unsafe-function-type": "error",
+    "@typescript-eslint/no-wrapper-object-types": "error",
+    "@typescript-eslint/prefer-as-const": "error",
+    "@typescript-eslint/prefer-namespace-keyword": "error",
+    "@typescript-eslint/triple-slash-reference": "error",
+    "array-callback-return": "error",
+    "constructor-super": "error",
+    "curly": "error",
+    "eqeqeq": ["error", "always", { "null": "ignore" }],
+    "for-direction": "error",
+    "getter-return": "error",
+    "import-x/export": "error",
+    "import-x/no-namespace": "error",
+    // Side-effect CSS / module-augmentation imports are required; nkzw does not
+    // enable this import-plugin correctness rule.
+    "import/no-unassigned-import": "off",
+    "no-array-constructor": "error",
+    "no-async-promise-executor": "error",
+    "no-case-declarations": "error",
+    "no-class-assign": "error",
+    "no-compare-neg-zero": "error",
+    "no-cond-assign": "error",
+    "no-console": "error",
+    "no-const-assign": "error",
+    "no-constant-binary-expression": "error",
+    "no-constant-condition": "error",
+    "no-control-regex": "error",
+    "no-debugger": "error",
+    "no-delete-var": "error",
+    "no-dupe-class-members": "error",
+    "no-dupe-else-if": "error",
+    "no-dupe-keys": "error",
+    "no-duplicate-case": "error",
+    "no-empty": "error",
+    "no-empty-character-class": "error",
+    "no-empty-pattern": "error",
+    "no-empty-static-block": "error",
+    "no-ex-assign": "error",
+    "no-extra-bind": "error",
+    "no-extra-boolean-cast": "error",
+    "no-fallthrough": "error",
+    "no-func-assign": "error",
+    "no-global-assign": "error",
+    "no-implied-eval": "error",
+    "no-import-assign": "error",
+    "no-invalid-regexp": "error",
+    "no-irregular-whitespace": "error",
+    "no-loss-of-precision": "error",
+    "no-misleading-character-class": "error",
+    "no-new-native-nonconstructor": "error",
+    "no-new-wrappers": "error",
+    "no-nonoctal-decimal-escape": "error",
+    "no-obj-calls": "error",
+    "no-only-tests/no-only-tests": "error",
+    "no-prototype-builtins": "error",
+    "no-redeclare": "error",
+    "no-regex-spaces": "error",
+    "no-self-assign": "error",
+    "no-self-compare": "error",
+    "no-setter-return": "error",
+    "no-shadow-restricted-names": "error",
+    "no-sparse-arrays": "error",
+    "no-this-before-super": "error",
+    "no-throw-literal": "error",
+    "no-undef": "error",
+    "no-unexpected-multiline": "error",
+    "no-unreachable": "error",
+    "no-unsafe-finally": "error",
+    "no-unsafe-negation": "error",
+    "no-unsafe-optional-chaining": "error",
+    "no-unused-expressions": "error",
+    "no-unused-labels": "error",
+    "no-unused-private-class-members": "error",
+    "no-unused-vars": [
+      "error",
+      {
+        "args": "none",
+        "fix": {
+          "imports": "safe-fix",
+          "variables": "off"
+        },
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "no-useless-backreference": "error",
+    "no-useless-catch": "error",
+    "no-useless-escape": "error",
+    "no-useless-rename": "error",
+    "no-var": "error",
+    "no-warning-comments": ["error", { "terms": ["@nocommit"] }],
+    "no-with": "error",
+    "object-shorthand": "error",
+    "oxc/approx-constant": "error",
+    "oxc/bad-bitwise-operator": "error",
+    "oxc/bad-char-at-comparison": "error",
+    "oxc/bad-comparison-sequence": "error",
+    "oxc/bad-min-max-func": "error",
+    "oxc/bad-object-literal-comparison": "error",
+    "oxc/bad-replace-all-arg": "error",
+    "oxc/const-comparisons": "error",
+    "oxc/double-comparisons": "error",
+    "oxc/misrefactored-assign-op": "error",
+    "oxc/missing-throw": "error",
+    "oxc/number-arg-out-of-range": "error",
+    "oxc/uninvoked-array-callback": "error",
+    "perfectionist/sort-enums": [
+      "error",
+      {
+        "partitionByComment": true,
+        "sortByValue": "always"
+      }
+    ],
+    "perfectionist/sort-heritage-clauses": "error",
+    "perfectionist/sort-interfaces": "error",
+    "perfectionist/sort-jsx-props": "error",
+    "perfectionist/sort-object-types": "error",
+    "perfectionist/sort-objects": [
+      "error",
+      {
+        "partitionByComment": true
+      }
+    ],
+    "prefer-arrow-callback": ["error", { "allowNamedFunctions": true }],
+    "prefer-const": "error",
+    "prefer-object-has-own": "error",
+    "preserve-caught-error": "error",
+    "react/button-has-type": "error",
+    "react/checked-requires-onchange-or-readonly": "error",
+    "react/display-name": "error",
+    "react/exhaustive-deps": "error",
+    "react/jsx-key": "error",
+    "react/jsx-no-comment-textnodes": "error",
+    "react/jsx-no-duplicate-props": "error",
+    "react/jsx-no-script-url": "error",
+    "react/jsx-no-target-blank": "error",
+    "react/jsx-no-undef": "error",
+    "react/jsx-props-no-spread-multi": "error",
+    "react/no-children-prop": "error",
+    "react/no-danger-with-children": "error",
+    "react/no-direct-mutation-state": "error",
+    "react/no-find-dom-node": "error",
+    "react/no-is-mounted": "error",
+    "react/no-render-return-value": "error",
+    "react/no-string-refs": "error",
+    "react/no-unescaped-entities": "error",
+    "react/no-unknown-property": "error",
+    "react/require-render-return": "error",
+    "react/rules-of-hooks": "error",
+    "react/void-dom-elements-no-children": "error",
+    "require-yield": "error",
+    "unicorn/catch-error-name": "error",
+    "unicorn/consistent-empty-array-spread": "error",
+    "unicorn/consistent-function-scoping": "error",
+    "unicorn/no-abusive-eslint-disable": "error",
+    "unicorn/no-hex-escape": "error",
+    "unicorn/no-invalid-fetch-options": "error",
+    "unicorn/no-magic-array-flat-depth": "error",
+    "unicorn/no-typeof-undefined": "error",
+    "unicorn/no-unnecessary-slice-end": "error",
+    "unicorn/no-useless-promise-resolve-reject": "error",
+    "unicorn/no-useless-spread": "error",
+    "unicorn/numeric-separators-style": "error",
+    "unicorn/prefer-array-flat-map": "error",
+    "unicorn/prefer-array-index-of": "error",
+    "unicorn/prefer-array-some": "error",
+    "unicorn/prefer-at": "error",
+    "unicorn/prefer-dom-node-append": "error",
+    "unicorn/prefer-import-meta-properties": "error",
+    "unicorn/prefer-native-coercion-functions": "error",
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/prefer-number-properties": "error",
+    "unicorn/prefer-optional-catch-binding": "error",
+    "unicorn/prefer-set-size": "error",
+    "unicorn/prefer-single-call": "error",
+    "unicorn/prefer-string-raw": "error",
+    "unicorn/prefer-string-replace-all": "error",
+    "unicorn/prefer-string-slice": "error",
+    "unicorn/prefer-structured-clone": "error",
+    "unicorn/prefer-top-level-await": "error",
+    "unicorn/text-encoding-identifier-case": "error",
+    "use-isnan": "error",
+    "valid-typeof": "error"
   },
   "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+      "rules": {
+        "constructor-super": "off",
+        "getter-return": "off",
+        "no-class-assign": "off",
+        "no-const-assign": "off",
+        "no-dupe-class-members": "off",
+        "no-dupe-keys": "off",
+        "no-func-assign": "off",
+        "no-import-assign": "off",
+        "no-new-native-nonconstructor": "off",
+        "no-obj-calls": "off",
+        "no-redeclare": "off",
+        "no-setter-return": "off",
+        "no-this-before-super": "off",
+        "no-undef": "off",
+        "no-unreachable": "off",
+        "no-unsafe-negation": "off",
+        "no-with": "off",
+        "prefer-rest-params": "error",
+        "prefer-spread": "error"
+      }
+    },
     {
       "files": [
         "**/*.test.{js,jsx,ts,tsx}",
@@ -121,7 +359,8 @@
         "**/__tests__/**/*.{js,jsx,ts,tsx}"
       ],
       "rules": {
-        "typescript/consistent-type-assertions": "off"
+        "typescript/consistent-type-assertions": "off",
+        "no-console": "off"
       }
     },
     {
@@ -195,8 +434,15 @@
     {
       // Service worker: plain JS JSON boundary (no TS type predicates).
       "files": ["apps/web/public/sw.js"],
+      "globals": {
+        "clients": "readonly",
+        "registration": "readonly",
+        "self": "readonly"
+      },
       "rules": {
-        "anti-slop/no-runtime-typeof": "off"
+        "anti-slop/no-runtime-typeof": "off",
+        "no-console": "off",
+        "no-undef": "off"
       }
     },
     {
@@ -258,7 +504,21 @@
         "react/capitalized-calls": "off",
         "react/memo-dependencies": "off",
         "react/no-deriving-state-in-effects": "off",
-        "react-hooks/exhaustive-deps": "off"
+        "react-hooks/exhaustive-deps": "off",
+        "eqeqeq": "off",
+        "react/button-has-type": "off",
+        "@typescript-eslint/array-type": "off",
+        "curly": "off",
+        "import-x/no-namespace": "off",
+        "object-shorthand": "off",
+        "perfectionist/sort-enums": "off",
+        "perfectionist/sort-heritage-clauses": "off",
+        "perfectionist/sort-interfaces": "off",
+        "perfectionist/sort-jsx-props": "off",
+        "perfectionist/sort-object-types": "off",
+        "perfectionist/sort-objects": "off",
+        "prefer-arrow-callback": "off",
+        "unicorn/prefer-string-raw": "off"
       }
     },
     {
@@ -308,6 +568,36 @@
       "files": ["packages/convex-prefetch/src/useLiveConvexInfinitePages.ts"],
       "rules": {
         "workspace/no-use-state": "off"
+      }
+    },
+    {
+      // CLI / seed / coverage scripts — nkzw disables no-console for server scripts.
+      // Convex uses console for dashboard logs.
+      "files": [
+        "**/scripts/**",
+        "packages/scripts/src/**",
+        "packages/convex/convex/**"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      // Latest dismiss is an Effect Event assigned onto the external store
+      // each render; the compiler rule forbids passing Effect Events, but the
+      // click handler is outside React and cannot be an Effect.
+      "files": ["apps/web/src/lib/use-coachmark-store.ts"],
+      "rules": {
+        "react-hooks/rules-of-hooks": "off",
+        "react/rules-of-hooks": "off"
+      }
+    },
+    {
+      // Field order is domain-grouped; sort-objects detaches @todo JSDoc from
+      // v.optional() fields and trips workspace/no-undocumented-optional.
+      "files": ["packages/convex/convex/schema.ts"],
+      "rules": {
+        "perfectionist/sort-objects": "off"
       }
     }
   ]

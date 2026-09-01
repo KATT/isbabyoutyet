@@ -9,23 +9,23 @@ import type {
 
 /** Builds a typed {@link PreloadedConvexQuery} handle for unit tests. */
 export function testPreloadedConvexQuery<TQuery extends QueryReference>(opts: {
-  input: FunctionArgs<TQuery>;
   initialData: FunctionReturnType<TQuery>;
+  input: FunctionArgs<TQuery>;
 }): PreloadedConvexQuery<TQuery> {
   // SAFETY: Handle brands are type-only; input/initialData are the runtime fields.
-  return { input: opts.input, initialData: opts.initialData } as PreloadedConvexQuery<TQuery>;
+  return { initialData: opts.initialData, input: opts.input } as PreloadedConvexQuery<TQuery>;
 }
 
 /** Builds a typed {@link PreloadedConvexInfiniteQuery} handle for unit tests. */
 export function testPreloadedConvexInfiniteQuery<TQuery extends PaginatedQueryReference>(opts: {
+  initialData: InfiniteData<FunctionReturnType<TQuery>, PaginationOptions>;
   input: PaginationArgs<TQuery>;
   numItems: number;
-  initialData: InfiniteData<FunctionReturnType<TQuery>, PaginationOptions>;
 }): PreloadedConvexInfiniteQuery<TQuery> {
   // SAFETY: Test fixture is a subset of the production type.
   return {
+    initialData: opts.initialData,
     input: opts.input,
     numItems: opts.numItems,
-    initialData: opts.initialData,
   } as PreloadedConvexInfiniteQuery<TQuery>;
 }

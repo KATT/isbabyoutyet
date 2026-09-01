@@ -23,41 +23,41 @@ import { useVisualViewportMetrics } from "@/lib/use-visual-viewport";
 type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
 type TourBaby = {
-  publicId: string;
   name: string;
+  publicId: string;
 };
 
 type GettingStartedCardProps = {
-  effectiveSteps: string[];
+  className: string | undefined;
+  effectiveSteps: Array<string>;
   minimized: boolean;
-  onMinimize: (minimized: boolean) => void;
   onDismiss: () => void;
+  /** Baby-page: scroll to and highlight a control */
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
+  onMinimize: (minimized: boolean) => void;
   /** Current route context for CTAs */
   surface: "dashboard" | "baby";
   /** First owned baby — preferred deep-link target from dashboard CTAs only */
   tourBaby: TourBaby | null;
-  /** Baby-page: scroll to and highlight a control */
-  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
-  className: string | undefined;
 };
 
 type StepAction =
-  | { kind: "link"; link: LinkProps; label: string; onClick: (() => void) | undefined }
-  | { kind: "button"; onClick: () => void; label: string };
+  | { kind: "link"; label: string; link: LinkProps; onClick: (() => void) | undefined }
+  | { kind: "button"; label: string; onClick: () => void };
 
 function babyPageLink(publicId: string): LinkProps {
   return {
-    to: "/baby/$publicId",
     params: { publicId },
+    to: "/baby/$publicId",
   };
 }
 
 function getStepAction(opts: {
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
   step: OnboardingStep;
   surface: "dashboard" | "baby";
-  tourBaby: TourBaby | null;
-  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
   t: TranslationFunction;
+  tourBaby: TourBaby | null;
 }): StepAction | null {
   const step = opts.step;
   const t = opts.t;
@@ -71,8 +71,8 @@ function getStepAction(opts: {
     }
     return {
       kind: "link",
-      link: { to: "/dashboard/add" },
       label: t(ctaLabel),
+      link: { to: "/dashboard/add" },
       onClick: undefined,
     };
   }
@@ -92,8 +92,8 @@ function getStepAction(opts: {
     ) {
       return {
         kind: "link",
-        link: babyPageLink(publicId),
         label: t("See {{name}}'s page", { name }),
+        link: babyPageLink(publicId),
         onClick: undefined,
       };
     }
@@ -108,8 +108,8 @@ function getStepAction(opts: {
   ) {
     return {
       kind: "button",
-      onClick: () => opts.onGoToStep?.(step.id),
       label: t("Show me"),
+      onClick: () => opts.onGoToStep?.(step.id),
     };
   }
   return null;
@@ -129,18 +129,18 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
   if (props.minimized) {
     return (
       <button
-        type="button"
-        onClick={() => props.onMinimize(false)}
-        style={visualViewport.style}
+        aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
+          completed: completedCount,
+          total,
+        })}
         className={cn(
           "fixed z-40 flex min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-popover/95 px-3 py-2 text-sm font-medium shadow-lg ring-1 ring-foreground/10 backdrop-blur-sm transition hover:border-primary/40",
           "right-[calc(0.75rem+env(safe-area-inset-right)+max(0px,100vw-100dvw))] bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] sm:right-4 sm:bottom-20",
           props.className,
         )}
-        aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
-          completed: completedCount,
-          total,
-        })}
+        onClick={() => props.onMinimize(false)}
+        style={visualViewport.style}
+        type="button"
       >
         <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-primary">
           <Sparkle className="size-3.5" />
@@ -157,13 +157,13 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
     <>
       <Drawer showSwipeHandle>
         <aside
-          style={visualViewport.style}
+          aria-label={t("Getting started checklist")}
           className={cn(
             "fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] z-40 w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-border/60 bg-popover/95 p-3 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:hidden",
             "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
             props.className,
           )}
-          aria-label={t("Getting started checklist")}
+          style={visualViewport.style}
         >
           <div className="flex items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
@@ -180,20 +180,20 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
             <DrawerTrigger
               render={
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-11"
                   aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
                     completed: completedCount,
                     total,
                   })}
+                  className="size-11"
+                  size="icon"
+                  variant="ghost"
                 />
               }
             >
               <CaretUp />
             </DrawerTrigger>
           </div>
-          <Progress value={percent} className="mt-3">
+          <Progress className="mt-3" value={percent}>
             <ProgressLabel className="sr-only">{t("Tour progress")}</ProgressLabel>
           </Progress>
         </aside>
@@ -203,9 +203,9 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           style={{
             bottom: `${visualViewport.bottom}px`,
             left: `${visualViewport.left}px`,
+            maxWidth: visualViewport.width > 0 ? `${visualViewport.width}px` : "100dvw",
             right: "auto",
             width: visualViewport.width > 0 ? `${visualViewport.width}px` : "100dvw",
-            maxWidth: visualViewport.width > 0 ? `${visualViewport.width}px` : "100dvw",
           }}
         >
           <DrawerHeader className="flex-row items-start text-left">
@@ -221,10 +221,10 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
             <DrawerClose
               render={
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-11"
                   aria-label={t("Close checklist")}
+                  className="size-11"
+                  size="icon"
+                  variant="ghost"
                 />
               }
             >
@@ -234,14 +234,14 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           <div className="flex-1 overflow-y-auto p-4 pt-3">
             <ChecklistContents
               {...props}
+              closeWithDrawerClose
               done={done}
               nextStep={nextStep}
-              percent={percent}
-              t={t}
               onBeforeAction={undefined}
               onRequestDismiss={props.onDismiss}
+              percent={percent}
               showDismissAction={false}
-              closeWithDrawerClose
+              t={t}
             />
           </div>
           {nextStep ? (
@@ -249,9 +249,9 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               <DrawerClose
                 render={
                   <Button
-                    variant="secondary"
                     className="min-h-11 w-full"
                     onClick={props.onDismiss}
+                    variant="secondary"
                   />
                 }
               >
@@ -263,12 +263,12 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
       </Drawer>
 
       <aside
+        aria-label={t("Getting started checklist")}
         className={cn(
           "fixed right-4 bottom-20 z-40 hidden w-[min(100%-2rem,22rem)] rounded-xl border border-border/60 bg-popover/95 p-4 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:block",
           "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
           props.className,
         )}
-        aria-label={t("Getting started checklist")}
       >
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -283,24 +283,24 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
             </div>
           </div>
           <Button
-            variant="ghost"
-            size="icon-sm"
             aria-label={t("Minimize")}
             onClick={() => props.onMinimize(true)}
+            size="icon-sm"
+            variant="ghost"
           >
             <CaretDown />
           </Button>
         </div>
         <ChecklistContents
           {...props}
+          closeWithDrawerClose={false}
           done={done}
           nextStep={nextStep}
-          percent={percent}
-          t={t}
           onBeforeAction={undefined}
           onRequestDismiss={props.onDismiss}
+          percent={percent}
           showDismissAction
-          closeWithDrawerClose={false}
+          t={t}
         />
       </aside>
     </>
@@ -308,21 +308,21 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
 }
 
 type ChecklistContentsProps = GettingStartedCardProps & {
+  closeWithDrawerClose: boolean;
   done: Set<string>;
   nextStep: OnboardingStep | undefined;
-  percent: number;
-  t: TranslationFunction;
   onBeforeAction: (() => void) | undefined;
   onRequestDismiss: () => void;
+  percent: number;
   showDismissAction: boolean;
-  closeWithDrawerClose: boolean;
+  t: TranslationFunction;
 };
 
 function ChecklistContents(props: ChecklistContentsProps) {
   const { t } = props;
   return (
     <>
-      <Progress value={props.percent} className="mb-3">
+      <Progress className="mb-3" value={props.percent}>
         <ProgressLabel className="sr-only">{t("Tour progress")}</ProgressLabel>
         <ProgressValue />
       </Progress>
@@ -334,24 +334,24 @@ function ChecklistContents(props: ChecklistContentsProps) {
           const action = isDone
             ? null
             : getStepAction({
+                onGoToStep: props.onGoToStep,
                 step,
                 surface: props.surface,
-                tourBaby: props.tourBaby,
-                onGoToStep: props.onGoToStep,
                 t,
+                tourBaby: props.tourBaby,
               });
           return (
             <li
-              key={step.id}
               className={cn("rounded-lg text-sm", isNext && "bg-primary/8 ring-1 ring-primary/15")}
+              key={step.id}
             >
               <StepRow
-                step={step}
-                isDone={isDone}
                 action={action}
-                title={t(step.title)}
-                onBeforeAction={props.onBeforeAction}
                 closeWithDrawerClose={props.closeWithDrawerClose}
+                isDone={isDone}
+                onBeforeAction={props.onBeforeAction}
+                step={step}
+                title={t(step.title)}
               />
             </li>
           );
@@ -361,20 +361,20 @@ function ChecklistContents(props: ChecklistContentsProps) {
       {props.nextStep ? (
         <>
           <NextStepHint
+            closeWithDrawerClose={props.closeWithDrawerClose}
+            onBeforeAction={props.onBeforeAction}
+            onGoToStep={props.onGoToStep}
             step={props.nextStep}
             surface={props.surface}
-            tourBaby={props.tourBaby}
-            onGoToStep={props.onGoToStep}
-            onBeforeAction={props.onBeforeAction}
-            closeWithDrawerClose={props.closeWithDrawerClose}
             t={t}
+            tourBaby={props.tourBaby}
           />
           {props.showDismissAction ? (
             <Button
-              size="sm"
-              variant="secondary"
               className="mt-2 min-h-11 w-full"
               onClick={props.onRequestDismiss}
+              size="sm"
+              variant="secondary"
             >
               {t("Dismiss guide")}
             </Button>
@@ -385,7 +385,7 @@ function ChecklistContents(props: ChecklistContentsProps) {
           <p className="text-xs text-muted-foreground">
             {t("Nice work — share your page and enjoy the quiet inbox.")}
           </p>
-          <Button size="sm" variant="outline" onClick={props.onDismiss}>
+          <Button onClick={props.onDismiss} size="sm" variant="outline">
             {t("Close checklist")}
           </Button>
         </div>
@@ -395,12 +395,12 @@ function ChecklistContents(props: ChecklistContentsProps) {
 }
 
 function StepRow(props: {
-  step: OnboardingStep;
-  isDone: boolean;
   action: StepAction | null;
-  title: string;
-  onBeforeAction: (() => void) | undefined;
   closeWithDrawerClose: boolean;
+  isDone: boolean;
+  onBeforeAction: (() => void) | undefined;
+  step: OnboardingStep;
+  title: string;
 }) {
   const inner = (
     <>
@@ -427,8 +427,8 @@ function StepRow(props: {
     const link = (
       <Link
         {...action.link}
-        className={cn(rowClass, "transition hover:bg-primary/6")}
         aria-label={action.label}
+        className={cn(rowClass, "transition hover:bg-primary/6")}
         onClick={() => {
           if (props.onBeforeAction) {
             props.onBeforeAction();
@@ -442,7 +442,7 @@ function StepRow(props: {
       </Link>
     );
     if (props.closeWithDrawerClose) {
-      return <DrawerClose render={link} nativeButton={false} />;
+      return <DrawerClose nativeButton={false} render={link} />;
     }
     return link;
   }
@@ -451,7 +451,7 @@ function StepRow(props: {
     const action = props.action;
     const button = (
       <button
-        type="button"
+        aria-label={action.label}
         className={cn(rowClass, "transition hover:bg-primary/6")}
         onClick={() => {
           if (props.onBeforeAction) {
@@ -459,7 +459,7 @@ function StepRow(props: {
           }
           action.onClick();
         }}
-        aria-label={action.label}
+        type="button"
       >
         {inner}
       </button>
@@ -474,22 +474,22 @@ function StepRow(props: {
 }
 
 function NextStepHint(props: {
+  closeWithDrawerClose: boolean;
+  onBeforeAction: (() => void) | undefined;
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
   step: OnboardingStep;
   surface: "dashboard" | "baby";
-  tourBaby: TourBaby | null;
-  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
-  onBeforeAction: (() => void) | undefined;
-  closeWithDrawerClose: boolean;
   t: TranslationFunction;
+  tourBaby: TourBaby | null;
 }) {
   const { t } = props;
   const Icon = props.step.icon;
   const action = getStepAction({
+    onGoToStep: props.onGoToStep,
     step: props.step,
     surface: props.surface,
-    tourBaby: props.tourBaby,
-    onGoToStep: props.onGoToStep,
     t,
+    tourBaby: props.tourBaby,
   });
 
   return (
@@ -507,9 +507,9 @@ function NextStepHint(props: {
         <div className="flex flex-wrap gap-2">
           <StepActionControl
             action={action}
+            closeWithDrawerClose={props.closeWithDrawerClose}
             onBeforeAction={props.onBeforeAction}
             size="sm"
-            closeWithDrawerClose={props.closeWithDrawerClose}
           />
         </div>
       ) : null}
@@ -519,16 +519,16 @@ function NextStepHint(props: {
 
 function StepActionControl(props: {
   action: StepAction;
+  closeWithDrawerClose: boolean;
   onBeforeAction: (() => void) | undefined;
   size: "sm" | "default";
-  closeWithDrawerClose: boolean;
 }) {
   if (props.action.kind === "link") {
     const action = props.action;
     const button = (
       <Button
-        size={props.size}
         className="min-h-11"
+        nativeButton={false}
         render={
           <Link
             {...action.link}
@@ -542,13 +542,13 @@ function StepActionControl(props: {
             }}
           />
         }
-        nativeButton={false}
+        size={props.size}
       >
         {action.label}
       </Button>
     );
     if (props.closeWithDrawerClose) {
-      return <DrawerClose render={button} nativeButton={false} />;
+      return <DrawerClose nativeButton={false} render={button} />;
     }
     return button;
   }
@@ -556,7 +556,6 @@ function StepActionControl(props: {
   const action = props.action;
   const button = (
     <Button
-      size={props.size}
       className="min-h-11"
       onClick={() => {
         if (props.onBeforeAction) {
@@ -564,6 +563,7 @@ function StepActionControl(props: {
         }
         action.onClick();
       }}
+      size={props.size}
     >
       {action.label}
     </Button>

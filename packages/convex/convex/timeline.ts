@@ -33,9 +33,9 @@ async function findEncouragementByTimelineItem(ctx: QueryCtx, timelineItemId: Id
 async function hydrateUpdate(
   ctx: QueryCtx,
   opts: {
+    currentPhotoId: Id<"_storage"> | null;
     item: Doc<"timelineItems">;
     update: Doc<"updates">;
-    currentPhotoId: Id<"_storage"> | null;
   },
 ) {
   const milestone = opts.update.milestone ?? null;
@@ -49,12 +49,12 @@ async function hydrateUpdate(
     postedAt: opts.item.postedAt,
     update: {
       _id: opts.update._id,
+      blurDataUrl: opts.update.blurDataUrl ?? null,
       message: opts.update.message ?? null,
       milestone,
       occurredAt: opts.update.occurredAt ?? null,
       photoUrl,
       thumbnailUrl,
-      blurDataUrl: opts.update.blurDataUrl ?? null,
       // Whether this update's photo is the baby's current page photo
       isCurrentPagePhoto: !!opts.update.photoId && opts.update.photoId === opts.currentPhotoId,
     },
@@ -71,40 +71,46 @@ function toPublicEncouragement(encouragement: Doc<"encouragements">, visitorId: 
   return {
     _id: encouragement._id,
     authorName: encouragement.authorName,
-    message: encouragement.message,
     createdAt: encouragement.createdAt,
     isMine: visitorId != null && encouragement.visitorId === visitorId,
+    message: encouragement.message,
   };
 }
 
 async function hydrateTimelineItem(
   ctx: QueryCtx,
   opts: {
+    currentPhotoId: Id<"_storage"> | null;
     item: Doc<"timelineItems">;
     visitorId: string | null;
-    currentPhotoId: Id<"_storage"> | null;
   },
 ) {
-  if (!isActive(opts.item)) return null;
+  if (!isActive(opts.item)) {
+    return null;
+  }
 
   switch (opts.item.kind) {
     case "update": {
       const update = await findUpdateByTimelineItem(ctx, opts.item._id);
-      if (!update || !isActive(update)) return null;
+      if (!update || !isActive(update)) {
+        return null;
+      }
       return await hydrateUpdate(ctx, {
+        currentPhotoId: opts.currentPhotoId,
         item: opts.item,
         update,
-        currentPhotoId: opts.currentPhotoId,
       });
     }
     case "encouragement": {
       const encouragement = await findEncouragementByTimelineItem(ctx, opts.item._id);
-      if (!encouragement || !isActive(encouragement)) return null;
+      if (!encouragement || !isActive(encouragement)) {
+        return null;
+      }
       return {
         _id: opts.item._id,
+        encouragement: toPublicEncouragement(encouragement, opts.visitorId),
         kind: "encouragement" as const,
         postedAt: opts.item.postedAt,
-        encouragement: toPublicEncouragement(encouragement, opts.visitorId),
       };
     }
   }
@@ -116,13 +122,13 @@ export const listByBaby = query({
   args: {
     babyId: babyIdOrPublicIdValidator,
     /** The caller's visitor id, used to mark their posts with `isMine`. */
-    visitorId: v.union(v.string(), v.null()),
     paginationOpts: paginationOptsValidator,
+    visitorId: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
     if (!baby || !isActive(baby)) {
-      return { page: [], isDone: true, continueCursor: "" };
+      return { continueCursor: "", isDone: true, page: [] };
     }
     const babyId = baby._id;
     const currentPhotoId = baby.photoId ?? null;
@@ -133,12 +139,12 @@ export const listByBaby = query({
       .order("desc")
       .paginate(args.paginationOpts);
 
-    const page: TimelineItem[] = [];
+    const page: Array<TimelineItem> = [];
     for (const item of result.page) {
       const hydrated = await hydrateTimelineItem(ctx, {
+        currentPhotoId,
         item,
         visitorId: args.visitorId,
-        currentPhotoId,
       });
       if (hydrated) {
         page.push(hydrated);
@@ -172,21 +178,27 @@ export const latestUpdate = query({
       .order("desc")
       .take(256);
 
-    let latest: { update: Doc<"updates">; item: Doc<"timelineItems"> } | null = null;
+    let latest: { item: Doc<"timelineItems">; update: Doc<"updates"> } | null = null;
     for (const update of updates) {
-      if (!isActive(update) || !update.message) continue;
+      if (!isActive(update) || !update.message) {
+        continue;
+      }
       const item = await ctx.db.get(update.timelineItemId);
-      if (!item || !isActive(item)) continue;
+      if (!item || !isActive(item)) {
+        continue;
+      }
       if (!latest || item.postedAt > latest.item.postedAt) {
-        latest = { update, item };
+        latest = { item, update };
       }
     }
 
-    if (!latest) return null;
+    if (!latest) {
+      return null;
+    }
     return await hydrateUpdate(ctx, {
+      currentPhotoId: baby.photoId ?? null,
       item: latest.item,
       update: latest.update,
-      currentPhotoId: baby.photoId ?? null,
     });
   },
 });
@@ -200,14 +212,6 @@ export const getUpdatePhoto = query({
     babyId: babyIdOrPublicIdValidator,
     updateId: v.string(),
   },
-  returns: v.union(
-    v.object({
-      photoUrl: v.string(),
-      blurDataUrl: v.union(v.string(), v.null()),
-      babyName: v.string(),
-    }),
-    v.null(),
-  ),
   handler: async (ctx, args) => {
     const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
     if (!baby || !isActive(baby)) {
@@ -226,18 +230,26 @@ export const getUpdatePhoto = query({
       return null;
     }
     return {
-      photoUrl,
-      blurDataUrl: update.blurDataUrl ?? null,
       babyName: baby.name,
+      blurDataUrl: update.blurDataUrl ?? null,
+      photoUrl,
     };
   },
+  returns: v.union(
+    v.object({
+      babyName: v.string(),
+      blurDataUrl: v.union(v.string(), v.null()),
+      photoUrl: v.string(),
+    }),
+    v.null(),
+  ),
 });
 
 // --- Write helpers (shared by baby.ts, updates.ts, encouragements.ts, migrations.ts) ---
 
 async function advanceBabyActivity(
   ctx: MutationCtx,
-  opts: { babyId: Id<"baby">; activityAt: number },
+  opts: { activityAt: number; babyId: Id<"baby"> },
 ) {
   const baby = await ctx.db.get(opts.babyId);
   if (baby && (baby.lastActivityAt === undefined || opts.activityAt > baby.lastActivityAt)) {
@@ -254,15 +266,15 @@ export async function insertUpdateWithTimelineItem(
   ctx: MutationCtx,
   opts: {
     babyId: Id<"baby">;
-    postedAt: number;
+    blurDataUrl?: string | null;
     message?: string | null;
     milestone?: Milestone | null;
     occurredAt?: number | null;
     photoId?: Id<"_storage"> | null;
-    thumbnailId?: Id<"_storage"> | null;
-    blurDataUrl?: string | null;
-    pushImageId?: Id<"_storage"> | null;
+    postedAt: number;
     postedByUserId?: string | null;
+    pushImageId?: Id<"_storage"> | null;
+    thumbnailId?: Id<"_storage"> | null;
   },
 ) {
   const timelineItemId = await ctx.db.insert("timelineItems", {
@@ -272,19 +284,19 @@ export async function insertUpdateWithTimelineItem(
   });
   const updateId = await ctx.db.insert("updates", {
     babyId: opts.babyId,
-    timelineItemId,
+    blurDataUrl: opts.blurDataUrl ?? null,
     message: opts.message ?? null,
     milestone: opts.milestone ?? null,
     occurredAt: opts.occurredAt ?? null,
     photoId: opts.photoId ?? null,
-    thumbnailId: opts.thumbnailId ?? null,
-    blurDataUrl: opts.blurDataUrl ?? null,
-    pushImageId: opts.pushImageId ?? null,
     postedByUserId: opts.postedByUserId ?? null,
+    pushImageId: opts.pushImageId ?? null,
+    thumbnailId: opts.thumbnailId ?? null,
+    timelineItemId,
   });
   await advanceBabyActivity(ctx, {
-    babyId: opts.babyId,
     activityAt: opts.postedAt,
+    babyId: opts.babyId,
   });
   return { timelineItemId, updateId };
 }
@@ -297,8 +309,8 @@ export async function deleteUpdateWithTimelineItem(ctx: MutationCtx, update: Doc
   await ctx.db.patch(update._id, patch);
   await ctx.db.patch(update.timelineItemId, patch);
   await advanceBabyActivity(ctx, {
-    babyId: update.babyId,
     activityAt: patch.deletedAt,
+    babyId: update.babyId,
   });
 }
 
@@ -315,8 +327,8 @@ export async function deleteEncouragementWithTimelineItem(
     await ctx.db.patch(encouragement.timelineItemId, patch);
   }
   await advanceBabyActivity(ctx, {
-    babyId: encouragement.babyId,
     activityAt: patch.deletedAt,
+    babyId: encouragement.babyId,
   });
 }
 
@@ -354,13 +366,15 @@ export async function loadMilestoneDates(
   babyId: Id<"baby">,
 ): Promise<MilestoneDates> {
   const dates: MilestoneDates = {
+    babyBorn: null,
     laborStarted: null,
     wentToHospital: null,
-    babyBorn: null,
   };
   for (const milestone of MILESTONES) {
     const update = await findMilestoneUpdate(ctx, { babyId, milestone });
-    if (!update) continue;
+    if (!update) {
+      continue;
+    }
     const item = await ctx.db.get(update.timelineItemId);
     if (!item || !isActive(item)) {
       throw new Error(`Milestone update ${update._id} has no active timeline item`);
@@ -394,8 +408,8 @@ export async function insertEncouragementTimelineItem(
     postedAt: opts.postedAt,
   });
   await advanceBabyActivity(ctx, {
-    babyId: opts.babyId,
     activityAt: opts.postedAt,
+    babyId: opts.babyId,
   });
   return timelineItemId;
 }

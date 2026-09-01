@@ -17,8 +17,8 @@ test("update photo beforeLoad 404s unknown babies", async () => {
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: "missing-baby", updateId: "jd7update00000000000000001" },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     isNotFound: true,
@@ -27,7 +27,7 @@ test("update photo beforeLoad 404s unknown babies", async () => {
 
 test("update photo beforeLoad redirects when the public id resolves to a different slug", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Nova", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Nova" });
   const update = await seedTimelineUpdateWithPhoto(harness, {
     babyId: baby.babyId,
     message: "Photo update",
@@ -43,21 +43,21 @@ test("update photo beforeLoad redirects when the public id resolves to a differe
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: baby.publicId, updateId: update.updateId },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/baby/$publicId/updates/$updateId/photo",
       params: { publicId: renamed?.publicId, updateId: update.updateId },
       replace: true,
+      to: "/baby/$publicId/updates/$updateId/photo",
     },
   });
 });
 
 test("update photo beforeLoad allows matching public ids", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const update = await seedTimelineUpdateWithPhoto(harness, {
     babyId: baby.babyId,
     message: "Photo update",
@@ -66,15 +66,15 @@ test("update photo beforeLoad allows matching public ids", async () => {
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: baby.publicId, updateId: update.updateId },
+      route: Route,
     }),
   ).resolves.toBeUndefined();
 });
 
 test("update photo loader redirects home when the update has no photo", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const updateId = await postTestUpdate(harness, {
     babyId: baby.babyId,
     message: "Text only",
@@ -83,21 +83,21 @@ test("update photo loader redirects home when the update has no photo", async ()
   await expect(
     runRouteLoader({
       harness,
-      route: Route,
       params: { publicId: baby.publicId, updateId },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/baby/$publicId",
       params: { publicId: baby.publicId },
       resetScroll: false,
+      to: "/baby/$publicId",
     },
   });
 });
 
 test("update photo loader prefetches the full image in the browser", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const update = await seedTimelineUpdateWithPhoto(harness, {
     babyId: baby.babyId,
     message: "Photo update",
@@ -107,28 +107,30 @@ test("update photo loader prefetches the full image in the browser", async () =>
     updateId: update.updateId,
   });
   const photoUrl = photo?.photoUrl;
-  if (!photoUrl) throw new Error("expected update photo URL");
+  if (!photoUrl) {
+    throw new Error("expected update photo URL");
+  }
 
   await using _image = stubBrowserImageResource();
 
   const data = await runRouteLoader<{ imagePrefetch: { input: string | undefined } }>({
     harness,
-    route: Route,
     params: { publicId: baby.publicId, updateId: update.updateId },
+    route: Route,
   });
 
   expect(data.imagePrefetch).toMatchObject({ input: photoUrl });
   await vi.waitFor(() => {
     expect(harness.queryClient.getQueryData(["browserImagePrefetch", photoUrl])).toEqual({
-      url: photoUrl,
       ok: true,
+      url: photoUrl,
     });
   });
 });
 
 test("dismisses the update photo overlay after the dialog closes", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const update = await seedTimelineUpdateWithPhoto(harness, {
     babyId: baby.babyId,
     message: "Photo update",
@@ -137,10 +139,10 @@ test("dismisses the update photo overlay after the dialog closes", async () => {
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/updates/$updateId/photo",
     initialEntry: `/baby/${baby.publicId}/updates/${update.updateId}/photo`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/updates/$updateId/photo",
+    route: Route,
     wrap: null,
   });
 
@@ -156,7 +158,7 @@ test("dismisses the update photo overlay after the dialog closes", async () => {
 
 test("BabyUpdatePhotoOverlay mounts from the real route loader", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const update = await seedTimelineUpdateWithPhoto(harness, {
     babyId: baby.babyId,
     message: "Photo update",
@@ -165,10 +167,10 @@ test("BabyUpdatePhotoOverlay mounts from the real route loader", async () => {
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/updates/$updateId/photo",
     initialEntry: `/baby/${baby.publicId}/updates/${update.updateId}/photo`,
     overlayHistory: null,
+    path: "/baby/$publicId/updates/$updateId/photo",
+    route: Route,
     wrap: null,
   });
 

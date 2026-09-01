@@ -23,7 +23,7 @@ function pushSubscription() {
     endpoint: ENDPOINT,
     toJSON: (): PushSubscriptionJSON => ({
       endpoint: ENDPOINT,
-      keys: { p256dh: "p256", auth: "auth" },
+      keys: { auth: "auth", p256dh: "p256" },
     }),
   } as PushSubscription;
 }
@@ -34,7 +34,7 @@ function stubGrantedPush(opts: { existing: PushSubscription | null }) {
 
   function replaceProperty<$Target extends object>(
     target: $Target,
-    property: { key: string; descriptor: PropertyDescriptor },
+    property: { descriptor: PropertyDescriptor; key: string },
   ) {
     const existing = Object.getOwnPropertyDescriptor(target, property.key);
     Object.defineProperty(target, property.key, { configurable: true, ...property.descriptor });
@@ -53,8 +53,8 @@ function stubGrantedPush(opts: { existing: PushSubscription | null }) {
     get: () => "granted",
   });
   replaceProperty(globalThis, {
-    key: "Notification",
     descriptor: { value: NotificationStub },
+    key: "Notification",
   });
 
   // SAFETY: Test fixture is a subset of the production type.
@@ -68,8 +68,8 @@ function stubGrantedPush(opts: { existing: PushSubscription | null }) {
     },
   } as ServiceWorkerRegistration;
   replaceProperty(navigator, {
-    key: "serviceWorker",
     descriptor: { value: { ready: Promise.resolve(registration) } },
+    key: "serviceWorker",
   });
 
   return makeResource({}, () => {
@@ -86,14 +86,14 @@ async function renderLiveSwitch(opts: {
     | { kind: "serviceWorkerTimeout" }
     | { kind: "unsubscribed" }
     | {
-        kind: "subscribed";
-        subscription: PushSubscription;
         family: boolean;
+        kind: "subscribed";
         messages: boolean;
+        subscription: PushSubscription;
       };
 }) {
   const harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const vapid = await harness.convexPreloader.ensureQueryData(
     api.pushSubscriptions.getPublicKey,
     {},
@@ -103,17 +103,17 @@ async function renderLiveSwitch(opts: {
     ui: (
       <OwnerMessageNotifyLiveSwitch
         babyId={baby.babyId}
-        vapidPublicKey={vapid}
         browserPush={testPreloadedQuery(
           (ref) => browserPushQueryOptions(harness.queryClient, ref),
           opts.capability,
           baby.publicId,
         )}
+        vapidPublicKey={vapid}
       />
     ),
     wrap: null,
   });
-  return makeAsyncResource({ view, harness, babyId: baby.babyId }, async () => {
+  return makeAsyncResource({ babyId: baby.babyId, harness, view }, async () => {
     view[Symbol.dispose]();
     await harness[Symbol.asyncDispose]();
   });
@@ -127,8 +127,8 @@ test("settings switch describes visitor message alerts", async () => {
         checked={false}
         disabled={false}
         disabledReason={null}
-        onCheckedChange={onCheckedChange}
         layout="settings"
+        onCheckedChange={onCheckedChange}
       />
     </LocaleProvider>,
   );
@@ -148,8 +148,8 @@ test("settings switch shows subscribed copy when on", async () => {
         checked={true}
         disabled={false}
         disabledReason={null}
-        onCheckedChange={vi.fn()}
         layout="settings"
+        onCheckedChange={vi.fn()}
       />
     </LocaleProvider>,
   );
@@ -171,8 +171,8 @@ test("settings switch opens Home Screen instructions when iOS needs a PWA instal
             checked={false}
             disabled={true}
             disabledReason="needsIosInstall"
-            onCheckedChange={null}
             layout="settings"
+            onCheckedChange={null}
           />
         </DialogContent>
       </Dialog>
@@ -198,8 +198,8 @@ test("settings switch explains when the browser cannot push", async () => {
         checked={false}
         disabled={true}
         disabledReason="unsupported"
-        onCheckedChange={null}
         layout="settings"
+        onCheckedChange={null}
       />
     </LocaleProvider>,
   );
@@ -272,18 +272,18 @@ test("turning the live switch off removes the owner message subscription", async
   await using _env = stubGrantedPush({ existing: subscription });
   await using ctx = await renderLiveSwitch({
     capability: {
-      kind: "subscribed",
-      subscription,
       family: false,
+      kind: "subscribed",
       messages: true,
+      subscription,
     },
   });
 
   await ctx.harness.client.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "auth",
     babyId: ctx.babyId,
     endpoint: ENDPOINT,
     p256dh: "p256",
-    auth: "auth",
     userAgent: "vitest",
   });
 

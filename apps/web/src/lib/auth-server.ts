@@ -4,6 +4,6 @@ const convexUrl = import.meta.env.VITE_CONVEX_URL!;
 const convexSiteUrl = import.meta.env.VITE_CONVEX_SITE_URL!;
 
 export const authServer = convexBetterAuthReactStart({
-  convexUrl,
   convexSiteUrl,
+  convexUrl,
 });

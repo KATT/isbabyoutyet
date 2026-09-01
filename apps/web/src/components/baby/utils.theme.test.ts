@@ -16,7 +16,7 @@ test("getThemeCss returns null for the default theme and unknown names", () => {
 });
 
 test("default theme option has no css payload", () => {
-  expect(THEME_OPTIONS).toContainEqual(expect.objectContaining({ value: null, css: null }));
+  expect(THEME_OPTIONS).toContainEqual(expect.objectContaining({ css: null, value: null }));
 });
 
 test("named themes expose a css string for head.styles injection", () => {

@@ -16,26 +16,26 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   const milestonePolicy = getMilestonePolicy(baby);
 
   const stepMeta = {
-    labor_started: { labelKey: MILESTONE_LABEL_KEYS.labor_started, emoji: "💫" },
-    gone_to_hospital: { labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital, emoji: "🏥" },
-    born: { labelKey: MILESTONE_LABEL_KEYS.born, emoji: "🎉" },
+    born: { emoji: "🎉", labelKey: MILESTONE_LABEL_KEYS.born },
+    gone_to_hospital: { emoji: "🏥", labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital },
+    labor_started: { emoji: "💫", labelKey: MILESTONE_LABEL_KEYS.labor_started },
   } as const;
   const steps = milestonePolicy.visibleMilestones.map((milestone) => ({
     key: milestone,
     ...stepMeta[milestone],
-    date: baby[MILESTONE_FIELDS[milestone].date],
     completed: milestonePolicy.isReached(milestone),
+    date: baby[MILESTONE_FIELDS[milestone].date],
   }));
 
   const lastIndex = steps.length - 1;
 
   return (
     <div
+      aria-valuemax={100}
+      aria-valuemin={0}
+      aria-valuenow={Math.round(milestonePolicy.progressPercent)}
       className="w-full overflow-x-clip"
       role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(milestonePolicy.progressPercent)}
     >
       {/*
         Each column owns a left half-line + badge + right half-line. Adjacent
@@ -54,7 +54,7 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
           const rightFilled = index < lastIndex && steps[index + 1]?.completed === true;
 
           return (
-            <li key={step.key} className="flex min-w-0 flex-col items-center text-center">
+            <li className="flex min-w-0 flex-col items-center text-center" key={step.key}>
               <div className="mb-1.5 flex w-full items-center">
                 <div
                   aria-hidden="true"

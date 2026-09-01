@@ -23,8 +23,8 @@ type AddBabyOptionalSettingsProps<
   TBirthJourneyName extends FieldPath<TFieldValues>,
   TThemeName extends FieldPath<TFieldValues>,
 > = {
-  control: Control<TFieldValues, unknown, unknown>;
   birthJourneyFieldName: TBirthJourneyName;
+  control: Control<TFieldValues, unknown, unknown>;
   themeFieldName: TThemeName;
 };
 
@@ -81,20 +81,20 @@ export function AddBabyOptionalSettings<
                     const selected = renderProps.field.value === option.value;
                     return (
                       <Button
-                        key={option.value ?? "default"}
-                        type="button"
-                        variant={selected ? "default" : "outline"}
                         aria-pressed={selected}
                         className="h-auto justify-start gap-3 rounded-xl px-3 py-2"
+                        key={option.value ?? "default"}
                         onClick={() => {
                           renderProps.field.onChange(option.value);
                         }}
+                        type="button"
+                        variant={selected ? "default" : "outline"}
                       >
                         <span className="flex gap-0.5">
                           {option.colors.map((color, index) => (
                             <span
-                              key={index}
                               className="size-4 rounded-sm border border-border/50"
+                              key={index}
                               style={{ backgroundColor: color }}
                             />
                           ))}

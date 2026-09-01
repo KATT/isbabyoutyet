@@ -26,13 +26,13 @@ import { waitForConvexAuth } from "@/lib/convexAuthHandoff";
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
-    name: z.string().min(2, t("Name must be at least 2 characters")),
     email: z.string().email(t("Invalid email address")),
+    name: z.string().min(2, t("Name must be at least 2 characters")),
     password: z.string().min(6, t("Password must be at least 6 characters")),
   });
 }
 
-type NewAccount = { name: string; email: string; password: string };
+type NewAccount = { email: string; name: string; password: string };
 
 /**
  * `signUp` reports failure as a message rather than the auth client's own
@@ -41,14 +41,14 @@ type NewAccount = { name: string; email: string; password: string };
  * @internal Exported for tests.
  */
 export type SignUpHandoff = {
+  failedMessage: string;
+  headers: () => Record<string, string>;
+  navigate: () => Promise<void>;
   signUp: (
     body: NewAccount,
     fetchOptions: { headers: Record<string, string> },
   ) => Promise<{ errorMessage: string | null }>;
-  headers: () => Record<string, string>;
   waitForAuth: () => Promise<void>;
-  navigate: () => Promise<void>;
-  failedMessage: string;
 };
 
 /**
@@ -60,7 +60,7 @@ export type SignUpHandoff = {
  */
 export async function signUpAndHandoff(values: NewAccount, deps: SignUpHandoff) {
   const result = await deps.signUp(
-    { email: values.email, password: values.password, name: values.name },
+    { email: values.email, name: values.name, password: values.password },
     { headers: deps.headers() },
   );
 
@@ -74,7 +74,6 @@ export async function signUpAndHandoff(values: NewAccount, deps: SignUpHandoff) 
 
 export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
-  headers: authPageCacheHeaders,
   head: (opts) => ({
     meta: [
       {
@@ -83,6 +82,7 @@ export const Route = createFileRoute("/auth/signup")({
       ...robotsNoIndexMeta(),
     ],
   }),
+  headers: authPageCacheHeaders,
 });
 
 /**
@@ -92,9 +92,9 @@ export const Route = createFileRoute("/auth/signup")({
  * @internal
  */
 export const signupAuthAdapter = {
+  headers: () => getBrowserAuthHeaders(),
   signUpEmail: (body: NewAccount, fetchOptions: { headers: Record<string, string> }) =>
     authClient.signUp.email(body, fetchOptions),
-  headers: () => getBrowserAuthHeaders(),
   waitForAuth: () => waitForConvexAuth(),
 };
 
@@ -109,14 +109,14 @@ export function SignupPage() {
     <SignupCard
       onSignUp={(values) =>
         signUpAndHandoff(values, {
+          failedMessage: t("Failed to sign up"),
+          headers: () => signupAuthAdapter.headers(),
+          navigate: () => router.navigate({ to: "/dashboard" }),
           signUp: async (body, fetchOptions) => {
             const result = await signupAuthAdapter.signUpEmail(body, fetchOptions);
             return { errorMessage: result.error ? (result.error.message ?? "") : null };
           },
-          headers: () => signupAuthAdapter.headers(),
           waitForAuth: () => signupAuthAdapter.waitForAuth(),
-          navigate: () => router.navigate({ to: "/dashboard" }),
-          failedMessage: t("Failed to sign up"),
         })
       }
     />
@@ -133,20 +133,20 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
   const { t } = useI18n();
 
   const form = useZodForm({
-    schema: signupSchema(t),
     defaultValues: {
-      name: "",
       email: "",
+      name: "",
       password: "",
     },
+    schema: signupSchema(t),
   });
 
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <Link
-          to="/"
           className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm transition-transform hover:-rotate-2"
+          to="/"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
             <Baby className="h-4 w-4 text-primary" />
@@ -155,7 +155,7 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
         </Link>
         <Card className="rounded-[2rem] border-2 pop-shadow-strong">
           <CardHeader className="text-center">
-            <p className="text-4xl" aria-hidden="true">
+            <p aria-hidden="true" className="text-4xl">
               🎈
             </p>
             <CardTitle className="text-2xl font-black">{t("Join the fun!")}</CardTitle>
@@ -187,7 +187,7 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
                     <FormItem>
                       <FormLabel>{t("Email")}</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="you@example.com" {...field} />
+                        <Input placeholder="you@example.com" type="email" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -209,10 +209,10 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
                 />
 
                 <SubmitButton
+                  className="w-full rounded-full font-extrabold pop-shadow"
                   form="context"
                   IconComponent={UserPlus}
                   iconPosition="start"
-                  className="w-full rounded-full font-extrabold pop-shadow"
                   size="lg"
                 >
                   {t("Sign Up")}
@@ -223,8 +223,8 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
             <div className="mt-6 text-center text-sm text-muted-foreground">
               {t("Already have an account?")}{" "}
               <Link
-                to="/auth/login"
                 className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
+                to="/auth/login"
               >
                 {t("Sign in")}
               </Link>

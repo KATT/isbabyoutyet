@@ -1,17 +1,16 @@
-import { fileURLToPath } from "node:url";
 import { defineConfig, defineProject } from "vitest/config";
 import viteReact from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import type { BrowserCommand } from "vitest/node";
 
-const VIEWPORT = { width: 393, height: 924 };
+const VIEWPORT = { height: 924, width: 393 };
 const APP_BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
-const WEB_ROOT = fileURLToPath(new URL(".", import.meta.url));
+const WEB_ROOT = import.meta.dirname;
 
 type PageCheckOptions = {
-  path: string;
-  heading: string;
   expectedText: string | null;
+  heading: string;
+  path: string;
 };
 
 type OverflowResult = {
@@ -49,9 +48,9 @@ const measureMobileOverflow: BrowserCommand<[PageCheckOptions], OverflowResult> 
           // className is string | SVGAnimatedString; coerce without typeof (browser bundle).
           const className = element.className;
           return {
-            tagName: element.tagName,
             className: `${className}` === className ? className : "",
             right: rect.right,
+            tagName: element.tagName,
           };
         })
         .toSorted((left, right) => right.right - left.right)[0] ?? null;
@@ -67,16 +66,16 @@ const measureMobileOverflow: BrowserCommand<[PageCheckOptions], OverflowResult> 
 };
 
 export const webUnitProject = defineProject({
-  root: WEB_ROOT,
+  plugins: [viteReact()],
   resolve: {
     tsconfigPaths: true,
   },
-  plugins: [viteReact()],
+  root: WEB_ROOT,
   test: {
-    name: "web",
     environment: "jsdom",
-    include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["src/**/*.browser.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}"],
+    name: "web",
     // Loads better-auth host stubs (broadcast, focus, online) before that
     // package is imported. Window API stubs are opt-in via `stubJsdomWindow()`.
     setupFiles: ["./src/test/stubJsdomWindow.ts"],
@@ -84,15 +83,15 @@ export const webUnitProject = defineProject({
     // developer's running `pnpm dev` / Convex backend (ports 3000 / 3210) or
     // a publicly resolvable Convex host (example.convex.cloud resolves in DNS).
     env: {
-      VITE_SITE_URL: "https://example.test",
-      VITE_CONVEX_URL: "https://example.invalid",
       VITE_CONVEX_SITE_URL: "https://example.invalid",
+      VITE_CONVEX_URL: "https://example.invalid",
+      VITE_SITE_URL: "https://example.test",
       // convex-test runs real Convex functions (including scheduled cache purge).
-      SITE_URL: "http://localhost:3000",
       BETTER_AUTH_SECRET: "test-secret-for-vitest-at-least-32-chars",
       CONVEX_SITE_URL: "https://convex.test",
-      VAPID_PUBLIC_KEY: "test-vapid-public-key",
+      SITE_URL: "http://localhost:3000",
       VAPID_PRIVATE_KEY: "test-vapid-private-key",
+      VAPID_PUBLIC_KEY: "test-vapid-public-key",
     },
     server: {
       deps: {
@@ -106,17 +105,17 @@ export const webUnitProject = defineProject({
 export const webBrowserProject = defineProject({
   root: WEB_ROOT,
   test: {
-    name: "web-browser",
-    include: ["src/**/*.browser.test.ts"],
     browser: {
-      enabled: true,
-      headless: true,
-      provider: playwright(),
-      instances: [{ browser: "chromium" }],
       commands: {
         measureMobileOverflow,
       },
+      enabled: true,
+      headless: true,
+      instances: [{ browser: "chromium" }],
+      provider: playwright(),
     },
+    include: ["src/**/*.browser.test.ts"],
+    name: "web-browser",
   },
 });
 

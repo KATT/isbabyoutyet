@@ -26,12 +26,12 @@ const fingerprint = "abc123";
 
 test("fingerprint changes when schema contents change", () => {
   const before = computeSchemaFingerprint([
-    { path: "convex/schema.ts", contents: "defineSchema({ babies: defineTable({}) })" },
+    { contents: "defineSchema({ babies: defineTable({}) })", path: "convex/schema.ts" },
   ]);
   const after = computeSchemaFingerprint([
     {
-      path: "convex/schema.ts",
       contents: "defineSchema({ babies: defineTable({ name: v.string() }) })",
+      path: "convex/schema.ts",
     },
   ]);
   expect(before).not.toBe(after);
@@ -39,8 +39,8 @@ test("fingerprint changes when schema contents change", () => {
 
 test("fingerprint is stable for the same files", () => {
   const files = [
-    { path: "convex/schema.ts", contents: "a" },
-    { path: "convex/convex.config.ts", contents: "b" },
+    { contents: "a", path: "convex/schema.ts" },
+    { contents: "b", path: "convex/convex.config.ts" },
   ];
   expect(computeSchemaFingerprint(files)).toBe(computeSchemaFingerprint(files));
 });
@@ -48,18 +48,18 @@ test("fingerprint is stable for the same files", () => {
 test("plans merge-queue as web-only", () => {
   expect(
     planConvexDeploy({
-      vercelEnv: "preview",
-      gitRef: mergeQueueRef,
       currentFingerprint: fingerprint,
-      stored: { previewExists: false, fingerprint: null },
+      gitRef: mergeQueueRef,
+      stored: { fingerprint: null, previewExists: false },
+      vercelEnv: "preview",
     }),
   ).toEqual({ kind: "merge-queue-web-only" });
   expect(
     planConvexDeploy({
-      vercelEnv: "preview",
-      gitRef: mergeQueueRef,
       currentFingerprint: fingerprint,
-      stored: { previewExists: true, fingerprint },
+      gitRef: mergeQueueRef,
+      stored: { fingerprint, previewExists: true },
+      vercelEnv: "preview",
     }),
   ).toEqual({ kind: "merge-queue-web-only" });
 });
@@ -67,76 +67,76 @@ test("plans merge-queue as web-only", () => {
 test("plans production with homepage seed", () => {
   expect(
     planConvexDeploy({
-      vercelEnv: "production",
-      gitRef: "main",
       currentFingerprint: fingerprint,
-      stored: { previewExists: false, fingerprint: null },
+      gitRef: "main",
+      stored: { fingerprint: null, previewExists: false },
+      vercelEnv: "production",
     }),
   ).toEqual({
     kind: "production",
-    writeEnv: true,
     seed: "seed:homepage",
+    writeEnv: true,
   });
 });
 
 test("creates a missing preview without a wipe", () => {
   expect(
     planConvexDeploy({
-      vercelEnv: "preview",
-      gitRef: previewName,
       currentFingerprint: fingerprint,
-      stored: { previewExists: false, fingerprint: null },
+      gitRef: previewName,
+      stored: { fingerprint: null, previewExists: false },
+      vercelEnv: "preview",
     }),
   ).toEqual({
     kind: "preview-create",
     previewName,
-    writeEnv: true,
     seed: "seed:homepage:content",
+    writeEnv: true,
   });
 });
 
 test("recreates only when the schema fingerprint changed", () => {
   expect(
     planConvexDeploy({
-      vercelEnv: "preview",
-      gitRef: previewName,
       currentFingerprint: "new",
-      stored: { previewExists: true, fingerprint: "old" },
+      gitRef: previewName,
+      stored: { fingerprint: "old", previewExists: true },
+      vercelEnv: "preview",
     }),
   ).toEqual({
     kind: "preview-recreate",
     previewName,
-    writeEnv: true,
     seed: "seed:homepage:content",
+    writeEnv: true,
   });
 });
 
 test("reuses an existing preview when the fingerprint is missing or matches", () => {
   expect(
     planConvexDeploy({
-      vercelEnv: "preview",
-      gitRef: previewName,
       currentFingerprint: fingerprint,
-      stored: { previewExists: true, fingerprint: null },
+      gitRef: previewName,
+      stored: { fingerprint: null, previewExists: true },
+      vercelEnv: "preview",
     }),
   ).toEqual({
     kind: "preview-reuse",
     previewName,
-    writeEnv: true,
     seed: null,
+    writeEnv: true,
   });
   expect(
     planConvexDeploy({
-      vercelEnv: "preview",
-      gitRef: previewName,
       currentFingerprint: fingerprint,
-      stored: { previewExists: true, fingerprint },
+      gitRef: previewName,
+      stored: { fingerprint, previewExists: true },
+      vercelEnv: "preview",
     }),
   ).toEqual({
     kind: "preview-reuse",
     previewName,
-    writeEnv: false,
     seed: null,
+    writeEnv: false,
   });
 });
 
@@ -147,32 +147,32 @@ test("describes reuse as a function push without a wipe", () => {
   expect(
     describeConvexDeployPlan({
       kind: "production",
-      writeEnv: true,
       seed: "seed:homepage",
+      writeEnv: true,
     }),
   ).toBe("Production — deploying Convex and building the web app");
   expect(
     describeConvexDeployPlan({
       kind: "preview-create",
       previewName,
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toBe(`Preview is new — creating Convex preview "${previewName}" (no wipe)`);
   expect(
     describeConvexDeployPlan({
       kind: "preview-recreate",
       previewName,
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toBe(`Schema changed — recreating Convex preview "${previewName}"`);
   expect(
     describeConvexDeployPlan({
       kind: "preview-reuse",
       previewName,
-      writeEnv: true,
       seed: null,
+      writeEnv: true,
     }),
   ).toBe(
     `Preview exists without a schema fingerprint — pushing functions to existing preview "${previewName}" (no wipe)`,
@@ -181,8 +181,8 @@ test("describes reuse as a function push without a wipe", () => {
     describeConvexDeployPlan({
       kind: "preview-reuse",
       previewName,
-      writeEnv: false,
       seed: null,
+      writeEnv: false,
     }),
   ).toBe(`Schema unchanged — pushing functions to existing preview "${previewName}" (no wipe)`);
 });
@@ -192,32 +192,32 @@ test("deploy flags wipe only when recreating an existing preview", () => {
   expect(
     convexDeployCliArgs({
       kind: "production",
-      writeEnv: true,
       seed: "seed:homepage",
+      writeEnv: true,
     }),
   ).toEqual([]);
   expect(
     convexDeployCliArgs({
       kind: "preview-create",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["--preview-name", "feat/demo", "--preview-run", "seed:seedDemoData"]);
   expect(
     convexDeployCliArgs({
       kind: "preview-recreate",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["--preview-create", "feat/demo", "--preview-run", "seed:seedDemoData"]);
   expect(
     convexDeployCliArgs({
       kind: "preview-reuse",
       previewName: "feat/demo",
-      writeEnv: false,
       seed: null,
+      writeEnv: false,
     }),
   ).toEqual(["--preview-name", "feat/demo"]);
 });
@@ -227,32 +227,32 @@ test("start_push 408 retries claim the preview without a wipe", () => {
   expect(
     convexDeployRetryCliArgs({
       kind: "production",
-      writeEnv: true,
       seed: "seed:homepage",
+      writeEnv: true,
     }),
   ).toEqual([]);
   expect(
     convexDeployRetryCliArgs({
       kind: "preview-create",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["--preview-name", "feat/demo"]);
   expect(
     convexDeployRetryCliArgs({
       kind: "preview-recreate",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["--preview-name", "feat/demo"]);
   expect(
     convexDeployRetryCliArgs({
       kind: "preview-reuse",
       previewName: "feat/demo",
-      writeEnv: false,
       seed: null,
+      writeEnv: false,
     }),
   ).toEqual(["--preview-name", "feat/demo"]);
 });
@@ -262,32 +262,32 @@ test("follow-up Convex CLI commands get --preview-name on preview plans", () => 
   expect(
     previewNameCliArgs({
       kind: "production",
-      writeEnv: true,
       seed: "seed:homepage",
+      writeEnv: true,
     }),
   ).toEqual([]);
   expect(
     previewNameCliArgs({
       kind: "preview-create",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["--preview-name", "feat/demo"]);
   expect(
     previewNameCliArgs({
       kind: "preview-recreate",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["--preview-name", "feat/demo"]);
   expect(
     previewNameCliArgs({
       kind: "preview-reuse",
       previewName: "feat/demo",
-      writeEnv: false,
       seed: null,
+      writeEnv: false,
     }),
   ).toEqual(["--preview-name", "feat/demo"]);
 });
@@ -296,25 +296,25 @@ test("env get treats a missing variable as an existing preview", () => {
   expect(
     interpretEnvGetResult({
       ok: false,
-      stdout: "",
       stderr:
         '✖ Environment variable "PREVIEW_SCHEMA_FINGERPRINT" not found (on preview deployment keen-herring-537)',
+      stdout: "",
     }),
-  ).toEqual({ previewExists: true, fingerprint: null });
+  ).toEqual({ fingerprint: null, previewExists: true });
   expect(
     interpretEnvGetResult({
       ok: false,
-      stdout: "",
       stderr: "✖ Error: Preview deployment not found",
+      stdout: "",
     }),
-  ).toEqual({ previewExists: false, fingerprint: null });
+  ).toEqual({ fingerprint: null, previewExists: false });
   expect(
     interpretEnvGetResult({
       ok: true,
-      stdout: "deadbeef\n",
       stderr: "",
+      stdout: "deadbeef\n",
     }),
-  ).toEqual({ previewExists: true, fingerprint: "deadbeef" });
+  ).toEqual({ fingerprint: "deadbeef", previewExists: true });
 });
 
 test("preview name comes from a branch ref, not a commit SHA", () => {
@@ -338,16 +338,16 @@ test("merge queue refs skip the Convex push", () => {
 test("feature-branch previews create without a wipe then reuse", () => {
   const branch = "cursor/skip-mq-seed-preview-7188";
   const firstDeploy = planConvexDeploy({
-    vercelEnv: "preview",
-    gitRef: branch,
     currentFingerprint: fingerprint,
-    stored: { previewExists: false, fingerprint: null },
+    gitRef: branch,
+    stored: { fingerprint: null, previewExists: false },
+    vercelEnv: "preview",
   });
   expect(firstDeploy).toEqual({
     kind: "preview-create",
     previewName: branch,
-    writeEnv: true,
     seed: "seed:homepage:content",
+    writeEnv: true,
   });
   expect(convexDeployCliArgs(firstDeploy)).toEqual([
     "--preview-name",
@@ -357,16 +357,16 @@ test("feature-branch previews create without a wipe then reuse", () => {
   ]);
 
   const laterDeploy = planConvexDeploy({
-    vercelEnv: "preview",
-    gitRef: branch,
     currentFingerprint: fingerprint,
-    stored: { previewExists: true, fingerprint },
+    gitRef: branch,
+    stored: { fingerprint, previewExists: true },
+    vercelEnv: "preview",
   });
   expect(laterDeploy).toEqual({
     kind: "preview-reuse",
     previewName: branch,
-    writeEnv: false,
     seed: null,
+    writeEnv: false,
   });
   expect(convexDeployCliArgs(laterDeploy)).toEqual(["--preview-name", branch]);
   expect(previewNameCliArgs(laterDeploy)).toEqual(["--preview-name", branch]);
@@ -377,25 +377,25 @@ test("photo seed skips merge-queue github.ref even when deployment.ref is a SHA"
   const deploymentSha = "20e0607956751eeb3467f750ed8367eaa6a6338c";
   expect(
     shouldSkipPreviewPhotoSeed({
-      githubRef: mergeQueueGithubRef,
-      deploymentRef: deploymentSha,
       deploymentEnvironment: "Preview",
+      deploymentRef: deploymentSha,
+      githubRef: mergeQueueGithubRef,
       resolvedBranch: "cursor/react-compiler-lint-6a73",
     }),
   ).toBe(true);
   expect(
     shouldSkipPreviewPhotoSeed({
-      githubRef: mergeQueueGithubRef,
-      deploymentRef: deploymentSha,
       deploymentEnvironment: "Preview",
+      deploymentRef: deploymentSha,
+      githubRef: mergeQueueGithubRef,
       resolvedBranch: null,
     }),
   ).toBe(true);
   expect(
     shouldSkipPreviewPhotoSeed({
-      githubRef: "refs/heads/cursor/skip-mq-seed-preview-7188",
-      deploymentRef: deploymentSha,
       deploymentEnvironment: "Preview",
+      deploymentRef: deploymentSha,
+      githubRef: "refs/heads/cursor/skip-mq-seed-preview-7188",
       resolvedBranch: "cursor/skip-mq-seed-preview-7188",
     }),
   ).toBe(false);
@@ -440,8 +440,8 @@ test("deploy argv uses a tiny --cmd so start_push is not blocked by the web buil
       convexDeployRetryCliArgs({
         kind: "preview-create",
         previewName: "feat/demo",
-        writeEnv: true,
         seed: "seed:homepage:content",
+        writeEnv: true,
       }),
     ),
   ).toEqual([
@@ -460,47 +460,47 @@ test("create and recreate run seedDemoData via convex run after push because ret
   expect(
     convexPostPushRunFunctions({
       kind: "production",
-      writeEnv: true,
       seed: "seed:homepage",
+      writeEnv: true,
     }),
   ).toEqual([]);
   expect(
     convexPostPushRunFunctions({
       kind: "preview-create",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["seed:seedDemoData"]);
   expect(
     convexPostPushRunFunctions({
       kind: "preview-recreate",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["seed:seedDemoData"]);
   expect(
     convexPostPushRunFunctions({
       kind: "preview-reuse",
       previewName: "feat/demo",
-      writeEnv: false,
       seed: null,
+      writeEnv: false,
     }),
   ).toEqual([]);
   expect(
     convexSeedNpmScripts({
       kind: "preview-create",
       previewName: "feat/demo",
-      writeEnv: true,
       seed: "seed:homepage:content",
+      writeEnv: true,
     }),
   ).toEqual(["seed:homepage:content"]);
   expect(
     convexSeedNpmScripts({
       kind: "production",
-      writeEnv: true,
       seed: "seed:homepage",
+      writeEnv: true,
     }),
   ).toEqual(["seed:homepage"]);
   expect(convexSeedNpmScripts({ kind: "merge-queue-web-only" })).toEqual([]);

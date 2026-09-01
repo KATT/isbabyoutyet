@@ -6,12 +6,12 @@ type LiveInsertItem = {
 };
 
 type LiveInsertSnapshot = {
-  seenIds: ReadonlySet<string>;
   liveInsertIds: ReadonlySet<string>;
   maxSortKey: number | null;
+  seenIds: ReadonlySet<string>;
 };
 
-function maxSortKeyOf(items: readonly LiveInsertItem[], fallback: number | null) {
+function maxSortKeyOf(items: ReadonlyArray<LiveInsertItem>, fallback: number | null) {
   let maxSortKey = fallback;
   for (const item of items) {
     if (maxSortKey === null || item.sortKey > maxSortKey) {
@@ -21,25 +21,32 @@ function maxSortKeyOf(items: readonly LiveInsertItem[], fallback: number | null)
   return maxSortKey;
 }
 
-function seedLiveInsertSnapshot(items: readonly LiveInsertItem[]): LiveInsertSnapshot {
+function seedLiveInsertSnapshot(items: ReadonlyArray<LiveInsertItem>): LiveInsertSnapshot {
   const seenIds = new Set<string>();
   for (const item of items) {
     seenIds.add(item.id);
   }
   return {
-    seenIds,
     liveInsertIds: new Set(),
     maxSortKey: maxSortKeyOf(items, null),
+    seenIds,
   };
 }
 
-function advanceLiveInsertSnapshot(snapshot: LiveInsertSnapshot, items: readonly LiveInsertItem[]) {
+function advanceLiveInsertSnapshot(
+  snapshot: LiveInsertSnapshot,
+  items: ReadonlyArray<LiveInsertItem>,
+) {
   let seenIds: Set<string> | null = null;
   let liveInsertIds: Set<string> | null = null;
 
   for (const item of items) {
-    if (snapshot.seenIds.has(item.id)) continue;
-    if (seenIds !== null && seenIds.has(item.id)) continue;
+    if (snapshot.seenIds.has(item.id)) {
+      continue;
+    }
+    if (seenIds !== null && seenIds.has(item.id)) {
+      continue;
+    }
     if (seenIds === null) {
       seenIds = new Set(snapshot.seenIds);
     }
@@ -57,9 +64,9 @@ function advanceLiveInsertSnapshot(snapshot: LiveInsertSnapshot, items: readonly
     return snapshot;
   }
   return {
-    seenIds: seenIds ?? snapshot.seenIds,
     liveInsertIds: liveInsertIds ?? snapshot.liveInsertIds,
     maxSortKey,
+    seenIds: seenIds ?? snapshot.seenIds,
   };
 }
 
@@ -72,7 +79,7 @@ function advanceLiveInsertSnapshot(snapshot: LiveInsertSnapshot, items: readonly
  * Snapshot state is adjusted during render (React’s “adjusting state when
  * props change” pattern) so the hook never reads refs in render.
  */
-export function useLiveInsertIds(items: readonly LiveInsertItem[]) {
+export function useLiveInsertIds(items: ReadonlyArray<LiveInsertItem>) {
   const [snapshot, setSnapshot] = useState(() => seedLiveInsertSnapshot(items));
   const nextSnapshot = advanceLiveInsertSnapshot(snapshot, items);
   if (nextSnapshot !== snapshot) {

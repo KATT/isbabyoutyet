@@ -8,12 +8,12 @@ const app = defineApp({
   env: {
     BETTER_AUTH_SECRET: v.optional(v.string()),
     NODE_ENV: v.optional(v.string()),
+    PREVIEW_SCHEMA_FINGERPRINT: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),
     VAPID_PRIVATE_KEY: v.optional(v.string()),
     VAPID_PUBLIC_KEY: v.optional(v.string()),
     VAPID_SUBJECT: v.optional(v.string()),
     VERCEL_ENV: v.optional(v.union(v.literal("production"), v.literal("preview"))),
-    PREVIEW_SCHEMA_FINGERPRINT: v.optional(v.string()),
   },
 });
 app.use(betterAuth);

@@ -17,17 +17,17 @@ async function setup() {
 test("getMine returns empty defaults for anonymous callers", async () => {
   const t = await setup();
   expect(await t.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: false,
+    activeCoachmarkStepId: null,
+    allDone: false,
     checklistDismissed: false,
-    minimized: false,
     completedSteps: [],
+    effectiveSteps: [],
     hasBaby: false,
     hasUpdate: false,
-    effectiveSteps: [],
-    allDone: false,
-    tourBaby: null,
-    activeCoachmarkStepId: null,
+    minimized: false,
     restartHintVisible: false,
+    tourBaby: null,
+    welcomeDismissed: false,
   });
 });
 
@@ -37,8 +37,8 @@ test("dismissWelcome and completeStep persist for the owner", async () => {
 
   await asAlice.mutation(api.onboarding.dismissWelcome, {});
   expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: true,
     completedSteps: [],
+    welcomeDismissed: true,
   });
 
   await asAlice.mutation(api.onboarding.completeStep, { stepId: "share_link" });
@@ -59,8 +59,8 @@ test("creating a baby auto-completes add_baby; posting auto-completes post_updat
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Tour Baby",
       dueDate: "2026-09-01",
+      name: "Tour Baby",
     }),
   );
 
@@ -91,18 +91,18 @@ test("dismissChecklist hides the tour; restart brings it back without wiping ste
 
   expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
     checklistDismissed: true,
-    welcomeDismissed: true,
     completedSteps: ["share_link"],
+    welcomeDismissed: true,
   });
 
   await asAlice.mutation(api.onboarding.restart, {});
   expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
-    checklistDismissed: false,
-    welcomeDismissed: false,
-    minimized: false,
-    completedSteps: ["share_link"],
     activeCoachmarkStepId: null,
+    checklistDismissed: false,
+    completedSteps: ["share_link"],
+    minimized: false,
     restartHintVisible: false,
+    welcomeDismissed: false,
   });
 });
 
@@ -142,15 +142,15 @@ test("getMine points the tour at the first created baby", async () => {
   await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "First",
       dueDate: "2026-09-01",
+      name: "First",
     }),
   );
   await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Second",
       dueDate: "2026-10-01",
+      name: "Second",
     }),
   );
 
@@ -166,8 +166,8 @@ test("restart with a baby skips the welcome carousel", async () => {
   await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Ada",
       dueDate: "2026-09-01",
+      name: "Ada",
     }),
   );
   await asAlice.mutation(api.onboarding.dismissChecklist, {});
@@ -175,9 +175,9 @@ test("restart with a baby skips the welcome carousel", async () => {
 
   expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
     checklistDismissed: false,
-    welcomeDismissed: true,
-    minimized: false,
     hasBaby: true,
+    minimized: false,
+    welcomeDismissed: true,
   });
 });
 
@@ -240,8 +240,8 @@ async function signUpUser(
     const result = await auth.api.signUpEmail({
       body: {
         email: opts.email,
-        password: "password123",
         name: opts.name,
+        password: "password123",
       },
     });
     return result.user.id;
@@ -255,16 +255,16 @@ test("skipTourForExistingUsers grandfathers registered users and leaves later si
   const bobId = await signUpUser(t, { email: "bob@example.com", name: "Bob" });
 
   const first = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
-  expect(first).toMatchObject({ isDone: true, alreadyRan: false });
+  expect(first).toMatchObject({ alreadyRan: false, isDone: true });
   expect(first.processed).toBeGreaterThanOrEqual(2);
 
   const asAlice = t.withIdentity({ subject: aliceId });
   const asBob = t.withIdentity({ subject: bobId });
   expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: true,
-    checklistDismissed: true,
     allDone: true,
+    checklistDismissed: true,
     effectiveSteps: [...ONBOARDING_STEP_IDS],
+    welcomeDismissed: true,
   });
   expect(await asBob.query(api.onboarding.getMine, {})).toMatchObject({
     checklistDismissed: true,
@@ -280,14 +280,14 @@ test("skipTourForExistingUsers grandfathers registered users and leaves later si
 
   const carolId = await signUpUser(t, { email: "carol@example.com", name: "Carol" });
   const second = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
-  expect(second).toMatchObject({ isDone: true, alreadyRan: true, processed: 0 });
+  expect(second).toMatchObject({ alreadyRan: true, isDone: true, processed: 0 });
 
   const asCarol = t.withIdentity({ subject: carolId });
   expect(await asCarol.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: false,
-    checklistDismissed: false,
     allDone: false,
+    checklistDismissed: false,
     completedSteps: [],
+    welcomeDismissed: false,
   });
 });
 
@@ -303,15 +303,15 @@ test("skipTourForExistingUsers leaves the empty demo login on the first-run tour
 
   const asEmpty = t.withIdentity({ subject: emptyId });
   expect(await asEmpty.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: false,
-    checklistDismissed: false,
     allDone: false,
+    checklistDismissed: false,
     completedSteps: [],
+    welcomeDismissed: false,
   });
 
   const asAlice = t.withIdentity({ subject: aliceId });
   expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: true,
     checklistDismissed: true,
+    welcomeDismissed: true,
   });
 });

@@ -8,13 +8,13 @@ import { htmlElement } from "@/test/htmlElement";
 test("shows the next incomplete step and an add-baby CTA on the dashboard", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={[]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
       tourBaby={null}
     />,
   );
@@ -28,13 +28,13 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
   const onDismiss = vi.fn<() => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={[]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={onDismiss}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
       tourBaby={null}
     />,
   );
@@ -73,13 +73,13 @@ test("dismisses the guide from the explicit labeled action", async () => {
   const onDismiss = vi.fn<() => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={[]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={onDismiss}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
       tourBaby={null}
     />,
   );
@@ -108,9 +108,9 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
   // SAFETY: Test fixture is a subset of the production type.
   const visualViewport = Object.assign(new EventTarget(), {
     height: 844,
-    width: 390,
     offsetLeft: 0,
     offsetTop: 0,
+    width: 390,
   }) as VisualViewport;
   Object.defineProperty(window, "innerHeight", { configurable: true, value: 959 });
   Object.defineProperty(window, "visualViewport", {
@@ -120,13 +120,13 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
 
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={[]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
       tourBaby={null}
     />,
   );
@@ -157,14 +157,14 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
 test("dashboard baby-page steps link to the preferred baby's page (not overlays)", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -176,14 +176,14 @@ test("dashboard baby-page steps link to the preferred baby's page (not overlays)
 test("dashboard post-update step links to the preferred baby's page", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -195,13 +195,13 @@ test("dashboard post-update step links to the preferred baby's page", async () =
 test("baby-page Show me is a no-op when onGoToStep is missing", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="baby"
       onGoToStep={undefined}
-      className={undefined}
+      onMinimize={vi.fn<() => void>()}
+      surface="baby"
       tourBaby={null}
     />,
   );
@@ -214,14 +214,14 @@ test("baby-page share step highlights via Show me", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="baby"
       onGoToStep={onGoToStep}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="baby"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -233,14 +233,14 @@ test("minimized chip shows progress count", async () => {
   const onMinimize = vi.fn<(minimized: boolean) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link"]}
       minimized
-      onMinimize={onMinimize}
       onDismiss={vi.fn<() => void>()}
-      surface="baby"
       onGoToStep={undefined}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={onMinimize}
+      surface="baby"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -252,13 +252,13 @@ test("desktop Minimize collapses the checklist panel", async () => {
   const onMinimize = vi.fn<(minimized: boolean) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby"]}
       minimized={false}
-      onMinimize={onMinimize}
       onDismiss={vi.fn<() => void>()}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
+      onMinimize={onMinimize}
+      surface="dashboard"
       tourBaby={null}
     />,
   );
@@ -270,14 +270,14 @@ test("desktop Minimize collapses the checklist panel", async () => {
 test("dashboard settings CTA opens the preferred baby's page without completing", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link", "post_update"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -290,14 +290,14 @@ test("baby-page checklist uses Show me for post and settings tips", async () => 
   const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      className={undefined}
       onGoToStep={onGoToStep}
+      onMinimize={vi.fn<() => void>()}
       surface="baby"
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -309,12 +309,12 @@ test("baby-page Show me works without a preferred tour baby", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      className={undefined}
       onGoToStep={onGoToStep}
+      onMinimize={vi.fn<() => void>()}
       surface="baby"
       tourBaby={null}
     />,
@@ -328,6 +328,7 @@ test("all-done state offers close checklist", async () => {
   const onDismiss = vi.fn<() => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={[
         "add_baby",
         "share_link",
@@ -336,12 +337,11 @@ test("all-done state offers close checklist", async () => {
         "learn_encouragements",
       ]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={onDismiss}
-      surface="baby"
       onGoToStep={undefined}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="baby"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -357,14 +357,14 @@ test("all-done state offers close checklist", async () => {
 test("dashboard learn encouragements step links to the first baby's page", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -377,14 +377,14 @@ test("baby-page learn encouragements opens the highlight tip via Show me", async
   const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="baby"
       onGoToStep={onGoToStep}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="baby"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -397,14 +397,14 @@ test("next-step hint Show me runs the baby-page highlight action", async () => {
 
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="baby"
       onGoToStep={onGoToStep}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="baby"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
@@ -417,20 +417,20 @@ test("next-step hint Show me runs the baby-page highlight action", async () => {
 test("next-step hint See page runs the dashboard deep link", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
+      className={undefined}
       effectiveSteps={["add_baby", "share_link", "post_update"]}
       minimized={false}
-      onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+      onMinimize={vi.fn<() => void>()}
+      surface="dashboard"
+      tourBaby={{ name: "Ada", publicId: "baby-waiting" }}
     />,
   );
 
   const hintTitles = screen.getAllByText("Peek at settings");
   expect(hintTitles.length).toBeGreaterThan(0);
-  const hintPanel = hintTitles[hintTitles.length - 1]!.closest("div.rounded-lg");
+  const hintPanel = hintTitles.at(-1)!.closest("div.rounded-lg");
   expect(hintPanel).toBeTruthy();
   const seePage =
     within(htmlElement(hintPanel)).queryByRole("link", { name: /see ada's page/i }) ||

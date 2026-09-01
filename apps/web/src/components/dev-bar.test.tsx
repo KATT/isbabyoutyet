@@ -92,9 +92,9 @@ test("marks the current homepage demo baby", async () => {
 });
 
 test.each([
-  { path: "/dashboard", name: /dashboard/i },
-  { path: "/auth/login", name: /login/i },
-  { path: "/preview", name: /preview/i },
+  { name: /dashboard/i, path: "/dashboard" },
+  { name: /login/i, path: "/auth/login" },
+  { name: /preview/i, path: "/preview" },
 ])("marks the current page shortcut on $path", async (testCase) => {
   await using _view = await renderWithTestRouter(<DevBar />, {
     path: testCase.path,
@@ -108,10 +108,10 @@ test.each([
 });
 
 test.each([
-  { pathname: "/baby/baby-waiting", expected: "baby-waiting" },
-  { pathname: "/baby/baby-waiting/settings", expected: "baby-waiting" },
-  { pathname: "/dashboard", expected: null },
-  { pathname: "/babysitter", expected: null },
+  { expected: "baby-waiting", pathname: "/baby/baby-waiting" },
+  { expected: "baby-waiting", pathname: "/baby/baby-waiting/settings" },
+  { expected: null, pathname: "/dashboard" },
+  { expected: null, pathname: "/babysitter" },
 ])("activeBabyPublicId($pathname) is $expected", (testCase) => {
   expect(activeBabyPublicId(testCase.pathname)).toBe(testCase.expected);
 });

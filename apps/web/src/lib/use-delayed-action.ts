@@ -11,7 +11,9 @@ import { isFunction } from "@workspace/runtime/guards";
 export function useDelayedAction(opts: { action: () => void; delayMs: number; enabled: boolean }) {
   const onAction = useEffectEvent(opts.action);
   useEffect(() => {
-    if (!opts.enabled) return;
+    if (!opts.enabled) {
+      return;
+    }
     const timeout = window.setTimeout(() => {
       onAction();
     }, opts.delayMs);
@@ -23,7 +25,7 @@ export function useDelayedAction(opts: { action: () => void; delayMs: number; en
  * Mirrors `value`, delaying `true` by `delayMs` and applying `false` on the
  * next timeout (0ms). Used for UI that must not flash on instantaneous pulses.
  */
-export function useDelayedBoolean(opts: { value: boolean; delayMs: number }) {
+export function useDelayedBoolean(opts: { delayMs: number; value: boolean }) {
   const [shown, setShown] = useState(false);
   useEffect(() => {
     const timeout = window.setTimeout(
@@ -82,7 +84,9 @@ export function useRotatingIndex(opts: { intervalMs: number; itemCount: number }
     const reducedMotion =
       isFunction(window.matchMedia) &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion || opts.itemCount < 2) return;
+    if (reducedMotion || opts.itemCount < 2) {
+      return;
+    }
     const interval = window.setInterval(() => {
       setIndices((previous) => ({
         current: (previous.current + 1) % opts.itemCount,

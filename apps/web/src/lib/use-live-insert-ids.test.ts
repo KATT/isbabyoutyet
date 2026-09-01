@@ -8,7 +8,7 @@ type LiveInsertItem = {
   sortKey: number;
 };
 
-const emptyItems: LiveInsertItem[] = [];
+const emptyItems: Array<LiveInsertItem> = [];
 
 test("the first snapshot is never a live insert, including an empty list", async () => {
   const empty = renderHook((props) => useLiveInsertIds(props.items), {

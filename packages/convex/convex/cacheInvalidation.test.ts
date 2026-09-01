@@ -13,8 +13,8 @@ test("baby and related writes leave a durable targeted purge job", async () => {
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Baby Smith",
       dueDate: "2026-09-01",
+      name: "Baby Smith",
     }),
   );
   await asAlice.mutation(api.baby.update, {
@@ -26,8 +26,8 @@ test("baby and related writes leave a durable targeted purge job", async () => {
   await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: created.babyId,
       authorName: "Grandma",
+      babyId: created.babyId,
       message: "We cannot wait!",
       visitorId: "visitor-1",
     }),
@@ -39,8 +39,8 @@ test("baby and related writes leave a durable targeted purge job", async () => {
 
   expect(jobs).toHaveLength(1);
   expect(jobs[0]).toMatchObject({
-    key: `baby:${created.babyId}`,
     attempts: 0,
+    key: `baby:${created.babyId}`,
   });
   expect(jobs[0]?.tags).toEqual(
     expect.arrayContaining([`baby-id:${created.babyId}`, "baby-public-id:baby-jones"]),

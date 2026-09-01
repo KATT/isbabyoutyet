@@ -17,16 +17,16 @@ import schema from "./schema";
 import { modules, registerComponents, createBabyArgs } from "./test.setup";
 
 async function jpegBytes(opts: {
-  width: number;
+  background?: { b: number; g: number; r: number };
   height: number;
-  background?: { r: number; g: number; b: number };
+  width: number;
 }) {
   return await sharp({
     create: {
-      width: opts.width,
-      height: opts.height,
+      background: opts.background ?? { b: 40, g: 80, r: 200 },
       channels: 3,
-      background: opts.background ?? { r: 200, g: 80, b: 40 },
+      height: opts.height,
+      width: opts.width,
     },
   })
     .jpeg()
@@ -34,7 +34,7 @@ async function jpegBytes(opts: {
 }
 
 test("push images are 1350×675 JPEGs under 200KB (Android big-picture at 3×)", async () => {
-  const source = await jpegBytes({ width: 2000, height: 3000 });
+  const source = await jpegBytes({ height: 3000, width: 2000 });
   const rendered = await renderPushImage(source);
   const meta = await sharp(rendered).metadata();
   expect(meta.format).toBe("jpeg");
@@ -48,10 +48,10 @@ test("push images are 1350×675 JPEGs under 200KB (Android big-picture at 3×)",
 });
 
 test("blur placeholders are tiny JPEG data URLs of the same center-cover crop", async () => {
-  const source = await jpegBytes({ width: 2000, height: 3000 });
+  const source = await jpegBytes({ height: 3000, width: 2000 });
   const blurDataUrl = await renderBlurDataUrl(source);
   expect(blurDataUrl.startsWith("data:image/jpeg;base64,")).toBe(true);
-  expect(blurDataUrl.length).toBeLessThan(1_500);
+  expect(blurDataUrl.length).toBeLessThan(1500);
 
   const jpeg = Buffer.from(blurDataUrl.slice("data:image/jpeg;base64,".length), "base64");
   const meta = await sharp(jpeg).metadata();
@@ -60,10 +60,10 @@ test("blur placeholders are tiny JPEG data URLs of the same center-cover crop", 
   expect(meta.height).toBe(BLUR_PLACEHOLDER.height);
 
   const red = await renderBlurDataUrl(
-    await jpegBytes({ width: 64, height: 64, background: { r: 220, g: 30, b: 30 } }),
+    await jpegBytes({ background: { b: 30, g: 30, r: 220 }, height: 64, width: 64 }),
   );
   const blue = await renderBlurDataUrl(
-    await jpegBytes({ width: 64, height: 64, background: { r: 30, g: 30, b: 220 } }),
+    await jpegBytes({ background: { b: 220, g: 30, r: 30 }, height: 64, width: 64 }),
   );
   expect(red).not.toBe(blue);
 });
@@ -75,12 +75,12 @@ test("generateThumbnail stores a blur data URL on the baby and update", async ()
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Blur Baby",
       dueDate: "2026-09-01",
+      name: "Blur Baby",
     }),
   );
 
-  const source = await jpegBytes({ width: 400, height: 600 });
+  const source = await jpegBytes({ height: 600, width: 400 });
   const photoId = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob([new Uint8Array(source)], { type: "image/jpeg" }));
   });
@@ -93,9 +93,9 @@ test("generateThumbnail stores a blur data URL on the baby and update", async ()
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
       photoId,
       postedByUserId: "alice",
+      timelineItemId,
     });
   });
 
@@ -110,7 +110,7 @@ test("generateThumbnail stores a blur data URL on the baby and update", async ()
 
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: created.babyId,
-    paginationOpts: { numItems: 20, cursor: null },
+    paginationOpts: { cursor: null, numItems: 20 },
     visitorId: null,
   });
   const photoItem = feed.page.find((item) => item.kind === "update");
@@ -124,12 +124,12 @@ test("generateBlurDataUrl writes the placeholder without requiring a thumbnail",
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Blur Only Baby",
       dueDate: "2026-09-01",
+      name: "Blur Only Baby",
     }),
   );
 
-  const source = await jpegBytes({ width: 200, height: 200 });
+  const source = await jpegBytes({ height: 200, width: 200 });
   const photoId = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob([new Uint8Array(source)], { type: "image/jpeg" }));
   });
@@ -155,8 +155,8 @@ test("updateBlurDataUrl ignores stale generation after the photo changes", async
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Stale Blur Baby",
       dueDate: "2026-09-01",
+      name: "Stale Blur Baby",
     }),
   );
   const photoA = await t.run(async (ctx) => {
@@ -171,8 +171,8 @@ test("updateBlurDataUrl ignores stale generation after the photo changes", async
 
   await t.mutation(internal.baby.updateBlurDataUrl, {
     babyId: created.babyId,
-    photoId: photoA,
     blurDataUrl: "data:image/jpeg;base64,stale",
+    photoId: photoA,
     updateId: null,
   });
   const ignored = await t.query(api.baby.getByPublicId, { id: created.publicId });
@@ -180,8 +180,8 @@ test("updateBlurDataUrl ignores stale generation after the photo changes", async
 
   await t.mutation(internal.baby.updateBlurDataUrl, {
     babyId: created.babyId,
-    photoId: photoB,
     blurDataUrl: "data:image/jpeg;base64,fresh",
+    photoId: photoB,
     updateId: null,
   });
   const applied = await t.query(api.baby.getByPublicId, { id: created.publicId });
@@ -195,8 +195,8 @@ test("send prefers the push image, then the page thumbnail, then the original", 
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Push Image Baby",
       dueDate: "2026-09-01",
+      name: "Push Image Baby",
     }),
   );
 
@@ -217,52 +217,52 @@ test("send prefers the push image, then the page thumbnail, then the original", 
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
       photoId: original,
       postedByUserId: "alice",
+      timelineItemId,
     });
   });
 
   expect(
     await t.query(internal.baby.resolveNotificationImage, {
-      updateId,
       photoId: original,
+      updateId,
     }),
   ).toBe(original);
 
   await t.mutation(internal.baby.updateThumbnail, {
     babyId: created.babyId,
-    thumbnailId: thumbnail,
-    pushImageId: null,
-    photoId: original,
-    updateId,
     blurDataUrl: null,
+    photoId: original,
+    pushImageId: null,
+    thumbnailId: thumbnail,
+    updateId,
   });
   expect(
     await t.query(internal.baby.resolveNotificationImage, {
-      updateId,
       photoId: original,
+      updateId,
     }),
   ).toBe(thumbnail);
 
   await t.mutation(internal.baby.updateThumbnail, {
     babyId: created.babyId,
-    thumbnailId: thumbnail,
-    pushImageId: pushImage,
-    photoId: original,
-    updateId,
     blurDataUrl: null,
+    photoId: original,
+    pushImageId: pushImage,
+    thumbnailId: thumbnail,
+    updateId,
   });
   expect(
     await t.query(internal.baby.resolveNotificationImage, {
-      updateId,
       photoId: original,
+      updateId,
     }),
   ).toBe(pushImage);
   expect(
     await t.query(internal.baby.resolveNotificationImage, {
-      updateId: null,
       photoId: original,
+      updateId: null,
     }),
   ).toBe(original);
 
@@ -271,8 +271,8 @@ test("send prefers the push image, then the page thumbnail, then the original", 
   });
   expect(
     await t.query(internal.baby.resolveNotificationImage, {
-      updateId,
       photoId: original,
+      updateId,
     }),
   ).toBe(original);
 });
@@ -284,8 +284,8 @@ test("push image backfill only schedules photo updates that still need a derivat
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Backfill Baby",
       dueDate: "2026-09-01",
+      name: "Backfill Baby",
     }),
   );
   const photo = await t.run(async (ctx) => {
@@ -303,9 +303,9 @@ test("push image backfill only schedules photo updates that still need a derivat
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
       photoId: photo,
       pushImageId: pushImage,
+      timelineItemId,
     });
   });
   const deleted = await t.run(async (ctx) => {
@@ -316,9 +316,9 @@ test("push image backfill only schedules photo updates that still need a derivat
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
-      photoId: photo,
       deletedAt: Date.now(),
+      photoId: photo,
+      timelineItemId,
     });
   });
   const messageOnly = await t.run(async (ctx) => {
@@ -329,8 +329,8 @@ test("push image backfill only schedules photo updates that still need a derivat
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
       message: "No photo",
+      timelineItemId,
     });
   });
 
@@ -338,7 +338,9 @@ test("push image backfill only schedules photo updates that still need a derivat
     const done = await ctx.db.get(alreadyDone);
     const gone = await ctx.db.get(deleted);
     const text = await ctx.db.get(messageOnly);
-    if (!done || !gone || !text) throw new Error("expected fixture updates");
+    if (!done || !gone || !text) {
+      throw new Error("expected fixture updates");
+    }
     expect(await generatePushImagesForExistingPhotosDoc(ctx, done)).toBeUndefined();
     expect(await generatePushImagesForExistingPhotosDoc(ctx, gone)).toBeUndefined();
     expect(await generatePushImagesForExistingPhotosDoc(ctx, text)).toBeUndefined();
@@ -352,8 +354,8 @@ test("blur data URL backfill only schedules photo updates that still need a plac
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Blur Backfill Baby",
       dueDate: "2026-09-01",
+      name: "Blur Backfill Baby",
     }),
   );
   const photo = await t.run(async (ctx) => {
@@ -368,9 +370,9 @@ test("blur data URL backfill only schedules photo updates that still need a plac
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
-      photoId: photo,
       blurDataUrl: "data:image/jpeg;base64,already",
+      photoId: photo,
+      timelineItemId,
     });
   });
   const deleted = await t.run(async (ctx) => {
@@ -381,9 +383,9 @@ test("blur data URL backfill only schedules photo updates that still need a plac
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
-      photoId: photo,
       deletedAt: Date.now(),
+      photoId: photo,
+      timelineItemId,
     });
   });
   const messageOnly = await t.run(async (ctx) => {
@@ -394,8 +396,8 @@ test("blur data URL backfill only schedules photo updates that still need a plac
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
       message: "No photo",
+      timelineItemId,
     });
   });
 
@@ -403,7 +405,9 @@ test("blur data URL backfill only schedules photo updates that still need a plac
     const done = await ctx.db.get(alreadyDone);
     const gone = await ctx.db.get(deleted);
     const text = await ctx.db.get(messageOnly);
-    if (!done || !gone || !text) throw new Error("expected fixture updates");
+    if (!done || !gone || !text) {
+      throw new Error("expected fixture updates");
+    }
     expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, done)).toBeUndefined();
     expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, gone)).toBeUndefined();
     expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, text)).toBeUndefined();
@@ -417,8 +421,8 @@ test("updateThumbnail ignores stale generation after the photo changes", async (
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Stale Thumb Baby",
       dueDate: "2026-09-01",
+      name: "Stale Thumb Baby",
     }),
   );
   const photoA = await t.run(async (ctx) => {
@@ -445,18 +449,18 @@ test("updateThumbnail ignores stale generation after the photo changes", async (
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
       photoId: photoB,
+      timelineItemId,
     });
   });
 
   await t.mutation(internal.baby.updateThumbnail, {
     babyId: created.babyId,
-    thumbnailId: thumbA,
-    pushImageId: null,
-    photoId: photoA,
-    updateId,
     blurDataUrl: null,
+    photoId: photoA,
+    pushImageId: null,
+    thumbnailId: thumbA,
+    updateId,
   });
   const ignored = await t.run(async (ctx) => {
     const baby = await ctx.db.get(created.babyId);
@@ -468,24 +472,24 @@ test("updateThumbnail ignores stale generation after the photo changes", async (
 
   await t.mutation(internal.baby.updateThumbnail, {
     babyId: created.babyId,
-    thumbnailId: thumbB,
-    pushImageId: pushB,
-    photoId: photoB,
-    updateId,
     blurDataUrl: null,
+    photoId: photoB,
+    pushImageId: pushB,
+    thumbnailId: thumbB,
+    updateId,
   });
   const applied = await t.run(async (ctx) => {
     const baby = await ctx.db.get(created.babyId);
     const update = await ctx.db.get(updateId);
     return {
       babyThumbnailId: baby?.thumbnailId,
-      updateThumbnailId: update?.thumbnailId,
       pushImageId: update?.pushImageId,
+      updateThumbnailId: update?.thumbnailId,
     };
   });
   expect(applied).toMatchObject({
     babyThumbnailId: thumbB,
-    updateThumbnailId: thumbB,
     pushImageId: pushB,
+    updateThumbnailId: thumbB,
   });
 });

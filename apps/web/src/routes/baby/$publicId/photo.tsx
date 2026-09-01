@@ -18,12 +18,13 @@ export const Route = createFileRoute("/baby/$publicId/photo")({
     }
     if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
-        to: "/baby/$publicId/photo",
         params: { publicId: babyDoc.publicId },
         replace: true,
+        to: "/baby/$publicId/photo",
       });
     }
   },
+  component: BabyPhotoOverlay,
   loader: async (opts) => {
     const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,
@@ -31,9 +32,9 @@ export const Route = createFileRoute("/baby/$publicId/photo")({
     const babyDoc = baby.initialData;
     if (!babyDoc?.photoUrl) {
       throw redirect({
-        to: "/baby/$publicId",
         params: { publicId: opts.params.publicId },
         resetScroll: false,
+        to: "/baby/$publicId",
       });
     }
     const imagePrefetch = prefetchBrowserImage(opts.context.queryClient, babyDoc.photoUrl);
@@ -43,7 +44,6 @@ export const Route = createFileRoute("/baby/$publicId/photo")({
       imagePrefetch,
     };
   },
-  component: BabyPhotoOverlay,
 });
 
 export function BabyPhotoOverlay() {
@@ -59,10 +59,10 @@ export function BabyPhotoOverlay() {
 
   return (
     <PhotoLightbox
-      photoUrl={babyDoc.photoUrl}
-      blurDataUrl={babyDoc.blurDataUrl ?? null}
       alt={t("Photo of {{name}}", { name: babyDoc.name })}
+      blurDataUrl={babyDoc.blurDataUrl ?? null}
       overlay={photo}
+      photoUrl={babyDoc.photoUrl}
     />
   );
 }

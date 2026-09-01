@@ -35,14 +35,14 @@ function withMatchMedia(matches: (query: string) => boolean) {
   window.matchMedia = (query: string) =>
     // SAFETY: Test fixture is a subset of the production type.
     ({
+      addEventListener: () => {},
+      addListener: () => {},
+      dispatchEvent: () => false,
       matches: matches(query),
       media: query,
       onchange: null,
-      addEventListener: () => {},
       removeEventListener: () => {},
-      addListener: () => {},
       removeListener: () => {},
-      dispatchEvent: () => false,
     }) as MediaQueryList;
   return makeResource({}, () => {
     window.matchMedia = original;
@@ -95,7 +95,7 @@ test("uses instant scroll when the user prefers reduced motion", async () => {
 test("scrolls again when the service worker posts a notification-click", async () => {
   await using _hash = withHash("#feed");
   await using scrollIntoView = withScrollSpy();
-  const listeners: EventListener[] = [];
+  const listeners: Array<EventListener> = [];
   const addEventListener = vi.fn<(type: string, listener: EventListener) => void>(
     (type, listener) => {
       if (type === "message") {
@@ -130,7 +130,7 @@ test("scrolls again when the service worker posts a notification-click", async (
 test("notification-click with a feed url sets the hash when the page has none", async () => {
   await using _hash = withHash("");
   await using scrollIntoView = withScrollSpy();
-  const listeners: EventListener[] = [];
+  const listeners: Array<EventListener> = [];
   const addEventListener = vi.fn<(type: string, listener: EventListener) => void>(
     (type, listener) => {
       if (type === "message") {
@@ -174,7 +174,7 @@ test("notification-click with a feed url sets the hash when the page has none", 
 test("ignores service-worker messages that are not notification clicks", async () => {
   await using _hash = withHash("#feed");
   await using scrollIntoView = withScrollSpy();
-  const listeners: EventListener[] = [];
+  const listeners: Array<EventListener> = [];
   const addEventListener = vi.fn<(type: string, listener: EventListener) => void>(
     (_type, listener) => {
       listeners.push(listener);

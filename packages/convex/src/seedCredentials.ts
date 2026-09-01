@@ -13,15 +13,15 @@ import { SUPPORTED_LOCALES } from "./i18n";
 
 export const DEMO_USER = {
   email: "test@example.com",
-  password: "password",
   name: "Demo Parent",
+  password: "password",
 } as const;
 
 /** Same password as DEMO_USER, but no babies — empty-dashboard / first-run flow. */
 export const DEMO_EMPTY_USER = {
   email: "test+newuser@example.com",
-  password: "password",
   name: "New Parent",
+  password: "password",
 } as const;
 
 export const DEMO_ACCOUNTS = [
@@ -37,28 +37,28 @@ export const DEMO_ACCOUNTS = [
 
 export const DEMO_BABIES = [
   {
+    label: "Not yet",
     name: "Avery",
     publicId: "baby-waiting",
     state: "not_yet",
-    label: "Not yet",
   },
   {
+    label: "Labour started",
     name: "Frankie",
     publicId: "baby-in-labor",
     state: "labor_started",
-    label: "Labour started",
   },
   {
+    label: "Gone to hospital",
     name: "Rowan",
     publicId: "baby-at-hospital",
     state: "gone_to_hospital",
-    label: "Gone to hospital",
   },
   {
+    label: "Born",
     name: "Milo",
     publicId: "baby-born",
     state: "born",
-    label: "Born",
   },
 ] as const;
 
@@ -72,9 +72,9 @@ export const HOMEPAGE_DEMO_THEME = "sunny-days";
 export const HOMEPAGE_DEMO_BABIES = {
   "en-GB": { locale: "en-GB", name: "Juniper Hale", publicId: "juniper-hale" },
   "en-US": { locale: "en-US", name: "Willow Brooks", publicId: "willow-brooks" },
-  sv: { locale: "sv", name: "Ella Holm", publicId: "ella-holm" },
   es: { locale: "es", name: "Lucía Navarro", publicId: "lucia-navarro" },
   "pt-BR": { locale: "pt-BR", name: "Helena Costa", publicId: "helena-costa" },
+  sv: { locale: "sv", name: "Ella Holm", publicId: "ella-holm" },
 } as const satisfies Record<
   SupportedLocale,
   { locale: SupportedLocale; name: string; publicId: string }

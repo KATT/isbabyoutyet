@@ -9,20 +9,20 @@ type BabyNavProps = ComponentProps<typeof BabyNav>;
 
 function navProps(overrides: Partial<BabyNavProps>): BabyNavProps {
   return {
-    shareButton: { to: "/baby/$publicId/share" },
-    shareOpen: false,
+    dashboardButton: null,
+    onDismissPostUpdate: null,
+    onDismissSettings: null,
     onDismissShare: null,
+    onDismissSignIn: null,
+    onSettingsOpened: null,
     postUpdateButton: { to: "/baby/$publicId/post" },
     postUpdateOpen: false,
-    onDismissPostUpdate: null,
-    onSettingsOpened: null,
     settingsButton: { to: "/" },
     settingsOpen: false,
-    onDismissSettings: null,
+    shareButton: { to: "/baby/$publicId/share" },
+    shareOpen: false,
     signInButton: null,
     signInOpen: false,
-    onDismissSignIn: null,
-    dashboardButton: null,
     ...overrides,
   };
 }
@@ -73,10 +73,10 @@ test("disables sharing when the share link is empty", async () => {
   await using view = await renderWithTestRouter(
     <BabyNav
       {...navProps({
-        shareButton: null,
+        onDismissSettings: () => {},
         postUpdateButton: null,
         settingsOpen: true,
-        onDismissSettings: () => {},
+        shareButton: null,
       })}
     />,
   );
@@ -94,15 +94,15 @@ test("calls dismiss handlers when overlay owner actions are open", async () => {
   await using view = await renderWithTestRouter(
     <BabyNav
       {...navProps({
-        shareButton: { to: "/baby/$publicId/share" },
-        shareOpen: true,
+        onDismissPostUpdate,
+        onDismissSettings,
         onDismissShare,
         postUpdateButton: { to: "/baby/$publicId/post" },
         postUpdateOpen: true,
-        onDismissPostUpdate,
         settingsButton: { to: "/baby/$publicId/settings" },
         settingsOpen: true,
-        onDismissSettings,
+        shareButton: { to: "/baby/$publicId/share" },
+        shareOpen: true,
       })}
     />,
   );
@@ -122,7 +122,7 @@ test("logged-out visitors get a sign-in icon in page actions", async () => {
       {...navProps({
         postUpdateButton: null,
         settingsButton: null,
-        signInButton: { to: "/baby/$publicId/login", params: { publicId: "baby-waiting" } },
+        signInButton: { params: { publicId: "baby-waiting" }, to: "/baby/$publicId/login" },
       })}
     />,
   );
@@ -151,11 +151,11 @@ test("calls dismiss when the sign-in overlay is open", async () => {
   await using view = await renderWithTestRouter(
     <BabyNav
       {...navProps({
+        onDismissSignIn,
         postUpdateButton: null,
         settingsButton: null,
-        signInButton: { to: "/baby/$publicId/login", params: { publicId: "baby-waiting" } },
+        signInButton: { params: { publicId: "baby-waiting" }, to: "/baby/$publicId/login" },
         signInOpen: true,
-        onDismissSignIn,
       })}
     />,
   );

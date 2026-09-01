@@ -15,7 +15,7 @@ async function renderLanguageSettings(
   const profileHandle = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
   return renderWithConvexTest({
     harness,
-    ui: <LanguageSettings profile={profileHandle} className={undefined} />,
+    ui: <LanguageSettings className={undefined} profile={profileHandle} />,
     wrap: null,
   });
 }
@@ -24,8 +24,8 @@ test("changing the profile language persists it and applies the locale", async (
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "ada@example.com",
-    password: "password123",
     name: "Ada",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
 
@@ -46,8 +46,8 @@ test("changing the profile time zone persists it", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "ada@example.com",
-    password: "password123",
     name: "Ada",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
 
@@ -55,7 +55,9 @@ test("changing the profile time zone persists it", async () => {
 
   const picker = view.getByRole("combobox", { name: "Profile time zone" });
   const trigger = picker.parentElement?.querySelector("button");
-  if (!trigger) throw new Error("time zone trigger missing");
+  if (!trigger) {
+    throw new Error("time zone trigger missing");
+  }
   fireEvent.focus(picker);
   expect(htmlInput(picker).selectionStart).toBe(0);
   expect(htmlInput(picker).selectionEnd).toBe("London (Europe)".length);
@@ -85,14 +87,14 @@ test("changing the profile time zone persists it", async () => {
 });
 
 test.each([
-  { failure: new Error("Could not save time zone"), expectedMessage: "Could not save time zone" },
-  { failure: "offline", expectedMessage: "Something went wrong. Try again." },
+  { expectedMessage: "Could not save time zone", failure: new Error("Could not save time zone") },
+  { expectedMessage: "Something went wrong. Try again.", failure: "offline" },
 ])("a failed time zone save rolls back for $expectedMessage", async (testCase) => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "ada@example.com",
-    password: "password123",
     name: "Ada",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
 
@@ -111,7 +113,9 @@ test.each([
 
   const picker = view.getByRole("combobox", { name: "Profile time zone" });
   const trigger = picker.parentElement?.querySelector("button");
-  if (!trigger) throw new Error("time zone trigger missing");
+  if (!trigger) {
+    throw new Error("time zone trigger missing");
+  }
   fireEvent.click(trigger);
   fireEvent.input(picker, { target: { value: "Tokyo" } });
   const tokyo = view.getByRole("option", { name: "Tokyo (Asia)" });
@@ -136,8 +140,8 @@ test("requesting another language submits the request form", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "ada@example.com",
-    password: "password123",
     name: "Ada",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
 
@@ -149,7 +153,9 @@ test("requesting another language submits the request form", async () => {
     target: { value: "French / fr-FR" },
   });
   const form = input.closest("form");
-  if (!form) throw new Error("request form missing");
+  if (!form) {
+    throw new Error("request form missing");
+  }
   fireEvent.submit(form);
 
   await vi.waitFor(async () => {
@@ -164,8 +170,8 @@ test("LanguageSettings wires Convex mutations into the view", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "ada@example.com",
-    password: "password123",
     name: "Ada",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
 

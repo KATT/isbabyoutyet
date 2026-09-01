@@ -48,14 +48,14 @@ type Credentials = { email: string; password: string };
  * @internal Exported for tests.
  */
 export type SignInHandoff = {
+  failedMessage: string;
+  headers: () => Record<string, string>;
+  navigate: () => Promise<void>;
   signIn: (
     body: Credentials & { rememberMe: boolean },
     fetchOptions: { headers: Record<string, string> },
   ) => Promise<{ errorMessage: string | null }>;
-  headers: () => Record<string, string>;
   waitForAuth: () => Promise<void>;
-  navigate: () => Promise<void>;
-  failedMessage: string;
 };
 
 /**
@@ -81,10 +81,6 @@ export async function signInAndHandoff(values: Credentials, deps: SignInHandoff)
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
-  validateSearch: z.object({
-    redirect: z.string().optional(),
-  }),
-  headers: authPageCacheHeaders,
   head: (opts) => ({
     meta: [
       {
@@ -92,6 +88,10 @@ export const Route = createFileRoute("/auth/login")({
       },
       ...robotsNoIndexMeta(),
     ],
+  }),
+  headers: authPageCacheHeaders,
+  validateSearch: z.object({
+    redirect: z.string().optional(),
   }),
 });
 
@@ -103,11 +103,11 @@ export const Route = createFileRoute("/auth/login")({
  * @internal
  */
 export const loginAuthAdapter = {
+  headers: () => getBrowserAuthHeaders(),
   signInEmail: (
     body: Credentials & { rememberMe: boolean },
     fetchOptions: { headers: Record<string, string> },
   ) => authClient.signIn.email(body, fetchOptions),
-  headers: () => getBrowserAuthHeaders(),
   waitForAuth: () => waitForConvexAuth(),
 };
 
@@ -124,20 +124,20 @@ export function LoginPage() {
   return (
     <LoginCard
       demoLoginEnabled={hasDemoLogin}
-      variant="page"
       homeLink={homeLink}
       onSignIn={(values) =>
         signInAndHandoff(values, {
+          failedMessage: t("Failed to sign in"),
+          headers: () => loginAuthAdapter.headers(),
+          navigate: () => router.navigate(successTarget),
           signIn: async (body, fetchOptions) => {
             const result = await loginAuthAdapter.signInEmail(body, fetchOptions);
             return { errorMessage: result.error ? (result.error.message ?? "") : null };
           },
-          headers: () => loginAuthAdapter.headers(),
           waitForAuth: () => loginAuthAdapter.waitForAuth(),
-          navigate: () => router.navigate(successTarget),
-          failedMessage: t("Failed to sign in"),
         })
       }
+      variant="page"
     />
   );
 }
@@ -150,14 +150,13 @@ export function LoginPage() {
  */
 export function LoginCard(props: {
   demoLoginEnabled: boolean;
+  homeLink: { to: "/" } | { params: { publicId: string }; to: "/baby/$publicId" };
   onSignIn: (values: Credentials) => Promise<void>;
   variant: "page" | "dialog";
-  homeLink: { to: "/" } | { to: "/baby/$publicId"; params: { publicId: string } };
 }) {
   const { t } = useI18n();
 
   const form = useZodForm({
-    schema: loginSchema(t),
     defaultValues: props.demoLoginEnabled
       ? {
           email: DEMO_USER.email,
@@ -167,6 +166,7 @@ export function LoginCard(props: {
           email: "",
           password: "",
         },
+    schema: loginSchema(t),
   });
 
   const card = (
@@ -178,7 +178,7 @@ export function LoginCard(props: {
       }
     >
       <CardHeader className="text-center">
-        <p className="text-4xl" aria-hidden="true">
+        <p aria-hidden="true" className="text-4xl">
           👋
         </p>
         <CardTitle className="text-2xl font-black">{t("Welcome back!")}</CardTitle>
@@ -204,7 +204,7 @@ export function LoginCard(props: {
                 <FormItem>
                   <FormLabel>{t("Email")}</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="you@example.com" {...field} />
+                    <Input placeholder="you@example.com" type="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -226,10 +226,10 @@ export function LoginCard(props: {
             />
 
             <SubmitButton
+              className="w-full rounded-full font-extrabold pop-shadow"
               form="context"
               IconComponent={SignIn}
               iconPosition="start"
-              className="w-full rounded-full font-extrabold pop-shadow"
               size="lg"
             >
               {t("Sign In")}
@@ -240,8 +240,8 @@ export function LoginCard(props: {
         <div className="mt-6 text-center text-sm text-muted-foreground">
           {t("Don't have an account?")}{" "}
           <Link
-            to="/auth/signup"
             className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
+            to="/auth/signup"
           >
             {t("Sign up")}
           </Link>

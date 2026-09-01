@@ -29,14 +29,14 @@ function spyOnToastErrorResource() {
 }
 
 const baby: BabyData = {
-  name: "Nova",
-  timeZone: "Europe/London",
+  babyBorn: null,
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
-  publicDueDateText: null,
   laborStarted: null,
+  name: "Nova",
+  publicDueDateText: null,
+  timeZone: "Europe/London",
   wentToHospital: null,
-  babyBorn: null,
 };
 
 test("name editor mounts fresh on open: current name, reassurance note, trimmed save", async () => {
@@ -213,10 +213,10 @@ test("status editor saves the matching milestone instant", async () => {
   await using view = await renderWithTestRouter(
     <StatusDateEditor
       baby={laborBaby}
-      status="labor_started"
       currentDate={laborBaby.laborStarted}
       onRedate={onRedate}
       onRemove={onRemove}
+      status="labor_started"
     />,
   );
 
@@ -455,17 +455,17 @@ test("status editor confirms destructive deletion", async () => {
   const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const bornBaby = {
     ...baby,
+    babyBorn: "2026-08-11T03:00:00.000Z",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: "2026-08-10T12:00:00.000Z",
-    babyBorn: "2026-08-11T03:00:00.000Z",
   };
   await using view = await renderWithTestRouter(
     <StatusDateEditor
       baby={bornBaby}
-      status="born"
       currentDate={bornBaby.babyBorn}
       onRedate={onRedate}
       onRemove={onRemove}
+      status="born"
     />,
   );
 
@@ -494,17 +494,17 @@ test("status delete dialog stays open while deletion is pending", async () => {
   });
   const bornBaby = {
     ...baby,
+    babyBorn: "2026-08-11T03:00:00.000Z",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: "2026-08-10T12:00:00.000Z",
-    babyBorn: "2026-08-11T03:00:00.000Z",
   };
   await using view = await renderWithTestRouter(
     <StatusDateEditor
       baby={bornBaby}
-      status="born"
       currentDate={bornBaby.babyBorn}
       onRedate={onRedate}
       onRemove={onRemove}
+      status="born"
     />,
   );
 
@@ -532,17 +532,17 @@ test("status deletion is disabled until later statuses are deleted", async () =>
   const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const bornBaby = {
     ...baby,
-    wentToHospital: "2026-08-10T12:00:00.000Z",
     babyBorn: "2026-08-11T03:00:00.000Z",
+    wentToHospital: "2026-08-10T12:00:00.000Z",
   };
   await using view = await renderWithTestRouter(
     <TooltipProvider>
       <StatusDateEditor
         baby={bornBaby}
-        status="gone_to_hospital"
         currentDate={bornBaby.wentToHospital}
         onRedate={onRedate}
         onRemove={onRemove}
+        status="gone_to_hospital"
       />
     </TooltipProvider>,
   );
@@ -552,7 +552,9 @@ test("status deletion is disabled until later statuses are deleted", async () =>
   expect(deleteButton.disabled).toBe(true);
 
   const tooltipTrigger = deleteButton.closest('[data-slot="tooltip-trigger"]');
-  if (!tooltipTrigger) throw new Error("Tooltip trigger missing");
+  if (!tooltipTrigger) {
+    throw new Error("Tooltip trigger missing");
+  }
   expect(tooltipTrigger.getAttribute("aria-label")).toBe("Delete the Born status first");
   expect(view.queryByRole("alertdialog")).toBeNull();
   expect(onRemove).not.toHaveBeenCalled();

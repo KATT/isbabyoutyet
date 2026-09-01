@@ -84,16 +84,16 @@ class StubObserver {
 
 function stubMatchMedia(query: string) {
   return {
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener() {},
-    removeListener() {},
     addEventListener() {},
-    removeEventListener() {},
+    addListener() {},
     dispatchEvent() {
       return false;
     },
+    matches: false,
+    media: query,
+    onchange: null,
+    removeEventListener() {},
+    removeListener() {},
   };
 }
 
@@ -126,8 +126,8 @@ function patchJsdomLocation() {
   internals.replace = stubWindowScroll;
   Object.defineProperty(internals, "_locationObjectNavigate", {
     configurable: true,
-    writable: true,
     value: stubWindowScroll,
+    writable: true,
   });
 
   return () => {
@@ -142,8 +142,12 @@ function patchJsdomLocation() {
   };
 }
 
+function isArrayBuffer(data: BufferSource): data is ArrayBuffer {
+  return Object.prototype.isPrototypeOf.call(ArrayBuffer.prototype, data);
+}
+
 function digestBytes(data: BufferSource) {
-  if (data instanceof ArrayBuffer) {
+  if (isArrayBuffer(data)) {
     const bytes = new Uint8Array(data.byteLength);
     bytes.set(new Uint8Array(data));
     return bytes;
@@ -194,8 +198,8 @@ function installJsdomWindowStubs() {
   if (addedScrollIntoView) {
     Object.defineProperty(Element.prototype, "scrollIntoView", {
       configurable: true,
-      writable: true,
       value: stubWindowScroll,
+      writable: true,
     });
   }
   if (addedElementScrollTo) {

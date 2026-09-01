@@ -7,8 +7,8 @@ const browserImagePrefetchQueryKey = ["browserImagePrefetch"] as const;
 
 function browserImageQueryOptions(imageUrl: string) {
   return queryOptions({
-    queryKey: [...browserImagePrefetchQueryKey, imageUrl],
     queryFn: globalThis.window !== undefined ? () => loadBrowserImage(imageUrl) : skipToken,
+    queryKey: [...browserImagePrefetchQueryKey, imageUrl],
   });
 }
 
@@ -42,14 +42,14 @@ export function prefetchBrowserImage(
 }
 
 function loadBrowserImage(imageUrl: string) {
-  return new Promise<{ url: string; ok: boolean }>((resolve) => {
+  return new Promise<{ ok: boolean; url: string }>((resolve) => {
     const image = new Image();
     image.addEventListener("load", () => {
-      resolve({ url: imageUrl, ok: true });
+      resolve({ ok: true, url: imageUrl });
     });
     image.addEventListener("error", () => {
       // Soft-fail: the lightbox still opens; BlurImage shows the broken state.
-      resolve({ url: imageUrl, ok: false });
+      resolve({ ok: false, url: imageUrl });
     });
     image.src = imageUrl;
   });

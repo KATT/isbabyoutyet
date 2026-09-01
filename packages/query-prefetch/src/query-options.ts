@@ -44,7 +44,11 @@ function resolveInput<TFactory extends QueryOptionsFactory>(
   preloadedQuery: { readonly input?: QueryInput<TFactory> },
   remixInput: RemixInput<TFactory> | undefined,
 ): QueryInput<TFactory> | undefined;
-function resolveInput(preloadedQuery: { readonly input?: unknown }, remixInput: any) {
+function resolveInput(
+  preloadedQuery: { readonly input?: QueryFactoryInput },
+  // oxlint-disable-next-line typescript/no-explicit-any -- overload implementation
+  remixInput: any,
+) {
   return remixInput ? remixInput(preloadedQuery.input) : preloadedQuery.input;
 }
 
@@ -52,7 +56,11 @@ function invokeFactory<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInput<TFactory> | undefined,
 ): ReturnType<TFactory>;
-function invokeFactory(factory: RuntimeQueryOptionsFactory, input: any) {
+function invokeFactory(
+  factory: RuntimeQueryOptionsFactory,
+  // oxlint-disable-next-line typescript/no-explicit-any -- overload implementation
+  input: any,
+) {
   return factory(input);
 }
 

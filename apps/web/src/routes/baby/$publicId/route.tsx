@@ -46,11 +46,6 @@ import {
 const TIMELINE_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/baby/$publicId")({
-  component: BabyPageLayout,
-  validateSearch: z.object({
-    settings: z.boolean().optional(),
-    beta: z.boolean().optional(),
-  }),
   beforeLoad: async (opts) => {
     const preloader = opts.context.convexPreloader;
     const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
@@ -62,56 +57,22 @@ export const Route = createFileRoute("/baby/$publicId")({
     }
     if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
-        to: "/baby/$publicId",
         params: { publicId: babyDoc.publicId },
-        search: opts.location.search,
         replace: true,
+        search: opts.location.search,
+        to: "/baby/$publicId",
       });
     }
     if (opts.search.settings) {
       throw redirect({
-        to: "/baby/$publicId/settings",
         params: { publicId: babyDoc.publicId },
         replace: true,
+        to: "/baby/$publicId/settings",
       });
     }
     return { locale: babyDoc.resolvedLocale };
   },
-  loader: async (opts) => {
-    const preloader = opts.context.convexPreloader;
-    const publicId = opts.params.publicId;
-    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, publicId);
-
-    const loaderData = await allKeyed({
-      baby: preloader.ensureQueryData(api.baby.getByPublicId, {
-        id: publicId,
-      }),
-      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
-      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: publicId }),
-      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
-        babyId: publicId,
-      }),
-      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
-        args: { babyId: publicId, visitorId: null },
-        numItems: TIMELINE_PAGE_SIZE,
-      }),
-      managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
-        babyId: publicId,
-      }),
-      scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
-        babyId: publicId,
-      }),
-      subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
-        babyId: publicId,
-      }),
-      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
-    });
-
-    return {
-      browserPush,
-      ...loaderData,
-    };
-  },
+  component: BabyPageLayout,
   head: (opts) => {
     const babyDoc = opts.loaderData?.baby.initialData;
 
@@ -128,67 +89,67 @@ export const Route = createFileRoute("/baby/$publicId")({
     const manifestUrl = `/baby/manifest/${babyDoc._id}`;
 
     return {
+      links: [
+        {
+          href: manifestUrl,
+          rel: "manifest",
+        },
+        {
+          href: seo.canonical,
+          rel: "canonical",
+        },
+      ],
       meta: [
         {
           title: seo.title,
         },
         {
+          content: seo.description,
           name: "description",
-          content: seo.description,
         },
         {
+          content: seo.title,
           property: "og:title",
-          content: seo.title,
         },
         {
+          content: seo.description,
           property: "og:description",
-          content: seo.description,
         },
         {
-          property: "og:url",
           content: seo.ogUrl,
+          property: "og:url",
         },
         {
-          property: "og:locale",
           content: seo.locale.replace("-", "_"),
+          property: "og:locale",
         },
         {
-          property: "og:type",
           content: "website",
+          property: "og:type",
         },
-        ...openGraphImageMeta({ imageUrl: seo.imageUrl, alt: seo.imageAlt }),
+        ...openGraphImageMeta({ alt: seo.imageAlt, imageUrl: seo.imageUrl }),
         {
-          name: "twitter:title",
           content: seo.title,
+          name: "twitter:title",
         },
         {
-          name: "twitter:description",
           content: seo.description,
+          name: "twitter:description",
         },
         {
-          name: "theme-color",
           content: seo.themeColor,
+          name: "theme-color",
         },
         ...searchRobotsMeta({ index: seo.indexable }),
       ],
       styles: themeCss
         ? [
             {
-              "data-baby-theme": babyDoc.theme ?? "",
               children: themeCss,
+              "data-baby-theme": babyDoc.theme ?? "",
             },
           ]
         : [],
-      links: [
-        {
-          rel: "manifest",
-          href: manifestUrl,
-        },
-        {
-          rel: "canonical",
-          href: seo.canonical,
-        },
-      ],
     };
   },
   headers: (opts) => ({
@@ -197,6 +158,45 @@ export const Route = createFileRoute("/baby/$publicId")({
       routeIds: opts.matches.map((match) => match.routeId),
     }),
     ...babyPageRobotsHeaders(opts.params.publicId),
+  }),
+  loader: async (opts) => {
+    const preloader = opts.context.convexPreloader;
+    const publicId = opts.params.publicId;
+    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, publicId);
+
+    const loaderData = await allKeyed({
+      baby: preloader.ensureQueryData(api.baby.getByPublicId, {
+        id: publicId,
+      }),
+      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
+        babyId: publicId,
+      }),
+      managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
+        babyId: publicId,
+      }),
+      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: publicId }),
+      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
+      scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
+        babyId: publicId,
+      }),
+      subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
+        babyId: publicId,
+      }),
+      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+        args: { babyId: publicId, visitorId: null },
+        numItems: TIMELINE_PAGE_SIZE,
+      }),
+      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+    });
+
+    return {
+      browserPush,
+      ...loaderData,
+    };
+  },
+  validateSearch: z.object({
+    beta: z.boolean().optional(),
+    settings: z.boolean().optional(),
   }),
 });
 
@@ -207,15 +207,15 @@ export function docToBabyData(
   doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
 ): BabyData {
   const common = {
-    name: doc.name,
-    theme: doc.theme ?? null,
-    locale: doc.locale ?? null,
-    timeZone: doc.timeZone,
-    laborStarted: doc.laborStarted ?? null,
-    wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
+    laborStarted: doc.laborStarted ?? null,
+    locale: doc.locale ?? null,
     milestoneVisibility: doc.milestoneVisibility,
+    name: doc.name,
     photoId: doc.photoId ?? null,
+    theme: doc.theme ?? null,
+    timeZone: doc.timeZone,
+    wentToHospital: doc.wentToHospital ?? null,
   };
   return doc.dueDateDisplayMode === "exact"
     ? {
@@ -236,18 +236,18 @@ type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>
 
 export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   return {
-    name: doc.name,
+    babyBorn: doc.babyBorn ?? null,
     dueDate: doc.dueDate,
     dueDateDisplayMode: doc.dueDateDisplayMode,
+    laborStarted: doc.laborStarted ?? null,
+    locale: doc.locale ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
+    name: doc.name,
+    photoId: doc.photoId ?? null,
     publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
-    locale: doc.locale ?? null,
     timeZone: doc.timeZone,
-    laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
-    babyBorn: doc.babyBorn ?? null,
-    milestoneVisibility: doc.milestoneVisibility,
-    photoId: doc.photoId ?? null,
   };
 }
 
@@ -255,8 +255,8 @@ function BabyPageLayout() {
   const { t } = useI18n();
   const params = Route.useParams();
   useDemoToast({
-    publicId: params.publicId,
     enabled: isHomepageDemoPublicId(params.publicId),
+    publicId: params.publicId,
   });
   const matchRoute = useMatchRoute();
   const session = authClient.useSession();
@@ -319,10 +319,10 @@ function BabyPageLayout() {
 
       {canManage && birthJourney && managerBaby ? (
         <OnboardingHost
-          surface="baby"
-          onboarding={loaderData.onboarding}
           enabled={undefined}
+          onboarding={loaderData.onboarding}
           spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen && !loginOpen}
+          surface="baby"
         />
       ) : null}
 
@@ -330,8 +330,8 @@ function BabyPageLayout() {
       <header className="px-4 pt-3 pb-1">
         <div className="mx-auto flex max-w-6xl min-w-0 items-center justify-between gap-2">
           <Link
-            to="/"
             className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
+            to="/"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
               <Baby className="h-4 w-4 text-primary" />
@@ -339,15 +339,11 @@ function BabyPageLayout() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <BabyNav
-            shareButton={share.openLink}
-            shareOpen={shareOpen}
-            onDismissShare={shareOpen ? share.dismiss : null}
-            postUpdateButton={canManage ? post.openLink : null}
-            postUpdateOpen={postUpdateOpen}
+            dashboardButton={dashboardButton}
             onDismissPostUpdate={canManage && postUpdateOpen ? post.dismiss : null}
-            settingsButton={canManage ? settings.openLink : null}
-            settingsOpen={settingsOpen}
             onDismissSettings={canManage && settingsOpen ? settings.dismiss : null}
+            onDismissShare={shareOpen ? share.dismiss : null}
+            onDismissSignIn={loginOpen ? login.dismiss : null}
             onSettingsOpened={
               canManage
                 ? () => {
@@ -355,10 +351,14 @@ function BabyPageLayout() {
                   }
                 : null
             }
+            postUpdateButton={canManage ? post.openLink : null}
+            postUpdateOpen={postUpdateOpen}
+            settingsButton={canManage ? settings.openLink : null}
+            settingsOpen={settingsOpen}
+            shareButton={share.openLink}
+            shareOpen={shareOpen}
             signInButton={signInButton}
             signInOpen={loginOpen}
-            onDismissSignIn={loginOpen ? login.dismiss : null}
-            dashboardButton={dashboardButton}
           />
         </div>
       </header>
@@ -373,12 +373,9 @@ function BabyPageLayout() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
           <section className="overflow-x-clip rounded-[2rem] border-2 border-border bg-card px-5 pb-6 text-center pop-shadow-strong md:px-7 lg:sticky lg:top-4">
             <StatusDisplay
-              publicId={babyDoc.publicId}
               baby={baby}
-              currentStatus={currentStatus}
-              photoUrl={babyDoc.photoUrl}
-              thumbnailUrl={babyDoc.thumbnailUrl}
               blurDataUrl={babyDoc.blurDataUrl ?? null}
+              currentStatus={currentStatus}
               latestUpdate={
                 latestUpdate
                   ? {
@@ -387,13 +384,16 @@ function BabyPageLayout() {
                     }
                   : null
               }
+              photoUrl={babyDoc.photoUrl}
+              publicId={babyDoc.publicId}
+              thumbnailUrl={babyDoc.thumbnailUrl}
             />
             <div className="flex flex-col items-center">
               <NotificationSubscribe
-                babyId={babyDoc._id}
-                vapidPublicKey={loaderData.vapidPublicKey}
-                browserPush={loaderData.browserPush}
                 audience={canManage ? "manager" : "visitor"}
+                babyId={babyDoc._id}
+                browserPush={loaderData.browserPush}
+                vapidPublicKey={loaderData.vapidPublicKey}
               />
             </div>
             <div className="mt-4">
@@ -415,15 +415,15 @@ function BabyPageLayout() {
             </section>
 
             <section
-              id={BABY_FEED_HASH}
               className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8"
+              id={BABY_FEED_HASH}
             >
               <TimelineFeed
-                babyId={babyDoc._id}
-                publicId={babyDoc.publicId}
                 baby={baby}
+                babyId={babyDoc._id}
                 babyName={baby.name}
                 isOwner={canManage}
+                publicId={babyDoc.publicId}
                 timeline={loaderData.timeline}
               />
             </section>
@@ -433,8 +433,8 @@ function BabyPageLayout() {
 
       <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
         <Link
-          to="/"
           className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
+          to="/"
         >
           {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
         </Link>

@@ -17,16 +17,16 @@ test("subscription secrets stay internal while managers see the exact count", as
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Push Baby",
       dueDate: "2026-09-01",
+      name: "Push Baby",
     }),
   );
 
   await t.mutation(api.pushSubscriptions.subscribe, {
+    auth: "private-auth-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/subscription",
     p256dh: "public-key",
-    auth: "private-auth-secret",
     userAgent: TEST_USER_AGENT,
   });
 
@@ -50,22 +50,22 @@ test("subscription secrets stay internal while managers see the exact count", as
 
   const internalPage = await t.query(internal.pushSubscriptions.getSubscriptionsPage, {
     babyId: created.babyId,
-    paginationOpts: { numItems: 10, cursor: null },
+    paginationOpts: { cursor: null, numItems: 10 },
   });
   expect(internalPage.page).toMatchObject([
     {
+      auth: "private-auth-secret",
       endpoint: "https://push.example/subscription",
       p256dh: "public-key",
-      auth: "private-auth-secret",
       userAgent: TEST_USER_AGENT,
     },
   ]);
 
   await t.mutation(api.pushSubscriptions.unsubscribe, {
+    auth: "wrong-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/subscription",
     p256dh: "wrong-key",
-    auth: "wrong-secret",
   });
   expect(
     await asAlice.query(api.pushSubscriptions.getSubscriptionCount, {
@@ -74,10 +74,10 @@ test("subscription secrets stay internal while managers see the exact count", as
   ).toBe(1);
 
   await t.mutation(api.pushSubscriptions.unsubscribe, {
+    auth: "private-auth-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/subscription",
     p256dh: "public-key",
-    auth: "private-auth-secret",
   });
   expect(
     await asAlice.query(api.pushSubscriptions.getSubscriptionCount, {
@@ -93,19 +93,19 @@ test("internal pagination reaches every subscription without a cap", async () =>
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Popular Push Baby",
       dueDate: "2026-09-01",
+      name: "Popular Push Baby",
     }),
   );
 
   await t.run(async (ctx) => {
     for (let index = 0; index < 205; index += 1) {
       await ctx.db.insert("pushSubscriptions", {
+        auth: `secret-${index}`,
         babyId: created.babyId,
+        createdAt: index,
         endpoint: `https://push.example/subscription-${index}`,
         p256dh: `key-${index}`,
-        auth: `secret-${index}`,
-        createdAt: index,
       });
     }
     await ctx.db.patch(created.babyId, { subscriptionCount: 205 });
@@ -118,11 +118,13 @@ test("internal pagination reaches every subscription without a cap", async () =>
       internal.pushSubscriptions.getSubscriptionsPage,
       {
         babyId: created.babyId,
-        paginationOpts: { numItems: 100, cursor },
+        paginationOpts: { cursor, numItems: 100 },
       },
     );
     total += result.page.length;
-    if (result.isDone) break;
+    if (result.isDone) {
+      break;
+    }
     cursor = result.continueCursor;
   }
 
@@ -141,35 +143,35 @@ test("resubscribe rotates credentials and deleted babies reject new subscription
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Rotating Push Baby",
       dueDate: "2026-09-01",
+      name: "Rotating Push Baby",
     }),
   );
   const args = {
+    auth: "first-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/rotating",
     p256dh: "first-key",
-    auth: "first-secret",
     userAgent: TEST_USER_AGENT,
   };
 
   const firstId = await t.mutation(api.pushSubscriptions.subscribe, args);
   const secondId = await t.mutation(api.pushSubscriptions.subscribe, {
     ...args,
-    p256dh: "rotated-key",
     auth: "rotated-secret",
+    p256dh: "rotated-key",
     userAgent:
       "Mozilla/5.0 (iPhone; CPU iPhone OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Mobile/15E148 Safari/604.1",
   });
   expect(secondId).toBe(firstId);
   const rotatedPage = await t.query(internal.pushSubscriptions.getSubscriptionsPage, {
     babyId: created.babyId,
-    paginationOpts: { numItems: 10, cursor: null },
+    paginationOpts: { cursor: null, numItems: 10 },
   });
   expect(rotatedPage.page).toMatchObject([
     {
-      p256dh: "rotated-key",
       auth: "rotated-secret",
+      p256dh: "rotated-key",
       userAgent:
         "Mozilla/5.0 (iPhone; CPU iPhone OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Mobile/15E148 Safari/604.1",
     },
@@ -214,15 +216,15 @@ test("managers can opt into message alerts without changing the family subscribe
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Owner Push Baby",
       dueDate: "2026-09-01",
+      name: "Owner Push Baby",
     }),
   );
   const ownerArgs = {
+    auth: "owner-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/owner",
     p256dh: "owner-key",
-    auth: "owner-secret",
     userAgent: TEST_USER_AGENT,
   };
 
@@ -254,34 +256,34 @@ test("managers can opt into message alerts without changing the family subscribe
 
   const familyPage = await t.query(internal.pushSubscriptions.getSubscriptionsPage, {
     babyId: created.babyId,
-    paginationOpts: { numItems: 10, cursor: null },
+    paginationOpts: { cursor: null, numItems: 10 },
   });
   expect(familyPage.page).toEqual([]);
   const ownerPage = await t.query(internal.pushSubscriptions.getOwnerSubscriptionsPage, {
     babyId: created.babyId,
-    paginationOpts: { numItems: 10, cursor: null },
+    paginationOpts: { cursor: null, numItems: 10 },
   });
   expect(ownerPage.page).toMatchObject([{ _id: subscriptionId, endpoint: ownerArgs.endpoint }]);
 
   const rotatedId = await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
     ...ownerArgs,
-    p256dh: "rotated-owner-key",
     auth: "rotated-owner-secret",
+    p256dh: "rotated-owner-key",
   });
   expect(rotatedId).toBe(subscriptionId);
   const rotatedOwnerPage = await t.query(internal.pushSubscriptions.getOwnerSubscriptionsPage, {
     babyId: created.babyId,
-    paginationOpts: { numItems: 10, cursor: null },
+    paginationOpts: { cursor: null, numItems: 10 },
   });
   expect(rotatedOwnerPage.page).toMatchObject([
-    { p256dh: "rotated-owner-key", auth: "rotated-owner-secret" },
+    { auth: "rotated-owner-secret", p256dh: "rotated-owner-key" },
   ]);
 
   await asAlice.mutation(api.pushSubscriptions.unsubscribeAsOwner, {
+    auth: "wrong-secret",
     babyId: created.babyId,
     endpoint: ownerArgs.endpoint,
     p256dh: "wrong-key",
-    auth: "wrong-secret",
   });
   expect(
     await t.query(api.pushSubscriptions.isOwnerSubscribed, {
@@ -291,10 +293,10 @@ test("managers can opt into message alerts without changing the family subscribe
   ).toBe(true);
 
   await asAlice.mutation(api.pushSubscriptions.unsubscribeAsOwner, {
+    auth: "rotated-owner-secret",
     babyId: created.babyId,
     endpoint: ownerArgs.endpoint,
     p256dh: "rotated-owner-key",
-    auth: "rotated-owner-secret",
   });
   expect(
     await t.query(api.pushSubscriptions.isOwnerSubscribed, {
@@ -323,15 +325,15 @@ test("removeByEndpoint clears owner message subscriptions for that browser", asy
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Owner Endpoint Baby",
       dueDate: "2026-09-01",
+      name: "Owner Endpoint Baby",
     }),
   );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "owner-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/shared-endpoint",
     p256dh: "owner-key",
-    auth: "owner-secret",
     userAgent: TEST_USER_AGENT,
   });
 

@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import * as z from "zod";
+import { z } from "zod";
 import { useWatch } from "react-hook-form";
 import { Form, useZodForm } from "@/components/Form";
 import { getLanguageName } from "@/lib/i18n";
@@ -33,8 +33,8 @@ const localeSchema = z.object({
 
 export function LanguagePicker(props: LanguagePickerProps) {
   const form = useZodForm({
-    schema: localeSchema,
     defaultValues: { locale: props.value },
+    schema: localeSchema,
   });
   const selectedLocale = useWatch({ control: form.control, name: "locale" });
 
@@ -51,8 +51,8 @@ export function LanguagePicker(props: LanguagePickerProps) {
       }}
     >
       <Select
+        disabled={props.disabled}
         items={languageOptions}
-        value={selectedLocale}
         onValueChange={(value) => {
           if (!shouldApplyLocaleChange(value, selectedLocale)) {
             return;
@@ -60,7 +60,7 @@ export function LanguagePicker(props: LanguagePickerProps) {
           form.setValue("locale", value, { shouldDirty: true });
           form.formRef.current?.requestSubmit();
         }}
-        disabled={props.disabled}
+        value={selectedLocale}
       >
         <SelectTrigger aria-label={props.label}>
           <Translate data-icon="inline-start" />

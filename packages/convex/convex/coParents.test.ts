@@ -13,15 +13,15 @@ async function setup() {
 
 async function signUp(
   t: Awaited<ReturnType<typeof setup>>,
-  opts: { email: string; password: string; name: string },
+  opts: { email: string; name: string; password: string },
 ) {
   return await t.run(async (ctx) => {
     const auth = createAuth(ctx);
     const result = await auth.api.signUpEmail({
       body: {
         email: opts.email,
-        password: opts.password,
         name: opts.name,
+        password: opts.password,
       },
     });
     return result.user.id;
@@ -48,13 +48,13 @@ test("owner can add an existing user as co-parent; co-parent can post updates", 
   const t = await setup();
   const aliceId = await signUp(t, {
     email: "alice@example.com",
-    password: "password123",
     name: "Alice",
+    password: "password123",
   });
   const bobId = await signUp(t, {
     email: "bob@example.com",
-    password: "password123",
     name: "Bob",
+    password: "password123",
   });
 
   const asAlice = t.withIdentity({ subject: aliceId });
@@ -63,8 +63,8 @@ test("owner can add an existing user as co-parent; co-parent can post updates", 
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Shared Baby",
       dueDate: "2026-09-01",
+      name: "Shared Baby",
     }),
   );
 
@@ -103,23 +103,23 @@ test("owner can add an existing user as co-parent; co-parent can post updates", 
   );
 
   const access = await asBob.query(api.coParents.myAccess, { babyId: created.babyId });
-  expect(access).toEqual({ isOwner: false, isCoParent: true, canManage: true });
+  expect(access).toEqual({ canManage: true, isCoParent: true, isOwner: false });
 });
 
 test("inviting an unknown email creates a pending invite claimed on sign-up", async () => {
   const t = await setup();
   const aliceId = await signUp(t, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   const asAlice = t.withIdentity({ subject: aliceId });
 
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Pending Invite Baby",
       dueDate: "2026-10-01",
+      name: "Pending Invite Baby",
     }),
   );
 
@@ -138,8 +138,8 @@ test("inviting an unknown email creates a pending invite claimed on sign-up", as
 
   const newbieId = await signUp(t, {
     email: "newbie@example.com",
-    password: "password123",
     name: "Newbie",
+    password: "password123",
   });
   const asNewbie = t.withIdentity({ subject: newbieId });
 
@@ -160,21 +160,21 @@ test("pending invite is claimed when an existing user signs in", async () => {
   const t = await setup();
   const newbieId = await signUp(t, {
     email: "returning@example.com",
-    password: "password123",
     name: "Returning",
+    password: "password123",
   });
   const aliceId = await signUp(t, {
     email: "owner2@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   const asAlice = t.withIdentity({ subject: aliceId });
 
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Sign-in Claim Baby",
       dueDate: "2026-10-15",
+      name: "Sign-in Claim Baby",
     }),
   );
 
@@ -198,18 +198,18 @@ test("only the owner can manage co-parents and delete the baby", async () => {
   const t = await setup();
   const aliceId = await signUp(t, {
     email: "alice2@example.com",
-    password: "password123",
     name: "Alice",
+    password: "password123",
   });
   const bobId = await signUp(t, {
     email: "bob2@example.com",
-    password: "password123",
     name: "Bob",
+    password: "password123",
   });
   const carolId = await signUp(t, {
     email: "carol@example.com",
-    password: "password123",
     name: "Carol",
+    password: "password123",
   });
 
   const asAlice = t.withIdentity({ subject: aliceId });
@@ -218,8 +218,8 @@ test("only the owner can manage co-parents and delete the baby", async () => {
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Owned Baby",
       dueDate: "2026-11-01",
+      name: "Owned Baby",
     }),
   );
   await asAlice.mutation(api.coParents.invite, {
@@ -288,10 +288,10 @@ test("only the owner can manage co-parents and delete the baby", async () => {
   expect(carolId).toBeTruthy();
 
   const ownerAccess = await asAlice.query(api.coParents.myAccess, { babyId: created.babyId });
-  expect(ownerAccess).toEqual({ isOwner: true, isCoParent: false, canManage: true });
+  expect(ownerAccess).toEqual({ canManage: true, isCoParent: false, isOwner: true });
 
   const anonAccess = await t.query(api.coParents.myAccess, { babyId: created.babyId });
-  expect(anonAccess).toEqual({ isOwner: false, isCoParent: false, canManage: false });
+  expect(anonAccess).toEqual({ canManage: false, isCoParent: false, isOwner: false });
 });
 
 test("manager-only listings return forbidden for visitors instead of throwing", async () => {
@@ -302,8 +302,8 @@ test("manager-only listings return forbidden for visitors instead of throwing", 
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Gated Baby",
       dueDate: "2026-09-01",
+      name: "Gated Baby",
     }),
   );
 
@@ -325,24 +325,24 @@ test("claimPendingInvites clears pending invites addressed to the page owner", a
   const t = await setup();
   const aliceId = await signUp(t, {
     email: "owner-invite@example.com",
-    password: "password123",
     name: "Alice",
+    password: "password123",
   });
   const asAlice = t.withIdentity({ subject: aliceId });
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Owned Baby",
       dueDate: "2026-09-01",
+      name: "Owned Baby",
     }),
   );
 
   const inviteId = await t.run(async (ctx) => {
     return await ctx.db.insert("babyCoParentInvites", {
       babyId: created.babyId,
+      createdAt: Date.now(),
       email: "owner-invite@example.com",
       invitedByUserId: "someone-else",
-      createdAt: Date.now(),
     });
   });
 
@@ -363,21 +363,21 @@ test("leaving a page drops that co-parent's message-notification subscriptions",
   const t = await setup();
   const aliceId = await signUp(t, {
     email: "owner-push@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   const bobId = await signUp(t, {
     email: "coparent-push@example.com",
-    password: "password123",
     name: "Bob",
+    password: "password123",
   });
   const asAlice = t.withIdentity({ subject: aliceId });
   const asBob = t.withIdentity({ subject: bobId });
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Shared Notify Baby",
       dueDate: "2026-09-01",
+      name: "Shared Notify Baby",
     }),
   );
   await asAlice.mutation(api.coParents.invite, {
@@ -385,10 +385,10 @@ test("leaving a page drops that co-parent's message-notification subscriptions",
     email: "coparent-push@example.com",
   });
   await asBob.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "bob-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/bob-inbox",
     p256dh: "bob-key",
-    auth: "bob-secret",
     userAgent: "Mozilla/5.0",
   });
   expect(
@@ -411,21 +411,21 @@ test("removing a co-parent drops their message-notification subscriptions", asyn
   const t = await setup();
   const aliceId = await signUp(t, {
     email: "owner-remove-push@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   const bobId = await signUp(t, {
     email: "coparent-remove-push@example.com",
-    password: "password123",
     name: "Bob",
+    password: "password123",
   });
   const asAlice = t.withIdentity({ subject: aliceId });
   const asBob = t.withIdentity({ subject: bobId });
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Remove Notify Baby",
       dueDate: "2026-09-01",
+      name: "Remove Notify Baby",
     }),
   );
   await asAlice.mutation(api.coParents.invite, {
@@ -433,10 +433,10 @@ test("removing a co-parent drops their message-notification subscriptions", asyn
     email: "coparent-remove-push@example.com",
   });
   await asBob.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "bob-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/bob-removed",
     p256dh: "bob-key",
-    auth: "bob-secret",
     userAgent: "Mozilla/5.0",
   });
   const listed = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });

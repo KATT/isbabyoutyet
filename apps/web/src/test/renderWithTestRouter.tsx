@@ -41,9 +41,9 @@ export async function renderWithTestRouter(ui: ReactElement, opts = { path: "/" 
   });
 
   const router = createRouter({
-    routeTree: rootRoute,
-    history: createMemoryHistory({ initialEntries: [opts.path] }),
     defaultPendingMinMs: 0,
+    history: createMemoryHistory({ initialEntries: [opts.path] }),
+    routeTree: rootRoute,
   });
 
   // Resolve the initial match before rendering so the first paint isn't the
@@ -63,5 +63,5 @@ export async function renderWithTestRouter(ui: ReactElement, opts = { path: "/" 
   const rerenderUi = (nextUi: ReactElement) => {
     rerenderShell(<Shell ui={nextUi} />);
   };
-  return Object.assign(view, { router, rerender: rerenderUi });
+  return Object.assign(view, { rerender: rerenderUi, router });
 }

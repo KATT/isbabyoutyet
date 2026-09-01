@@ -14,10 +14,10 @@ const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 type AuthGuardContext = {
-  queryClient: QueryClient;
   convexClient: ConvexReactClient;
-  convexQueryClient: ConvexQueryClient;
   convexPreloader: ConvexQueryPreloader;
+  convexQueryClient: ConvexQueryClient;
+  queryClient: QueryClient;
   token: string | null;
 };
 
@@ -48,10 +48,10 @@ export async function resolveAuthGuard(opts: {
       throw redirect({ to: "/" });
     }
     return {
-      locale: profile.locale,
-      token,
       isAuthenticated: true,
+      locale: profile.locale,
       profile: profileHandle,
+      token,
     };
   }
 
@@ -81,14 +81,21 @@ export async function resolveAuthGuard(opts: {
     }
   }
   return {
-    locale: profile.locale,
-    token: opts.context.token,
     isAuthenticated: true,
+    locale: profile.locale,
     profile: profileHandle,
+    token: opts.context.token,
   };
 }
 
 export const Route = createFileRoute("/_auth")({
+  beforeLoad: async (opts) => {
+    return await resolveAuthGuard({
+      context: opts.context,
+      fetchToken: async () => (await getAuthToken()) ?? null,
+    });
+  },
+  component: AuthLayout,
   headers() {
     return {
       "Cache-Control": "private, no-store, no-cache, max-age=0, must-revalidate",
@@ -98,13 +105,6 @@ export const Route = createFileRoute("/_auth")({
       ...noIndexHeaders(),
     };
   },
-  beforeLoad: async (opts) => {
-    return await resolveAuthGuard({
-      context: opts.context,
-      fetchToken: async () => (await getAuthToken()) ?? null,
-    });
-  },
-  component: AuthLayout,
 });
 
 function AuthLayout() {

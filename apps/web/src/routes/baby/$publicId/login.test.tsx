@@ -16,12 +16,12 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: "missing-baby" },
+      route: Route,
     }),
   ).rejects.toMatchObject({ isNotFound: true });
 
-  const baby = await seedOwnedBaby(harness, { name: "Baby Nova", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Nova" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
@@ -33,26 +33,26 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: baby.publicId },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/baby/$publicId/login",
       params: { publicId: renamed?.publicId },
       replace: true,
+      to: "/baby/$publicId/login",
     },
   });
 });
 
 test("sign-in in the overlay dismisses back to the baby page", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   const signInEmail = vi.fn().mockResolvedValue({ data: null, error: null });
   const original = {
-    signInEmail: loginAuthAdapter.signInEmail,
     headers: loginAuthAdapter.headers,
+    signInEmail: loginAuthAdapter.signInEmail,
     waitForAuth: loginAuthAdapter.waitForAuth,
   };
   // SAFETY: Test stub replaces the adapter's email sign-in method.
@@ -67,10 +67,10 @@ test("sign-in in the overlay dismisses back to the baby page", async () => {
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/login",
     initialEntry: `/baby/${baby.publicId}/login`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/login",
+    route: Route,
     wrap: null,
   });
 

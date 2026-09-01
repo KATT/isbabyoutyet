@@ -12,7 +12,7 @@ import {
 import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { translate, useI18n } from "@/lib/i18n";
+import { translate, useI18n, getDetectedLocale } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import { previewCacheHeaders } from "@/lib/cachePolicy";
@@ -25,35 +25,26 @@ function getDefaultBabyData(): PreviewBabyData {
   laborStarted.setHours(laborStarted.getHours() - 2);
 
   return {
-    name: "Baby",
+    babyBorn: null,
+    babyBornMessage: null,
     dueDate: dueDate.toISOString(),
     dueDateDisplayMode: "exact",
+    hospitalMessage: null,
+    laborStarted: null,
+    laborStartedMessage: null,
+    milestoneVisibility: milestoneVisibilityForPreset("labor"),
+    name: "Baby",
+    photoId: null,
     publicDueDateText: null,
     theme: null,
     timeZone: DEFAULT_TIME_ZONE,
-    laborStarted: null,
     wentToHospital: null,
-    babyBorn: null,
-    milestoneVisibility: milestoneVisibilityForPreset("labor"),
-    hospitalMessage: null,
-    babyBornMessage: null,
-    laborStartedMessage: null,
-    photoId: null,
   };
 }
 
 const searchSchema = z.object({
-  name: z.string().default("Baby"),
-  dueDate: z.string().nullable().optional(),
-  dueDateDisplayMode: z.union([z.literal("exact"), z.literal("message")]).optional(),
-  publicDueDateText: z.string().nullable().optional(),
-  theme: z.string().nullable().optional(),
-  laborStarted: z.string().nullable().optional(),
-  wentToHospital: z.string().nullable().optional(),
   babyBorn: z.string().nullable().optional(),
-  hospitalMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
-  laborStartedMessage: z.string().nullable().optional(),
   birthJourney: z
     .union([
       z.literal("labor"),
@@ -62,41 +53,50 @@ const searchSchema = z.object({
       z.literal("custom"),
     ])
     .optional(),
+  dueDate: z.string().nullable().optional(),
+  dueDateDisplayMode: z.union([z.literal("exact"), z.literal("message")]).optional(),
+  hospitalMessage: z.string().nullable().optional(),
+  laborStarted: z.string().nullable().optional(),
+  laborStartedMessage: z.string().nullable().optional(),
+  name: z.string().default("Baby"),
+  publicDueDateText: z.string().nullable().optional(),
   settings: z.boolean().optional(),
+  theme: z.string().nullable().optional(),
+  wentToHospital: z.string().nullable().optional(),
 });
 
 export type PreviewSearch = z.infer<typeof searchSchema>;
 
 export const Route = createFileRoute("/preview")({
   component: PreviewPage,
-  validateSearch: searchSchema,
-  headers: previewCacheHeaders,
-  head: (opts) => ({
-    meta: [
-      {
-        title: translate(opts.match.context.locale, "Preview – {{title}}", {
-          title: translate(
-            opts.match.context.locale,
-            "Is Baby Out Yet? – Share Your Baby's Arrival",
+  head: (opts) => {
+    const locale = opts.match.context.locale ?? getDetectedLocale();
+    return {
+      meta: [
+        {
+          title: translate(locale, "Preview – {{title}}", {
+            title: translate(locale, "Is Baby Out Yet? – Share Your Baby's Arrival"),
+          }),
+        },
+        {
+          content: translate(
+            locale,
+            "Preview how your baby tracking page will look at different stages.",
           ),
-        }),
-      },
-      {
-        name: "description",
-        content: translate(
-          opts.match.context.locale,
-          "Preview how your baby tracking page will look at different stages.",
-        ),
-      },
-      ...robotsNoIndexMeta(),
-    ],
-  }),
+          name: "description",
+        },
+        ...robotsNoIndexMeta(),
+      ],
+    };
+  },
+  headers: previewCacheHeaders,
+  validateSearch: searchSchema,
 });
 
 export function PreviewPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { t, locale } = useI18n();
+  const { locale, t } = useI18n();
   const birthJourney = search.birthJourney ?? "labor";
 
   const baby: PreviewBabyData = {
@@ -126,60 +126,60 @@ export function PreviewPage() {
       <SettingsPanel
         baby={baby}
         birthJourney={birthJourney}
-        onUpdate={(update) => {
-          void navigate({
-            search: {
-              ...search,
-              ...update,
-            },
-            replace: true,
-            resetScroll: false,
-          });
-        }}
+        coParents={null}
+        messagePush={null}
+        onDelete={null}
         onMilestoneRedate={(milestone, occurredAt) => {
           void navigate({
+            replace: true,
+            resetScroll: false,
             search: {
               ...search,
               [MILESTONE_FIELDS[milestone].date]: occurredAt,
             },
-            replace: true,
-            resetScroll: false,
           });
         }}
         onMilestoneRemove={(milestone) => {
           void navigate({
+            replace: true,
+            resetScroll: false,
             search: {
               ...search,
               [MILESTONE_FIELDS[milestone].date]: null,
             },
-            replace: true,
-            resetScroll: false,
           });
         }}
-        open={!!search.settings}
         onOpenChange={(open) => {
           void navigate({
+            replace: true,
+            resetScroll: false,
             search: {
               ...search,
               settings: open || undefined,
             },
-            replace: true,
-            resetScroll: false,
           });
         }}
         onOpenChangeComplete={null}
+        onUpdate={(update) => {
+          void navigate({
+            replace: true,
+            resetScroll: false,
+            search: {
+              ...search,
+              ...update,
+            },
+          });
+        }}
+        open={!!search.settings}
         profileLocale={locale}
-        onDelete={null}
-        coParents={null}
-        messagePush={null}
       />
 
       <div className="min-h-screen bg-background bg-dots">
         <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-2">
             <Link
-              to="/"
               className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
+              to="/"
             >
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
                 <Baby className="h-4 w-4 text-primary" />
@@ -187,28 +187,28 @@ export function PreviewPage() {
               <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
             </Link>
             <BabyNav
-              shareButton={null}
-              shareOpen={false}
+              dashboardButton={null}
+              onDismissPostUpdate={null}
+              onDismissSettings={null}
               onDismissShare={null}
+              onDismissSignIn={null}
+              onSettingsOpened={null}
               postUpdateButton={null}
               postUpdateOpen={false}
-              onDismissPostUpdate={null}
-              onSettingsOpened={null}
               settingsButton={{
-                to: "/preview",
+                replace: true,
+                resetScroll: false,
                 search: {
                   ...search,
                   settings: search.settings ? undefined : true,
                 },
-                replace: true,
-                resetScroll: false,
+                to: "/preview",
               }}
               settingsOpen={!!search.settings}
-              onDismissSettings={null}
+              shareButton={null}
+              shareOpen={false}
               signInButton={null}
               signInOpen={false}
-              onDismissSignIn={null}
-              dashboardButton={null}
             />
           </div>
         </header>
@@ -220,23 +220,23 @@ export function PreviewPage() {
 
           <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
             <StatusDisplay
-              publicId={null}
               baby={baby}
+              blurDataUrl={null}
               currentStatus={currentStatus}
               latestUpdate={latestUpdate}
               photoUrl={null}
+              publicId={null}
               thumbnailUrl={null}
-              blurDataUrl={null}
             />
-            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
+            <div aria-hidden="true" className="my-8 border-t-2 border-dashed border-border" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />
           </section>
         </main>
 
         <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
           <Link
-            to="/"
             className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
+            to="/"
           >
             {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
           </Link>

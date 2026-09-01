@@ -11,8 +11,8 @@ test("sending a photo notification resolves the image URL and marks the job sent
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Baby Smith",
       dueDate: "2026-09-01",
+      name: "Baby Smith",
     }),
   );
 
@@ -30,17 +30,17 @@ test("sending a photo notification resolves the image URL and marks the job sent
     });
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
-      timelineItemId,
       photoId: photo,
       pushImageId: pushImage,
+      timelineItemId,
     });
   });
 
   await t.mutation(api.pushSubscriptions.subscribe, {
+    auth: "private-auth-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/photo-sub",
     p256dh: "public-key",
-    auth: "private-auth-secret",
     userAgent:
       "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
   });
@@ -48,33 +48,33 @@ test("sending a photo notification resolves the image URL and marks the job sent
   const notificationId = await t.run(async (ctx) => {
     return await ctx.db.insert("scheduledNotifications", {
       babyId: created.babyId,
-      status: "pending",
-      scheduledFor: Date.now(),
-      notificationType: "photo_added",
-      customMessage: null,
-      photoId: photo,
-      updateId,
       createdAt: Date.now(),
+      customMessage: null,
+      notificationType: "photo_added",
+      photoId: photo,
+      scheduledFor: Date.now(),
+      status: "pending",
+      updateId,
     });
   });
 
   await t.action(internal.pushNotifications.sendNotification, {
-    notificationId,
     babyId: created.babyId,
     babyName: "Baby Smith",
+    customMessage: null,
+    locale: "en-GB",
+    notificationId,
+    photoId: photo,
     publicId: created.publicId,
     status: "photo_added",
-    customMessage: null,
-    photoId: photo,
     updateId,
-    locale: "en-GB",
   });
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
     babyId: created.babyId,
   });
   expect(notifications).toMatchObject([
-    { status: "sent", notificationType: "photo_added", photoId: photo },
+    { notificationType: "photo_added", photoId: photo, status: "sent" },
   ]);
 });
 
@@ -85,15 +85,15 @@ test("owner message notifications page manager subscriptions without marking fam
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Baby Smith",
       dueDate: "2026-09-01",
+      name: "Baby Smith",
     }),
   );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "private-auth-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/owner-sub",
     p256dh: "public-key",
-    auth: "private-auth-secret",
     userAgent:
       "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
   });
@@ -101,22 +101,22 @@ test("owner message notifications page manager subscriptions without marking fam
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: created.babyId,
       authorName: "Grandma",
+      babyId: created.babyId,
       message: "Hello from the waiting room",
       visitorId: "visitor-1",
     }),
   );
 
   await t.action(internal.pushNotifications.sendOwnerMessageNotification, {
+    authorName: "Grandma",
     babyId: created.babyId,
     babyName: "Baby Smith",
-    publicId: created.publicId,
-    authorName: "Grandma",
-    message: "Hello from the waiting room",
     encouragementId,
     event: "created",
     locale: "en-GB",
+    message: "Hello from the waiting room",
+    publicId: created.publicId,
   });
 
   expect(
@@ -139,23 +139,23 @@ test("dismissing an owner message push pages the same manager subscriptions", as
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Baby Smith",
       dueDate: "2026-09-01",
+      name: "Baby Smith",
     }),
   );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "private-auth-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/owner-sub",
     p256dh: "public-key",
-    auth: "private-auth-secret",
     userAgent:
       "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
   });
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: created.babyId,
       authorName: "Grandma",
+      babyId: created.babyId,
       message: "Please ignore this",
       visitorId: "visitor-1",
     }),

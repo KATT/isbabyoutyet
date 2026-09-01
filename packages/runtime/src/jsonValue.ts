@@ -10,7 +10,7 @@ export type JsonValue =
   | boolean
   | number
   | string
-  | JsonValue[]
+  | Array<JsonValue>
   | { readonly [key: string]: JsonValue };
 
 export type JsonObject = { readonly [key: string]: JsonValue };

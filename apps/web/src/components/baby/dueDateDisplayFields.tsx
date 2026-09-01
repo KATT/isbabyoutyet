@@ -18,12 +18,12 @@ type DueDateDisplayFieldsProps<
   TShowExactName extends FieldPathByValue<TFieldValues, boolean>,
   TPublicTextName extends FieldPathByValue<TFieldValues, string>,
 > = {
+  className: string | undefined;
   control: Control<TFieldValues, unknown, unknown>;
   dateFieldName: TDateName;
-  showExactDueDateFieldName: TShowExactName;
   publicDueDateTextFieldName: TPublicTextName;
-  className: string | undefined;
   sectionLabelClassName: string | undefined;
+  showExactDueDateFieldName: TShowExactName;
   stopPopoverPropagation: boolean;
 };
 
@@ -59,17 +59,17 @@ export function DueDateDisplayFields<
                   <FormLabel className="sr-only">{t("Due Date")}</FormLabel>
                   <FormControl>
                     <Input
-                      type="date"
-                      onMouseDown={
-                        props.stopPopoverPropagation
-                          ? (event) => event.stopPropagation()
-                          : undefined
-                      }
                       onFocus={
                         props.stopPopoverPropagation
                           ? (event) => event.stopPropagation()
                           : undefined
                       }
+                      onMouseDown={
+                        props.stopPopoverPropagation
+                          ? (event) => event.stopPropagation()
+                          : undefined
+                      }
+                      type="date"
                       {...renderProps.field}
                       value={renderProps.field.value ?? ""}
                     />
@@ -89,8 +89,8 @@ export function DueDateDisplayFields<
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t("September baby")}
                       maxLength={80}
+                      placeholder={t("September baby")}
                       {...renderProps.field}
                     />
                   </FormControl>

@@ -40,7 +40,7 @@ export function babyLoginHomeLink(redirect: string | undefined) {
   if (publicId === null) {
     return { to: "/" as const };
   }
-  return { to: "/baby/$publicId" as const, params: { publicId } };
+  return { params: { publicId }, to: "/baby/$publicId" as const };
 }
 
 export function babyLoginSuccessTarget(redirect: string | undefined) {
@@ -48,5 +48,5 @@ export function babyLoginSuccessTarget(redirect: string | undefined) {
   if (publicId === null) {
     return { to: "/dashboard" as const };
   }
-  return { to: "/baby/$publicId" as const, params: { publicId } };
+  return { params: { publicId }, to: "/baby/$publicId" as const };
 }

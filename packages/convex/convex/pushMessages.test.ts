@@ -5,50 +5,50 @@ import { SUPPORTED_LOCALES } from "../src/i18n";
 import type { SupportedLocale } from "../src/i18n";
 import type { NotifiableStatus } from "../src/types";
 
-function msg(opts: { locale: SupportedLocale; status: NotifiableStatus; babyName: string }) {
+function msg(opts: { babyName: string; locale: SupportedLocale; status: NotifiableStatus }) {
   return getPushMessage(opts);
 }
 
 test("push copy follows the baby's locale and dialect", () => {
-  expect(msg({ locale: "sv", status: "labor_started", babyName: "Nova" })).toEqual({
-    title: "Nova: Förlossningen är igång!",
+  expect(msg({ babyName: "Nova", locale: "sv", status: "labor_started" })).toEqual({
     body: "Värkarna har börjat. Kika in för senaste nytt!",
+    title: "Nova: Förlossningen är igång!",
   });
   expect([
-    msg({ locale: "en-GB", status: "labor_started", babyName: "Nova" }),
-    msg({ locale: "en-GB", status: "gone_to_hospital", babyName: "Nova" }),
-    msg({ locale: "en-GB", status: "born", babyName: "Nova" }),
-    msg({ locale: "en-GB", status: "photo_added", babyName: "Nova" }),
-    msg({ locale: "en-GB", status: "update_posted", babyName: "Nova" }),
+    msg({ babyName: "Nova", locale: "en-GB", status: "labor_started" }),
+    msg({ babyName: "Nova", locale: "en-GB", status: "gone_to_hospital" }),
+    msg({ babyName: "Nova", locale: "en-GB", status: "born" }),
+    msg({ babyName: "Nova", locale: "en-GB", status: "photo_added" }),
+    msg({ babyName: "Nova", locale: "en-GB", status: "update_posted" }),
   ]).toEqual([
-    { title: "Nova: Labour's started!", body: "It's happening! Tap for the latest." },
-    { title: "Nova is heading to hospital!", body: "They're heading in. Tap for the latest." },
-    { title: "Nova is here! 🎉", body: "The wait is over. Tap for the happy news." },
-    { title: "Nova: New photo! 📸", body: "Tap to have a look!" },
-    { title: "Nova: New update", body: "Tap for the latest." },
+    { body: "It's happening! Tap for the latest.", title: "Nova: Labour's started!" },
+    { body: "They're heading in. Tap for the latest.", title: "Nova is heading to hospital!" },
+    { body: "The wait is over. Tap for the happy news.", title: "Nova is here! 🎉" },
+    { body: "Tap to have a look!", title: "Nova: New photo! 📸" },
+    { body: "Tap for the latest.", title: "Nova: New update" },
   ]);
   expect([
-    msg({ locale: "en-US", status: "labor_started", babyName: "Nova" }),
-    msg({ locale: "en-US", status: "gone_to_hospital", babyName: "Nova" }),
-    msg({ locale: "en-US", status: "born", babyName: "Nova" }),
-    msg({ locale: "en-US", status: "photo_added", babyName: "Nova" }),
+    msg({ babyName: "Nova", locale: "en-US", status: "labor_started" }),
+    msg({ babyName: "Nova", locale: "en-US", status: "gone_to_hospital" }),
+    msg({ babyName: "Nova", locale: "en-US", status: "born" }),
+    msg({ babyName: "Nova", locale: "en-US", status: "photo_added" }),
   ]).toEqual([
-    { title: "Nova: Labor's started!", body: "It's happening! Tap for the latest." },
+    { body: "It's happening! Tap for the latest.", title: "Nova: Labor's started!" },
     {
-      title: "Nova is heading to the hospital!",
       body: "They're heading in. Tap for the latest.",
+      title: "Nova is heading to the hospital!",
     },
-    { title: "Nova is here! 🎉", body: "The wait is over. Tap for the happy news." },
-    { title: "Nova: New photo! 📸", body: "Tap to take a look!" },
+    { body: "The wait is over. Tap for the happy news.", title: "Nova is here! 🎉" },
+    { body: "Tap to take a look!", title: "Nova: New photo! 📸" },
   ]);
-  expect(msg({ locale: "es", status: "born", babyName: "Nova" }).title).toBe(
+  expect(msg({ babyName: "Nova", locale: "es", status: "born" }).title).toBe(
     "¡Nova ya está aquí! 🎉",
   );
   expect([
-    msg({ locale: "pt-BR", status: "labor_started", babyName: "Nova" }).title,
-    msg({ locale: "pt-BR", status: "gone_to_hospital", babyName: "Nova" }).title,
-    msg({ locale: "pt-BR", status: "born", babyName: "Nova" }).title,
-    msg({ locale: "pt-BR", status: "photo_added", babyName: "Nova" }).title,
+    msg({ babyName: "Nova", locale: "pt-BR", status: "labor_started" }).title,
+    msg({ babyName: "Nova", locale: "pt-BR", status: "gone_to_hospital" }).title,
+    msg({ babyName: "Nova", locale: "pt-BR", status: "born" }).title,
+    msg({ babyName: "Nova", locale: "pt-BR", status: "photo_added" }).title,
   ]).toEqual([
     "Nova: o trabalho de parto começou!",
     "Nova está a caminho do hospital!",
@@ -60,52 +60,52 @@ test("push copy follows the baby's locale and dialect", () => {
 test("owner message push copy names the visitor and truncates long notes", () => {
   expect(
     getOwnerPushMessage({
-      locale: "en-GB",
-      event: "created",
-      babyName: "Nova",
       authorName: "Grandma",
+      babyName: "Nova",
+      event: "created",
+      locale: "en-GB",
       message: "Can't wait to meet you!",
     }),
   ).toEqual({
-    title: "New message for Nova",
     body: "Grandma: Can't wait to meet you!",
+    title: "New message for Nova",
   });
   expect(
     getOwnerPushMessage({
-      locale: "en-GB",
-      event: "updated",
-      babyName: "Nova",
       authorName: "Grandma",
+      babyName: "Nova",
+      event: "updated",
+      locale: "en-GB",
       message: "Fixed the typo",
     }),
   ).toEqual({
-    title: "Grandma updated their message on Nova's page",
     body: "Fixed the typo",
+    title: "Grandma updated their message on Nova's page",
   });
   expect(
     getOwnerPushMessage({
-      locale: "sv",
-      event: "updated",
-      babyName: "Nova",
       authorName: "Mormor",
+      babyName: "Nova",
+      event: "updated",
+      locale: "sv",
       message: "Korrigerade stavningen",
     }),
   ).toEqual({
-    title: "Mormor uppdaterade sin hälsning på Novas sida",
     body: "Korrigerade stavningen",
+    title: "Mormor uppdaterade sin hälsning på Novas sida",
   });
   expect(truncateOwnerPushBody("short")).toBe("short");
   expect(truncateOwnerPushBody("x".repeat(181)).length).toBe(180);
   expect(truncateOwnerPushBody("x".repeat(181)).endsWith("…")).toBe(true);
 
-  const events = ["created", "updated"] as const satisfies OwnerMessagePushEvent[];
+  const events = ["created", "updated"] as const satisfies Array<OwnerMessagePushEvent>;
   for (const locale of SUPPORTED_LOCALES) {
     for (const event of events) {
       const copy = getOwnerPushMessage({
-        locale,
-        event,
-        babyName: "Nova",
         authorName: "Ada",
+        babyName: "Nova",
+        event,
+        locale,
         message: "Hi from the waiting room",
       });
       expect(copy.title.length).toBeGreaterThan(0);

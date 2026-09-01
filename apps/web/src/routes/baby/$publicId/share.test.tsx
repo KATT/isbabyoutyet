@@ -16,12 +16,12 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: "missing-baby" },
+      route: Route,
     }),
   ).rejects.toMatchObject({ isNotFound: true });
 
-  const baby = await seedOwnedBaby(harness, { name: "Baby Nova", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Nova" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
@@ -33,21 +33,21 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: baby.publicId },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/baby/$publicId/share",
       params: { publicId: renamed?.publicId },
       replace: true,
+      to: "/baby/$publicId/share",
     },
   });
 });
 
 test("loader prefetches the canonical OG image in the browser", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
@@ -62,12 +62,14 @@ test("loader prefetches the canonical OG image in the browser", async () => {
     shareLink: string;
   }>({
     harness,
-    route: Route,
     params: { publicId: baby.publicId },
+    route: Route,
   });
 
   const babyDoc = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-  if (!babyDoc) throw new Error("expected baby");
+  if (!babyDoc) {
+    throw new Error("expected baby");
+  }
   const prefetchedImageUrl = new URL(data.imagePrefetch.input ?? "");
   expect(prefetchedImageUrl.pathname).toBe(`/og/baby/${baby.publicId}`);
   expect(prefetchedImageUrl.searchParams.get("v")).toBeTruthy();
@@ -78,7 +80,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
 
 test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
@@ -86,7 +88,9 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
     },
   });
   const staleBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-  if (!staleBaby) throw new Error("expected baby");
+  if (!staleBaby) {
+    throw new Error("expected baby");
+  }
   harness.queryClient.setQueryData(
     convexQuery(api.baby.getByPublicId, { id: baby.publicId }).queryKey,
     staleBaby,
@@ -102,19 +106,21 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
 
   const data = await runRouteLoader<{ imagePrefetch: { input: string | undefined } }>({
     harness,
-    route: Route,
     params: { publicId: baby.publicId },
+    route: Route,
   });
 
   const freshBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-  if (!freshBaby) throw new Error("expected baby");
+  if (!freshBaby) {
+    throw new Error("expected baby");
+  }
   expect(data.imagePrefetch.input).toBe(getBabySeo(freshBaby, baby.publicId).imageUrl);
   expect(freshBaby.theme).toBe("baby-blue");
 });
 
 test("copies from the route overlay and dismisses through overlay history", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
@@ -122,7 +128,9 @@ test("copies from the route overlay and dismisses through overlay history", asyn
     },
   });
   const babyDoc = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-  if (!babyDoc) throw new Error("expected baby");
+  if (!babyDoc) {
+    throw new Error("expected baby");
+  }
   const preview = getBabySeo(babyDoc, baby.publicId);
   const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
   const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
@@ -141,10 +149,10 @@ test("copies from the route overlay and dismisses through overlay history", asyn
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/share",
     initialEntry: `/baby/${baby.publicId}/share`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/share",
+    route: Route,
     wrap: null,
   });
 
@@ -171,7 +179,7 @@ test("copies from the route overlay and dismisses through overlay history", asyn
 
 test("BabyShareOverlay mounts from the real route loader", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
@@ -182,10 +190,10 @@ test("BabyShareOverlay mounts from the real route loader", async () => {
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/share",
     initialEntry: `/baby/${baby.publicId}/share`,
     overlayHistory: null,
+    path: "/baby/$publicId/share",
+    route: Route,
     wrap: null,
   });
 
@@ -197,7 +205,7 @@ test("BabyShareOverlay mounts from the real route loader", async () => {
 
 test("share overlay falls back to execCommand when clipboard.writeText fails", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
@@ -222,15 +230,15 @@ test("share overlay falls back to execCommand when clipboard.writeText fails", a
   const originalExecCommand = document.execCommand;
   Object.defineProperty(document, "execCommand", {
     configurable: true,
-    writable: true,
     value: execCommand,
+    writable: true,
   });
   await using _exec = makeResource({}, () => {
     if (hadExecCommand) {
       Object.defineProperty(document, "execCommand", {
         configurable: true,
-        writable: true,
         value: originalExecCommand,
+        writable: true,
       });
       return;
     }
@@ -240,10 +248,10 @@ test("share overlay falls back to execCommand when clipboard.writeText fails", a
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/share",
     initialEntry: `/baby/${baby.publicId}/share`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: false },
+    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/share",
+    route: Route,
     wrap: null,
   });
 

@@ -5,7 +5,7 @@
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const base64 = (base64String + padding).replaceAll("-", "+").replaceAll("_", "/");
 
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
@@ -20,9 +20,9 @@ function keysFromPushSubscription(subscription: PushSubscription) {
   const subscriptionData = subscription.toJSON();
   if (subscriptionData.endpoint && subscriptionData.keys?.p256dh && subscriptionData.keys?.auth) {
     return {
+      auth: subscriptionData.keys.auth,
       endpoint: subscriptionData.endpoint,
       p256dh: subscriptionData.keys.p256dh,
-      auth: subscriptionData.keys.auth,
     };
   }
   return null;
@@ -57,8 +57,8 @@ export async function ensureWebPushSubscription(vapidPublicKey: string) {
   }
 
   const pushSubscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    userVisibleOnly: true,
   });
   const keys = keysFromPushSubscription(pushSubscription);
   if (!keys) {

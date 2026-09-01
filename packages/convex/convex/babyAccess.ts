@@ -27,7 +27,9 @@ export async function canManageBaby(
   opts: { baby: Doc<"baby">; identity: AppIdentity },
 ) {
   const isOwner = opts.baby.ownerTokenIdentifier === opts.identity.tokenIdentifier;
-  if (isOwner) return true;
+  if (isOwner) {
+    return true;
+  }
   const coParent = await findActiveCoParent(ctx, {
     babyId: opts.baby._id,
     identity: opts.identity,
@@ -63,7 +65,7 @@ export async function requireBabyManager(ctx: DbCtx, babyRef: BabyIdOrPublicId) 
     }
   }
 
-  return { identity: caller, baby, isOwner };
+  return { baby, identity: caller, isOwner };
 }
 
 /**
@@ -96,7 +98,7 @@ export async function findBabyManager(ctx: DbCtx, babyRef: BabyIdOrPublicId) {
     }
   }
 
-  return { identity: caller, baby, isOwner };
+  return { baby, identity: caller, isOwner };
 }
 
 /**

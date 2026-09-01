@@ -22,11 +22,11 @@ function isWithinEditWindow(createdAt: number): boolean {
 async function scheduleOwnerEncouragementPush(
   ctx: MutationCtx,
   opts: {
-    baby: Doc<"baby">;
     authorName: string;
-    message: string;
+    baby: Doc<"baby">;
     encouragementId: Id<"encouragements">;
     event: OwnerMessagePushEvent;
+    message: string;
   },
 ) {
   const existing = await ctx.db
@@ -39,14 +39,14 @@ async function scheduleOwnerEncouragementPush(
 
   const preferences = await resolveBabyPreferences(ctx.db, opts.baby);
   await ctx.scheduler.runAfter(0, internal.pushNotifications.sendOwnerMessageNotification, {
+    authorName: opts.authorName,
     babyId: opts.baby._id,
     babyName: opts.baby.name,
-    publicId: opts.baby.publicId,
-    authorName: opts.authorName,
-    message: opts.message,
     encouragementId: opts.encouragementId,
     event: opts.event,
     locale: preferences.resolvedLocale,
+    message: opts.message,
+    publicId: opts.baby.publicId,
   });
 }
 
@@ -78,13 +78,13 @@ async function callerIsManager(ctx: MutationCtx, baby: Doc<"baby">) {
 
 export const create = mutationWithTriggers({
   args: {
-    babyId: v.id("baby"),
     authorName: v.string(),
-    message: v.string(),
-    visitorId: v.string(),
-    userAgent: v.union(v.string(), v.null()),
+    babyId: v.id("baby"),
     locale: v.union(v.string(), v.null()),
+    message: v.string(),
     timezone: v.union(v.string(), v.null()),
+    userAgent: v.union(v.string(), v.null()),
+    visitorId: v.string(),
   },
   handler: async (ctx, args) => {
     // Validate baby exists and is not soft-deleted
@@ -114,24 +114,24 @@ export const create = mutationWithTriggers({
       postedAt: createdAt,
     });
     const encouragementId = await ctx.db.insert("encouragements", {
-      babyId: args.babyId,
       authorName: trimmedName,
-      message: trimmedMessage,
+      babyId: args.babyId,
       createdAt,
-      timelineItemId,
-      visitorId: args.visitorId,
-      userAgent: args.userAgent,
       locale: args.locale,
+      message: trimmedMessage,
+      timelineItemId,
       timezone: args.timezone,
+      userAgent: args.userAgent,
+      visitorId: args.visitorId,
     });
 
     if (!(await callerIsManager(ctx, baby))) {
       await scheduleOwnerEncouragementPush(ctx, {
-        baby,
         authorName: trimmedName,
-        message: trimmedMessage,
+        baby,
         encouragementId,
         event: "created",
+        message: trimmedMessage,
       });
     }
 
@@ -142,8 +142,8 @@ export const create = mutationWithTriggers({
 export const update = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
-    visitorId: v.string(),
     message: v.string(),
+    visitorId: v.string(),
   },
   handler: async (ctx, args) => {
     const encouragement = await ctx.db.get(args.encouragementId);
@@ -174,11 +174,11 @@ export const update = mutationWithTriggers({
     const baby = await ctx.db.get(encouragement.babyId);
     if (baby && isActive(baby)) {
       await scheduleOwnerEncouragementPush(ctx, {
-        baby,
         authorName: encouragement.authorName,
-        message: trimmedMessage,
+        baby,
         encouragementId: args.encouragementId,
         event: "updated",
+        message: trimmedMessage,
       });
     }
   },
@@ -188,8 +188,8 @@ export const listByBaby = query({
   args: {
     babyId: v.id("baby"),
     /** The caller's visitor id, used to mark their posts with `isMine`. */
-    visitorId: v.union(v.string(), v.null()),
     paginationOpts: paginationOptsValidator,
+    visitorId: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const result = await ctx.db
@@ -205,9 +205,9 @@ export const listByBaby = query({
       page: result.page.filter(isActive).map((encouragement) => ({
         _id: encouragement._id,
         authorName: encouragement.authorName,
-        message: encouragement.message,
         createdAt: encouragement.createdAt,
         isMine: args.visitorId != null && encouragement.visitorId === args.visitorId,
+        message: encouragement.message,
       })),
     };
   },

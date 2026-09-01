@@ -39,7 +39,7 @@ test("runs an enabled action after the delay and cancels when disabled", async (
 test("delays becoming true and hides on the next timeout", async () => {
   vi.useFakeTimers();
   await using _timers = makeResource({}, () => vi.useRealTimers());
-  const hook = renderHook((props) => useDelayedBoolean({ value: props.value, delayMs: 200 }), {
+  const hook = renderHook((props) => useDelayedBoolean({ delayMs: 200, value: props.value }), {
     initialProps: { value: true },
   });
   await using _hook = makeResource({}, () => hook.unmount());

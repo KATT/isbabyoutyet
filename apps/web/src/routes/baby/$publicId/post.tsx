@@ -17,9 +17,9 @@ export const Route = createFileRoute("/baby/$publicId/post")({
     const token = await authenticateManagerOverlaySsr(opts.context);
     if (globalThis.window === undefined && !token) {
       throw redirect({
-        to: "/baby/$publicId",
         params: { publicId: opts.params.publicId },
         resetScroll: false,
+        to: "/baby/$publicId",
       });
     }
 
@@ -32,13 +32,14 @@ export const Route = createFileRoute("/baby/$publicId/post")({
     }
     if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
-        to: "/baby/$publicId/post",
         params: { publicId: babyDoc.publicId },
         replace: true,
+        to: "/baby/$publicId/post",
       });
     }
-    return token ? { token, isAuthenticated: true } : undefined;
+    return token ? { isAuthenticated: true, token } : undefined;
   },
+  component: BabyPostUpdateOverlay,
   loader: async (opts) => {
     const babyRef = opts.params.publicId;
     const data = await allKeyed({
@@ -51,15 +52,14 @@ export const Route = createFileRoute("/baby/$publicId/post")({
     });
     if (!data.myAccess.initialData.canManage || data.managerBaby.initialData === FORBIDDEN) {
       throw redirect({
-        to: "/baby/$publicId",
         params: { publicId: babyRef },
         resetScroll: false,
+        to: "/baby/$publicId",
       });
     }
     // oxlint-disable-next-line workspace/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
     return data;
   },
-  component: BabyPostUpdateOverlay,
 });
 
 export function BabyPostUpdateOverlay() {
@@ -83,12 +83,12 @@ export function BabyPostUpdateOverlay() {
       {...formOverlay.rootProps}
       onOpenChangeComplete={post.onOpenChangeComplete}
     >
-      <DialogContent ref={contentRef} initialFocus={contentRef} className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" initialFocus={contentRef} ref={contentRef}>
         <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
         <FormGuardProvider guard={formOverlay}>
           <UpdateComposer
-            babyId={managerBabyDoc._id}
             baby={baby}
+            babyId={managerBabyDoc._id}
             babyName={managerBabyDoc.name}
             onPosted={() => {
               void completeOnboardingStep({ stepId: "post_update" });

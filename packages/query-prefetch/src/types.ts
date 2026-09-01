@@ -26,7 +26,7 @@ export type QueryFactoryInput =
   | symbol
   | null
   | undefined
-  | QueryFactoryInput[]
+  | Array<QueryFactoryInput>
   | { readonly [key: string]: QueryFactoryInput };
 
 /**
@@ -52,7 +52,7 @@ export type QueryInput<TFactory extends QueryOptionsFactory> = Parameters<TFacto
  * stay required at the call site.
  */
 export type QueryInputArgs<TFactory extends QueryOptionsFactory> =
-  Parameters<TFactory> extends [unknown, ...unknown[]]
+  Parameters<TFactory> extends [unknown, ...Array<unknown>]
     ? [input: QueryInput<TFactory>]
     : [input?: QueryInput<TFactory>];
 
@@ -61,8 +61,8 @@ export type QueryInputArgs<TFactory extends QueryOptionsFactory> =
  * guaranteed by render time; component reads may still suspend or be pending.
  */
 export interface InitiatedQuery<TFactory extends QueryOptionsFactory> {
-  readonly input?: QueryInput<TFactory>;
   readonly [initiatedQueryBrand]: TFactory;
+  readonly input?: QueryInput<TFactory>;
 }
 
 /**
@@ -70,8 +70,8 @@ export interface InitiatedQuery<TFactory extends QueryOptionsFactory> {
  * started, but data is not guaranteed by render time.
  */
 export interface InitiatedInfiniteQuery<TFactory extends QueryOptionsFactory> {
-  readonly input?: QueryInput<TFactory>;
   readonly [initiatedInfiniteQueryBrand]: TFactory;
+  readonly input?: QueryInput<TFactory>;
 }
 
 /**
@@ -82,7 +82,7 @@ export interface InitiatedInfiniteQuery<TFactory extends QueryOptionsFactory> {
  * `queryClient.ensureQueryData` falls back to the `queryFn` type.
  */
 type QueryFnDataOf<TOptions extends AnyQueryOptions> = TOptions extends {
-  queryFn?: (...args: never[]) => infer TReturn;
+  queryFn?: (...args: Array<never>) => infer TReturn;
 }
   ? Awaited<TReturn>
   : unknown;

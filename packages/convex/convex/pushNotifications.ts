@@ -14,13 +14,13 @@ import { notifiableStatusValidator, ownerMessagePushEventValidator } from "./pus
 import { requiredEnv } from "./requiredEnv";
 
 type ShowPushPayload = {
-  title: string;
   body: string;
-  url: string;
+  dismiss: false;
   icon: string | undefined;
   image: string | undefined;
   tag: string | undefined;
-  dismiss: false;
+  title: string;
+  url: string;
 };
 
 type DismissPushPayload = {
@@ -35,16 +35,16 @@ function ownerMessagePushTag(encouragementId: string) {
 }
 
 type PushSubscriptionKeys = {
+  auth: string;
   endpoint: string;
   p256dh: string;
-  auth: string;
 };
 
 async function sendNotificationToSubscription(
   ctx: ActionCtx,
   opts: {
-    subscription: PushSubscriptionKeys;
     payload: PushPayload;
+    subscription: PushSubscriptionKeys;
   },
 ): Promise<boolean> {
   webPush.setVapidDetails(
@@ -56,8 +56,8 @@ async function sendNotificationToSubscription(
     const pushSubscription = {
       endpoint: opts.subscription.endpoint,
       keys: {
-        p256dh: opts.subscription.p256dh,
         auth: opts.subscription.auth,
+        p256dh: opts.subscription.p256dh,
       },
     };
 
@@ -94,8 +94,8 @@ async function sendPayloadToSubscriptionPages(
     const results = await Promise.allSettled(
       subscriptions.page.map((subscription) =>
         sendNotificationToSubscription(ctx, {
-          subscription,
           payload: opts.payload,
+          subscription,
         }),
       ),
     );
@@ -104,7 +104,9 @@ async function sendPayloadToSubscriptionPages(
     ).length;
     successCount += pageSuccessCount;
     failureCount += results.length - pageSuccessCount;
-    if (subscriptions.isDone) break;
+    if (subscriptions.isDone) {
+      break;
+    }
     cursor = subscriptions.continueCursor;
   }
 
@@ -113,28 +115,28 @@ async function sendPayloadToSubscriptionPages(
 
 export const sendNotification = internalAction({
   args: {
-    notificationId: v.id("scheduledNotifications"),
     babyId: v.id("baby"),
     babyName: v.string(),
+    customMessage: v.union(v.string(), v.null()),
+    locale: supportedLocaleValidator,
+    notificationId: v.id("scheduledNotifications"),
+    photoId: v.union(v.id("_storage"), v.null()),
     publicId: v.string(), // Still need publicId for the URL
     status: notifiableStatusValidator,
-    customMessage: v.union(v.string(), v.null()),
-    photoId: v.union(v.id("_storage"), v.null()),
     updateId: v.union(v.id("updates"), v.null()),
-    locale: supportedLocaleValidator,
   },
   handler: async (ctx, args) => {
     const message = getPushMessage({
+      babyName: args.babyName,
       locale: args.locale,
       status: args.status,
-      babyName: args.babyName,
     });
     const body = args.customMessage || message.body;
 
     const url = babyPageUrl(args.publicId);
     const imageStorageId = await ctx.runQuery(internal.baby.resolveNotificationImage, {
-      updateId: args.updateId ?? null,
       photoId: args.photoId ?? null,
+      updateId: args.updateId ?? null,
     });
     const image = imageStorageId
       ? ((await ctx.storage.getUrl(imageStorageId)) ?? undefined)
@@ -146,27 +148,27 @@ export const sendNotification = internalAction({
           internal.pushSubscriptions.getSubscriptionsPage,
           {
             babyId: args.babyId,
-            paginationOpts: { numItems: 100, cursor },
+            paginationOpts: { cursor, numItems: 100 },
           },
         );
         return {
           ...subscriptions,
           page: subscriptions.page.map((subscription) => ({
+            auth: subscription.auth,
             endpoint: subscription.endpoint,
             p256dh: subscription.p256dh,
-            auth: subscription.auth,
           })),
         };
       },
       payload: {
-        title: message.title,
         body,
-        url,
         icon: "/logo192.png",
         image,
+        title: message.title,
+        url,
         // Unique tag per baby+type so a later generic update doesn't replace a birth notice
-        tag: `baby-update-${args.publicId}-${args.status}`,
         dismiss: false,
+        tag: `baby-update-${args.publicId}-${args.status}`,
       },
     });
 
@@ -185,49 +187,49 @@ async function loadOwnerSubscriptionKeysPage(
     internal.pushSubscriptions.getOwnerSubscriptionsPage,
     {
       babyId: opts.babyId,
-      paginationOpts: { numItems: 100, cursor: opts.cursor },
+      paginationOpts: { cursor: opts.cursor, numItems: 100 },
     },
   );
   return {
     ...subscriptions,
     page: subscriptions.page.map((subscription) => ({
+      auth: subscription.auth,
       endpoint: subscription.endpoint,
       p256dh: subscription.p256dh,
-      auth: subscription.auth,
     })),
   };
 }
 
 export const sendOwnerMessageNotification = internalAction({
   args: {
+    authorName: v.string(),
     babyId: v.id("baby"),
     babyName: v.string(),
-    publicId: v.string(),
-    authorName: v.string(),
-    message: v.string(),
     encouragementId: v.id("encouragements"),
     event: ownerMessagePushEventValidator,
     locale: supportedLocaleValidator,
+    message: v.string(),
+    publicId: v.string(),
   },
   handler: async (ctx, args) => {
     const copy = getOwnerPushMessage({
-      locale: args.locale,
-      event: args.event,
-      babyName: args.babyName,
       authorName: args.authorName,
+      babyName: args.babyName,
+      event: args.event,
+      locale: args.locale,
       message: args.message,
     });
 
     await sendPayloadToSubscriptionPages(ctx, {
       loadPage: (cursor) => loadOwnerSubscriptionKeysPage(ctx, { babyId: args.babyId, cursor }),
       payload: {
-        title: copy.title,
         body: copy.body,
-        url: babyFeedUrl(args.publicId),
+        dismiss: false,
         icon: "/logo192.png",
         image: undefined,
         tag: ownerMessagePushTag(args.encouragementId),
-        dismiss: false,
+        title: copy.title,
+        url: babyFeedUrl(args.publicId),
       },
     });
   },

@@ -26,7 +26,7 @@ import { stubJsdomWindow } from "@/test/stubJsdomWindow";
  */
 function reparentRoute<TRoute extends AnyRoute>(
   route: TRoute,
-  opts: { path: string; getParentRoute: () => AnyRoute },
+  opts: { getParentRoute: () => AnyRoute; path: string },
 ): TRoute {
   // SAFETY: Test fixture is a subset of the production type.
   const update = route.update as (options: typeof opts) => TRoute;
@@ -39,16 +39,16 @@ function reparentRoute<TRoute extends AnyRoute>(
  */
 export async function renderMountedFileRoute(opts: {
   harness: ConvexTestHarness;
-  route: AnyRoute;
-  path: string;
   initialEntry: string;
-  /** Extra providers around the route outlet. */
-  wrap: ((children: ReactNode) => ReactNode) | null;
   /**
    * Shape overlay history like production: parent baby page, then push or
    * replace onto the overlay route (controls dismiss via back vs navigate).
    */
-  overlayHistory: { parentEntry: string; overlayPush: boolean } | null;
+  overlayHistory: { overlayPush: boolean; parentEntry: string } | null;
+  path: string;
+  route: AnyRoute;
+  /** Extra providers around the route outlet. */
+  wrap: ((children: ReactNode) => ReactNode) | null;
 }) {
   const context = routeContextFromHarness(opts.harness);
 
@@ -90,15 +90,15 @@ export async function renderMountedFileRoute(opts: {
   });
 
   const mountedRoute = reparentRoute(opts.route, {
-    path: opts.path,
     getParentRoute: () => rootRoute,
+    path: opts.path,
   });
 
   const router = createRouter({
-    routeTree: rootRoute.addChildren([mountedRoute]),
-    history,
-    defaultPendingMinMs: 0,
     context,
+    defaultPendingMinMs: 0,
+    history,
+    routeTree: rootRoute.addChildren([mountedRoute]),
   });
 
   await router.load();
@@ -107,7 +107,7 @@ export async function renderMountedFileRoute(opts: {
   const navigate = vi.spyOn(router, "navigate");
   const back = vi.spyOn(history, "back");
   const view = render(<RouterProvider router={router} />);
-  return makeAsyncResource({ view, router, harness: opts.harness, navigate, back }, async () => {
+  return makeAsyncResource({ back, harness: opts.harness, navigate, router, view }, async () => {
     navigate.mockRestore();
     back.mockRestore();
     view.unmount();
@@ -121,7 +121,9 @@ export function stubBrowserImageResource() {
   class MockImage {
     #load: (() => void) | null = null;
     addEventListener(type: string, listener: () => void) {
-      if (type === "load") this.#load = listener;
+      if (type === "load") {
+        this.#load = listener;
+      }
     }
     set src(value: string) {
       void value;

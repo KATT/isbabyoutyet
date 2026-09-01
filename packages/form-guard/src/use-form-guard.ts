@@ -34,6 +34,12 @@ export type FormGuardHandle = {
    * Safe mid-submit: reports `imperative-action`, which the guard allows.
    */
   close: () => void;
+  /** @internal consumed by the app's discard dialog. */
+  discardPrompt: {
+    onDiscard: () => void;
+    onOpenChange: (open: boolean) => void;
+    open: boolean;
+  };
   /**
    * Overlay adapter — spread onto the Base UI Root (`Popover` / `Dialog` /
    * `AlertDialog` / `Sheet`). Omit on full-page forms.
@@ -44,17 +50,11 @@ export type FormGuardHandle = {
   };
   /** @internal consumed by the context provider and the router adapter. */
   store: FormGuardStore;
-  /** @internal consumed by the app's discard dialog. */
-  discardPrompt: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onDiscard: () => void;
-  };
 };
 
 type FormGuardContextValue = {
+  ancestors: Array<FormGuardStore>;
   store: FormGuardStore;
-  ancestors: FormGuardStore[];
 };
 
 const FormGuardContext = createContext<FormGuardContextValue | null>(null);
@@ -65,7 +65,7 @@ const FormGuardContext = createContext<FormGuardContextValue | null>(null);
  * nested editor must also unblock the parent overlay's dismiss and
  * navigation guard. Empty outside any provider.
  */
-function useFormGuardStack(): FormGuardStore[] {
+function useFormGuardStack(): Array<FormGuardStore> {
   const ctx = useContext(FormGuardContext);
   return ctx ? [ctx.store, ...ctx.ancestors] : [];
 }
@@ -77,9 +77,9 @@ function useFormGuardStack(): FormGuardStore[] {
  * calls `onDiscard`.
  */
 export type DiscardPromptProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onDiscard: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
 };
 
 /**
@@ -92,10 +92,10 @@ export type DiscardPromptProps = {
  * discard requests to it).
  */
 export function FormGuardProvider(props: {
+  children: ReactNode;
   guard: FormGuardHandle;
   /** Localized confirm UI (e.g. an AlertDialog); rendered once at the stack root. */
   renderDiscardPrompt: (promptProps: DiscardPromptProps) => ReactNode;
-  children: ReactNode;
 }) {
   const store = props.guard.store;
   // The stack seen from the provider (i.e. the parent's) is this guard's
@@ -107,7 +107,7 @@ export function FormGuardProvider(props: {
   }, [store, ancestors]);
   return createElement(
     FormGuardContext.Provider,
-    { value: { store, ancestors } },
+    { value: { ancestors, store } },
     props.children,
     isStackRoot
       ? createElement(StackRootDiscardHost, {
@@ -131,7 +131,12 @@ function StackRootDiscardHost(props: {
   const prompt = props.guard.discardPrompt;
   const blocked = navigation.status === "blocked";
   return props.renderDiscardPrompt({
-    open: prompt.open || blocked,
+    onDiscard: () => {
+      prompt.onDiscard();
+      if (navigation.status === "blocked") {
+        navigation.proceed();
+      }
+    },
     onOpenChange: (open) => {
       if (open) {
         return;
@@ -141,12 +146,7 @@ function StackRootDiscardHost(props: {
         navigation.reset();
       }
     },
-    onDiscard: () => {
-      prompt.onDiscard();
-      if (navigation.status === "blocked") {
-        navigation.proceed();
-      }
-    },
+    open: prompt.open || blocked,
   });
 }
 
@@ -176,7 +176,15 @@ export function useFormGuard(opts: {
 
   return {
     close: store.close,
-    store,
+    discardPrompt: {
+      onDiscard: store.discard,
+      onOpenChange: (open) => {
+        if (!open) {
+          store.keepEditing();
+        }
+      },
+      open: promptOpen,
+    },
     rootProps: {
       actionsRef: store.actionsRef,
       onOpenChange: (open, eventDetails) => {
@@ -185,15 +193,7 @@ export function useFormGuard(opts: {
         }
       },
     },
-    discardPrompt: {
-      open: promptOpen,
-      onOpenChange: (open) => {
-        if (!open) {
-          store.keepEditing();
-        }
-      },
-      onDiscard: store.discard,
-    },
+    store,
   };
 }
 
@@ -217,7 +217,7 @@ export function useRegisterFormState(flags: FormStateFlags) {
   const isSubmitSuccessful = flags.isSubmitSuccessful;
   useEffect(() => {
     for (const store of stores) {
-      store.setFormState(id, { isDirty, isSubmitting, isSubmitSuccessful });
+      store.setFormState(id, { isDirty, isSubmitSuccessful, isSubmitting });
     }
     return () => {
       for (const store of stores) {

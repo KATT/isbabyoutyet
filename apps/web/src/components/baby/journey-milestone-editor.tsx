@@ -21,8 +21,8 @@ import { JOURNEY_OPTION_BY_VALUE, JOURNEY_PRESET_OPTIONS } from "./journey-optio
 
 type JourneyMilestoneEditorProps = {
   birthJourney: BirthJourney;
-  onBirthJourneyChange: (birthJourney: BirthJourney) => void;
   idPrefix: string;
+  onBirthJourneyChange: (birthJourney: BirthJourney) => void;
 };
 
 /**
@@ -34,11 +34,11 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
   const visibility = milestoneVisibilityForPreset(props.birthJourney);
   const presetItems = [
     ...JOURNEY_PRESET_OPTIONS.map((option) => ({
-      value: option.value,
       label: t(option.labelKey),
+      value: option.value,
     })),
     // Included so the closed trigger can show "Custom" when toggles diverge
-    { value: "custom" as const, label: t("Custom") },
+    { label: t("Custom"), value: "custom" as const },
   ];
 
   function requestVisibilityChange(nextVisibility: MilestoneVisibility) {
@@ -64,14 +64,14 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
         </p>
         <Select
           items={presetItems}
-          value={props.birthJourney}
           onValueChange={(value) => {
             if (value === "labor" || value === "home_birth" || value === "planned_c_section") {
               handlePresetSelect(value);
             }
           }}
+          value={props.birthJourney}
         >
-          <SelectTrigger aria-label={t("Presets")} size="sm" className="w-full">
+          <SelectTrigger aria-label={t("Presets")} className="w-full" size="sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false} className="w-(--anchor-width)">
@@ -92,13 +92,13 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
         </p>
 
         <label
-          htmlFor={`${props.idPrefix}-show-labor`}
           className="flex items-center justify-between gap-3"
+          htmlFor={`${props.idPrefix}-show-labor`}
         >
           <span className="text-sm font-medium">{t("Labour started")}</span>
           <Switch
-            id={`${props.idPrefix}-show-labor`}
             checked={visibility.showLabor}
+            id={`${props.idPrefix}-show-labor`}
             onCheckedChange={(checked) => {
               requestVisibilityChange({ ...visibility, showLabor: checked });
             }}
@@ -106,13 +106,13 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
         </label>
 
         <label
-          htmlFor={`${props.idPrefix}-show-hospital`}
           className="flex items-center justify-between gap-3"
+          htmlFor={`${props.idPrefix}-show-hospital`}
         >
           <span className="text-sm font-medium">{t("Gone to hospital")}</span>
           <Switch
-            id={`${props.idPrefix}-show-hospital`}
             checked={visibility.showHospital}
+            id={`${props.idPrefix}-show-hospital`}
             onCheckedChange={(checked) => {
               requestVisibilityChange({ ...visibility, showHospital: checked });
             }}
@@ -120,11 +120,11 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
         </label>
 
         <label
-          htmlFor={`${props.idPrefix}-show-born`}
           className="flex items-center justify-between gap-3 opacity-70"
+          htmlFor={`${props.idPrefix}-show-born`}
         >
           <span className="text-sm font-medium">{t("Baby born")}</span>
-          <Switch id={`${props.idPrefix}-show-born`} checked={true} disabled={true} />
+          <Switch checked={true} disabled={true} id={`${props.idPrefix}-show-born`} />
         </label>
       </div>
 

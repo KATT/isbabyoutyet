@@ -5,36 +5,36 @@ import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules, registerComponents, createBabyArgs, createEncouragementArgs } from "./test.setup";
 
-const FIRST_PAGE = { numItems: 10, cursor: null };
+const FIRST_PAGE = { cursor: null, numItems: 10 };
 
 async function setupWithBaby() {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const babyId: Id<"baby"> = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Baby Smith",
+      birthJourney: "labor",
       dueDate: "2026-09-01",
       dueDateDisplayMode: "exact",
+      lastActivityAt: 1,
+      name: "Baby Smith",
+      ownerTokenIdentifier: "https://convex.test|alice",
       publicDueDateText: null,
       publicId: "baby-smith",
-      birthJourney: "labor",
-      lastActivityAt: 1,
       subscriptionCount: 0,
+      userId: "alice",
     });
   });
-  return { t, babyId };
+  return { babyId, t };
 }
 
 test("visitors can create encouragements and list them", async () => {
-  const { t, babyId } = await setupWithBaby();
+  const { babyId, t } = await setupWithBaby();
 
   await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId,
       authorName: "Grandma",
+      babyId,
       message: "We can't wait to meet you!",
       visitorId: "visitor-1",
     }),
@@ -42,8 +42,8 @@ test("visitors can create encouragements and list them", async () => {
   await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId,
       authorName: "  Uncle Bob  ",
+      babyId,
       message: "Good luck! ",
       visitorId: "visitor-2",
     }),
@@ -51,15 +51,15 @@ test("visitors can create encouragements and list them", async () => {
 
   const result = await t.query(api.encouragements.listByBaby, {
     babyId,
-    visitorId: "visitor-2",
     paginationOpts: FIRST_PAGE,
+    visitorId: "visitor-2",
   });
 
   // Newest first; names and messages are trimmed; visitor credential and
   // metadata are never exposed — only an isMine marker for the caller
   expect(result.page).toMatchObject([
-    { authorName: "Uncle Bob", message: "Good luck!", isMine: true },
-    { authorName: "Grandma", message: "We can't wait to meet you!", isMine: false },
+    { authorName: "Uncle Bob", isMine: true, message: "Good luck!" },
+    { authorName: "Grandma", isMine: false, message: "We can't wait to meet you!" },
   ]);
   expect(result.page[0]).not.toHaveProperty("visitorId");
   expect(result.page[0]).not.toHaveProperty("userAgent");
@@ -71,35 +71,35 @@ test("visitors can create encouragements and list them", async () => {
       .collect();
   });
   expect(stored).toMatchObject([
-    { userAgent: null, locale: null, timezone: null },
-    { userAgent: null, locale: null, timezone: null },
+    { locale: null, timezone: null, userAgent: null },
+    { locale: null, timezone: null, userAgent: null },
   ]);
 });
 
 test("create persists visitor metadata when provided", async () => {
-  const { t, babyId } = await setupWithBaby();
+  const { babyId, t } = await setupWithBaby();
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId,
       authorName: "Grandma",
-      message: "Hi!",
-      visitorId: "visitor-1",
-      userAgent: "Mozilla/5.0",
+      babyId,
       locale: "en-US",
+      message: "Hi!",
       timezone: "Europe/Stockholm",
+      userAgent: "Mozilla/5.0",
+      visitorId: "visitor-1",
     }),
   );
   const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
   expect(stored).toMatchObject({
-    userAgent: "Mozilla/5.0",
     locale: "en-US",
     timezone: "Europe/Stockholm",
+    userAgent: "Mozilla/5.0",
   });
 });
 
 test("create rejects a missing baby, blank name, overlong name, and blank message", async () => {
-  const { t, babyId } = await setupWithBaby();
+  const { babyId, t } = await setupWithBaby();
 
   await t.run(async (ctx) => {
     await ctx.db.delete(babyId);
@@ -108,21 +108,21 @@ test("create rejects a missing baby, blank name, overlong name, and blank messag
     t.mutation(
       api.encouragements.create,
       createEncouragementArgs({
-        babyId,
         authorName: "Grandma",
+        babyId,
         message: "Hi!",
         visitorId: "visitor-1",
       }),
     ),
   ).rejects.toThrow("Baby not found");
 
-  const { t: t2, babyId: babyId2 } = await setupWithBaby();
+  const { babyId: babyId2, t: t2 } = await setupWithBaby();
   await expect(
     t2.mutation(
       api.encouragements.create,
       createEncouragementArgs({
-        babyId: babyId2,
         authorName: "   ",
+        babyId: babyId2,
         message: "Hi!",
         visitorId: "visitor-1",
       }),
@@ -132,8 +132,8 @@ test("create rejects a missing baby, blank name, overlong name, and blank messag
     t2.mutation(
       api.encouragements.create,
       createEncouragementArgs({
-        babyId: babyId2,
         authorName: "x".repeat(51),
+        babyId: babyId2,
         message: "Hi!",
         visitorId: "visitor-1",
       }),
@@ -143,8 +143,8 @@ test("create rejects a missing baby, blank name, overlong name, and blank messag
     t2.mutation(
       api.encouragements.create,
       createEncouragementArgs({
-        babyId: babyId2,
         authorName: "Grandma",
+        babyId: babyId2,
         message: "   ",
         visitorId: "visitor-1",
       }),
@@ -153,13 +153,13 @@ test("create rejects a missing baby, blank name, overlong name, and blank messag
 });
 
 test("the author can edit their encouragement within the edit window", async () => {
-  const { t, babyId } = await setupWithBaby();
+  const { babyId, t } = await setupWithBaby();
 
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId,
       authorName: "Grandma",
+      babyId,
       message: "Typo mesage",
       visitorId: "visitor-1",
     }),
@@ -167,8 +167,8 @@ test("the author can edit their encouragement within the edit window", async () 
 
   await t.mutation(api.encouragements.update, {
     encouragementId,
-    visitorId: "visitor-1",
     message: "Fixed message",
+    visitorId: "visitor-1",
   });
 
   const result = await t.query(api.encouragements.listByBaby, {
@@ -180,13 +180,13 @@ test("the author can edit their encouragement within the edit window", async () 
 });
 
 test("editing is refused for the wrong visitor and after the edit window", async () => {
-  const { t, babyId } = await setupWithBaby();
+  const { babyId, t } = await setupWithBaby();
 
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId,
       authorName: "Grandma",
+      babyId,
       message: "Original message",
       visitorId: "visitor-1",
     }),
@@ -196,8 +196,8 @@ test("editing is refused for the wrong visitor and after the edit window", async
   await expect(
     t.mutation(api.encouragements.update, {
       encouragementId,
-      visitorId: "visitor-imposter",
       message: "Hijacked",
+      visitorId: "visitor-imposter",
     }),
   ).rejects.toThrow("Not authorized to edit this encouragement");
 
@@ -216,20 +216,20 @@ test("editing is refused for the wrong visitor and after the edit window", async
   await expect(
     t.mutation(api.encouragements.update, {
       encouragementId,
-      visitorId: "visitor-1",
       message: "Too late",
+      visitorId: "visitor-1",
     }),
   ).rejects.toThrow("Edit window has expired");
 });
 
 test("the baby's owner can remove an encouragement", async () => {
-  const { t, babyId } = await setupWithBaby();
+  const { babyId, t } = await setupWithBaby();
 
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId,
       authorName: "Stranger",
+      babyId,
       message: "Something inappropriate",
       visitorId: "visitor-x",
     }),
@@ -252,13 +252,13 @@ test("the baby's owner can remove an encouragement", async () => {
 });
 
 test("removing an encouragement soft-deletes it so it can be recovered later", async () => {
-  const { t, babyId } = await setupWithBaby();
+  const { babyId, t } = await setupWithBaby();
 
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId,
       authorName: "Grandma",
+      babyId,
       message: "Oops wrong baby",
       visitorId: "visitor-1",
     }),
@@ -288,23 +288,23 @@ test("visitor messages notify opted-in owners; deletes retract the push instead 
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Notify Baby",
       dueDate: "2026-09-01",
+      name: "Notify Baby",
     }),
   );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "owner-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/owner-inbox",
     p256dh: "owner-key",
-    auth: "owner-secret",
     userAgent: "Mozilla/5.0",
   });
 
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: created.babyId,
       authorName: "Grandma",
+      babyId: created.babyId,
       message: "Thinking of you!",
       visitorId: "visitor-1",
     }),
@@ -319,14 +319,14 @@ test("visitor messages notify opted-in owners; deletes retract the push instead 
 
   await t.mutation(api.encouragements.update, {
     encouragementId,
-    visitorId: "visitor-1",
     message: "Thinking of you both!",
+    visitorId: "visitor-1",
   });
   await t.finishInProgressScheduledFunctions();
   const afterEdit = await t.query(api.encouragements.listByBaby, {
     babyId: created.babyId,
-    visitorId: "visitor-1",
     paginationOpts: FIRST_PAGE,
+    visitorId: "visitor-1",
   });
   expect(afterEdit.page).toMatchObject([{ message: "Thinking of you both!" }]);
 
@@ -337,8 +337,8 @@ test("visitor messages notify opted-in owners; deletes retract the push instead 
   await t.finishInProgressScheduledFunctions();
   const afterDelete = await t.query(api.encouragements.listByBaby, {
     babyId: created.babyId,
-    visitorId: "visitor-1",
     paginationOpts: FIRST_PAGE,
+    visitorId: "visitor-1",
   });
   expect(afterDelete.page).toEqual([]);
 });
@@ -350,23 +350,23 @@ test("a manager posting or deleting a message does not notify owners", async () 
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Quiet Delete Baby",
       dueDate: "2026-09-01",
+      name: "Quiet Delete Baby",
     }),
   );
   await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    auth: "owner-secret",
     babyId: created.babyId,
     endpoint: "https://push.example/owner-inbox",
     p256dh: "owner-key",
-    auth: "owner-secret",
     userAgent: "Mozilla/5.0",
   });
 
   const managerPostId = await asAlice.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: created.babyId,
       authorName: "Alice",
+      babyId: created.babyId,
       message: "Owner note",
       visitorId: "owner-visitor",
     }),
@@ -376,8 +376,8 @@ test("a manager posting or deleting a message does not notify owners", async () 
   const encouragementId = await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({
-      babyId: created.babyId,
       authorName: "Stranger",
+      babyId: created.babyId,
       message: "Please delete me",
       visitorId: "visitor-x",
     }),
@@ -396,8 +396,8 @@ test("a manager posting or deleting a message does not notify owners", async () 
 
   const listed = await t.query(api.encouragements.listByBaby, {
     babyId: created.babyId,
-    visitorId: null,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(listed.page).toEqual([]);
   expect(

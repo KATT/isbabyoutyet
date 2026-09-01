@@ -2,18 +2,18 @@ import type { AnyRoute } from "@tanstack/react-router";
 import type { ConvexTestHarness } from "@/test/convexTestHarness";
 
 export type RouteTestContext = {
-  queryClient: ConvexTestHarness["queryClient"];
+  convexClient: ConvexTestHarness["convexClient"];
   convexPreloader: ConvexTestHarness["convexPreloader"];
   convexQueryClient: ConvexTestHarness["convexQueryClient"];
-  convexClient: ConvexTestHarness["convexClient"];
+  queryClient: ConvexTestHarness["queryClient"];
 };
 
 export function routeContextFromHarness(harness: ConvexTestHarness): RouteTestContext {
   return {
-    queryClient: harness.queryClient,
+    convexClient: harness.convexClient,
     convexPreloader: harness.convexPreloader,
     convexQueryClient: harness.convexQueryClient,
-    convexClient: harness.convexClient,
+    queryClient: harness.queryClient,
   };
 }
 
@@ -22,8 +22,8 @@ type RouteBeforeLoadResult = object | void | null;
 
 export async function runRouteBeforeLoad(opts: {
   harness: ConvexTestHarness;
-  route: AnyRoute;
   params: Record<string, string>;
+  route: AnyRoute;
 }) {
   // SAFETY: Test fixture is a subset of the production type.
   const beforeLoad = opts.route.options.beforeLoad as
@@ -43,8 +43,8 @@ export async function runRouteBeforeLoad(opts: {
 
 export async function runRouteLoader<TLoaderData>(opts: {
   harness: ConvexTestHarness;
-  route: AnyRoute;
   params: Record<string, string>;
+  route: AnyRoute;
 }) {
   // SAFETY: Test fixture is a subset of the production type.
   const loader = opts.route.options.loader as
