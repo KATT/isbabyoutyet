@@ -74,6 +74,13 @@ test("encouragementHasUserId reads the union or the legacy userId", () => {
   expect(
     encouragementHasUserId({
       author: { type: "visitor", visitorId: "v1" },
+      userId: "bob",
+      visitorId: "v1",
+    }),
+  ).toBe(true);
+  expect(
+    encouragementHasUserId({
+      author: { type: "visitor", visitorId: "v1" },
       userId: null,
       visitorId: "v1",
     }),

@@ -63,7 +63,10 @@ export function storedEncouragementUserId(author: EncouragementAuthor | null) {
 }
 
 export function encouragementHasUserId(row: EncouragementOwnership) {
-  return storedEncouragementAuthor(row).type === "user";
+  if (row.author?.type === "user" || row.userId != null) {
+    return true;
+  }
+  return false;
 }
 
 export function encouragementIsMine(
