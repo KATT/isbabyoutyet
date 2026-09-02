@@ -94,6 +94,7 @@ const enGB = {
   "Baby Name": "Baby name",
   "Baby update": "Baby update",
   "Back to Dashboard": "Back to Dashboard",
+  "Back to sign in": "Back to sign in",
   "Before labour starts": "Before labour starts",
   "Birth journey": "Birth journey",
   Born: "Born",
@@ -107,10 +108,14 @@ const enGB = {
   Change: "Change",
   "Change photo": "Change photo",
   "Change theme": "Change theme",
+  "Check your inbox for the next step.": "Check your inbox for the next step.",
   "Choose a journey": "Choose a journey",
+  "Choose a new password": "Choose a new password",
+  "Choose a new password – Is Baby Out Yet?": "Choose a new password | Is Baby Out Yet?",
   "Choose a theme that matches your style — your page, your way.":
     "Choose a theme that feels like you.",
   "Choose notifications": "Choose notifications",
+  "Confirm new password": "Confirm new password",
   "Click any stage to see how your page will look":
     "Click any stage to see how your page will look",
   "Close checklist": "Close checklist",
@@ -181,6 +186,8 @@ const enGB = {
   "Enter a message for visitors": "Enter a message for visitors",
   "Enter baby's name": "Enter baby's name",
   "Enter your baby's name and due date to get started": "Add your baby's name and due date.",
+  "Enter your email and we'll send you a secure reset link.":
+    "Enter your email and we'll send you a secure reset link.",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
     "Everyone sees the countdown, even when baby is taking their sweet time.",
   "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
@@ -208,6 +215,7 @@ const enGB = {
   "Feel free to post test messages — we reset this demo daily.":
     "Feel free to post test messages — we reset this demo daily.",
   "Follow {{name}}'s arrival": "Follow {{name}}'s arrival",
+  "Forgot your password?": "Forgot your password?",
   "For You": "For You",
   "For you, and for everyone waiting by the phone":
     "For you and everyone refreshing the group chat.",
@@ -249,6 +257,8 @@ const enGB = {
   "How it works": "How it works",
   "If this photo is the current page photo, the previous one takes its place.":
     "If this photo is the current page photo, the previous one takes its place.",
+  "If an account exists for that address, a password reset email is on its way.":
+    "If an account exists for that address, a password reset email is on its way.",
   "If you close now, your edits will be lost.": "If you close now, your edits will be lost.",
   "Install this app on your Home Screen before enabling push notifications on iOS.":
     "Add this page to your Home Screen before turning on notifications.",
@@ -300,6 +310,7 @@ const enGB = {
   "Name is required": "Name is required",
   "Name must be {{count}} characters or less": "Name must be {{count}} characters or less",
   "Name must be at least 2 characters": "Name must be at least 2 characters",
+  "New password": "New password",
   "New photo": "New photo",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Nice work. Share your page and enjoy fewer 'any news?' texts.",
@@ -351,6 +362,8 @@ const enGB = {
   "Page photo": "Page photo",
   Password: "Password",
   "Password must be at least 6 characters": "Password must be at least 6 characters",
+  "Password must be at least 8 characters": "Password must be at least 8 characters",
+  "Passwords do not match": "Passwords do not match",
   "Peek at settings": "Peek at settings",
   "People who can post updates and change settings":
     "People who can post updates and change settings",
@@ -398,8 +411,11 @@ const enGB = {
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Renaming may change the page address, but links you have already shared will keep working.",
   "Request another language": "Request another language",
+  "Request another link": "Request another link",
   "Requested languages": "Requested languages",
   Requester: "Requester",
+  "Reset your password": "Reset your password",
+  "Reset your password – Is Baby Out Yet?": "Reset your password | Is Baby Out Yet?",
   "Restart getting started tour": "Restart getting started tour",
   "Restart tour": "Restart tour",
   "Review babies, users, and language requests across the platform.":
@@ -414,6 +430,7 @@ const enGB = {
   "See it in action": "See it in action",
   "Send Encouragement": "Send some love",
   "Send encouragement": "Send some love",
+  "Send reset link": "Send reset link",
   "Sending...": "Sending...",
   "Sending notification...": "Sending notification...",
   "Sending your encouragement...": "Sending your message...",
@@ -492,6 +509,7 @@ const enGB = {
   "This is how your page will look when shared.": "This is how your page will look when shared.",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "We start with your browser language. New baby pages use it too.",
+  "This reset link is invalid or has expired.": "This reset link is invalid or has expired.",
   "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
     "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.",
   "This removes the update from the timeline.": "This removes the update from the timeline.",
@@ -505,10 +523,14 @@ const enGB = {
   "Track the progress of labour and birth": "Follow labour and birth",
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labour and birth. Know when baby arrives!",
+  "Unable to request a password reset": "Unable to request a password reset",
+  "Unable to reset your password": "Unable to reset your password",
   Unsubscribe: "Unsubscribe",
   "Unsubscribed from notifications!": "Notifications off",
   "Unsubscribing from notifications...": "Unsubscribing from notifications...",
   "Up and running in under a minute": "Up and running in under a minute",
+  "Use at least eight characters for your new password.":
+    "Use at least eight characters for your new password.",
   Update: "Update",
   "Update as You Go": "Update as You Go",
   "Update as you go": "Update as you go",
@@ -517,6 +539,7 @@ const enGB = {
   "Update message (optional)": "Update message (optional)",
   "Update posted": "Update posted",
   "Update posted!": "Update posted!",
+  "Update password": "Update password",
   "Update removed": "Update removed",
   "Updates & encouragements": "Updates & messages",
   "Updates from the family will show up here.": "Updates from the family will show up here.",

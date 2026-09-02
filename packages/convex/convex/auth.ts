@@ -2,7 +2,9 @@ import { betterAuth } from "better-auth/minimal";
 import { createAuthMiddleware } from "better-auth/api";
 import { createClient } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
+import { requireActionCtx } from "@convex-dev/better-auth/utils";
 import authConfig from "./auth.config";
+import { sendPasswordResetEmail } from "./cloudflareEmail";
 import { components, internal } from "./_generated/api";
 import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
@@ -93,6 +95,23 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+      resetPasswordTokenExpiresIn: 60 * 30,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async (data) => {
+        requireActionCtx(convexCtx);
+        await sendPasswordResetEmail({
+          deps: null,
+          recipient: data.user.email,
+          resetUrl: data.url,
+        });
+      },
+    },
+    // Convex better-auth already exposes a rateLimit table; enable it on
+    // preview too (Better Auth defaults to production-only). Password-reset
+    // endpoints are capped at 3 requests / 60s by Better Auth's built-ins.
+    rateLimit: {
+      enabled: true,
+      storage: "database",
     },
     hooks: {
       after: createAuthMiddleware(async (ctx) => {

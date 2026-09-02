@@ -31,7 +31,12 @@ type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
   readonly BETTER_AUTH_SECRET: string | undefined;
+  readonly CLOUDFLARE_ACCOUNT_ID: string | undefined;
+  readonly CLOUDFLARE_EMAIL_API_TOKEN: string | undefined;
+  readonly EMAIL_FROM: string | undefined;
+  readonly EMAIL_FROM_PREVIEW: string | undefined;
   readonly NODE_ENV: string | undefined;
+  readonly PREVIEW_SCHEMA_FINGERPRINT: string | undefined;
   readonly SITE_URL: string | undefined;
   readonly VAPID_PRIVATE_KEY: string | undefined;
   readonly VAPID_PUBLIC_KEY: string | undefined;

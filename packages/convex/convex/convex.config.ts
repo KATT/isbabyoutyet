@@ -7,6 +7,10 @@ import tableHistory from "convex-table-history/convex.config";
 const app = defineApp({
   env: {
     BETTER_AUTH_SECRET: v.optional(v.string()),
+    CLOUDFLARE_ACCOUNT_ID: v.optional(v.string()),
+    CLOUDFLARE_EMAIL_API_TOKEN: v.optional(v.string()),
+    EMAIL_FROM: v.optional(v.string()),
+    EMAIL_FROM_PREVIEW: v.optional(v.string()),
     NODE_ENV: v.optional(v.string()),
     PREVIEW_SCHEMA_FINGERPRINT: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),

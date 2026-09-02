@@ -216,7 +216,15 @@ export function LoginCard(props: {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("Password")}</FormLabel>
+                  <div className="flex items-center justify-between gap-3">
+                    <FormLabel>{t("Password")}</FormLabel>
+                    <Link
+                      className="text-xs font-semibold text-primary hover:text-primary/80 underline underline-offset-4"
+                      to="/auth/forgot-password"
+                    >
+                      {t("Forgot your password?")}
+                    </Link>
+                  </div>
                   <FormControl>
                     <Input type="password" {...field} />
                   </FormControl>

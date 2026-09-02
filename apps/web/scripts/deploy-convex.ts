@@ -65,6 +65,10 @@ import { z } from "zod";
 
 const vercelEnvSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(1),
+  CLOUDFLARE_ACCOUNT_ID: z.string().min(1).optional(),
+  CLOUDFLARE_EMAIL_API_TOKEN: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(1).optional(),
+  EMAIL_FROM_PREVIEW: z.string().min(1).optional(),
   VAPID_PRIVATE_KEY: z.string().min(1),
   VAPID_PUBLIC_KEY: z.string().min(1),
   VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),
@@ -263,6 +267,9 @@ if (plan.kind === "merge-queue-web-only") {
 
   if (plan.writeEnv) {
     for (const [key, value] of Object.entries(convexEnv)) {
+      if (value === undefined) {
+        continue;
+      }
       convexCli(["env", "set", key, value, ...previewArgs]);
     }
     if (plan.kind !== "production") {
