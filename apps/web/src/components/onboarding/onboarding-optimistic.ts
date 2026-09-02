@@ -18,7 +18,7 @@ function setOnboardingMine(localStore: OptimisticLocalStore, next: OnboardingPro
 
 function withEffectiveSteps(
   progress: OnboardingProgress,
-  completedSteps: string[],
+  completedSteps: Array<string>,
 ): OnboardingProgress {
   const set = new Set(completedSteps);
   if (progress.hasBaby) {
@@ -30,9 +30,9 @@ function withEffectiveSteps(
   const effectiveSteps = ONBOARDING_STEP_IDS.filter((id) => set.has(id));
   return {
     ...progress,
+    allDone: effectiveSteps.length >= ONBOARDING_STEP_IDS.length,
     completedSteps,
     effectiveSteps,
-    allDone: effectiveSteps.length >= ONBOARDING_STEP_IDS.length,
   };
 }
 
@@ -43,10 +43,10 @@ export function optimisticallySetMinimized(progress: OnboardingProgress, minimiz
 export function optimisticallyDismissChecklist(progress: OnboardingProgress) {
   return {
     ...progress,
-    checklistDismissed: true,
-    welcomeDismissed: true,
-    minimized: true,
     activeCoachmarkStepId: null,
+    checklistDismissed: true,
+    minimized: true,
+    welcomeDismissed: true,
   };
 }
 
@@ -71,9 +71,9 @@ export function optimisticallyCompleteStep(progress: OnboardingProgress, stepId:
   const next = withEffectiveSteps(progress, [...progress.completedSteps, stepId]);
   return {
     ...next,
-    welcomeDismissed: true,
     activeCoachmarkStepId:
       progress.activeCoachmarkStepId === stepId ? null : progress.activeCoachmarkStepId,
+    welcomeDismissed: true,
   };
 }
 

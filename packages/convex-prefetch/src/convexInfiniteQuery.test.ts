@@ -18,29 +18,29 @@ test("convexInfiniteQuery builds cursor pagination options", () => {
   });
 
   expect(options.queryKey[0]).toBe(CONVEX_INFINITE_QUERY_KEY);
-  expect(options.initialPageParam).toEqual({ numItems: 20, cursor: null });
+  expect(options.initialPageParam).toEqual({ cursor: null, numItems: 20 });
   expect(
     options.getNextPageParam(
-      { page: [], isDone: false, continueCursor: "c1" },
+      { continueCursor: "c1", isDone: false, page: [] },
       [],
-      { numItems: 20, cursor: null },
+      { cursor: null, numItems: 20 },
       [],
     ),
-  ).toEqual({ numItems: 20, cursor: "c1" });
+  ).toEqual({ cursor: "c1", numItems: 20 });
   expect(
     options.getNextPageParam(
-      { page: [], isDone: true, continueCursor: "c1" },
+      { continueCursor: "c1", isDone: true, page: [] },
       [],
-      { numItems: 20, cursor: null },
+      { cursor: null, numItems: 20 },
       [],
     ),
   ).toBeUndefined();
 });
 
 test("convexInfiniteQuery queryFn uses the registered Convex client", async () => {
-  const query = vi.fn<() => Promise<{ page: unknown[]; isDone: boolean; continueCursor: string }>>(
-    async () => ({ page: ["row"], isDone: true, continueCursor: "" }),
-  );
+  const query = vi.fn<
+    () => Promise<{ continueCursor: string; isDone: boolean; page: Array<unknown> }>
+  >(async () => ({ continueCursor: "", isDone: true, page: ["row"] }));
   registerConvexInfiniteQueryClient({
     // @ts-expect-error — fixture only implements query
     convexClient: { query },
@@ -53,67 +53,67 @@ test("convexInfiniteQuery queryFn uses the registered Convex client", async () =
     initialNumItems: 20,
   });
   const page = await options.queryFn!({
-    queryKey: options.queryKey,
-    pageParam: options.initialPageParam,
-    meta: undefined,
-    signal: new AbortController().signal,
     client: new QueryClient(),
     direction: "forward",
+    meta: undefined,
+    pageParam: options.initialPageParam,
+    queryKey: options.queryKey,
+    signal: new AbortController().signal,
   });
 
   expect(query).toHaveBeenCalledWith("admin:listBabies", {
     hideDemo: true,
-    paginationOpts: { numItems: 20, cursor: null },
+    paginationOpts: { cursor: null, numItems: 20 },
   });
-  expect(page).toEqual({ page: ["row"], isDone: true, continueCursor: "" });
+  expect(page).toEqual({ continueCursor: "", isDone: true, page: ["row"] });
 });
 
 test("convexInfiniteQueryFn merges pageParam into paginationOpts", async () => {
-  const query = vi.fn<() => Promise<{ page: unknown[]; isDone: boolean; continueCursor: string }>>(
-    async () => ({ page: [], isDone: true, continueCursor: "" }),
-  );
+  const query = vi.fn<
+    () => Promise<{ continueCursor: string; isDone: boolean; page: Array<unknown> }>
+  >(async () => ({ continueCursor: "", isDone: true, page: [] }));
   const convexQueryClient = {
+    convexClient: { query },
     queryFn: () => async () => {
       throw new Error("fallback should not run");
     },
-    convexClient: { query },
     serverHttpClient: undefined,
   };
 
   // @ts-expect-error — stand-in only implements queryFn/convexClient
   const queryFn = convexInfiniteQueryFn(convexQueryClient);
   const result = await queryFn({
-    queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
-    pageParam: { numItems: 20, cursor: null },
-    meta: undefined,
-    signal: new AbortController().signal,
     client: new QueryClient(),
     direction: "forward",
+    meta: undefined,
+    pageParam: { cursor: null, numItems: 20 },
+    queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
+    signal: new AbortController().signal,
   });
 
   expect(query).toHaveBeenCalledWith("admin:listBabies", {
     hideDemo: true,
-    paginationOpts: { numItems: 20, cursor: null },
+    paginationOpts: { cursor: null, numItems: 20 },
   });
-  expect(result).toEqual({ page: [], isDone: true, continueCursor: "" });
+  expect(result).toEqual({ continueCursor: "", isDone: true, page: [] });
 });
 
 test("convexInfiniteQueryFn falls back for non-infinite keys", async () => {
   const fallback = vi.fn<() => Promise<string>>(async () => "ok");
   const convexQueryClient = {
-    queryFn: () => fallback,
     convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
+    queryFn: () => fallback,
     serverHttpClient: undefined,
   };
 
   // @ts-expect-error — stand-in only implements queryFn/convexClient
   const queryFn = convexInfiniteQueryFn(convexQueryClient);
   const result = await queryFn({
-    queryKey: ["convexQuery", "profile:get", {}],
-    pageParam: undefined,
-    meta: undefined,
-    signal: new AbortController().signal,
     client: new QueryClient(),
+    meta: undefined,
+    pageParam: undefined,
+    queryKey: ["convexQuery", "profile:get", {}],
+    signal: new AbortController().signal,
   });
 
   expect(fallback).toHaveBeenCalled();
@@ -131,20 +131,20 @@ test("convexInfiniteQuery queryFn rejects when the client was never registered",
 
   await expect(
     options.queryFn!({
-      queryKey: options.queryKey,
-      pageParam: options.initialPageParam,
-      meta: undefined,
-      signal: new AbortController().signal,
       client: new QueryClient(),
       direction: "forward",
+      meta: undefined,
+      pageParam: options.initialPageParam,
+      queryKey: options.queryKey,
+      signal: new AbortController().signal,
     }),
   ).rejects.toThrow("registerConvexInfiniteQueryClient() was not called");
 });
 
 test("convexInfiniteQueryFn rejects without a pageParam", async () => {
   const convexQueryClient = {
-    queryFn: () => async () => "unused",
     convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
+    queryFn: () => async () => "unused",
     serverHttpClient: undefined,
   };
   // @ts-expect-error — stand-in only implements queryFn/convexClient
@@ -152,25 +152,25 @@ test("convexInfiniteQueryFn rejects without a pageParam", async () => {
 
   await expect(
     queryFn({
-      queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
-      pageParam: undefined,
-      meta: undefined,
-      signal: new AbortController().signal,
       client: new QueryClient(),
       direction: "forward",
+      meta: undefined,
+      pageParam: undefined,
+      queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
+      signal: new AbortController().signal,
     }),
   ).rejects.toThrow("Convex infinite query requires an initialPageParam");
 });
 
 test("convexInfiniteQueryFn uses the SSR HTTP client when window is undefined", async () => {
   const consistentQuery = vi.fn<
-    () => Promise<{ page: unknown[]; isDone: boolean; continueCursor: string }>
-  >(async () => ({ page: ["ssr"], isDone: true, continueCursor: "" }));
+    () => Promise<{ continueCursor: string; isDone: boolean; page: Array<unknown> }>
+  >(async () => ({ continueCursor: "", isDone: true, page: ["ssr"] }));
   const convexQueryClient = {
+    convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     queryFn: () => async () => {
       throw new Error("fallback should not run");
     },
-    convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: { consistentQuery },
   };
 
@@ -183,19 +183,19 @@ test("convexInfiniteQueryFn uses the SSR HTTP client when window is undefined", 
     // @ts-expect-error — stand-in only implements queryFn/convexClient
     const queryFn = convexInfiniteQueryFn(convexQueryClient);
     const result = await queryFn({
-      queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
-      pageParam: { numItems: 20, cursor: null },
-      meta: undefined,
-      signal: new AbortController().signal,
       client: new QueryClient(),
       direction: "forward",
+      meta: undefined,
+      pageParam: { cursor: null, numItems: 20 },
+      queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
+      signal: new AbortController().signal,
     });
 
     expect(consistentQuery).toHaveBeenCalledWith("admin:listBabies", {
       hideDemo: true,
-      paginationOpts: { numItems: 20, cursor: null },
+      paginationOpts: { cursor: null, numItems: 20 },
     });
-    expect(result).toEqual({ page: ["ssr"], isDone: true, continueCursor: "" });
+    expect(result).toEqual({ continueCursor: "", isDone: true, page: ["ssr"] });
   } finally {
     globalThis.window = originalWindow;
   }
@@ -203,8 +203,8 @@ test("convexInfiniteQueryFn uses the SSR HTTP client when window is undefined", 
 
 test("convexInfiniteQueryFn rejects on SSR when the HTTP client is missing", async () => {
   const convexQueryClient = {
-    queryFn: () => async () => "unused",
     convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
+    queryFn: () => async () => "unused",
     serverHttpClient: undefined,
   };
 
@@ -217,12 +217,12 @@ test("convexInfiniteQueryFn rejects on SSR when the HTTP client is missing", asy
     const queryFn = convexInfiniteQueryFn(convexQueryClient);
     await expect(
       queryFn({
-        queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
-        pageParam: { numItems: 20, cursor: null },
-        meta: undefined,
-        signal: new AbortController().signal,
         client: new QueryClient(),
         direction: "forward",
+        meta: undefined,
+        pageParam: { cursor: null, numItems: 20 },
+        queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
+        signal: new AbortController().signal,
       }),
     ).rejects.toThrow("Convex SSR HTTP client is not available");
   } finally {

@@ -55,8 +55,8 @@ test("search robots meta keeps Google indexing off family pages", () => {
   const indexed = searchRobotsMeta({ index: true });
   const hidden = searchRobotsMeta({ index: false });
   expect(indexed).toEqual([
-    { name: "robots", content: "index, follow" },
-    { name: "googlebot", content: "index, follow" },
+    { content: "index, follow", name: "robots" },
+    { content: "index, follow", name: "googlebot" },
   ]);
   expect(hidden.some((tag) => tag.content.includes("noindex"))).toBe(true);
   expect(hidden.some((tag) => tag.name === "googlebot" && tag.content.includes("noindex"))).toBe(

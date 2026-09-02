@@ -38,11 +38,13 @@
       "entry": [
         "workspace.ts!",
         "anti-slop/index.ts!",
+        "nkzw/index.ts!",
         "infer-callback-params.ts!",
         "inline-jsx-callback.ts!",
         "no-banned-react-reexport.ts!",
         "no-convex-optional.ts!",
         "no-convex-query-hooks.ts!",
+        "no-custom-test-timeout.ts!",
         "no-invalid-convex-client.ts!",
         "no-manual-memoization.ts!",
         "no-mock.ts!",

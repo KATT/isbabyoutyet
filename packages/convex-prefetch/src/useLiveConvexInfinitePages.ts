@@ -15,24 +15,24 @@ import {
 } from "convex/server";
 
 type LivePage = {
-  page: unknown[];
-  isDone: boolean;
   continueCursor: string;
+  isDone: boolean;
+  page: Array<unknown>;
 };
 
 type LivePagesSnapshot = {
-  queryKey: QueryKey;
   args: DefaultFunctionArgs;
-  pageParams: PaginationOptions[];
+  pageParams: Array<PaginationOptions>;
+  queryKey: QueryKey;
 };
 
 type WatchDeps = {
-  queryKey: QueryKey;
   args: DefaultFunctionArgs;
-  pageParams: PaginationOptions[];
-  funcName: string;
-  queryClient: ReturnType<typeof useQueryClient>;
   convex: ReturnType<typeof useConvex>;
+  funcName: string;
+  pageParams: Array<PaginationOptions>;
+  queryClient: ReturnType<typeof useQueryClient>;
+  queryKey: QueryKey;
 };
 
 function createSubscribe(deps: WatchDeps) {
@@ -92,10 +92,10 @@ function createSubscribe(deps: WatchDeps) {
  * during render (banned by react/refs).
  */
 export function useLiveConvexInfinitePages(opts: {
-  queryKey: QueryKey;
-  funcRef: FunctionReference<"query">;
   args: DefaultFunctionArgs;
-  pageParams: PaginationOptions[];
+  funcRef: FunctionReference<"query">;
+  pageParams: Array<PaginationOptions>;
+  queryKey: QueryKey;
 }) {
   const queryClient = useQueryClient();
   const convex = useConvex();
@@ -106,9 +106,9 @@ export function useLiveConvexInfinitePages(opts: {
   // `getFunctionName` / `makeFunctionReference` stabilize the function ref.
   const funcName = getFunctionName(opts.funcRef);
   const [snapshot, setSnapshot] = useState<LivePagesSnapshot>(() => ({
-    queryKey: opts.queryKey,
     args: opts.args,
     pageParams: opts.pageParams,
+    queryKey: opts.queryKey,
   }));
   const nextQueryKey = replaceEqualDeep(snapshot.queryKey, opts.queryKey);
   const nextArgs = replaceEqualDeep(snapshot.args, opts.args);
@@ -119,19 +119,19 @@ export function useLiveConvexInfinitePages(opts: {
     nextPageParams !== snapshot.pageParams
   ) {
     setSnapshot({
-      queryKey: nextQueryKey,
       args: nextArgs,
       pageParams: nextPageParams,
+      queryKey: nextQueryKey,
     });
   }
 
   const watchDeps: WatchDeps = {
-    queryKey: snapshot.queryKey,
     args: snapshot.args,
-    pageParams: snapshot.pageParams,
-    funcName,
-    queryClient,
     convex,
+    funcName,
+    pageParams: snapshot.pageParams,
+    queryClient,
+    queryKey: snapshot.queryKey,
   };
 
   // Keep a stable `subscribe` identity across renders when watch inputs are

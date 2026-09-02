@@ -19,8 +19,8 @@ type CompleteStepHolder = {
 
 async function renderOnboardingHost(opts: {
   harness: Awaited<ReturnType<typeof createConvexTestHarness>>;
-  surface: "dashboard" | "baby";
   session: { data: { user: { id: string } } | null; isPending: boolean };
+  surface: "dashboard" | "baby";
 }) {
   const onboarding = await opts.harness.convexPreloader.ensureQueryData(api.onboarding.getMine, {});
   return await renderWithTestRouter(
@@ -31,11 +31,11 @@ async function renderOnboardingHost(opts: {
       >
         <LocaleProvider locale="en-GB">
           <OnboardingHostWithSession
-            surface={opts.surface}
-            onboarding={onboarding}
             enabled={undefined}
-            spotlight={undefined}
+            onboarding={onboarding}
             session={opts.session}
+            spotlight={undefined}
+            surface={opts.surface}
           />
         </LocaleProvider>
       </ConvexProvider>
@@ -54,17 +54,17 @@ function plantTourTarget(targetId: string) {
   el.getBoundingClientRect = () =>
     // SAFETY: Test fixture is a subset of the production type.
     ({
+      bottom: 120,
+      height: 40,
+      left: 80,
+      right: 120,
+      toJSON: () => ({}),
+      top: 80,
+      width: 40,
       x: 80,
       y: 80,
-      top: 80,
-      left: 80,
-      bottom: 120,
-      right: 120,
-      width: 40,
-      height: 40,
-      toJSON: () => ({}),
     }) as DOMRect;
-  document.body.appendChild(el);
+  document.body.append(el);
   return makeResource(el, () => {
     el.remove();
   });
@@ -91,11 +91,11 @@ test("returns null for anonymous visitors", async () => {
     harness,
     ui: (
       <OnboardingHostWithSession
-        surface="dashboard"
-        onboarding={onboarding}
         enabled={undefined}
-        spotlight={undefined}
+        onboarding={onboarding}
         session={{ data: null, isPending: false }}
+        spotlight={undefined}
+        surface="dashboard"
       />
     ),
     wrap: null,
@@ -109,15 +109,15 @@ test("shows the checklist on first run without a welcome dialog", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "dashboard",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "dashboard",
   });
 
   expect(view.getAllByText("Add your first baby").length).toBeGreaterThan(0);
@@ -128,16 +128,16 @@ test("mounts authed onboarding host when progress is loaded", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "dashboard",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "dashboard",
   });
 
   expect(view.getAllByText(/getting started/i).length).toBeGreaterThan(0);
@@ -147,16 +147,16 @@ test("minimizes the checklist through the host mutation", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "dashboard",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "dashboard",
   });
 
   fireEvent.click(view.getByRole("button", { name: /^minimize$/i }));
@@ -184,16 +184,16 @@ test("highlights how to restore the guide after dismissal", async () => {
   });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "dashboard",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "dashboard",
   });
 
   fireEvent.click(view.getAllByRole("button", { name: "Dismiss guide" })[0]!);
@@ -204,7 +204,7 @@ test("highlights how to restore the guide after dismissal", async () => {
   await vi.waitFor(() => {
     expect(view.getByText("Guide dismissed")).toBeTruthy();
   });
-  expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+  expect(scrollTo).toHaveBeenCalledWith({ behavior: "auto", top: 0 });
 
   fireEvent.click(view.getByRole("button", { name: "Hide tip" }));
   await vi.waitFor(async () => {
@@ -217,17 +217,17 @@ test("renders the guide on any owner baby page", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
-  await seedOwnedBaby(harness, { name: "Other", dueDate: "2026-10-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
+  await seedOwnedBaby(harness, { dueDate: "2026-10-01", name: "Other" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "baby",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "baby",
   });
 
   expect(view.getAllByText(/share the link/i).length).toBeGreaterThan(0);
@@ -239,16 +239,16 @@ test("keeps the coachmark tip hidden until a tip target is activated", async () 
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "baby",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "baby",
   });
 
   expect(view.queryByRole("button", { name: "Hide tip" })).toBeNull();
@@ -265,17 +265,17 @@ test("auto-dismisses the checklist shortly after all steps are done", async () =
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
   await seedAllOnboardingStepsDone(harness, baby.babyId);
 
   await using _view = await renderOnboardingHost({
     harness,
-    surface: "dashboard",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "dashboard",
   });
 
   await vi.advanceTimersByTimeAsync(4000);
@@ -294,17 +294,17 @@ test("auto-dismiss timer survives progress re-renders", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
   await seedAllOnboardingStepsDone(harness, baby.babyId);
 
   await using _view = await renderOnboardingHost({
     harness,
-    surface: "dashboard",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "dashboard",
   });
 
   await vi.advanceTimersByTimeAsync(2000);
@@ -323,11 +323,11 @@ test("Show me for settings scrolls, highlights, and completes on Got it", async 
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
   await postTestUpdate(harness, {
     babyId: baby.babyId,
     message: "First update",
@@ -336,8 +336,8 @@ test("Show me for settings scrolls, highlights, and completes on Got it", async 
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "baby",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "baby",
   });
 
   fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
@@ -362,23 +362,23 @@ test("Show me for share scrolls the tour target into view", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "baby",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "baby",
   });
 
   fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
   await vi.waitFor(() => {
     expect(scrollIntoView).toHaveBeenCalledWith({
-      block: "center",
       behavior: "smooth",
+      block: "center",
       inline: "nearest",
     });
   });
@@ -392,16 +392,16 @@ test("Show me activates the tip even when the tour target is not in the DOM", as
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "baby",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "baby",
   });
 
   fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
@@ -417,11 +417,11 @@ test("messages-from-visitors tip scrolls, highlights, and completes on Got it wi
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
   await postTestUpdate(harness, {
     babyId: baby.babyId,
     message: "First update",
@@ -432,14 +432,14 @@ test("messages-from-visitors tip scrolls, highlights, and completes on Got it wi
 
   const encouragementsBefore = await harness.client.query(api.encouragements.listByBaby, {
     babyId: baby.babyId,
-    paginationOpts: { numItems: 20, cursor: null },
+    paginationOpts: { cursor: null, numItems: 20 },
     visitorId: null,
   });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "baby",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "baby",
   });
 
   fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
@@ -457,7 +457,7 @@ test("messages-from-visitors tip scrolls, highlights, and completes on Got it wi
 
   const encouragementsAfter = await harness.client.query(api.encouragements.listByBaby, {
     babyId: baby.babyId,
-    paginationOpts: { numItems: 20, cursor: null },
+    paginationOpts: { cursor: null, numItems: 20 },
     visitorId: null,
   });
   expect(encouragementsAfter.page).toEqual(encouragementsBefore.page);
@@ -467,16 +467,16 @@ test("authed onboarding host wires Convex mutations into the view", async () => 
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "dashboard",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "dashboard",
   });
 
   expect(view.getAllByText(/getting started/i).length).toBeGreaterThan(0);
@@ -486,11 +486,11 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
 
   const holder: CompleteStepHolder = { completeStep: null };
   function Probe() {
@@ -518,19 +518,19 @@ test("baby-page settings tip completes through the host Show me action", async (
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: userId });
-  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Smith" });
   await harness.client.mutation(api.onboarding.completeStep, { stepId: "add_baby" });
   await harness.client.mutation(api.onboarding.completeStep, { stepId: "share_link" });
   await harness.client.mutation(api.onboarding.completeStep, { stepId: "post_update" });
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "baby",
     session: { data: { user: { id: userId } }, isPending: false },
+    surface: "baby",
   });
 
   fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);

@@ -18,7 +18,7 @@ export function useVisualViewportMetrics() {
   const style: CSSProperties & Record<"--visual-viewport-bottom", string> = {
     "--visual-viewport-bottom": `${bottom}px`,
   };
-  return { bottom, width, left, style };
+  return { bottom, left, style, width };
 }
 
 function subscribeToVisualViewport(onStoreChange: () => void) {

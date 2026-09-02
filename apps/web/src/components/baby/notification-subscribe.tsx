@@ -21,7 +21,7 @@ import type { InitiatedQuery } from "@workspace/query-prefetch";
 import { getQueryInitiator, preloadedQueryOptions } from "@workspace/query-prefetch";
 import type { ReactElement } from "react";
 import { toast } from "sonner";
-import * as z from "zod";
+import { z } from "zod";
 import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -53,10 +53,10 @@ type BrowserPushCapability =
   | { kind: "serviceWorkerTimeout" }
   | { kind: "unsubscribed" }
   | {
-      kind: "subscribed";
-      subscription: PushSubscription;
       family: boolean;
+      kind: "subscribed";
       messages: boolean;
+      subscription: PushSubscription;
     };
 
 const browserPushCapabilityQueryKey = ["browserPushCapability"] as const;
@@ -66,11 +66,11 @@ const SERVICE_WORKER_READY_TIMEOUT_MESSAGE = "Service worker ready timeout";
 
 export function browserPushQueryOptions(queryClient: QueryClient, babyRef: string) {
   return queryOptions({
-    queryKey: [...browserPushCapabilityQueryKey, babyRef],
     queryFn:
       globalThis.window !== undefined
         ? () => resolveBrowserPushCapability(queryClient, babyRef)
         : skipToken,
+    queryKey: [...browserPushCapabilityQueryKey, babyRef],
   });
 }
 
@@ -103,10 +103,10 @@ export function prefetchBrowserPushCapability(
 }
 
 type NotificationSubscribeProps = {
-  babyId: Id<"baby">;
-  vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
-  browserPush: InitiatedQuery<BrowserPushCapabilityFactory>;
   audience: "visitor" | "manager";
+  babyId: Id<"baby">;
+  browserPush: InitiatedQuery<BrowserPushCapabilityFactory>;
+  vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
 };
 
 type NotificationSelection = {
@@ -149,10 +149,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         return;
       }
       const pushKeys = {
+        auth: existing.auth,
         babyId: props.babyId,
         endpoint: existing.endpoint,
         p256dh: existing.p256dh,
-        auth: existing.auth,
       };
       if (familyOn) {
         await unsubscribeMutationFn(pushKeys);
@@ -165,10 +165,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
     const keys = await ensureWebPushSubscription(vapidPublicKey);
     const pushKeys = {
+      auth: keys.auth,
       babyId: props.babyId,
       endpoint: keys.endpoint,
       p256dh: keys.p256dh,
-      auth: keys.auth,
       userAgent: navigator.userAgent,
     };
     if (selection.family) {
@@ -197,10 +197,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       }
       const keys = await ensureWebPushSubscription(vapidPublicKey);
       await subscribeMutationFn({
+        auth: keys.auth,
         babyId: props.babyId,
         endpoint: keys.endpoint,
         p256dh: keys.p256dh,
-        auth: keys.auth,
         userAgent: navigator.userAgent,
       });
     },
@@ -216,10 +216,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         throw new Error(t("Failed to get subscription data"));
       }
       return await unsubscribeMutationFn({
+        auth: keys.auth,
         babyId: props.babyId,
         endpoint: keys.endpoint,
         p256dh: keys.p256dh,
-        auth: keys.auth,
       });
     },
     onSuccess: () => {
@@ -245,7 +245,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         <IosPwaInstallPrompt
           audience={props.audience === "manager" ? "owner" : "visitor"}
           trigger={
-            <Button variant="default" size="lg">
+            <Button size="lg" variant="default">
               <Bell className="w-5 h-5" />
               {t("Get Notifications")}
             </Button>
@@ -260,9 +260,9 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         return (
           <ManagerNotificationChooserView
             familyDefault={!familyOn && !messagesOn ? true : Boolean(familyOn)}
-            messagesDefault={!familyOn && !messagesOn ? true : Boolean(messagesOn)}
-            isSubscribed={Boolean(isSubscribed)}
             isPending={isLoading}
+            isSubscribed={Boolean(isSubscribed)}
+            messagesDefault={!familyOn && !messagesOn ? true : Boolean(messagesOn)}
             onSubmit={async (selection) => {
               await toastPushSync({
                 run: subscribeMutation.mutateAsync(selection),
@@ -275,17 +275,17 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       }
       return (
         <NotificationSubscribeControls
-          isSubscribed={Boolean(isSubscribed)}
           isLoading={isLoading}
+          isSubscribed={Boolean(isSubscribed)}
           onClick={() => {
             if (isSubscribed) {
               toast.promise(unsubscribeMutation.mutateAsync(), {
-                loading: t("Unsubscribing from notifications..."),
-                success: t("Unsubscribed from notifications!"),
                 error: (error) =>
                   error instanceof Error
                     ? error.message
                     : t("Failed to unsubscribe from notifications"),
+                loading: t("Unsubscribing from notifications..."),
+                success: t("Unsubscribed from notifications!"),
               });
               return;
             }
@@ -309,18 +309,18 @@ function toastPushSync(opts: { run: Promise<void>; t: TranslationFunction; turni
     opts.run,
     opts.turningOff
       ? {
-          loading: opts.t("Unsubscribing from notifications..."),
-          success: opts.t("Unsubscribed from notifications!"),
           error: (error) =>
             error instanceof Error
               ? error.message
               : opts.t("Failed to unsubscribe from notifications"),
+          loading: opts.t("Unsubscribing from notifications..."),
+          success: opts.t("Unsubscribed from notifications!"),
         }
       : {
-          loading: opts.t("Subscribing to notifications..."),
-          success: opts.t("Subscribed to notifications!"),
           error: (error) =>
             error instanceof Error ? error.message : opts.t("Failed to subscribe to notifications"),
+          loading: opts.t("Subscribing to notifications..."),
+          success: opts.t("Subscribed to notifications!"),
         },
   );
   return opts.run;
@@ -329,7 +329,7 @@ function toastPushSync(opts: { run: Promise<void>; t: TranslationFunction; turni
 function GetNotificationsPending() {
   const { t } = useI18n();
   return (
-    <Button variant="default" size="lg" disabled>
+    <Button disabled size="lg" variant="default">
       <Bell className="w-5 h-5" />
       {t("Get Notifications")}
     </Button>
@@ -337,8 +337,8 @@ function GetNotificationsPending() {
 }
 
 export function IosPwaInstallPrompt(props: {
-  trigger: ReactElement;
   audience: "visitor" | "owner";
+  trigger: ReactElement;
 }) {
   const { t } = useI18n();
 
@@ -412,9 +412,9 @@ const chooserSchema = z.object({
  */
 export function ManagerNotificationChooserView(props: {
   familyDefault: boolean;
-  messagesDefault: boolean;
-  isSubscribed: boolean;
   isPending: boolean;
+  isSubscribed: boolean;
+  messagesDefault: boolean;
   onSubmit: (selection: NotificationSelection) => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -429,12 +429,12 @@ export function ManagerNotificationChooserView(props: {
               render={
                 <Button
                   disabled={props.isPending}
-                  variant={props.isSubscribed ? "secondary" : "default"}
                   size="lg"
+                  variant={props.isSubscribed ? "secondary" : "default"}
                 >
                   <GetNotificationsButtonLabel
-                    isSubscribed={props.isSubscribed}
                     isLoading={props.isPending}
+                    isSubscribed={props.isSubscribed}
                   />
                 </Button>
               }
@@ -448,12 +448,12 @@ export function ManagerNotificationChooserView(props: {
       <DialogContent>
         <FormGuardProvider guard={overlay}>
           <ManagerNotificationChooserForm
-            key={`${String(props.familyDefault)}:${String(props.messagesDefault)}`}
             familyDefault={props.familyDefault}
-            messagesDefault={props.messagesDefault}
             isPending={props.isPending}
-            onSubmit={props.onSubmit}
+            key={`${String(props.familyDefault)}:${String(props.messagesDefault)}`}
+            messagesDefault={props.messagesDefault}
             onClose={overlay.close}
+            onSubmit={props.onSubmit}
           />
         </FormGuardProvider>
       </DialogContent>
@@ -463,18 +463,18 @@ export function ManagerNotificationChooserView(props: {
 
 function ManagerNotificationChooserForm(props: {
   familyDefault: boolean;
-  messagesDefault: boolean;
   isPending: boolean;
-  onSubmit: (selection: NotificationSelection) => Promise<void>;
+  messagesDefault: boolean;
   onClose: () => void;
+  onSubmit: (selection: NotificationSelection) => Promise<void>;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: chooserSchema,
     defaultValues: {
       family: props.familyDefault,
       messages: props.messagesDefault,
     },
+    schema: chooserSchema,
   });
 
   return (
@@ -500,9 +500,9 @@ function ManagerNotificationChooserForm(props: {
                 <Field orientation="horizontal">
                   <FormControl>
                     <Checkbox
-                      id="notify-family"
                       checked={renderProps.field.value}
                       disabled={props.isPending}
+                      id="notify-family"
                       onCheckedChange={(checked) => {
                         renderProps.field.onChange(checked === true);
                       }}
@@ -528,9 +528,9 @@ function ManagerNotificationChooserForm(props: {
                 <Field orientation="horizontal">
                   <FormControl>
                     <Checkbox
-                      id="notify-messages"
                       checked={renderProps.field.value}
                       disabled={props.isPending}
+                      id="notify-messages"
                       onCheckedChange={(checked) => {
                         renderProps.field.onChange(checked === true);
                       }}
@@ -552,10 +552,10 @@ function ManagerNotificationChooserForm(props: {
       </FieldSet>
       <DialogFooter>
         <SubmitButton
+          disabled={props.isPending}
           form="context"
           IconComponent={null}
           iconPosition="start"
-          disabled={props.isPending}
         >
           {t("Save")}
         </SubmitButton>
@@ -564,7 +564,7 @@ function ManagerNotificationChooserForm(props: {
   );
 }
 
-function GetNotificationsButtonLabel(props: { isSubscribed: boolean; isLoading: boolean }) {
+function GetNotificationsButtonLabel(props: { isLoading: boolean; isSubscribed: boolean }) {
   const { t } = useI18n();
   if (props.isSubscribed) {
     return (
@@ -583,8 +583,8 @@ function GetNotificationsButtonLabel(props: { isSubscribed: boolean; isLoading: 
 }
 
 function NotificationSubscribeControls(props: {
-  isSubscribed: boolean;
   isLoading: boolean;
+  isSubscribed: boolean;
   onClick: () => void;
 }) {
   const { t } = useI18n();
@@ -597,14 +597,14 @@ function NotificationSubscribeControls(props: {
       <TooltipTrigger
         render={
           <Button
-            onClick={props.onClick}
             disabled={props.isLoading}
-            variant={props.isSubscribed ? "secondary" : "default"}
+            onClick={props.onClick}
             size="lg"
+            variant={props.isSubscribed ? "secondary" : "default"}
           >
             <GetNotificationsButtonLabel
-              isSubscribed={props.isSubscribed}
               isLoading={props.isLoading}
+              isSubscribed={props.isSubscribed}
             />
           </Button>
         }
@@ -668,9 +668,9 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
 }
 
 function fetchFamilyIsSubscribed(opts: {
-  queryClient: QueryClient;
   babyRef: string;
   endpoint: string;
+  queryClient: QueryClient;
 }) {
   return opts.queryClient.fetchQuery(
     convexQuery(api.pushSubscriptions.isSubscribed, {
@@ -681,9 +681,9 @@ function fetchFamilyIsSubscribed(opts: {
 }
 
 function fetchOwnerIsSubscribed(opts: {
-  queryClient: QueryClient;
   babyRef: string;
   endpoint: string;
+  queryClient: QueryClient;
 }) {
   return opts.queryClient.fetchQuery(
     convexQuery(api.pushSubscriptions.isOwnerSubscribed, {
@@ -712,21 +712,21 @@ async function resolveBrowserPushCapability(
     if (subscription) {
       const [family, messages] = await Promise.all([
         fetchFamilyIsSubscribed({
-          queryClient,
           babyRef,
           endpoint: subscription.endpoint,
+          queryClient,
         }),
         fetchOwnerIsSubscribed({
-          queryClient,
           babyRef,
           endpoint: subscription.endpoint,
+          queryClient,
         }),
       ]);
       return {
-        kind: "subscribed",
-        subscription,
         family: Boolean(family),
+        kind: "subscribed",
         messages: Boolean(messages),
+        subscription,
       };
     }
     return { kind: "unsubscribed" };

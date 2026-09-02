@@ -20,28 +20,28 @@ function spyOnToastErrorResource() {
 }
 
 const baby: BabyData = {
-  name: "Nova",
-  timeZone: "Europe/London",
+  babyBorn: null,
   dueDate: "2026-09-01T00:00:00.000Z",
   dueDateDisplayMode: "exact",
+  laborStarted: "2026-08-10T08:00:00.000Z",
+  milestoneVisibility: { showHospital: true, showLabor: true },
+  name: "Nova",
+  photoId: null,
   publicDueDateText: null,
   theme: null,
-  laborStarted: "2026-08-10T08:00:00.000Z",
+  timeZone: "Europe/London",
   wentToHospital: null,
-  babyBorn: null,
-  photoId: null,
-  milestoneVisibility: { showLabor: true, showHospital: true },
 };
 
 const absentSettingsProps = {
   birthJourney: "labor" as const,
-  profileLocale: "en-GB" as const,
-  onDelete: null,
   coParents: null,
   messagePush: null,
+  onDelete: null,
   onMilestoneRedate: () => undefined,
   onMilestoneRemove: () => undefined,
   onOpenChangeComplete: null,
+  profileLocale: "en-GB" as const,
 };
 
 function openJourneyEditor(view: RenderResult) {
@@ -51,7 +51,9 @@ function openJourneyEditor(view: RenderResult) {
 /** Press the modal dialog's backdrop the way a real pointer would. */
 function clickDialogBackdrop(view: RenderResult) {
   const backdrop = view.baseElement.querySelector("[data-slot=dialog-overlay]");
-  if (!backdrop) throw new Error("dialog backdrop missing");
+  if (!backdrop) {
+    throw new Error("dialog backdrop missing");
+  }
   fireEvent.pointerDown(backdrop, { pointerType: "mouse" });
   fireEvent.mouseDown(backdrop);
   fireEvent.mouseUp(backdrop);
@@ -72,9 +74,9 @@ test("settings dialog shows page fields when open and stays closed when not", as
   await using closed = await renderWithTestRouter(
     <SettingsPanel
       baby={baby}
+      onOpenChange={onOpenChange}
       onUpdate={onUpdate}
       open={false}
-      onOpenChange={onOpenChange}
       {...absentSettingsProps}
     />,
   );
@@ -84,9 +86,9 @@ test("settings dialog shows page fields when open and stays closed when not", as
   await using open = await renderWithTestRouter(
     <SettingsPanel
       baby={baby}
+      onOpenChange={onOpenChange}
       onUpdate={onUpdate}
       open={true}
-      onOpenChange={onOpenChange}
       {...absentSettingsProps}
     />,
   );
@@ -125,9 +127,9 @@ test("closing settings with a dirty nested editor prompts before discarding", as
     <LocaleProvider locale="en-GB">
       <SettingsPanel
         baby={baby}
+        onOpenChange={onOpenChange}
         onUpdate={onUpdate}
         open
-        onOpenChange={onOpenChange}
         {...absentSettingsProps}
       />
     </LocaleProvider>,
@@ -160,9 +162,9 @@ test("clicking the backdrop with a dirty nested editor shows one prompt for the 
     <LocaleProvider locale="en-GB">
       <SettingsPanel
         baby={baby}
+        onOpenChange={onOpenChange}
         onUpdate={onUpdate}
         open
-        onOpenChange={onOpenChange}
         {...absentSettingsProps}
       />
     </LocaleProvider>,
@@ -205,9 +207,9 @@ test("due date row previews optional public text", async () => {
         dueDateDisplayMode: "message",
         publicDueDateText: "Any day now",
       }}
+      onOpenChange={vi.fn<(open: boolean) => void>()}
       onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
       open
-      onOpenChange={vi.fn<(open: boolean) => void>()}
       {...absentSettingsProps}
     />,
   );
@@ -223,17 +225,17 @@ test("delete page control appears when onDelete is provided", async () => {
   await using view = await renderWithTestRouter(
     <SettingsPanel
       baby={baby}
-      onUpdate={onUpdate}
-      onDelete={onDelete}
       birthJourney="labor"
-      open={true}
-      onOpenChange={onOpenChange}
-      onOpenChangeComplete={null}
-      profileLocale="en-GB"
       coParents={null}
       messagePush={null}
+      onDelete={onDelete}
       onMilestoneRedate={() => undefined}
       onMilestoneRemove={() => undefined}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={null}
+      onUpdate={onUpdate}
+      open={true}
+      profileLocale="en-GB"
     />,
   );
 
@@ -250,9 +252,9 @@ test("falls back to the default label for an unknown legacy theme", async () => 
   await using view = await renderWithTestRouter(
     <SettingsPanel
       baby={{ ...baby, theme: "legacy-theme" }}
+      onOpenChange={vi.fn<(open: boolean) => void>()}
       onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
       open
-      onOpenChange={vi.fn<(open: boolean) => void>()}
       {...absentSettingsProps}
     />,
   );
@@ -267,9 +269,9 @@ test("page language selection saves the locale override", async () => {
   await using view = await renderWithTestRouter(
     <SettingsPanel
       baby={baby}
+      onOpenChange={onOpenChange}
       onUpdate={onUpdate}
       open
-      onOpenChange={onOpenChange}
       {...absentSettingsProps}
     />,
   );
@@ -305,9 +307,9 @@ test("journey selection saves the chosen preset after Save", async () => {
   await using view = await renderWithTestRouter(
     <SettingsPanel
       baby={baby}
+      onOpenChange={onOpenChange}
       onUpdate={onUpdate}
       open
-      onOpenChange={onOpenChange}
       {...absentSettingsProps}
     />,
   );
@@ -334,9 +336,9 @@ test("journey editor reports a failed save and remains open", async () => {
   await using view = await renderWithTestRouter(
     <SettingsPanel
       baby={baby}
+      onOpenChange={vi.fn<(open: boolean) => void>()}
       onUpdate={onUpdate}
       open
-      onOpenChange={vi.fn<(open: boolean) => void>()}
       {...absentSettingsProps}
     />,
   );
@@ -358,9 +360,9 @@ test("turning off visitor visibility does not remove a marked milestone", async 
   await using view = await renderWithTestRouter(
     <SettingsPanel
       baby={baby}
+      onOpenChange={vi.fn<(open: boolean) => void>()}
       onUpdate={onUpdate}
       open
-      onOpenChange={vi.fn<(open: boolean) => void>()}
       {...absentSettingsProps}
       onMilestoneRemove={onMilestoneRemove}
     />,
@@ -385,9 +387,9 @@ test("journey selection stays changeable after milestone updates", async () => {
   await using view = await renderWithTestRouter(
     <SettingsPanel
       baby={{ ...baby, laborStarted: null, wentToHospital: "2026-08-10T12:00:00.000Z" }}
+      onOpenChange={onOpenChange}
       onUpdate={onUpdate}
       open
-      onOpenChange={onOpenChange}
       {...absentSettingsProps}
       birthJourney="home_birth"
     />,
@@ -412,16 +414,16 @@ test("theme constants render through the active translation catalog", async () =
       <SettingsPanel
         baby={baby}
         birthJourney="labor"
-        onUpdate={onUpdate}
-        open
-        onOpenChange={onOpenChange}
-        onOpenChangeComplete={null}
-        profileLocale="sv"
-        onDelete={null}
         coParents={null}
         messagePush={null}
+        onDelete={null}
         onMilestoneRedate={() => undefined}
         onMilestoneRemove={() => undefined}
+        onOpenChange={onOpenChange}
+        onOpenChangeComplete={null}
+        onUpdate={onUpdate}
+        open
+        profileLocale="sv"
       />
     </LocaleProvider>,
   );

@@ -20,7 +20,7 @@ export function resetDemoToastDismissals() {
  * store and show/dismiss against Sonner's toast manager so Got it plays the
  * built-in exit animation.
  */
-export function useDemoToast(opts: { publicId: string; enabled: boolean }) {
+export function useDemoToast(opts: { enabled: boolean; publicId: string }) {
   const { t } = useI18n();
   const dismissed = useIsDismissed(demoToastDismissals, opts.publicId);
   const shouldShow = opts.enabled && isHomepageDemoPublicId(opts.publicId) && !dismissed;
@@ -37,15 +37,15 @@ export function useDemoToast(opts: { publicId: string; enabled: boolean }) {
     // visitor closed the toast (Got it, X, swipe) — not on unmount.
     let persistOnDismiss = true;
     toast.info(title, {
-      id: toastId,
-      description,
-      duration: Infinity,
       action: {
         label: actionLabel,
         onClick: () => {
           toast.dismiss(toastId);
         },
       },
+      description,
+      duration: Infinity,
+      id: toastId,
       onDismiss: () => {
         if (!persistOnDismiss) {
           return;

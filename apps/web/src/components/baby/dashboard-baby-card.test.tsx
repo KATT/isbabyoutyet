@@ -14,23 +14,23 @@ function useFakeTimersResource(now: Date) {
 }
 
 const alma: DashboardBabyCardBaby = {
-  name: "Alma Simone Petra Darvill",
-  timeZone: "Europe/London",
-  publicId: "alma-simone-petra-darvill",
-  dueDate: "2025-12-31",
-  dueDateDisplayMode: "exact",
-  publicDueDateText: null,
-  laborStarted: "2026-01-10T12:00:00.000Z",
-  wentToHospital: "2026-01-10T18:00:00.000Z",
   babyBorn: "2026-01-11T04:14:00.000Z",
   birthJourney: "labor" as const,
+  dueDate: "2025-12-31",
+  dueDateDisplayMode: "exact",
+  laborStarted: "2026-01-10T12:00:00.000Z",
+  name: "Alma Simone Petra Darvill",
+  publicDueDateText: null,
+  publicId: "alma-simone-petra-darvill",
   role: "owner",
+  timeZone: "Europe/London",
+  wentToHospital: "2026-01-10T18:00:00.000Z",
 };
 
 test("a born baby with a past due date shows born, not overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={alma} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={alma} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("Alma Simone Petra Darvill")).toBeTruthy();
@@ -43,20 +43,20 @@ test("a born baby with a past due date shows born, not overdue", async () => {
 test("an unborn baby past the due date still shows overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
-    name: "Avery",
-    timeZone: "Europe/London",
-    publicId: "baby-waiting",
-    dueDate: "2025-12-31",
-    dueDateDisplayMode: "exact",
-    publicDueDateText: null,
-    laborStarted: null,
-    wentToHospital: null,
     babyBorn: null,
     birthJourney: "labor" as const,
+    dueDate: "2025-12-31",
+    dueDateDisplayMode: "exact",
+    laborStarted: null,
+    name: "Avery",
+    publicDueDateText: null,
+    publicId: "baby-waiting",
     role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("225 days overdue")).toBeTruthy();
@@ -67,20 +67,20 @@ test("an unborn baby past the due date still shows overdue", async () => {
 test("labour in progress beats a past due date", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const inLabor: DashboardBabyCardBaby = {
-    name: "Frankie",
-    timeZone: "Europe/London",
-    publicId: "baby-in-labor",
-    dueDate: "2025-12-31",
-    dueDateDisplayMode: "exact",
-    publicDueDateText: null,
-    laborStarted: "2026-08-13T08:00:00.000Z",
-    wentToHospital: null,
     babyBorn: null,
     birthJourney: "labor" as const,
+    dueDate: "2025-12-31",
+    dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-13T08:00:00.000Z",
+    name: "Frankie",
+    publicDueDateText: null,
+    publicId: "baby-in-labor",
     role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={inLabor} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={inLabor} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("Labour started")).toBeTruthy();
@@ -90,7 +90,7 @@ test("labour in progress beats a past due date", async () => {
 test("marks the tour baby card for coachmarks", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={alma} index={1} dataTourId="tour_baby" />,
+    <DashboardBabyCard baby={alma} dataTourId="tour_baby" index={1} />,
   );
 
   expect(view.container.querySelector('[data-tour-id="tour_baby"]')).toBeTruthy();
@@ -99,20 +99,20 @@ test("marks the tour baby card for coachmarks", async () => {
 test("an unborn baby before the due date shows days remaining", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
-    name: "Avery",
-    timeZone: "Europe/London",
-    publicId: "baby-waiting",
-    dueDate: "2026-09-01",
-    dueDateDisplayMode: "exact",
-    publicDueDateText: null,
-    laborStarted: null,
-    wentToHospital: null,
     babyBorn: null,
     birthJourney: "labor" as const,
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    laborStarted: null,
+    name: "Avery",
+    publicDueDateText: null,
+    publicId: "baby-waiting",
     role: "coParent",
+    timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("Shared with you")).toBeTruthy();
@@ -121,20 +121,20 @@ test("an unborn baby before the due date shows days remaining", async () => {
 
 test("a message-mode baby card does not show a due date", async () => {
   const waiting: DashboardBabyCardBaby = {
-    name: "Avery",
-    timeZone: "Europe/London",
-    publicId: "baby-waiting",
-    dueDate: null,
-    dueDateDisplayMode: "message",
-    publicDueDateText: "Any day now",
-    laborStarted: null,
-    wentToHospital: null,
     babyBorn: null,
     birthJourney: "labor" as const,
+    dueDate: null,
+    dueDateDisplayMode: "message",
+    laborStarted: null,
+    name: "Avery",
+    publicDueDateText: "Any day now",
+    publicId: "baby-waiting",
     role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("Any day now")).toBeTruthy();
@@ -144,20 +144,20 @@ test("a message-mode baby card does not show a due date", async () => {
 
 test("a message-mode baby card with no text shows a hidden label", async () => {
   const waiting: DashboardBabyCardBaby = {
-    name: "Avery",
-    timeZone: "Europe/London",
-    publicId: "baby-waiting",
-    dueDate: "2026-09-01",
-    dueDateDisplayMode: "message",
-    publicDueDateText: null,
-    laborStarted: null,
-    wentToHospital: null,
     babyBorn: null,
     birthJourney: "labor" as const,
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "message",
+    laborStarted: null,
+    name: "Avery",
+    publicDueDateText: null,
+    publicId: "baby-waiting",
     role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("Due date hidden")).toBeTruthy();
@@ -167,20 +167,20 @@ test("a message-mode baby card with no text shows a hidden label", async () => {
 test("gone to hospital beats a past due date", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const atHospital: DashboardBabyCardBaby = {
-    name: "Rowan",
-    timeZone: "Europe/London",
-    publicId: "baby-at-hospital",
-    dueDate: "2025-12-31",
-    dueDateDisplayMode: "exact",
-    publicDueDateText: null,
-    laborStarted: "2026-08-13T08:00:00.000Z",
-    wentToHospital: "2026-08-13T10:00:00.000Z",
     babyBorn: null,
     birthJourney: "labor" as const,
+    dueDate: "2025-12-31",
+    dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-13T08:00:00.000Z",
+    name: "Rowan",
+    publicDueDateText: null,
+    publicId: "baby-at-hospital",
     role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: "2026-08-13T10:00:00.000Z",
   };
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={atHospital} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={atHospital} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("Gone to hospital")).toBeTruthy();
@@ -191,20 +191,20 @@ test("gone to hospital beats a past due date", async () => {
 test("an unborn baby due today shows due today", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const dueToday: DashboardBabyCardBaby = {
-    name: "Sage",
-    timeZone: "Europe/London",
-    publicId: "baby-due-today",
-    dueDate: "2026-08-13",
-    dueDateDisplayMode: "exact",
-    publicDueDateText: null,
-    laborStarted: null,
-    wentToHospital: null,
     babyBorn: null,
     birthJourney: "labor" as const,
+    dueDate: "2026-08-13",
+    dueDateDisplayMode: "exact",
+    laborStarted: null,
+    name: "Sage",
+    publicDueDateText: null,
+    publicId: "baby-due-today",
     role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={dueToday} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={dueToday} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("Due today!")).toBeTruthy();
@@ -213,20 +213,20 @@ test("an unborn baby due today shows due today", async () => {
 
 test("an exact-mode baby without a due date shows not yet", async () => {
   const waiting: DashboardBabyCardBaby = {
-    name: "Avery",
-    timeZone: "Europe/London",
-    publicId: "baby-waiting",
-    dueDate: null,
-    dueDateDisplayMode: "exact",
-    publicDueDateText: null,
-    laborStarted: null,
-    wentToHospital: null,
     babyBorn: null,
     birthJourney: "labor" as const,
+    dueDate: null,
+    dueDateDisplayMode: "exact",
+    laborStarted: null,
+    name: "Avery",
+    publicDueDateText: null,
+    publicId: "baby-waiting",
     role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
-    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+    <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
   );
 
   expect(view.getByText("Not yet")).toBeTruthy();

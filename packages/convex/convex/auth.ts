@@ -27,9 +27,9 @@ function requireAuthMutationCtx(ctx: GenericCtx<DataModel>) {
 
 /** Parsed Better Auth email auth user extracted from middleware returned. */
 type AuthEndpointUser = {
-  readonly userId: string;
   readonly email: string | null;
   readonly name: string | null;
+  readonly userId: string;
 };
 
 function parseAuthUserFromReturned<TReturned>(returned: TReturned): AuthEndpointUser | null {
@@ -46,7 +46,7 @@ function parseAuthUserFromReturned<TReturned>(returned: TReturned): AuthEndpoint
   }
   const email = "email" in user ? parseOptionalString(user.email) : null;
   const name = "name" in user ? parseOptionalString(user.name) : null;
-  return { userId, email, name };
+  return { email, name, userId };
 }
 
 export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
@@ -57,11 +57,21 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
     baseURL: resolveAuthBaseUrl(env.SITE_URL, env.CONVEX_SITE_URL),
     database: authComponent.adapter(convexCtx),
     // Configure simple, non-verified email/password to get started
-    emailAndPassword: {
-      enabled: true,
-      requireEmailVerification: false,
-    },
     databaseHooks: {
+      session: {
+        create: {
+          after: async (session) => {
+            await requireAuthMutationCtx(convexCtx).runMutation(
+              internal.profileBootstrap.claimInvitesForAuthUserMutation,
+              {
+                email: null,
+                name: null,
+                userId: String(session.userId),
+              },
+            );
+          },
+        },
+      },
       user: {
         create: {
           after: async (user) => {
@@ -71,28 +81,18 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
             await requireAuthMutationCtx(convexCtx).runMutation(
               internal.profileBootstrap.claimInvitesForAuthUserMutation,
               {
-                userId: user.id,
                 email: String(user.email),
                 name: parseOptionalString(user.name),
+                userId: user.id,
               },
             );
           },
         },
       },
-      session: {
-        create: {
-          after: async (session) => {
-            await requireAuthMutationCtx(convexCtx).runMutation(
-              internal.profileBootstrap.claimInvitesForAuthUserMutation,
-              {
-                userId: String(session.userId),
-                email: null,
-                name: null,
-              },
-            );
-          },
-        },
-      },
+    },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: false,
     },
     hooks: {
       after: createAuthMiddleware(async (ctx) => {
@@ -106,7 +106,6 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
         await requireAuthMutationCtx(convexCtx).runMutation(
           internal.profileBootstrap.ensureUserProfileForAuthUserMutation,
           {
-            userId: authUser.userId,
             localeHint:
               ctx.headers?.get("accept-language") ??
               ctx.request?.headers.get("accept-language") ??
@@ -115,6 +114,7 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
               ctx.headers?.get(TIME_ZONE_HINT_HEADER) ??
               ctx.request?.headers.get(TIME_ZONE_HINT_HEADER) ??
               null,
+            userId: authUser.userId,
           },
         );
       }),

@@ -11,9 +11,9 @@ import {
 } from "./coParentInviteClaims";
 
 export type ProfileResult = {
+  isAdmin: boolean;
   locale: SupportedLocale;
   timeZone: string;
-  isAdmin: boolean;
 };
 
 async function getProfileByTokenIdentifier(ctx: Pick<QueryCtx, "db">, tokenIdentifier: string) {
@@ -32,9 +32,9 @@ export function localeFromAcceptLanguage(acceptLanguage: string | null | undefin
 export async function ensureUserProfileForAuthUser(
   ctx: MutationCtx,
   opts: {
-    userId: string;
     localeHint: string | null | undefined;
     timeZoneHint: string | null | undefined;
+    userId: string;
   },
 ): Promise<ProfileResult> {
   const tokenIdentifier = tokenIdentifierForAuthUserId(opts.userId);
@@ -45,37 +45,37 @@ export async function ensureUserProfileForAuthUser(
       await ctx.db.patch(existing._id, { timeZone });
     }
     return {
+      isAdmin: existing.isAdmin,
       locale: resolveSupportedLocale(existing.locale),
       timeZone,
-      isAdmin: existing.isAdmin,
     };
   }
 
   const locale = resolveSupportedLocale(opts.localeHint);
   const timeZone = resolveTimeZone(opts.timeZoneHint);
   await ctx.db.insert("userProfiles", {
-    userId: opts.userId,
-    tokenIdentifier,
+    isAdmin: false,
     locale,
     timeZone,
-    isAdmin: false,
+    tokenIdentifier,
+    userId: opts.userId,
   });
-  return { locale, timeZone, isAdmin: false };
+  return { isAdmin: false, locale, timeZone };
 }
 
 export async function claimInvitesForAuthUser(
   ctx: MutationCtx,
   opts: {
-    userId: string;
     email: string | null;
     name: string | null;
+    userId: string;
   },
 ) {
   if (opts.email) {
     await claimPendingInvitesForAuthUser(ctx, {
-      userId: opts.userId,
       email: opts.email,
       name: opts.name,
+      userId: opts.userId,
     });
     return;
   }
@@ -85,9 +85,9 @@ export async function claimInvitesForAuthUser(
 
 export const ensureUserProfileForAuthUserMutation = internalMutation({
   args: {
-    userId: v.string(),
     localeHint: v.union(v.string(), v.null()),
     timeZoneHint: v.union(v.string(), v.null()),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     return await ensureUserProfileForAuthUser(ctx, args);
@@ -96,9 +96,9 @@ export const ensureUserProfileForAuthUserMutation = internalMutation({
 
 export const claimInvitesForAuthUserMutation = internalMutation({
   args: {
-    userId: v.string(),
     email: v.union(v.string(), v.null()),
     name: v.union(v.string(), v.null()),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     await claimInvitesForAuthUser(ctx, args);

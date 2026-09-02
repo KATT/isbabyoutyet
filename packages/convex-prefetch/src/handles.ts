@@ -19,8 +19,8 @@ export type QueryReference = FunctionReference<"query", "public">;
  * function args; the brand is type-only.
  */
 export interface InitiatedConvexQuery<TQuery extends QueryReference> {
-  readonly input: FunctionArgs<TQuery>;
   readonly [convexQueryBrand]?: TQuery;
+  readonly input: FunctionArgs<TQuery>;
 }
 
 /** Awaited loader handle for a Convex query; carries `initialData`. */
@@ -36,9 +36,9 @@ export interface PreloadedConvexQuery<
  * the page size.
  */
 export interface InitiatedConvexInfiniteQuery<TQuery extends PaginatedQueryReference> {
+  readonly [convexInfiniteQueryBrand]?: TQuery;
   readonly input: PaginationArgs<TQuery>;
   readonly numItems: number;
-  readonly [convexInfiniteQueryBrand]?: TQuery;
 }
 
 /** Awaited loader handle for a paginated Convex query. */

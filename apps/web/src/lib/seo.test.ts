@@ -35,15 +35,15 @@ test("baby SEO head includes countdown title, description, and dynamic OG image"
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
 
   const seo = babySeoHead({
-    name: "Juniper",
+    babyBorn: null,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
+    laborStarted: null,
+    locale: "en-GB",
+    name: "Juniper",
     publicId: "juniper-hale",
     theme: "sunny-days",
-    locale: "en-GB",
-    babyBorn: null,
     wentToHospital: null,
-    laborStarted: null,
   });
 
   expect(seo.title).toContain("21 days until due date");
@@ -56,16 +56,16 @@ test("baby SEO head includes countdown title, description, and dynamic OG image"
 
 test("baby OG image URL version changes with rendered baby data", () => {
   const baby = {
-    name: "Avery",
+    babyBorn: null,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact" as const,
+    laborStarted: null,
+    locale: "en-GB" as const,
+    name: "Avery",
+    photoId: null,
     publicId: "baby-waiting",
     theme: null,
-    locale: "en-GB" as const,
-    babyBorn: null,
     wentToHospital: null,
-    laborStarted: null,
-    photoId: null,
   };
   const mangoUrl = new URL(babySeoHead(baby).imageUrl);
   const babyBlueUrl = new URL(babySeoHead({ ...baby, theme: "baby-blue" }).imageUrl);
@@ -81,15 +81,15 @@ test("baby OG image URL version changes with rendered baby data", () => {
 test("custom due date text replaces countdown metadata", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby = {
-    name: "Juniper",
+    babyBorn: null,
     dueDateDisplayMode: "message" as const,
+    laborStarted: null,
+    locale: "en-GB" as const,
+    name: "Juniper",
     publicDueDateText: "Any day now",
     publicId: "juniper-hale",
     theme: "sunny-days",
-    locale: "en-GB" as const,
-    babyBorn: null,
     wentToHospital: null,
-    laborStarted: null,
   };
 
   const seo = babySeoHead(baby);
@@ -98,85 +98,85 @@ test("custom due date text replaces countdown metadata", async () => {
   expect(babyStatusDetail({ baby, status: { type: "not_yet" } })).toBe("Any day now");
 
   const exactModeSeo = babySeoHead({
-    name: baby.name,
+    babyBorn: baby.babyBorn,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
+    laborStarted: baby.laborStarted,
+    locale: baby.locale,
+    name: baby.name,
     publicId: baby.publicId,
     theme: baby.theme,
-    locale: baby.locale,
-    babyBorn: baby.babyBorn,
     wentToHospital: baby.wentToHospital,
-    laborStarted: baby.laborStarted,
   });
   expect(exactModeSeo.title).toContain("21 days until due date");
 });
 
 test("baby SEO description changes when the baby is born", () => {
   const seo = babySeoHead({
-    name: "Milo",
+    babyBorn: "2026-08-10T10:00:00.000Z",
     dueDate: "2026-08-01",
     dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-10T02:00:00.000Z",
+    locale: "en-GB",
+    name: "Milo",
     publicId: "baby-born",
     theme: null,
-    locale: "en-GB",
-    babyBorn: "2026-08-10T10:00:00.000Z",
     wentToHospital: "2026-08-10T06:00:00.000Z",
-    laborStarted: "2026-08-10T02:00:00.000Z",
   });
 
   expect(seo.description).toContain("arrived");
   expect(seo.indexable).toBe(false);
-  expect(babyStatusLabel({ status: { type: "born", date: "2026-08-10" }, locale: "en-GB" })).toBe(
+  expect(babyStatusLabel({ locale: "en-GB", status: { date: "2026-08-10", type: "born" } })).toBe(
     "Yes! Baby is out",
   );
 });
 
 test("baby SEO descriptions cover labour and hospital stages", () => {
   const inLabor = babySeoHead({
-    name: "Frankie",
+    babyBorn: null,
     dueDate: "2026-08-20",
     dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-14T01:00:00.000Z",
+    locale: "en-GB",
+    name: "Frankie",
     publicId: "baby-in-labor",
     theme: null,
-    locale: "en-GB",
-    babyBorn: null,
     wentToHospital: null,
-    laborStarted: "2026-08-14T01:00:00.000Z",
   });
   const atHospital = babySeoHead({
-    name: "Rowan",
+    babyBorn: null,
     dueDate: "2026-08-20",
     dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-14T01:00:00.000Z",
+    locale: "en-GB",
+    name: "Rowan",
     publicId: "baby-at-hospital",
     theme: null,
-    locale: "en-GB",
-    babyBorn: null,
     wentToHospital: "2026-08-14T02:00:00.000Z",
-    laborStarted: "2026-08-14T01:00:00.000Z",
   });
 
   expect(inLabor.description).toContain("labour");
   expect(atHospital.description).toContain("hospital");
   expect(
     babyStatusLabel({
-      status: { type: "labor_started", date: "2026-08-14T01:00:00.000Z" },
       locale: "en-GB",
+      status: { date: "2026-08-14T01:00:00.000Z", type: "labor_started" },
     }),
   ).toBe("Labour started");
 });
 
 test("hidden milestone data does not appear in public SEO copy", () => {
   const seo = babySeoHead({
-    name: "River",
+    babyBorn: null,
     dueDate: "2026-08-20",
     dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-14T01:00:00.000Z",
+    locale: "en-GB",
+    milestoneVisibility: { showHospital: false, showLabor: false },
+    name: "River",
     publicId: "river",
     theme: null,
-    locale: "en-GB",
-    babyBorn: null,
     wentToHospital: "2026-08-14T02:00:00.000Z",
-    laborStarted: "2026-08-14T01:00:00.000Z",
-    milestoneVisibility: { showLabor: false, showHospital: false },
   });
 
   expect(seo.description).not.toContain("labour");
@@ -188,15 +188,15 @@ test("overdue baby titles use the overdue copy", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-20T12:00:00.000Z"));
 
   const seo = babySeoHead({
-    name: "Avery",
+    babyBorn: null,
     dueDate: "2026-08-11",
     dueDateDisplayMode: "exact",
+    laborStarted: null,
+    locale: "en-GB",
+    name: "Avery",
     publicId: "baby-waiting",
     theme: null,
-    locale: "en-GB",
-    babyBorn: null,
     wentToHospital: null,
-    laborStarted: null,
   });
 
   expect(seo.title).toContain("overdue");
@@ -206,29 +206,29 @@ test("overdue baby titles use the overdue copy", async () => {
 test("baby titles use singular day copy for one-day overdue and one day until due", async () => {
   await using _untilTimers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const untilDue = babySeoHead({
-    name: "Sage",
+    babyBorn: null,
     dueDate: "2026-08-12",
     dueDateDisplayMode: "exact",
+    laborStarted: null,
+    locale: "en-GB",
+    name: "Sage",
     publicId: "baby-waiting",
     theme: null,
-    locale: "en-GB",
-    babyBorn: null,
     wentToHospital: null,
-    laborStarted: null,
   });
   expect(untilDue.title).toContain("1 day until due date");
 
   await using _overdueTimers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
   const overdue = babySeoHead({
-    name: "Sage",
+    babyBorn: null,
     dueDate: "2026-08-11",
     dueDateDisplayMode: "exact",
+    laborStarted: null,
+    locale: "en-GB",
+    name: "Sage",
     publicId: "baby-waiting",
     theme: null,
-    locale: "en-GB",
-    babyBorn: null,
     wentToHospital: null,
-    laborStarted: null,
   });
   expect(overdue.title).toContain("1 day overdue");
 });
@@ -236,15 +236,15 @@ test("baby titles use singular day copy for one-day overdue and one day until du
 test("born babies keep the base title without a due-date countdown", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-20T12:00:00.000Z"));
   const seo = babySeoHead({
-    name: "Milo",
+    babyBorn: "2026-08-10T10:00:00.000Z",
     dueDate: "2026-08-01",
     dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-10T02:00:00.000Z",
+    locale: "en-GB",
+    name: "Milo",
     publicId: "baby-born",
     theme: null,
-    locale: "en-GB",
-    babyBorn: "2026-08-10T10:00:00.000Z",
     wentToHospital: "2026-08-10T06:00:00.000Z",
-    laborStarted: "2026-08-10T02:00:00.000Z",
   });
   expect(seo.title).toContain("Is Milo out yet?");
   expect(seo.title).not.toContain("overdue");
@@ -254,45 +254,45 @@ test("born babies keep the base title without a due-date countdown", async () =>
 test("baby status labels cover hospital and waiting states", () => {
   expect(
     babyStatusLabel({
-      status: { type: "gone_to_hospital", date: "2026-08-14T02:00:00.000Z" },
       locale: "en-GB",
+      status: { date: "2026-08-14T02:00:00.000Z", type: "gone_to_hospital" },
     }),
   ).toBe("Gone to hospital");
-  expect(babyStatusLabel({ status: { type: "not_yet" }, locale: "en-GB" })).toBe("Not yet");
+  expect(babyStatusLabel({ locale: "en-GB", status: { type: "not_yet" } })).toBe("Not yet");
 });
 
 test("baby status detail covers born, in-progress, overdue, and due-date copy", async () => {
   expect(
     babyStatusDetail({
       baby: {
+        babyBorn: "2026-08-10T10:00:00.000Z",
         dueDate: "2026-08-01",
         dueDateDisplayMode: "exact",
-        babyBorn: "2026-08-10T10:00:00.000Z",
         locale: "en-GB",
       },
-      status: { type: "born", date: "2026-08-10" },
+      status: { date: "2026-08-10", type: "born" },
     }),
   ).toBe("Yes! Baby is out");
   expect(
     babyStatusDetail({
       baby: {
+        babyBorn: null,
         dueDate: "2026-08-20",
         dueDateDisplayMode: "exact",
-        babyBorn: null,
         locale: "en-GB",
       },
-      status: { type: "labor_started", date: "2026-08-14T01:00:00.000Z" },
+      status: { date: "2026-08-14T01:00:00.000Z", type: "labor_started" },
     }),
   ).toBe("Labour started");
   expect(
     babyStatusDetail({
       baby: {
+        babyBorn: null,
         dueDate: "2026-08-20",
         dueDateDisplayMode: "exact",
-        babyBorn: null,
         locale: "en-GB",
       },
-      status: { type: "gone_to_hospital", date: "2026-08-14T02:00:00.000Z" },
+      status: { date: "2026-08-14T02:00:00.000Z", type: "gone_to_hospital" },
     }),
   ).toBe("Gone to hospital");
 
@@ -300,9 +300,9 @@ test("baby status detail covers born, in-progress, overdue, and due-date copy", 
   expect(
     babyStatusDetail({
       baby: {
+        babyBorn: null,
         dueDate: "2026-08-12",
         dueDateDisplayMode: "exact",
-        babyBorn: null,
         locale: "en-GB",
       },
       status: { type: "not_yet" },
@@ -311,9 +311,9 @@ test("baby status detail covers born, in-progress, overdue, and due-date copy", 
   expect(
     babyStatusDetail({
       baby: {
+        babyBorn: null,
         dueDate: "2026-09-01",
         dueDateDisplayMode: "exact",
-        babyBorn: null,
         locale: "en-GB",
       },
       status: { type: "not_yet" },
@@ -324,9 +324,9 @@ test("baby status detail covers born, in-progress, overdue, and due-date copy", 
   expect(
     babyStatusDetail({
       baby: {
+        babyBorn: null,
         dueDate: "2026-08-19",
         dueDateDisplayMode: "exact",
-        babyBorn: null,
         locale: "en-GB",
       },
       status: { type: "not_yet" },
@@ -335,9 +335,9 @@ test("baby status detail covers born, in-progress, overdue, and due-date copy", 
   expect(
     babyStatusDetail({
       baby: {
+        babyBorn: null,
         dueDate: "2026-08-11",
         dueDateDisplayMode: "exact",
-        babyBorn: null,
         locale: "en-GB",
       },
       status: { type: "not_yet" },
@@ -349,10 +349,10 @@ test("blank message-mode status detail falls back to not yet", () => {
   expect(
     babyStatusDetail({
       baby: {
-        dueDateDisplayMode: "message",
-        publicDueDateText: "",
         babyBorn: null,
+        dueDateDisplayMode: "message",
         locale: "en-GB",
+        publicDueDateText: "",
       },
       status: { type: "not_yet" },
     }),
@@ -360,10 +360,10 @@ test("blank message-mode status detail falls back to not yet", () => {
   expect(
     babyStatusDetail({
       baby: {
-        dueDateDisplayMode: "message",
-        publicDueDateText: "   ",
         babyBorn: null,
+        dueDateDisplayMode: "message",
         locale: "en-GB",
+        publicDueDateText: "   ",
       },
       status: { type: "not_yet" },
     }),
@@ -372,15 +372,15 @@ test("blank message-mode status detail falls back to not yet", () => {
 
 test("Open Graph image meta includes dimensions and a large Twitter card", () => {
   const tags = openGraphImageMeta({
-    imageUrl: "https://isbabyoutyet.com/og",
     alt: "Is Baby Out Yet?",
+    imageUrl: "https://isbabyoutyet.com/og",
   });
   expect(tags).toEqual(
     expect.arrayContaining([
-      { property: "og:image", content: "https://isbabyoutyet.com/og" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { content: "https://isbabyoutyet.com/og", property: "og:image" },
+      { content: "1200", property: "og:image:width" },
+      { content: "630", property: "og:image:height" },
+      { content: "summary_large_image", name: "twitter:card" },
     ]),
   );
 });

@@ -48,10 +48,10 @@ export async function deleteOwnerSubscriptionsForIdentity(
 
 export const subscribe = mutation({
   args: {
+    auth: v.string(),
     babyId: v.id("baby"),
     endpoint: v.string(),
     p256dh: v.string(),
-    auth: v.string(),
     userAgent: v.string(),
   },
   handler: async (ctx, args) => {
@@ -71,8 +71,8 @@ export const subscribe = mutation({
     if (existing) {
       // Update existing subscription
       await ctx.db.patch(existing._id, {
-        p256dh: args.p256dh,
         auth: args.auth,
+        p256dh: args.p256dh,
         userAgent: args.userAgent,
       });
       return existing._id;
@@ -80,11 +80,11 @@ export const subscribe = mutation({
 
     // Create new subscription
     const subscriptionId = await ctx.db.insert("pushSubscriptions", {
+      auth: args.auth,
       babyId: args.babyId,
+      createdAt: Date.now(),
       endpoint: args.endpoint,
       p256dh: args.p256dh,
-      auth: args.auth,
-      createdAt: Date.now(),
       userAgent: args.userAgent,
     });
     await ctx.db.patch(args.babyId, {
@@ -97,10 +97,10 @@ export const subscribe = mutation({
 
 export const unsubscribe = mutation({
   args: {
+    auth: v.string(),
     babyId: v.id("baby"),
     endpoint: v.string(),
     p256dh: v.string(),
-    auth: v.string(),
   },
   handler: async (ctx, args) => {
     const subscription = await ctx.db
@@ -129,20 +129,19 @@ export const getSubscriptionsPage = internalQuery({
     babyId: v.id("baby"),
     paginationOpts: paginationOptsValidator,
   },
-  returns: paginationResultValidator(schema.doc("pushSubscriptions")),
   handler: async (ctx, args) => {
     return await ctx.db
       .query("pushSubscriptions")
       .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
       .paginate(args.paginationOpts);
   },
+  returns: paginationResultValidator(schema.doc("pushSubscriptions")),
 });
 
 export const getSubscriptionCount = query({
   args: {
     babyId: babyIdOrPublicIdValidator,
   },
-  returns: v.union(v.number(), v.literal(FORBIDDEN)),
   handler: async (ctx, args) => {
     // Sentinel instead of throwing: the baby route loader queries this for
     // every visitor.
@@ -152,6 +151,7 @@ export const getSubscriptionCount = query({
     }
     return access.baby.subscriptionCount ?? 0;
   },
+  returns: v.union(v.number(), v.literal(FORBIDDEN)),
 });
 
 export const getPublicKey = query({
@@ -186,14 +186,14 @@ export const isSubscribed = query({
 
 export const subscribeAsOwner = mutation({
   args: {
+    auth: v.string(),
     babyId: v.id("baby"),
     endpoint: v.string(),
     p256dh: v.string(),
-    auth: v.string(),
     userAgent: v.string(),
   },
   handler: async (ctx, args) => {
-    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
+    const { baby, identity } = await requireBabyManager(ctx, args.babyId);
 
     const existing = await ctx.db
       .query("ownerPushSubscriptions")
@@ -204,34 +204,34 @@ export const subscribeAsOwner = mutation({
 
     if (existing) {
       await ctx.db.patch(existing._id, {
-        p256dh: args.p256dh,
         auth: args.auth,
+        p256dh: args.p256dh,
+        tokenIdentifier: identity.tokenIdentifier,
         userAgent: args.userAgent,
         userId: identity.authUserId,
-        tokenIdentifier: identity.tokenIdentifier,
       });
       return existing._id;
     }
 
     return await ctx.db.insert("ownerPushSubscriptions", {
+      auth: args.auth,
       babyId: baby._id,
-      userId: identity.authUserId,
-      tokenIdentifier: identity.tokenIdentifier,
+      createdAt: Date.now(),
       endpoint: args.endpoint,
       p256dh: args.p256dh,
-      auth: args.auth,
-      createdAt: Date.now(),
+      tokenIdentifier: identity.tokenIdentifier,
       userAgent: args.userAgent,
+      userId: identity.authUserId,
     });
   },
 });
 
 export const unsubscribeAsOwner = mutation({
   args: {
+    auth: v.string(),
     babyId: v.id("baby"),
     endpoint: v.string(),
     p256dh: v.string(),
-    auth: v.string(),
   },
   handler: async (ctx, args) => {
     const subscription = await ctx.db
@@ -251,13 +251,13 @@ export const getOwnerSubscriptionsPage = internalQuery({
     babyId: v.id("baby"),
     paginationOpts: paginationOptsValidator,
   },
-  returns: paginationResultValidator(schema.doc("ownerPushSubscriptions")),
   handler: async (ctx, args) => {
     return await ctx.db
       .query("ownerPushSubscriptions")
       .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
       .paginate(args.paginationOpts);
   },
+  returns: paginationResultValidator(schema.doc("ownerPushSubscriptions")),
 });
 
 export const isOwnerSubscribed = query({

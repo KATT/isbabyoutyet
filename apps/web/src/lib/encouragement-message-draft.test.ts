@@ -20,11 +20,11 @@ function sessionStorageResource() {
     getItem(key: string) {
       return store.get(key) ?? null;
     },
-    setItem(key: string, value: string) {
-      store.set(key, value);
-    },
     removeItem(key: string) {
       store.delete(key);
+    },
+    setItem(key: string, value: string) {
+      store.set(key, value);
     },
   };
   vi.stubGlobal("sessionStorage", storage);
@@ -49,8 +49,8 @@ test("write and read round-trip a form draft", async () => {
   });
   expect(readEncouragementFormDraft(babyId)).toEqual({
     authorName: "Grandma",
-    message: "Thinking of you all!",
     hasDraft: true,
+    message: "Thinking of you all!",
   });
 });
 
@@ -60,8 +60,8 @@ test("partial message updates preserve an existing author name draft", async () 
   writeEncouragementFormDraft(babyId, { authorName: "Grandma", message: "Updated" });
   expect(readEncouragementFormDraft(babyId)).toEqual({
     authorName: "Grandma",
-    message: "Updated",
     hasDraft: true,
+    message: "Updated",
   });
 });
 
@@ -70,8 +70,8 @@ test("whitespace-only drafts are not stored", async () => {
   writeEncouragementFormDraft(babyId, { authorName: "   ", message: "   " });
   expect(readEncouragementFormDraft(babyId)).toEqual({
     authorName: "",
-    message: "",
     hasDraft: false,
+    message: "",
   });
 });
 
@@ -149,8 +149,8 @@ test("legacy message-only drafts still restore the message", async () => {
   );
   expect(readEncouragementFormDraft(babyId)).toEqual({
     authorName: "",
-    message: "Older draft",
     hasDraft: true,
+    message: "Older draft",
   });
 });
 
@@ -160,11 +160,11 @@ test("write swallows sessionStorage quota errors", async () => {
     getItem() {
       return null;
     },
+    removeItem() {},
     setItem() {
       setItemCalled = true;
       throw new Error("QuotaExceededError");
     },
-    removeItem() {},
   };
   vi.stubGlobal("sessionStorage", storage);
   await using _storage = makeResource({}, () => {

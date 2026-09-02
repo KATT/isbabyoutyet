@@ -12,30 +12,30 @@ import { htmlButton } from "@/test/htmlElement";
 
 test("settings loader fetches only manager settings data", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   const result = await runRouteLoader<{
-    managerBaby: { input: { babyId: string }; initialData: { name: string } };
+    browserPush: { input: string };
     coParentsList: {
+      initialData: { coParents: Array<unknown>; invites: Array<unknown> };
       input: { babyId: string };
-      initialData: { coParents: unknown[]; invites: unknown[] };
     };
+    managerBaby: { initialData: { name: string }; input: { babyId: string } };
     profile: { initialData: { locale: string } | null };
     vapidPublicKey: { initialData: string };
-    browserPush: { input: string };
   }>({
     harness,
-    route: Route,
     params: { publicId: baby.publicId },
+    route: Route,
   });
 
   expect(result.managerBaby).toMatchObject({
-    input: { babyId: baby.publicId },
     initialData: { name: "Baby Smith" },
+    input: { babyId: baby.publicId },
   });
   expect(result.coParentsList).toMatchObject({
-    input: { babyId: baby.publicId },
     initialData: { coParents: [], invites: [] },
+    input: { babyId: baby.publicId },
   });
   expect(result.profile?.initialData?.locale).toBeTruthy();
   expect(result.vapidPublicKey.initialData).toBeTruthy();
@@ -46,24 +46,24 @@ test("settings loader redirects non-managers to the public baby page", async () 
   await using harness = await createConvexTestHarness({ identity: null });
   const aliceId = await signUpTestUser(harness, {
     email: "alice@example.com",
-    password: "password123",
     name: "Alice",
+    password: "password123",
   });
   harness.withIdentity({ subject: aliceId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   harness.withIdentity(null);
 
   await expect(
     runRouteLoader({
       harness,
-      route: Route,
       params: { publicId: baby.publicId },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/baby/$publicId",
       params: { publicId: baby.publicId },
       resetScroll: false,
+      to: "/baby/$publicId",
     },
   });
 });
@@ -73,8 +73,8 @@ test("beforeLoad 404s unknown babies", async () => {
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: "missing-baby" },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     isNotFound: true,
@@ -83,7 +83,7 @@ test("beforeLoad 404s unknown babies", async () => {
 
 test("beforeLoad redirects when the public id resolves to a different slug", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Working Title", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Working Title" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
     patch: {
@@ -95,59 +95,59 @@ test("beforeLoad redirects when the public id resolves to a different slug", asy
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: baby.publicId },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/baby/$publicId/settings",
       params: { publicId: renamed?.publicId },
       replace: true,
+      to: "/baby/$publicId/settings",
     },
   });
 });
 
 test("beforeLoad allows matching public ids", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await expect(
     runRouteBeforeLoad({
       harness,
-      route: Route,
       params: { publicId: baby.publicId },
+      route: Route,
     }),
   ).resolves.toBeUndefined();
 });
 
 test("managerDocToBabyData maps manager fields for the settings panel", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const managerDoc = await harness.client.query(api.baby.getManagerBaby, { babyId: baby.publicId });
   if (managerDoc === FORBIDDEN) {
     throw new Error("expected manager baby");
   }
 
   expect(managerDocToBabyData(managerDoc)).toMatchObject({
-    name: "Baby Smith",
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
+    locale: null,
+    name: "Baby Smith",
     publicDueDateText: null,
     theme: null,
-    locale: null,
   });
 });
 
 test("settings overlay closes to the baby page after the dialog exit animation", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/settings",
     initialEntry: `/baby/${baby.publicId}/settings`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: false },
+    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/settings",
+    route: Route,
     wrap: null,
   });
 
@@ -161,24 +161,24 @@ test("settings overlay closes to the baby page after the dialog exit animation",
   expect(ctx.back).not.toHaveBeenCalled();
   await vi.waitFor(() => {
     expect(ctx.navigate).toHaveBeenCalledWith({
-      to: "/baby/$publicId",
       params: { publicId: baby.publicId },
       replace: true,
       resetScroll: false,
+      to: "/baby/$publicId",
     });
   });
 });
 
 test("settings overlay prefers history.back when opened via push", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/settings",
     initialEntry: `/baby/${baby.publicId}/settings`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/settings",
+    route: Route,
     wrap: null,
   });
 
@@ -197,18 +197,18 @@ test("settings overlay persists baby name edits through Convex", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const ownerId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: ownerId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/settings",
     initialEntry: `/baby/${baby.publicId}/settings`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: false },
+    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/settings",
+    route: Route,
     wrap: null,
   });
 
@@ -235,15 +235,15 @@ test("settings overlay hides delete for co-parents", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const ownerId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: ownerId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const bobId = await signUpTestUser(harness, {
     email: "bob@example.com",
-    password: "password123",
     name: "Bob",
+    password: "password123",
   });
   await harness.client.mutation(api.coParents.invite, {
     babyId: baby.babyId,
@@ -253,10 +253,10 @@ test("settings overlay hides delete for co-parents", async () => {
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/settings",
     initialEntry: `/baby/${baby.publicId}/settings`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: false },
+    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/settings",
+    route: Route,
     wrap: null,
   });
 
@@ -268,14 +268,14 @@ test("settings overlay hides delete for co-parents", async () => {
 
 test("BabySettingsOverlay mounts from the real route loader", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/settings",
     initialEntry: `/baby/${baby.publicId}/settings`,
     overlayHistory: null,
+    path: "/baby/$publicId/settings",
+    route: Route,
     wrap: null,
   });
 

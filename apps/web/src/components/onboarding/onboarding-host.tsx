@@ -24,20 +24,24 @@ type OnboardingSession = {
 };
 
 type OnboardingHostProps = {
-  surface: "dashboard" | "baby";
-  onboarding: PreloadedConvexQuery<typeof api.onboarding.getMine>;
   /** Baby-page owners only — visitors never see the tour */
   enabled: boolean | undefined;
+  onboarding: PreloadedConvexQuery<typeof api.onboarding.getMine>;
   /** Hide spotlight tips (e.g. while a modal is open) */
   spotlight: boolean | undefined;
+  surface: "dashboard" | "baby";
 };
+
+function isHtmlElement(value: Element | null): value is HTMLElement {
+  return value !== null && Object.prototype.isPrototypeOf.call(HTMLElement.prototype, value);
+}
 
 function scrollToTourTarget(targetId: string) {
   const el = document.querySelector(`[data-tour-id="${targetId}"]`);
-  if (!(el instanceof HTMLElement) || !isFunction(el.scrollIntoView)) {
+  if (!isHtmlElement(el) || !isFunction(el.scrollIntoView)) {
     return;
   }
-  el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+  el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
 }
 
 function useOnboardingMutations() {
@@ -76,10 +80,10 @@ function useOnboardingMutations() {
   });
 
   return {
-    setMinimized,
-    dismissChecklist,
     completeStep,
+    dismissChecklist,
     setActiveCoachmarkStepId,
+    setMinimized,
     setRestartHintVisible,
   };
 }
@@ -125,10 +129,10 @@ export function OnboardingHostWithSession(
 function OnboardingHostAuthed(props: OnboardingHostProps) {
   const progressQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.onboarding);
   const {
-    setMinimized,
-    dismissChecklist,
     completeStep,
+    dismissChecklist,
     setActiveCoachmarkStepId,
+    setMinimized,
     setRestartHintVisible,
   } = useOnboardingMutations();
   const { t } = useI18n();
@@ -164,15 +168,13 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
     <>
       {showChecklist && !showCoachmark && !showRestartHint ? (
         <GettingStartedCard
+          className={undefined}
           effectiveSteps={progress.effectiveSteps}
           minimized={progress.minimized}
-          onMinimize={(minimized) => {
-            void setMinimized({ minimized });
-          }}
           onDismiss={() => {
             void dismissChecklist({});
             if (props.surface === "dashboard") {
-              window.scrollTo({ top: 0, behavior: "auto" });
+              window.scrollTo({ behavior: "auto", top: 0 });
               void setRestartHintVisible({ visible: true });
             }
           }}
@@ -184,37 +186,39 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
             void setActiveCoachmarkStepId({ stepId: step.id });
             scrollToTourTarget(step.targetId);
           }}
+          onMinimize={(minimized) => {
+            void setMinimized({ minimized });
+          }}
           surface={props.surface}
           tourBaby={progress.tourBaby}
-          className={undefined}
         />
       ) : null}
 
       {showCoachmark && nextStep && coachmarkTargetId && coachmarkDescription ? (
         <Coachmark
-          targetId={coachmarkTargetId}
-          title={coachmarkTitle}
-          description={coachmarkDescription}
           completeOnDismiss={coachmarkCompletesStep}
+          description={coachmarkDescription}
           onComplete={() => {
             void completeStep({ stepId: nextStep.id });
           }}
           onDismiss={() => {
             void setActiveCoachmarkStepId({ stepId: null });
           }}
+          targetId={coachmarkTargetId}
+          title={coachmarkTitle}
         />
       ) : null}
 
       {showRestartHint ? (
         <Coachmark
-          targetId="restart_tour"
-          title={t("Guide dismissed")}
-          description={t("Use this sparkle button to bring the guide back anytime.")}
           completeOnDismiss={undefined}
+          description={t("Use this sparkle button to bring the guide back anytime.")}
           onComplete={undefined}
           onDismiss={() => {
             void setRestartHintVisible({ visible: false });
           }}
+          targetId="restart_tour"
+          title={t("Guide dismissed")}
         />
       ) : null}
     </>

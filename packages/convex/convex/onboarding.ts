@@ -12,22 +12,22 @@ type OnboardingClientState = Omit<
   ReturnType<typeof toClientState>,
   "completedSteps" | "effectiveSteps"
 > & {
-  completedSteps: string[];
-  effectiveSteps: string[];
+  completedSteps: Array<string>;
+  effectiveSteps: Array<string>;
 };
 
 const emptyState: OnboardingClientState = {
-  welcomeDismissed: false,
+  activeCoachmarkStepId: null,
+  allDone: false,
   checklistDismissed: false,
-  minimized: false,
   completedSteps: [],
+  effectiveSteps: [],
   hasBaby: false,
   hasUpdate: false,
-  effectiveSteps: [],
-  allDone: false,
-  tourBaby: null,
-  activeCoachmarkStepId: null,
+  minimized: false,
   restartHintVisible: false,
+  tourBaby: null,
+  welcomeDismissed: false,
 };
 
 async function requireUserId(ctx: QueryCtx | MutationCtx) {
@@ -47,12 +47,12 @@ async function getOrCreateOnboarding(ctx: MutationCtx, identity: AppIdentity) {
     return existing;
   }
   const id = await ctx.db.insert("userOnboarding", {
-    userId: identity.authUserId,
-    tokenIdentifier: identity.tokenIdentifier,
-    completedSteps: [],
-    welcomeDismissed: false,
     checklistDismissed: false,
+    completedSteps: [],
     minimized: false,
+    tokenIdentifier: identity.tokenIdentifier,
+    userId: identity.authUserId,
+    welcomeDismissed: false,
   });
   const doc = await ctx.db.get(id);
   if (!doc) {
@@ -64,7 +64,7 @@ async function getOrCreateOnboarding(ctx: MutationCtx, identity: AppIdentity) {
 type AutoProgress = {
   hasBaby: boolean;
   hasUpdate: boolean;
-  tourBaby: null | { publicId: string; name: string };
+  tourBaby: null | { name: string; publicId: string };
 };
 
 async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIdentity) {
@@ -79,7 +79,7 @@ async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIde
   ).filter(isActive);
 
   const first = babies[0];
-  const tourBaby = first ? { publicId: first.publicId, name: first.name } : null;
+  const tourBaby = first ? { name: first.name, publicId: first.publicId } : null;
 
   if (babies.length === 0) {
     return { hasBaby: false, hasUpdate: false, tourBaby };
@@ -99,7 +99,7 @@ async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIde
 }
 
 function mergeEffectiveSteps(opts: {
-  completedSteps: string[];
+  completedSteps: Array<string>;
   hasBaby: boolean;
   hasUpdate: boolean;
 }) {
@@ -121,17 +121,17 @@ function toClientState(doc: Doc<"userOnboarding"> | null, auto: AutoProgress) {
     hasUpdate: auto.hasUpdate,
   });
   return {
-    welcomeDismissed: doc?.welcomeDismissed ?? false,
+    activeCoachmarkStepId: doc?.activeCoachmarkStepId ?? null,
+    allDone: effectiveSteps.length >= ONBOARDING_STEP_IDS.length,
     checklistDismissed: doc?.checklistDismissed ?? false,
-    minimized: doc?.minimized ?? false,
     completedSteps,
+    effectiveSteps,
     hasBaby: auto.hasBaby,
     hasUpdate: auto.hasUpdate,
-    effectiveSteps,
-    allDone: effectiveSteps.length >= ONBOARDING_STEP_IDS.length,
-    tourBaby: auto.tourBaby,
-    activeCoachmarkStepId: doc?.activeCoachmarkStepId ?? null,
+    minimized: doc?.minimized ?? false,
     restartHintVisible: doc?.restartHintVisible ?? false,
+    tourBaby: auto.tourBaby,
+    welcomeDismissed: doc?.welcomeDismissed ?? false,
   };
 }
 
@@ -215,10 +215,10 @@ export const dismissChecklist = mutation({
     }
     const doc = await getOrCreateOnboarding(ctx, identity);
     await ctx.db.patch(doc._id, {
-      checklistDismissed: true,
-      welcomeDismissed: true,
-      minimized: true,
       activeCoachmarkStepId: null,
+      checklistDismissed: true,
+      minimized: true,
+      welcomeDismissed: true,
     });
     return null;
   },
@@ -261,11 +261,11 @@ export const restart = mutation({
     const auto = await computeAutoProgress(ctx, identity);
     await ctx.db.patch(doc._id, {
       // Replay the welcome carousel only if they still have no baby
-      welcomeDismissed: auto.hasBaby,
+      activeCoachmarkStepId: null,
       checklistDismissed: false,
       minimized: false,
-      activeCoachmarkStepId: null,
       restartHintVisible: false,
+      welcomeDismissed: auto.hasBaby,
     });
     return null;
   },
@@ -298,12 +298,12 @@ export async function skipUserOnboarding(ctx: MutationCtx, userId: string) {
     .unique();
 
   const patch = {
-    completedSteps: [...ONBOARDING_STEP_IDS],
-    welcomeDismissed: true,
-    checklistDismissed: true,
-    minimized: true,
     activeCoachmarkStepId: null,
+    checklistDismissed: true,
+    completedSteps: [...ONBOARDING_STEP_IDS],
+    minimized: true,
     restartHintVisible: false,
+    welcomeDismissed: true,
   };
 
   if (existing) {
@@ -312,8 +312,8 @@ export async function skipUserOnboarding(ctx: MutationCtx, userId: string) {
   }
 
   return await ctx.db.insert("userOnboarding", {
-    userId,
     tokenIdentifier,
+    userId,
     ...patch,
   });
 }

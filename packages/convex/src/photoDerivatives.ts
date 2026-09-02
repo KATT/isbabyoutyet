@@ -1,7 +1,7 @@
 import sharp from "sharp";
 
 /** Square crop used on the baby page and timeline. */
-export const PAGE_THUMBNAIL = { width: 900, height: 900 } as const;
+export const PAGE_THUMBNAIL = { height: 900, width: 900 } as const;
 
 /**
  * Chromium `Notification.image` (Chrome on Android / Windows). iOS Safari
@@ -12,14 +12,14 @@ export const PAGE_THUMBNAIL = { width: 900, height: 900 } as const;
  * the center. Keep the file small (typically well under 200KB) — the image
  * is fetched on the notification’s critical path.
  */
-export const PUSH_IMAGE = { width: 1350, height: 675 } as const;
+export const PUSH_IMAGE = { height: 675, width: 1350 } as const;
 
 /**
  * Tiny square JPEG inlined as a `data:` URL (Next.js `blurDataURL`).
  * The page thumbnail is the same center-cover crop, so the placeholder
  * matches the inline photo while CSS blurs it up.
  */
-export const BLUR_PLACEHOLDER = { width: 8, height: 8 } as const;
+export const BLUR_PLACEHOLDER = { height: 8, width: 8 } as const;
 
 const PAGE_CROP = { fit: "cover", position: "center" } as const;
 

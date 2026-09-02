@@ -8,13 +8,13 @@ export async function copyTextToClipboard(text: string): Promise<void> {
     textArea.value = text;
     textArea.style.position = "fixed";
     textArea.style.opacity = "0";
-    document.body.appendChild(textArea);
+    document.body.append(textArea);
     textArea.select();
     try {
       document.execCommand("copy");
-    } catch (cause) {
+    } catch (error) {
       document.body.removeChild(textArea);
-      throw cause;
+      throw error;
     }
     document.body.removeChild(textArea);
   }

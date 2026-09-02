@@ -40,10 +40,9 @@
  *    408 retry uses `--preview-name` and Convex then skips `--preview-run`.
  */
 import { execFileSync } from "node:child_process";
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { convexEnvSchema } from "@workspace/convex/src/env";
 import {
   MERGE_QUEUE_PLACEHOLDER_CONVEX_URL,
@@ -62,18 +61,18 @@ import {
   previewNameCliArgs,
   shouldPushConvexBackend,
 } from "@workspace/convex/src/previewDeploy";
-import * as z from "zod";
+import { z } from "zod";
 
 const vercelEnvSchema = z.object({
+  BETTER_AUTH_SECRET: z.string().min(1),
+  VAPID_PRIVATE_KEY: z.string().min(1),
+  VAPID_PUBLIC_KEY: z.string().min(1),
+  VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),
+
+  VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
   VERCEL_ENV: z.enum(["production", "preview"]),
   VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
-  VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
   VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1), // The domain name of the production project URL
-
-  BETTER_AUTH_SECRET: z.string().min(1),
-  VAPID_PUBLIC_KEY: z.string().min(1),
-  VAPID_PRIVATE_KEY: z.string().min(1),
-  VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),
 });
 
 const env = vercelEnvSchema.parse(process.env);
@@ -83,7 +82,7 @@ const siteUrl = isPreview
   ? `https://${env.VERCEL_BRANCH_URL}`
   : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
 
-const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
+const scriptsDir = import.meta.dirname;
 const convexPackageDir = path.resolve(scriptsDir, "../../../packages/convex");
 
 function convexDeployEnv() {
@@ -100,40 +99,40 @@ function convexDeployEnv() {
   };
 }
 
-function convexCli(args: string[]) {
+function convexCli(args: Array<string>) {
   console.log(`\n$ convex ${args.join(" ")}`);
   execFileSync("pnpm", ["convex", ...args], {
     cwd: convexPackageDir,
-    stdio: "inherit",
     env: convexDeployEnv(),
+    stdio: "inherit",
   });
 }
 
-function convexCliOutput(args: string[]) {
+function convexCliOutput(args: Array<string>) {
   console.log(`\n$ convex ${args.join(" ")}`);
   return execFileSync("pnpm", ["convex", ...args], {
     cwd: convexPackageDir,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "inherit"],
     env: convexDeployEnv(),
+    stdio: ["ignore", "pipe", "inherit"],
   });
 }
 
 const execFileErrorSchema = z.object({
-  stdout: z.union([z.string(), z.null()]),
   stderr: z.union([z.string(), z.null()]),
+  stdout: z.union([z.string(), z.null()]),
 });
 
-function convexCliCaptured(args: string[]) {
+function convexCliCaptured(args: Array<string>) {
   console.log(`\n$ convex ${args.join(" ")}`);
   try {
     const stdout = execFileSync("pnpm", ["convex", ...args], {
       cwd: convexPackageDir,
       encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
       env: convexDeployEnv(),
+      stdio: ["ignore", "pipe", "pipe"],
     });
-    return { ok: true, stdout, stderr: "" };
+    return { ok: true, stderr: "", stdout };
   } catch (error) {
     const parsed = execFileErrorSchema.safeParse(error);
     if (!parsed.success) {
@@ -141,23 +140,23 @@ function convexCliCaptured(args: string[]) {
     }
     return {
       ok: false,
-      stdout: parsed.data.stdout ?? "",
       stderr: parsed.data.stderr ?? "",
+      stdout: parsed.data.stdout ?? "",
     };
   }
 }
 
-function convexCliResult(args: string[]) {
+function convexCliResult(args: Array<string>) {
   console.log(`\n$ convex ${args.join(" ")}`);
   try {
     const stdout = execFileSync("pnpm", ["convex", ...args], {
       cwd: convexPackageDir,
       encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
       env: convexDeployEnv(),
+      stdio: ["ignore", "pipe", "pipe"],
     });
     process.stdout.write(stdout);
-    return { ok: true as const, stdout, stderr: "" };
+    return { ok: true as const, stderr: "", stdout };
   } catch (error) {
     const parsed = execFileErrorSchema.safeParse(error);
     if (!parsed.success) {
@@ -167,14 +166,14 @@ function convexCliResult(args: string[]) {
     const stderr = parsed.data.stderr ?? "";
     process.stdout.write(stdout);
     process.stderr.write(stderr);
-    return { ok: false as const, stdout, stderr };
+    return { ok: false as const, stderr, stdout };
   }
 }
 
 function readCurrentSchemaFingerprint() {
   const files = SCHEMA_FINGERPRINT_RELATIVE_PATHS.map((relativePath) => ({
-    path: relativePath,
     contents: fs.readFileSync(path.join(convexPackageDir, relativePath), "utf8"),
+    path: relativePath,
   }));
   return computeSchemaFingerprint(files);
 }
@@ -185,10 +184,10 @@ function readStoredSchemaFingerprint(previewName: string) {
   );
 }
 
-async function waitForMigrations(previewArgs: string[]) {
+async function waitForMigrations(previewArgs: Array<string>) {
   const migrationStatusSchema = z.object({
-    isDone: z.boolean(),
     failed: z.array(z.string()),
+    isDone: z.boolean(),
   });
 
   for (let attempt = 0; attempt < 300; attempt += 1) {
@@ -205,18 +204,18 @@ async function waitForMigrations(previewArgs: string[]) {
       throw new Error("Migrations did not finish before the deployment deadline");
     }
     await new Promise((resolve) => {
-      setTimeout(resolve, 1_000);
+      setTimeout(resolve, 1000);
     });
   }
 }
 
 function buildWebApp(convexUrl: string) {
   execFileSync("node", [path.join(scriptsDir, "build-web.mjs")], {
-    stdio: "inherit",
     env: {
       ...convexDeployEnv(),
       VITE_CONVEX_URL: convexUrl,
     },
+    stdio: "inherit",
   });
 }
 
@@ -225,13 +224,13 @@ const currentFingerprint = pushConvex ? readCurrentSchemaFingerprint() : "";
 const stored =
   isPreview && pushConvex
     ? readStoredSchemaFingerprint(env.VERCEL_GIT_COMMIT_REF)
-    : { previewExists: false, fingerprint: null };
+    : { fingerprint: null, previewExists: false };
 
 const plan = planConvexDeploy({
-  vercelEnv: env.VERCEL_ENV,
-  gitRef: env.VERCEL_GIT_COMMIT_REF,
   currentFingerprint,
+  gitRef: env.VERCEL_GIT_COMMIT_REF,
   stored,
+  vercelEnv: env.VERCEL_ENV,
 });
 
 console.log(`\n${describeConvexDeployPlan(plan)}`);
@@ -284,8 +283,8 @@ if (plan.kind === "merge-queue-web-only") {
     console.log(`\n$ pnpm ${script}`);
     execFileSync("pnpm", ["run", script, "--", ...previewArgs], {
       cwd: convexPackageDir,
-      stdio: "inherit",
       env: process.env,
+      stdio: "inherit",
     });
   }
 }

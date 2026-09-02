@@ -25,19 +25,19 @@ type QueryFailureReason =
   | symbol
   | null
   | undefined
-  | QueryFailureReason[]
+  | Array<QueryFailureReason>
   | { readonly [key: string]: QueryFailureReason };
 
 interface AnyInfiniteQueryOptions extends AnyQueryOptions {
-  initialPageParam: InfiniteQueryPageParam;
   getNextPageParam(
     ...args: [
       lastPage: unknown,
-      allPages: unknown[],
+      allPages: Array<unknown>,
       lastPageParam: InfiniteQueryPageParam,
-      allPageParams: InfiniteQueryPageParam[],
+      allPageParams: Array<InfiniteQueryPageParam>,
     ]
   ): InfiniteQueryPageParam | null | undefined;
+  initialPageParam: InfiniteQueryPageParam;
 }
 
 type RuntimeQueryOptionsFactory = {
@@ -56,7 +56,11 @@ function invokeFactory<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInput<TFactory> | undefined,
 ): ReturnType<TFactory>;
-function invokeFactory(factory: RuntimeQueryOptionsFactory, input: any) {
+function invokeFactory(
+  factory: RuntimeQueryOptionsFactory,
+  // oxlint-disable-next-line typescript/no-explicit-any -- overload implementation
+  input: any,
+) {
   return factory(input);
 }
 
@@ -65,8 +69,8 @@ type RuntimeInitiatedQuery = {
 };
 
 type RuntimePreloadedQuery = {
-  input?: unknown;
   initialData: unknown;
+  input?: unknown;
 };
 
 function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
@@ -75,7 +79,7 @@ function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
 ): InitiatedQuery<TFactory>;
 function createInitiatedQuery(
   _factory: RuntimeQueryOptionsFactory,
-  input: readonly unknown[],
+  input: ReadonlyArray<unknown>,
 ): RuntimeInitiatedQuery {
   return { input: input[0] };
 }
@@ -86,7 +90,7 @@ function createInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>(
 ): InitiatedInfiniteQuery<TFactory>;
 function createInitiatedInfiniteQuery(
   _factory: RuntimeQueryOptionsFactory,
-  input: readonly unknown[],
+  input: ReadonlyArray<unknown>,
 ): RuntimeInitiatedQuery {
   return { input: input[0] };
 }
@@ -94,29 +98,29 @@ function createInitiatedInfiniteQuery(
 function createPreloadedQuery<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   handle: {
-    input: QueryInputArgs<TFactory>;
     initialData: QueryDataOf<ReturnType<TFactory>>;
+    input: QueryInputArgs<TFactory>;
   },
 ): PreloadedQuery<TFactory>;
 function createPreloadedQuery(
   _factory: RuntimeQueryOptionsFactory,
-  handle: { input: readonly unknown[]; initialData: unknown },
+  handle: { initialData: unknown; input: ReadonlyArray<unknown> },
 ): RuntimePreloadedQuery {
-  return { input: handle.input[0], initialData: handle.initialData };
+  return { initialData: handle.initialData, input: handle.input[0] };
 }
 
 function createPreloadedInfiniteQuery<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   handle: {
-    input: QueryInputArgs<TFactory>;
     initialData: QueryDataOf<ReturnType<TFactory>>;
+    input: QueryInputArgs<TFactory>;
   },
 ): PreloadedInfiniteQuery<TFactory>;
 function createPreloadedInfiniteQuery(
   _factory: RuntimeQueryOptionsFactory,
-  handle: { input: readonly unknown[]; initialData: unknown },
+  handle: { initialData: unknown; input: ReadonlyArray<unknown> },
 ): RuntimePreloadedQuery {
-  return { input: handle.input[0], initialData: handle.initialData };
+  return { initialData: handle.initialData, input: handle.input[0] };
 }
 
 function ensureFactoryQueryData<TFactory extends QueryOptionsFactory>(
@@ -266,8 +270,8 @@ export function getQueryPreloader(queryClient: QueryClient) {
       const options = invokeFactory(factory, input[0]);
       const initialData = await ensureFactoryQueryData<TFactory>(queryClient, options);
       return createPreloadedQuery(factory, {
-        input,
         initialData,
+        input,
       });
     },
 
@@ -292,8 +296,8 @@ export function getQueryPreloader(queryClient: QueryClient) {
       const options = invokeFactory(factory, input[0]);
       const initialData = await ensureFactoryInfiniteQueryData<TFactory>(queryClient, options);
       return createPreloadedInfiniteQuery(factory, {
-        input,
         initialData,
+        input,
       });
     },
   };

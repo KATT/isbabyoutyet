@@ -21,8 +21,6 @@ import { paraglideVitePlugin } from "@inlang/paraglide-js";
  */
 function aliasUseSyncExternalStoreShim(): Plugin {
   return {
-    name: "alias-use-sync-external-store-shim",
-    enforce: "pre",
     config() {
       return {
         resolve: {
@@ -39,6 +37,8 @@ function aliasUseSyncExternalStoreShim(): Plugin {
         },
       };
     },
+    enforce: "pre",
+    name: "alias-use-sync-external-store-shim",
   };
 }
 
@@ -50,13 +50,13 @@ function aliasUseSyncExternalStoreShim(): Plugin {
  */
 function skipNativeNodeAddons(): Plugin {
   return {
-    name: "skip-native-node-addons",
     enforce: "pre",
+    name: "skip-native-node-addons",
     resolveId(source) {
       if (!source.endsWith(".node")) {
         return null;
       }
-      return { id: source, external: true };
+      return { external: true, id: source };
     },
   };
 }
@@ -68,8 +68,6 @@ function skipNativeNodeAddons(): Plugin {
  */
 function routeGeneratedImagesThroughSsr(): Plugin {
   return {
-    name: "route-generated-images-through-ssr",
-    enforce: "pre",
     configureServer(server) {
       server.middlewares.use((...args) => {
         const request = args[0];
@@ -84,6 +82,8 @@ function routeGeneratedImagesThroughSsr(): Plugin {
         next();
       });
     },
+    enforce: "pre",
+    name: "route-generated-images-through-ssr",
   };
 }
 
@@ -97,22 +97,22 @@ function routeGeneratedImagesThroughSsr(): Plugin {
 function stubTanstackDevtoolsOnServer(): Plugin {
   const stubId = "\0stub-tanstack-devtools-ssr";
   return {
-    name: "stub-tanstack-devtools-on-server",
-    enforce: "pre",
     applyToEnvironment(environment) {
       return environment.config.consumer === "server";
     },
-    resolveId(source) {
-      if (!/(?:^|[/\\])tanstack-devtools(?:\.[cm]?[jt]sx?)?$/.test(source)) {
-        return null;
-      }
-      return stubId;
-    },
+    enforce: "pre",
     load(id) {
       if (id !== stubId) {
         return null;
       }
       return "export function TanStackAppDevtools() { return null; }\n";
+    },
+    name: "stub-tanstack-devtools-on-server",
+    resolveId(source) {
+      if (!/(?:^|[/\\])tanstack-devtools(?:\.[cm]?[jt]sx?)?$/.test(source)) {
+        return null;
+      }
+      return stubId;
     },
   };
 }
@@ -123,7 +123,6 @@ function stubTanstackDevtoolsOnServer(): Plugin {
  */
 function patchLeakedReactRequire(): Plugin {
   return {
-    name: "patch-leaked-react-require",
     enforce: "post",
     generateBundle(_options, bundle) {
       for (const chunk of Object.values(bundle)) {
@@ -137,10 +136,14 @@ function patchLeakedReactRequire(): Plugin {
         chunk.code = chunk.code.replaceAll('__require("react")', `${match[0]}()`);
       }
     },
+    name: "patch-leaked-react-require",
   };
 }
 
 const config = defineConfig({
+  optimizeDeps: {
+    exclude: ["@resvg/resvg-js"],
+  },
   plugins: [
     // Docs require devtools() as the first Vite plugin:
     // https://tanstack.com/devtools/latest/docs/quick-start#vite-plugin
@@ -155,11 +158,11 @@ const config = defineConfig({
     skipNativeNodeAddons(),
     routeGeneratedImagesThroughSsr(),
     paraglideVitePlugin({
-      project: "./project.inlang",
+      cookieName: "PARAGLIDE_LOCALE",
+      emitTsDeclarations: true,
       outdir: "./src/paraglide",
       outputStructure: "message-modules",
-      emitTsDeclarations: true,
-      cookieName: "PARAGLIDE_LOCALE",
+      project: "./project.inlang",
       strategy: ["cookie", "preferredLanguage", "baseLocale"],
     }),
     // Nitro Vite plugin is what Vercel uses to turn TanStack Start into
@@ -180,15 +183,15 @@ const config = defineConfig({
                 test: /[/\\]node_modules[/\\]\.nitro[/\\]vite[/\\]services[/\\]ssr[/\\]/,
               },
               {
-                test: /node_modules[/\\](?!(?:nitro|nitro-nightly)[/\\])[^.]/,
                 name(id: string) {
                   const match =
                     /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/]+[/\\]node_modules[/\\])?(?:(@[^/]+[/\\][^/]+)|([^/]+))/i.exec(
                       id,
                     );
                   const name = match?.[1] ?? match?.[2];
-                  return name ? name.replace(/[/\\+@]/g, "_") : "vendor";
+                  return name ? name.replaceAll(/[/\\+@]/g, "_") : "vendor";
                 },
+                test: /node_modules[/\\](?!(?:nitro|nitro-nightly)[/\\])[^.]/,
               },
             ],
           },
@@ -207,12 +210,9 @@ const config = defineConfig({
     }),
     viteReact({ compiler: true }),
   ],
-  optimizeDeps: {
-    exclude: ["@resvg/resvg-js"],
-  },
   ssr: {
-    noExternal: ["@convex-dev/better-auth"],
     external: ["@resvg/resvg-js"],
+    noExternal: ["@convex-dev/better-auth"],
     optimizeDeps: {
       exclude: ["@resvg/resvg-js"],
     },

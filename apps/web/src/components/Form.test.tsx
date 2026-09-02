@@ -35,21 +35,21 @@ function spyOnToastErrorResource() {
 }
 
 function ContextSubmitForm(props: {
-  onSubmit: (values: { note: string }) => Promise<void>;
   disabled: boolean | undefined;
+  onSubmit: (values: { note: string }) => Promise<void>;
 }) {
   const form = useZodForm({
-    schema: z.object({ note: z.string() }),
     defaultValues: { note: "hi" },
+    schema: z.object({ note: z.string() }),
   });
   return (
     <Form form={form} handleSubmit={props.onSubmit}>
       <FormCancelButton form="context">Cancel</FormCancelButton>
       <SubmitButton
+        disabled={props.disabled}
         form="context"
         IconComponent={Check}
         iconPosition="start"
-        disabled={props.disabled}
       >
         Send
       </SubmitButton>
@@ -59,8 +59,8 @@ function ContextSubmitForm(props: {
 
 function ExplicitSubmitForm(props: { onSubmit: (values: { note: string }) => Promise<void> }) {
   const form = useZodForm({
-    schema: z.object({ note: z.string() }),
     defaultValues: { note: "hi" },
+    schema: z.object({ note: z.string() }),
   });
   return (
     <div>
@@ -89,7 +89,7 @@ test("SubmitButton keeps its label and swaps the icon for a spinner while submit
 
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
+      <ContextSubmitForm disabled={undefined} onSubmit={onSubmit} />
     </LocaleProvider>,
   );
 
@@ -149,7 +149,7 @@ test("SubmitButton can target an explicit form outside the <form> element", asyn
 test("SubmitButton honors an extra disabled prop while idle", async () => {
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <ContextSubmitForm onSubmit={vi.fn(async () => undefined)} disabled={true} />
+      <ContextSubmitForm disabled={true} onSubmit={vi.fn(async () => undefined)} />
     </LocaleProvider>,
   );
 
@@ -182,7 +182,7 @@ test("Form surfaces uncaught submit errors as a toast", async () => {
 
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
+      <ContextSubmitForm disabled={undefined} onSubmit={onSubmit} />
     </LocaleProvider>,
   );
 
@@ -203,12 +203,13 @@ test("Form toasts a generic message for non-Error throws", async () => {
   await using toastError = spyOnToastErrorResource();
 
   const onSubmit = vi.fn(async () => {
-    throw "string-fail";
+    const nonError = { failed: true } satisfies { failed: true };
+    throw nonError;
   });
 
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
+      <ContextSubmitForm disabled={undefined} onSubmit={onSubmit} />
     </LocaleProvider>,
   );
 
@@ -223,8 +224,8 @@ test("Form toasts a generic message for non-Error throws", async () => {
 test("SubmitButton supports an emoji glyph at the end of the label", async () => {
   function EmojiSubmitForm() {
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
     return (
       <Form form={form} handleSubmit={async () => undefined}>
@@ -261,8 +262,8 @@ test("SubmitButton accepts IconComponent={null} for label-only actions", async (
 
   function NullIconForm() {
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
     return (
       <Form form={form} handleSubmit={onSubmit}>
@@ -303,12 +304,12 @@ test("SubmitButton accepts IconComponent={null} for label-only actions", async (
 test("FormCancelButton honors an extra disabled prop while idle", async () => {
   function DisabledCancelForm() {
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
     return (
       <Form form={form} handleSubmit={async () => undefined}>
-        <FormCancelButton form="context" disabled={true} variant="secondary">
+        <FormCancelButton disabled={true} form="context" variant="secondary">
           Cancel
         </FormCancelButton>
       </Form>
@@ -339,7 +340,7 @@ test("FormCancelButton disables while its form is submitting", async () => {
 
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
+      <ContextSubmitForm disabled={undefined} onSubmit={onSubmit} />
     </LocaleProvider>,
   );
 
@@ -383,44 +384,43 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
       },
     });
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
 
     return (
       <FormGuardProvider guard={overlay}>
         <button
-          type="button"
           onClick={() => {
             const cancel = vi.fn();
             overlay.rootProps.onOpenChange(false, {
-              reason: "escape-key",
               cancel,
+              reason: "escape-key",
             });
             htmlInput(document.getElementById("dismiss-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
+          type="button"
         >
           TryEscape
         </button>
         <button
-          type="button"
           onClick={() => {
             const cancel = vi.fn();
             overlay.rootProps.onOpenChange(false, {
-              reason: "imperative-action",
               cancel,
+              reason: "imperative-action",
             });
             htmlInput(document.getElementById("imperative-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
+          type="button"
         >
           TryImperative
         </button>
         <button
-          type="button"
           onClick={() => {
             overlay.rootProps.actionsRef.current = {
               close: actionsClose,
@@ -428,11 +428,12 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
             };
             overlay.close();
           }}
+          type="button"
         >
           Close
         </button>
-        <input id="dismiss-result" readOnly defaultValue="unset" />
-        <input id="imperative-result" readOnly defaultValue="unset" />
+        <input defaultValue="unset" id="dismiss-result" readOnly />
+        <input defaultValue="unset" id="imperative-result" readOnly />
         <Form form={form} handleSubmit={onSubmit}>
           <FormCancelButton form={form}>Cancel</FormCancelButton>
           <SubmitButton form="context" IconComponent={Check} iconPosition="start">
@@ -483,17 +484,17 @@ test("useFormGuard close is a no-op without an actions handle", async () => {
     const overlay = useFormGuard({ onOpenChange: undefined });
     return (
       <>
-        <button type="button" onClick={() => overlay.close()}>
+        <button onClick={() => overlay.close()} type="button">
           Close
         </button>
         <button
-          type="button"
           onClick={() => {
             overlay.rootProps.onOpenChange(false, {
-              reason: "escape-key",
               cancel: () => undefined,
+              reason: "escape-key",
             });
           }}
+          type="button"
         >
           EscapeIdle
         </button>
@@ -526,14 +527,13 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
       },
     });
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
 
     return (
       <FormGuardProvider guard={overlay}>
         <button
-          type="button"
           onClick={() => {
             overlay.rootProps.actionsRef.current = {
               close: actionsClose,
@@ -541,17 +541,18 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
             };
             const cancel = vi.fn();
             overlay.rootProps.onOpenChange(false, {
-              reason: "escape-key",
               cancel,
+              reason: "escape-key",
             });
             htmlInput(document.getElementById("dismiss-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
+          type="button"
         >
           TryEscape
         </button>
-        <input id="dismiss-result" readOnly defaultValue="unset" />
+        <input defaultValue="unset" id="dismiss-result" readOnly />
         <Form form={form} handleSubmit={async () => undefined}>
           <input aria-label="Note" {...form.register("note")} />
         </Form>
@@ -599,44 +600,44 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
       },
     });
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
 
     return (
       <FormGuardProvider guard={overlay}>
         <button
-          type="button"
           onClick={() => {
             const cancel = vi.fn();
             overlay.rootProps.onOpenChange(false, {
-              reason: "imperative-action",
               cancel,
+              reason: "imperative-action",
             });
             htmlInput(document.getElementById("imperative-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
+          type="button"
         >
           TryImperative
         </button>
         <button
-          type="button"
           onClick={() => {
             const cancel = vi.fn();
             overlay.rootProps.onOpenChange(false, {
-              reason: "outside-press",
               cancel,
+              reason: "outside-press",
             });
             htmlInput(document.getElementById("picker-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
+          type="button"
         >
           TryPicker
         </button>
-        <input id="imperative-result" readOnly defaultValue="unset" />
-        <input id="picker-result" readOnly defaultValue="unset" />
+        <input defaultValue="unset" id="imperative-result" readOnly />
+        <input defaultValue="unset" id="picker-result" readOnly />
         <Form form={form} handleSubmit={async () => undefined}>
           <input aria-label="Note" {...form.register("note")} />
         </Form>
@@ -681,13 +682,12 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
     });
     const child = useFormGuard({ onOpenChange: undefined });
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
     return (
       <FormGuardProvider guard={parent}>
         <button
-          type="button"
           onClick={() => {
             parent.rootProps.actionsRef.current = {
               close: parentClose,
@@ -695,17 +695,18 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
             };
             const cancel = vi.fn();
             parent.rootProps.onOpenChange(false, {
-              reason: "outside-press",
               cancel,
+              reason: "outside-press",
             });
             htmlInput(document.getElementById("parent-dismiss")).value = String(
               cancel.mock.calls.length,
             );
           }}
+          type="button"
         >
           DismissParent
         </button>
-        <input id="parent-dismiss" readOnly defaultValue="unset" />
+        <input defaultValue="unset" id="parent-dismiss" readOnly />
         <FormGuardProvider guard={child}>
           <Form form={form} handleSubmit={async () => undefined}>
             <input aria-label="Note" {...form.register("note")} />
@@ -753,8 +754,8 @@ test("discard prompt blocks clicks on the dialog behind it", async () => {
       },
     });
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
 
     return (
@@ -796,8 +797,8 @@ test("dirty form overlay blocks in-app navigation until discarded", async () => 
     const router = useRouter();
     const overlay = useFormGuard({ onOpenChange: undefined });
     const form = useZodForm({
-      schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
+      schema: z.object({ note: z.string() }),
     });
     return (
       <LocaleProvider locale="en-GB">
@@ -806,10 +807,10 @@ test("dirty form overlay blocks in-app navigation until discarded", async () => 
             <input aria-label="Note" {...form.register("note")} />
           </Form>
           <button
-            type="button"
             onClick={() => {
               router.history.push("/other");
             }}
+            type="button"
           >
             Leave
           </button>
@@ -824,21 +825,21 @@ test("dirty form overlay blocks in-app navigation until discarded", async () => 
     },
   });
   const homeRoute = createRoute({
+    component: DirtyFormPage,
     getParentRoute: () => rootRoute,
     path: "/",
-    component: DirtyFormPage,
   });
   const otherRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/other",
     component: function OtherPage() {
       return <div>Other page</div>;
     },
+    getParentRoute: () => rootRoute,
+    path: "/other",
   });
   const router = createRouter({
-    routeTree: rootRoute.addChildren([homeRoute, otherRoute]),
-    history: createMemoryHistory({ initialEntries: ["/"] }),
     defaultPendingMinMs: 0,
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+    routeTree: rootRoute.addChildren([homeRoute, otherRoute]),
   });
   await router.load();
   await using view = renderResource(<RouterProvider router={router} />);

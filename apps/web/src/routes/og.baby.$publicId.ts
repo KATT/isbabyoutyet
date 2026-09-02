@@ -31,12 +31,12 @@ export const Route = createFileRoute("/og/baby/$publicId")({
         if (currentVersion && requestedVersion !== currentVersion) {
           requestUrl.searchParams.set("v", currentVersion);
           return new Response(null, {
-            status: 307,
             headers: {
               "Cache-Control": "no-store",
-              "Vercel-CDN-Cache-Control": "private, no-store",
               Location: requestUrl.toString(),
+              "Vercel-CDN-Cache-Control": "private, no-store",
             },
+            status: 307,
           });
         }
 
@@ -44,19 +44,19 @@ export const Route = createFileRoute("/og/baby/$publicId")({
           await createBabyOgImage({
             name: baby.name,
             ...(baby.dueDateDisplayMode === "exact"
-              ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
+              ? { dueDate: baby.dueDate, dueDateDisplayMode: "exact" as const }
               : {
                   dueDateDisplayMode: "message" as const,
                   publicDueDateText: baby.publicDueDateText ?? "",
                 }),
-            theme: baby.theme,
-            locale: baby.resolvedLocale,
-            timeZone: baby.timeZone,
             babyBorn: baby.babyBorn,
-            wentToHospital: baby.wentToHospital,
             laborStarted: baby.laborStarted,
+            locale: baby.resolvedLocale,
             milestoneVisibility: baby.milestoneVisibility,
             photoUrl: baby.photoUrl ?? baby.thumbnailUrl ?? null,
+            theme: baby.theme,
+            timeZone: baby.timeZone,
+            wentToHospital: baby.wentToHospital,
           }),
           [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(opts.params.publicId)],
         );

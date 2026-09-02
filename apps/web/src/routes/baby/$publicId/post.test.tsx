@@ -9,23 +9,23 @@ import { Route } from "@/routes/baby/$publicId/post";
 
 test("post loader fetches manager access data", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   const result = await runRouteLoader<{
-    managerBaby: { input: { babyId: string }; initialData: { name: string } };
-    myAccess: { initialData: { canManage: boolean; isOwner: boolean; isCoParent: boolean } };
+    managerBaby: { initialData: { name: string }; input: { babyId: string } };
+    myAccess: { initialData: { canManage: boolean; isCoParent: boolean; isOwner: boolean } };
   }>({
     harness,
-    route: Route,
     params: { publicId: baby.publicId },
+    route: Route,
   });
 
   expect(result.managerBaby).toMatchObject({
-    input: { babyId: baby.publicId },
     initialData: { name: "Baby Smith" },
+    input: { babyId: baby.publicId },
   });
   expect(result.myAccess).toMatchObject({
-    initialData: { canManage: true, isOwner: true, isCoParent: false },
+    initialData: { canManage: true, isCoParent: false, isOwner: true },
   });
 });
 
@@ -33,38 +33,38 @@ test("post loader redirects non-managers to the public baby page", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const aliceId = await signUpTestUser(harness, {
     email: "alice@example.com",
-    password: "password123",
     name: "Alice",
+    password: "password123",
   });
   harness.withIdentity({ subject: aliceId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   harness.withIdentity(null);
 
   await expect(
     runRouteLoader({
       harness,
-      route: Route,
       params: { publicId: baby.publicId },
+      route: Route,
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/baby/$publicId",
       params: { publicId: baby.publicId },
       resetScroll: false,
+      to: "/baby/$publicId",
     },
   });
 });
 
 test("post overlay closes to the baby page after dismiss", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/post",
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: false },
+    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/post",
+    route: Route,
     wrap: null,
   });
 
@@ -76,24 +76,24 @@ test("post overlay closes to the baby page after dismiss", async () => {
   expect(ctx.back).not.toHaveBeenCalled();
   await vi.waitFor(() => {
     expect(ctx.navigate).toHaveBeenCalledWith({
-      to: "/baby/$publicId",
       params: { publicId: baby.publicId },
       replace: true,
       resetScroll: false,
+      to: "/baby/$publicId",
     });
   });
 });
 
 test("post overlay asks to discard a dirty composer before closing", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/post",
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: false },
+    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/post",
+    route: Route,
     wrap: null,
   });
 
@@ -122,24 +122,24 @@ test("post overlay asks to discard a dirty composer before closing", async () =>
 
   await vi.waitFor(() => {
     expect(ctx.navigate).toHaveBeenCalledWith({
-      to: "/baby/$publicId",
       params: { publicId: baby.publicId },
       replace: true,
       resetScroll: false,
+      to: "/baby/$publicId",
     });
   });
 });
 
 test("discard prompt blocks interaction with the post composer behind it", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/post",
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/post",
+    route: Route,
     wrap: null,
   });
 
@@ -163,14 +163,14 @@ test("discard prompt blocks interaction with the post composer behind it", async
 
 test("post overlay prefers history.back when opened via push", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/post",
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/post",
+    route: Route,
     wrap: null,
   });
 
@@ -187,14 +187,14 @@ test("post overlay prefers history.back when opened via push", async () => {
 
 test("BabyPostUpdateOverlay mounts from the real route loader", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/post",
     initialEntry: `/baby/${baby.publicId}/post`,
     overlayHistory: null,
+    path: "/baby/$publicId/post",
+    route: Route,
     wrap: null,
   });
 
@@ -208,18 +208,18 @@ test("successful post completes onboarding step", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const ownerId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: ownerId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: Route,
-    path: "/baby/$publicId/post",
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: false },
+    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/post",
+    route: Route,
     wrap: null,
   });
 

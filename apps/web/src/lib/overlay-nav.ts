@@ -56,13 +56,13 @@ export function closeOverlayLink(options: OverlayCloseInput): LinkProps {
  * @public
  */
 export function dismissOverlay(opts: {
+  closeLink: LinkProps;
   history: {
-    location: { state: { overlay: true | undefined } };
-    canGoBack: () => boolean;
     back: () => void;
+    canGoBack: () => boolean;
+    location: { state: { overlay: true | undefined } };
   };
   navigate: (closeLink: LinkProps) => void;
-  closeLink: LinkProps;
 }) {
   if (isOverlayHistoryState(opts.history.location.state) && opts.history.canGoBack()) {
     opts.history.back();
@@ -72,28 +72,28 @@ export function dismissOverlay(opts: {
 }
 
 type UseOverlayNavOptions = {
-  open: OverlayOpenInput;
   close: OverlayCloseInput;
+  open: OverlayOpenInput;
 };
 
 type OverlayNav = {
-  /** Whether the route-backed overlay should currently be visible. */
-  open: boolean;
-  /** Spread onto `<Link>` / pass to `navigate` to open the overlay (push). */
-  openLink: LinkProps;
-  /** Spread onto `<Link>` / pass to `navigate` for replace-close fallback. */
-  closeLink: LinkProps;
   /** Start the overlay's exit animation. */
   close: () => void;
-  /** Pass to the overlay primitive's `onOpenChange`. */
-  onOpenChange: (open: boolean) => void;
-  /** Pass to `onOpenChangeComplete` so navigation waits for the exit animation. */
-  onOpenChangeComplete: (open: boolean) => void;
+  /** Spread onto `<Link>` / pass to `navigate` for replace-close fallback. */
+  closeLink: LinkProps;
   /**
    * Close the overlay: `history.back()` when this entry was push-opened and the
    * router can go back; otherwise navigate with {@link closeLink}.
    */
   dismiss: () => void;
+  /** Pass to the overlay primitive's `onOpenChange`. */
+  onOpenChange: (open: boolean) => void;
+  /** Pass to `onOpenChangeComplete` so navigation waits for the exit animation. */
+  onOpenChangeComplete: (open: boolean) => void;
+  /** Whether the route-backed overlay should currently be visible. */
+  open: boolean;
+  /** Spread onto `<Link>` / pass to `navigate` to open the overlay (push). */
+  openLink: LinkProps;
 };
 
 /**
@@ -134,21 +134,20 @@ function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
   const closeLink = closeOverlayLink(opts.close);
   const dismiss = () => {
     dismissOverlay({
+      closeLink,
       history: router.history,
       navigate: (link) => {
         void router.navigate(link);
       },
-      closeLink,
     });
   };
 
   return {
-    open,
-    openLink,
-    closeLink,
     close: () => {
       setOpen(false);
     },
+    closeLink,
+    dismiss,
     onOpenChange: (nextOpen) => {
       if (!nextOpen) {
         setOpen(false);
@@ -159,58 +158,59 @@ function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
         dismiss();
       }
     },
-    dismiss,
+    open,
+    openLink,
   };
 }
 
 export function useDashboardSettingsOverlayNav() {
   return useOverlayNav({
-    open: { to: "/dashboard/settings" },
     close: { to: "/dashboard" },
+    open: { to: "/dashboard/settings" },
   });
 }
 
 export function useBabySettingsOverlayNav(publicId: string) {
   return useOverlayNav({
-    open: { to: "/baby/$publicId/settings", params: { publicId } },
-    close: { to: "/baby/$publicId", params: { publicId } },
+    close: { params: { publicId }, to: "/baby/$publicId" },
+    open: { params: { publicId }, to: "/baby/$publicId/settings" },
   });
 }
 
 export function useBabyPostOverlayNav(publicId: string) {
   return useOverlayNav({
-    open: { to: "/baby/$publicId/post", params: { publicId } },
-    close: { to: "/baby/$publicId", params: { publicId } },
+    close: { params: { publicId }, to: "/baby/$publicId" },
+    open: { params: { publicId }, to: "/baby/$publicId/post" },
   });
 }
 
 export function useBabyShareOverlayNav(publicId: string) {
   return useOverlayNav({
-    open: { to: "/baby/$publicId/share", params: { publicId } },
-    close: { to: "/baby/$publicId", params: { publicId } },
+    close: { params: { publicId }, to: "/baby/$publicId" },
+    open: { params: { publicId }, to: "/baby/$publicId/share" },
   });
 }
 
 export function useBabyLoginOverlayNav(publicId: string) {
   return useOverlayNav({
-    open: { to: "/baby/$publicId/login", params: { publicId } },
-    close: { to: "/baby/$publicId", params: { publicId } },
+    close: { params: { publicId }, to: "/baby/$publicId" },
+    open: { params: { publicId }, to: "/baby/$publicId/login" },
   });
 }
 
 export function useBabyPhotoOverlayNav(publicId: string) {
   return useOverlayNav({
-    open: { to: "/baby/$publicId/photo", params: { publicId } },
-    close: { to: "/baby/$publicId", params: { publicId } },
+    close: { params: { publicId }, to: "/baby/$publicId" },
+    open: { params: { publicId }, to: "/baby/$publicId/photo" },
   });
 }
 
 export function useBabyUpdatePhotoOverlayNav(opts: { publicId: string; updateId: string }) {
   return useOverlayNav({
+    close: { params: { publicId: opts.publicId }, to: "/baby/$publicId" },
     open: {
-      to: "/baby/$publicId/updates/$updateId/photo",
       params: { publicId: opts.publicId, updateId: opts.updateId },
+      to: "/baby/$publicId/updates/$updateId/photo",
     },
-    close: { to: "/baby/$publicId", params: { publicId: opts.publicId } },
   });
 }

@@ -51,11 +51,11 @@ export function DevBar() {
         <DropdownMenuTrigger
           render={
             <Button
+              aria-label="Developer shortcuts"
+              className="pointer-events-auto rounded-full border-2 bg-background/90 font-extrabold shadow-sm backdrop-blur-md max-sm:size-8 max-sm:px-0 max-sm:has-data-[icon=inline-start]:pl-0"
+              size="sm"
               type="button"
               variant="outline"
-              size="sm"
-              className="pointer-events-auto rounded-full border-2 bg-background/90 font-extrabold shadow-sm backdrop-blur-md max-sm:size-8 max-sm:px-0 max-sm:has-data-[icon=inline-start]:pl-0"
-              aria-label="Developer shortcuts"
             />
           }
         >
@@ -63,7 +63,7 @@ export function DevBar() {
           <span className="max-sm:sr-only">Dev</span>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="center" side="bottom" sideOffset={8} className="w-72">
+        <DropdownMenuContent align="center" className="w-72" side="bottom" sideOffset={8}>
           <DropdownMenuGroup>
             <DropdownMenuLabel>Seeded babies · {DEMO_USER.email}</DropdownMenuLabel>
           </DropdownMenuGroup>
@@ -77,9 +77,9 @@ export function DevBar() {
                 key={baby.publicId}
                 render={
                   <Link
-                    to="/baby/$publicId"
-                    params={{ publicId: baby.publicId }}
                     aria-current={currentPage(currentPublicId === baby.publicId)}
+                    params={{ publicId: baby.publicId }}
+                    to="/baby/$publicId"
                   />
                 }
               >
@@ -101,9 +101,9 @@ export function DevBar() {
                   key={baby.publicId}
                   render={
                     <Link
-                      to="/baby/$publicId"
-                      params={{ publicId: baby.publicId }}
                       aria-current={currentPage(currentPublicId === baby.publicId)}
+                      params={{ publicId: baby.publicId }}
+                      to="/baby/$publicId"
                     />
                   }
                 >
@@ -120,7 +120,7 @@ export function DevBar() {
           <DropdownMenuGroup>
             <DropdownMenuLabel>Pages</DropdownMenuLabel>
             <DropdownMenuItem
-              render={<Link to="/dashboard" aria-current={currentPage(onDashboard)} />}
+              render={<Link aria-current={currentPage(onDashboard)} to="/dashboard" />}
             >
               {onDashboard ? (
                 <Check data-icon="inline-start" />
@@ -130,12 +130,12 @@ export function DevBar() {
               Dashboard
             </DropdownMenuItem>
             <DropdownMenuItem
-              render={<Link to="/auth/login" aria-current={currentPage(onLogin)} />}
+              render={<Link aria-current={currentPage(onLogin)} to="/auth/login" />}
             >
               {onLogin ? <Check data-icon="inline-start" /> : <SignIn data-icon="inline-start" />}
               Login
             </DropdownMenuItem>
-            <DropdownMenuItem render={<Link to="/preview" aria-current={currentPage(onPreview)} />}>
+            <DropdownMenuItem render={<Link aria-current={currentPage(onPreview)} to="/preview" />}>
               {onPreview ? <Check data-icon="inline-start" /> : <Code data-icon="inline-start" />}
               Preview
             </DropdownMenuItem>

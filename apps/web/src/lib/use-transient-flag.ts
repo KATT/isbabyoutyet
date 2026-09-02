@@ -9,7 +9,9 @@ export function useTransientFlag(durationMs: number) {
   const [generation, setGeneration] = useState(0);
 
   useEffect(() => {
-    if (generation === 0) return;
+    if (generation === 0) {
+      return;
+    }
     const timeout = window.setTimeout(() => setGeneration(0), durationMs);
     return () => window.clearTimeout(timeout);
   }, [generation, durationMs]);

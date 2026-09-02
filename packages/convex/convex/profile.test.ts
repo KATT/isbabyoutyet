@@ -8,12 +8,12 @@ import { modules, registerComponents } from "./test.setup";
 
 /** Pre-migration row: `isAdmin` is `| undefined` so deleting it is a known field, not a widened bag. */
 type LegacyUserProfile = {
-  _id: Doc<"userProfiles">["_id"];
   _creationTime: number;
-  userId: string;
-  tokenIdentifier: string;
-  locale: Doc<"userProfiles">["locale"];
+  _id: Doc<"userProfiles">["_id"];
   isAdmin: boolean | undefined;
+  locale: Doc<"userProfiles">["locale"];
+  tokenIdentifier: string;
+  userId: string;
 };
 
 async function setup() {
@@ -27,23 +27,23 @@ test("a missing authenticated profile defaults to British English", async () => 
   const asAlice = t.withIdentity({ subject: "alice" });
 
   expect(await asAlice.query(api.profile.get, {})).toEqual({
+    isAdmin: false,
     locale: "en-GB",
     timeZone: "Europe/London",
-    isAdmin: false,
   });
 
   await asAlice.mutation(api.profile.updateLocale, { locale: "es" });
   expect(await asAlice.query(api.profile.get, {})).toEqual({
+    isAdmin: false,
     locale: "es",
     timeZone: "Europe/London",
-    isAdmin: false,
   });
 
   await asAlice.mutation(api.profile.updateLocale, { locale: "pt-BR" });
   expect(await asAlice.query(api.profile.get, {})).toEqual({
+    isAdmin: false,
     locale: "pt-BR",
     timeZone: "Europe/London",
-    isAdmin: false,
   });
 });
 
@@ -62,8 +62,8 @@ test("language requests are stored for authenticated users", async () => {
   });
   const request = await t.run((ctx) => ctx.db.get(requestId));
   expect(request).toMatchObject({
-    userId: "alice",
     requestedLocale: "French (fr-FR)",
+    userId: "alice",
   });
 });
 
@@ -72,22 +72,22 @@ test("admin profiles preserve their flag across locale updates", async () => {
   const asAlice = t.withIdentity({ subject: "alice" });
   await t.run(async (ctx) => {
     await ctx.db.insert("userProfiles", {
-      userId: "alice",
-      tokenIdentifier: "https://convex.test|alice",
-      locale: "en-GB",
       isAdmin: true,
+      locale: "en-GB",
+      tokenIdentifier: "https://convex.test|alice",
+      userId: "alice",
     });
   });
 
   expect(await asAlice.query(api.profile.get, {})).toEqual({
+    isAdmin: true,
     locale: "en-GB",
     timeZone: "Europe/London",
-    isAdmin: true,
   });
   expect(await asAlice.mutation(api.profile.updateLocale, { locale: "sv" })).toEqual({
+    isAdmin: true,
     locale: "sv",
     timeZone: "Europe/London",
-    isAdmin: true,
   });
 });
 
@@ -96,14 +96,14 @@ test("locale updates create a missing profile", async () => {
   const asAlice = t.withIdentity({ subject: "alice" });
 
   expect(await asAlice.mutation(api.profile.updateLocale, { locale: "es" })).toEqual({
+    isAdmin: false,
     locale: "es",
     timeZone: "Europe/London",
-    isAdmin: false,
   });
   expect(await asAlice.query(api.profile.get, {})).toEqual({
+    isAdmin: false,
     locale: "es",
     timeZone: "Europe/London",
-    isAdmin: false,
   });
 });
 
@@ -112,14 +112,14 @@ test("time zone updates are inherited by profile reads", async () => {
   const asAlice = t.withIdentity({ subject: "alice" });
 
   expect(await asAlice.mutation(api.profile.updateTimeZone, { timeZone: "Asia/Tokyo" })).toEqual({
+    isAdmin: false,
     locale: "en-GB",
     timeZone: "Asia/Tokyo",
-    isAdmin: false,
   });
   expect(await asAlice.query(api.profile.get, {})).toEqual({
+    isAdmin: false,
     locale: "en-GB",
     timeZone: "Asia/Tokyo",
-    isAdmin: false,
   });
   await expect(
     asAlice.mutation(api.profile.updateTimeZone, { timeZone: "Not/A_Time_Zone" }),
@@ -134,9 +134,9 @@ test("time zone updates preserve an existing profile's locale", async () => {
   expect(
     await asAlice.mutation(api.profile.updateTimeZone, { timeZone: "America/New_York" }),
   ).toEqual({
+    isAdmin: false,
     locale: "sv",
     timeZone: "America/New_York",
-    isAdmin: false,
   });
 });
 
@@ -167,16 +167,16 @@ test("backfillUserProfileIsAdmin fills missing isAdmin and leaves set values alo
   const t = await setup();
   const ids = await t.run(async (ctx) => {
     const admin = await ctx.db.insert("userProfiles", {
-      userId: "already-admin",
-      tokenIdentifier: "https://convex.test|already-admin",
-      locale: "en-GB",
       isAdmin: true,
+      locale: "en-GB",
+      tokenIdentifier: "https://convex.test|already-admin",
+      userId: "already-admin",
     });
     const nonAdmin = await ctx.db.insert("userProfiles", {
-      userId: "already-false",
-      tokenIdentifier: "https://convex.test|already-false",
-      locale: "sv",
       isAdmin: false,
+      locale: "sv",
+      tokenIdentifier: "https://convex.test|already-false",
+      userId: "already-false",
     });
     return { admin, nonAdmin };
   });
@@ -184,7 +184,9 @@ test("backfillUserProfileIsAdmin fills missing isAdmin and leaves set values alo
   await t.run(async (ctx) => {
     const admin = await ctx.db.get(ids.admin);
     const nonAdmin = await ctx.db.get(ids.nonAdmin);
-    if (!admin || !nonAdmin) throw new Error("missing profiles");
+    if (!admin || !nonAdmin) {
+      throw new Error("missing profiles");
+    }
     await backfillUserProfileIsAdminDoc(ctx, admin);
     await backfillUserProfileIsAdminDoc(ctx, nonAdmin);
 

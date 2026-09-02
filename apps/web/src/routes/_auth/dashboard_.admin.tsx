@@ -35,10 +35,10 @@ import { useIntersectionAction } from "@/lib/use-intersection-action";
 const ADMIN_PAGE_SIZE = 20;
 
 const adminSearchSchema = z.object({
-  tab: z.enum(["babies", "languages", "users"]).default("babies"),
-  sort: z.enum(["created", "updated"]).default("created"),
-  order: z.enum(["asc", "desc"]).default("desc"),
   hideDemo: z.boolean().default(true),
+  order: z.enum(["asc", "desc"]).default("desc"),
+  sort: z.enum(["created", "updated"]).default("created"),
+  tab: z.enum(["babies", "languages", "users"]).default("babies"),
 });
 
 type AdminTab = z.infer<typeof adminSearchSchema>["tab"];
@@ -48,41 +48,41 @@ type AdminSearch = z.infer<typeof adminSearchSchema>;
 
 /** Default admin babies list: newest created first, demos hidden. */
 export const ADMIN_DEFAULT_SEARCH = {
-  tab: "babies",
-  sort: "created",
-  order: "desc",
   hideDemo: true,
+  order: "desc",
+  sort: "created",
+  tab: "babies",
 } as const satisfies AdminSearch;
 
 type LanguageRequestRow = {
   _id: string;
-  requestedLocale: string;
   createdAt: number;
-  userId: string;
+  requestedLocale: string;
   userEmail: string | null;
+  userId: string;
 };
 
 type BabyRow = {
   _id: string;
+  createdAt: number;
+  demo: boolean;
+  managerEmails: Array<string>;
   name: string;
   publicId: string;
   status: "not_yet" | "labor_started" | "gone_to_hospital" | "born";
-  demo: boolean;
-  createdAt: number;
   updatedAt: number;
-  managerEmails: string[];
 };
 
 type UserRow = {
   _id: string;
-  email: string;
-  name: string;
-  createdAt: number;
   babies: Array<{
+    demo: boolean;
     name: string;
     publicId: string;
-    demo: boolean;
   }>;
+  createdAt: number;
+  email: string;
+  name: string;
 };
 
 export const Route = createFileRoute("/_auth/dashboard_/admin")({
@@ -101,9 +101,9 @@ export const Route = createFileRoute("/_auth/dashboard_/admin")({
     return await allKeyed({
       babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
         args: {
+          hideDemo: search.hideDemo,
           sortBy: search.sort,
           sortOrder: search.order,
-          hideDemo: search.hideDemo,
         },
         numItems: ADMIN_PAGE_SIZE,
       }),
@@ -149,19 +149,19 @@ export function formatWhen(ms: number, locale: string) {
  * toggles to asc.
  */
 type NextSortSearch = {
-  sort: SortBy;
   order: SortOrder;
+  sort: SortBy;
 };
 
 export function nextSortSearch(opts: {
-  currentSort: SortBy;
-  currentOrder: SortOrder;
   clicked: SortBy;
+  currentOrder: SortOrder;
+  currentSort: SortBy;
 }): NextSortSearch {
   if (opts.clicked === opts.currentSort && opts.currentOrder === "desc") {
-    return { sort: opts.clicked, order: "asc" };
+    return { order: "asc", sort: opts.clicked };
   }
-  return { sort: opts.clicked, order: "desc" };
+  return { order: "desc", sort: opts.clicked };
 }
 
 function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {
@@ -170,12 +170,12 @@ function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () =>
     onIntersect: props.onLoadMore,
     threshold: 0.1,
   });
-  return <div ref={sentinelRef} className="h-8 w-full" aria-hidden="true" />;
+  return <div aria-hidden="true" className="h-8 w-full" ref={sentinelRef} />;
 }
 
 function AdminTableCard(props: {
-  children: ReactNode;
   canLoadMore: boolean;
+  children: ReactNode;
   isLoadingMore: boolean;
   onLoadMore: () => void;
 }) {
@@ -193,43 +193,43 @@ function AdminTableCard(props: {
 }
 
 function SortableHeaderLink(props: {
-  label: string;
   column: SortBy;
-  sort: SortBy;
-  order: SortOrder;
-  tab: AdminTab;
   hideDemo: boolean;
+  label: string;
+  order: SortOrder;
+  sort: SortBy;
+  tab: AdminTab;
 }) {
   const active = props.column === props.sort;
   const next = nextSortSearch({
-    currentSort: props.sort,
-    currentOrder: props.order,
     clicked: props.column,
+    currentOrder: props.order,
+    currentSort: props.sort,
   });
   const SortIcon = active && props.order === "asc" ? CaretUp : CaretDown;
 
   return (
     <TableHead>
       <Link
-        to="/dashboard/admin"
-        search={{
-          tab: props.tab,
-          sort: next.sort,
-          order: next.order,
-          hideDemo: props.hideDemo,
-        }}
-        replace
-        resetScroll={false}
         className={cn(
           "inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline",
           active ? "text-foreground" : "text-muted-foreground",
         )}
+        replace
+        resetScroll={false}
+        search={{
+          hideDemo: props.hideDemo,
+          order: next.order,
+          sort: next.sort,
+          tab: props.tab,
+        }}
+        to="/dashboard/admin"
       >
         {props.label}
         <SortIcon
-          data-icon="inline-end"
-          className={cn("opacity-0", active && "opacity-100")}
           aria-hidden="true"
+          className={cn("opacity-0", active && "opacity-100")}
+          data-icon="inline-end"
         />
       </Link>
     </TableHead>
@@ -237,12 +237,12 @@ function SortableHeaderLink(props: {
 }
 
 export function LanguageRequestsSection(props: {
-  requests: LanguageRequestRow[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
+  requests: Array<LanguageRequestRow>;
 }) {
-  const { t, locale } = useI18n();
+  const { locale, t } = useI18n();
 
   if (props.requests.length === 0) {
     return (
@@ -286,12 +286,12 @@ export function LanguageRequestsSection(props: {
 }
 
 export function UsersSection(props: {
-  users: UserRow[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
+  users: Array<UserRow>;
 }) {
-  const { t, locale } = useI18n();
+  const { locale, t } = useI18n();
 
   if (props.users.length === 0) {
     return (
@@ -334,9 +334,9 @@ export function UsersSection(props: {
                     <span key={baby.publicId}>
                       {index > 0 ? ", " : null}
                       <Link
-                        to="/baby/$publicId"
-                        params={{ publicId: baby.publicId }}
                         className="underline-offset-4 hover:underline"
+                        params={{ publicId: baby.publicId }}
+                        to="/baby/$publicId"
                       >
                         {baby.name}
                       </Link>
@@ -355,16 +355,16 @@ export function UsersSection(props: {
 }
 
 export function BabiesSection(props: {
-  babies: BabyRow[];
+  babies: Array<BabyRow>;
   hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  sort: SortBy;
-  order: SortOrder;
-  tab: AdminTab;
   hideDemo: boolean;
+  isFetchingNextPage: boolean;
   onLoadMore: () => void;
+  order: SortOrder;
+  sort: SortBy;
+  tab: AdminTab;
 }) {
-  const { t, locale } = useI18n();
+  const { locale, t } = useI18n();
 
   return (
     <AdminTableCard
@@ -379,20 +379,20 @@ export function BabiesSection(props: {
             <TableHead>{t("Status")}</TableHead>
             <TableHead>{t("Managers")}</TableHead>
             <SortableHeaderLink
-              label={t("Created")}
               column="created"
-              sort={props.sort}
-              order={props.order}
-              tab={props.tab}
               hideDemo={props.hideDemo}
+              label={t("Created")}
+              order={props.order}
+              sort={props.sort}
+              tab={props.tab}
             />
             <SortableHeaderLink
-              label={t("Updated")}
               column="updated"
-              sort={props.sort}
-              order={props.order}
-              tab={props.tab}
               hideDemo={props.hideDemo}
+              label={t("Updated")}
+              order={props.order}
+              sort={props.sort}
+              tab={props.tab}
             />
             <TableHead>
               <span className="sr-only">{t("Open")}</span>
@@ -416,10 +416,10 @@ export function BabiesSection(props: {
               <TableCell>{formatWhen(baby.updatedAt, locale)}</TableCell>
               <TableCell>
                 <Button
+                  nativeButton={false}
+                  render={<Link params={{ publicId: baby.publicId }} to="/baby/$publicId" />}
                   size="sm"
                   variant="outline"
-                  render={<Link to="/baby/$publicId" params={{ publicId: baby.publicId }} />}
-                  nativeButton={false}
                 >
                   {t("Open")}
                 </Button>
@@ -446,14 +446,14 @@ function AdminBabiesTab() {
     <BabiesSection
       babies={babies}
       hasNextPage={babiesQuery.hasNextPage}
-      isFetchingNextPage={babiesQuery.isFetchingNextPage}
-      sort={search.sort}
-      order={search.order}
-      tab={search.tab}
       hideDemo={search.hideDemo}
+      isFetchingNextPage={babiesQuery.isFetchingNextPage}
       onLoadMore={() => {
         void babiesQuery.fetchNextPage();
       }}
+      order={search.order}
+      sort={search.sort}
+      tab={search.tab}
     />
   );
 }
@@ -469,12 +469,12 @@ function AdminLanguagesTab() {
 
   return (
     <LanguageRequestsSection
-      requests={requests}
       hasNextPage={languagesQuery.hasNextPage}
       isFetchingNextPage={languagesQuery.isFetchingNextPage}
       onLoadMore={() => {
         void languagesQuery.fetchNextPage();
       }}
+      requests={requests}
     />
   );
 }
@@ -490,12 +490,12 @@ function AdminUsersTab() {
 
   return (
     <UsersSection
-      users={users}
       hasNextPage={usersQuery.hasNextPage}
       isFetchingNextPage={usersQuery.isFetchingNextPage}
       onLoadMore={() => {
         void usersQuery.fetchNextPage();
       }}
+      users={users}
     />
   );
 }
@@ -510,23 +510,23 @@ export function AdminDashboardPage() {
 
   return (
     <AdminDashboardView
-      tab={search.tab}
-      sort={search.sort}
-      order={search.order}
+      babiesTab={<AdminBabiesTab />}
       hideDemo={search.hideDemo}
-      onTabChange={(tab) => {
-        void navigate({ search: (prev) => ({ ...prev, tab }), replace: true, resetScroll: false });
-      }}
+      languagesTab={<AdminLanguagesTab />}
       onHideDemoChange={(hideDemo) => {
         void navigate({
-          search: (prev) => ({ ...prev, hideDemo }),
           replace: true,
           resetScroll: false,
+          search: (prev) => ({ ...prev, hideDemo }),
         });
       }}
-      babiesTab={<AdminBabiesTab />}
+      onTabChange={(tab) => {
+        void navigate({ replace: true, resetScroll: false, search: (prev) => ({ ...prev, tab }) });
+      }}
+      order={search.order}
+      sort={search.sort}
+      tab={search.tab}
       usersTab={<AdminUsersTab />}
-      languagesTab={<AdminLanguagesTab />}
     />
   );
 }
@@ -539,34 +539,34 @@ export function AdminDashboardPage() {
  * @internal Exported for tests; production uses `AdminDashboardPage`.
  */
 export function AdminDashboardView(props: {
-  tab: AdminTab;
-  sort: SortBy;
-  order: SortOrder;
-  hideDemo: boolean;
-  onTabChange: (tab: AdminTab) => void;
-  onHideDemoChange: (hideDemo: boolean) => void;
   babiesTab: ReactNode;
-  usersTab: ReactNode;
+  hideDemo: boolean;
   languagesTab: ReactNode;
+  onHideDemoChange: (hideDemo: boolean) => void;
+  onTabChange: (tab: AdminTab) => void;
+  order: SortOrder;
+  sort: SortBy;
+  tab: AdminTab;
+  usersTab: ReactNode;
 }) {
   const { t } = useI18n();
 
   const tabSearch = (tab: AdminTab): AdminSearch => ({
-    tab,
-    sort: props.sort,
-    order: props.order,
     hideDemo: props.hideDemo,
+    order: props.order,
+    sort: props.sort,
+    tab,
   });
 
   return (
     <div className="min-h-screen bg-background bg-dots">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10">
         <Button
-          variant="outline"
-          size="sm"
           className="w-fit"
-          render={<Link to="/dashboard" />}
           nativeButton={false}
+          render={<Link to="/dashboard" />}
+          size="sm"
+          variant="outline"
         >
           <ArrowLeft data-icon="inline-start" />
           {t("Back to Dashboard")}
@@ -590,86 +590,86 @@ export function AdminDashboardView(props: {
           </CardHeader>
           <CardContent className="flex flex-col gap-4 pt-(--card-spacing)">
             <Tabs
-              value={props.tab}
-              orientation="horizontal"
               className="flex w-full flex-col gap-4"
               onValueChange={(value) => {
                 if (isAdminTab(value)) {
                   props.onTabChange(value);
                 }
               }}
+              orientation="horizontal"
+              value={props.tab}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <TabsList variant="default">
                   <TabsTrigger
-                    value="babies"
                     nativeButton={false}
                     render={
                       <Link
-                        to="/dashboard/admin"
-                        search={tabSearch("babies")}
                         replace
                         resetScroll={false}
+                        search={tabSearch("babies")}
+                        to="/dashboard/admin"
                       />
                     }
+                    value="babies"
                   >
                     {t("All babies")}
                   </TabsTrigger>
                   <TabsTrigger
-                    value="users"
                     nativeButton={false}
                     render={
                       <Link
-                        to="/dashboard/admin"
-                        search={tabSearch("users")}
                         replace
                         resetScroll={false}
+                        search={tabSearch("users")}
+                        to="/dashboard/admin"
                       />
                     }
+                    value="users"
                   >
                     {t("Recent users")}
                   </TabsTrigger>
                   <TabsTrigger
-                    value="languages"
                     nativeButton={false}
                     render={
                       <Link
-                        to="/dashboard/admin"
-                        search={tabSearch("languages")}
                         replace
                         resetScroll={false}
+                        search={tabSearch("languages")}
+                        to="/dashboard/admin"
                       />
                     }
+                    value="languages"
                   >
                     {t("Requested languages")}
                   </TabsTrigger>
                 </TabsList>
 
                 {props.tab === "babies" ? (
-                  <Field orientation="horizontal" className="w-auto">
+                  <Field className="w-auto" orientation="horizontal">
                     <Switch
-                      id="admin-hide-demo"
                       checked={props.hideDemo}
+                      id="admin-hide-demo"
                       onCheckedChange={(hideDemo) => {
                         props.onHideDemoChange(hideDemo);
                       }}
                     />
-                    <FieldLabel htmlFor="admin-hide-demo" className="font-normal">
+                    <FieldLabel className="font-normal" htmlFor="admin-hide-demo">
                       {t("Hide demo babies")}
                     </FieldLabel>
                   </Field>
                 ) : null}
               </div>
 
-              <TabsContent value="babies" className="mt-0">
+              <TabsContent className="mt-0" value="babies">
                 {props.tab === "babies" ? props.babiesTab : null}
               </TabsContent>
 
-              <TabsContent value="users" className="mt-0">
+              <TabsContent className="mt-0" value="users">
                 {props.tab === "users" ? props.usersTab : null}
               </TabsContent>
 
-              <TabsContent value="languages" className="mt-0">
+              <TabsContent className="mt-0" value="languages">
                 {props.tab === "languages" ? props.languagesTab : null}
               </TabsContent>
             </Tabs>

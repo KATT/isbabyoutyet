@@ -22,7 +22,9 @@ export function createDismissedIdsStore() {
   }
 
   function dismiss(id: string) {
-    if (dismissed.has(id)) return;
+    if (dismissed.has(id)) {
+      return;
+    }
     dismissed.add(id);
     for (const listener of listeners) {
       listener();
@@ -34,14 +36,16 @@ export function createDismissedIdsStore() {
   }
 
   function clear() {
-    if (dismissed.size === 0) return;
+    if (dismissed.size === 0) {
+      return;
+    }
     dismissed.clear();
     for (const listener of listeners) {
       listener();
     }
   }
 
-  return { dismiss, isDismissed, subscribe, clear };
+  return { clear, dismiss, isDismissed, subscribe };
 }
 
 export function useIsDismissed(store: ReturnType<typeof createDismissedIdsStore>, id: string) {

@@ -19,8 +19,8 @@ function createAddBabyMocks() {
   return {
     createBaby: vi.fn<CreateBaby>().mockResolvedValue(
       /* SAFETY: createBaby tests read publicId and babyId from the result. */ {
-        publicId: "baby-fern",
         babyId: TEST_BABY_ID,
+        publicId: "baby-fern",
       } as Awaited<ReturnType<CreateBaby>>,
     ),
     navigate: vi.fn<NavigateFn>().mockResolvedValue(undefined),
@@ -149,24 +149,24 @@ test("submits optional theme selection", async () => {
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
-      name: "Baby Fern",
+      birthJourney: "labor",
       dueDate: expect.stringContaining("2026-09-09"),
       dueDateDisplayMode: "exact",
+      name: "Baby Fern",
       publicDueDateText: null,
-      birthJourney: "labor",
       theme: "violet-bloom",
     });
   });
   expect(navigate).toHaveBeenCalledWith({
-    to: "/baby/$publicId",
     params: { publicId: "baby-fern" },
+    to: "/baby/$publicId",
   });
 });
 
 test.each([
-  { label: "Labour", birthJourney: "labor" },
-  { label: "Home birth", birthJourney: "home_birth" },
-  { label: "Planned C-section", birthJourney: "planned_c_section" },
+  { birthJourney: "labor", label: "Labour" },
+  { birthJourney: "home_birth", label: "Home birth" },
+  { birthJourney: "planned_c_section", label: "Planned C-section" },
 ])("submits the $label selection", async (testCase) => {
   const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
     /* SAFETY: createBaby tests only read publicId from the result. */ {
@@ -193,17 +193,17 @@ test.each([
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
-      name: "Baby Fern",
+      birthJourney: testCase.birthJourney,
       dueDate: expect.stringContaining("2026-09-09"),
       dueDateDisplayMode: "exact",
+      name: "Baby Fern",
       publicDueDateText: null,
-      birthJourney: testCase.birthJourney,
       theme: null,
     });
   });
   expect(navigate).toHaveBeenCalledWith({
-    to: "/baby/$publicId",
     params: { publicId: "baby-fern" },
+    to: "/baby/$publicId",
   });
 });
 
@@ -224,11 +224,11 @@ test("allows a hidden public due date when message mode has no text", async () =
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
-      name: "Baby Fern",
+      birthJourney: "labor",
       dueDate: null,
       dueDateDisplayMode: "message",
+      name: "Baby Fern",
       publicDueDateText: null,
-      birthJourney: "labor",
       theme: null,
     });
   });
@@ -255,11 +255,11 @@ test("submits a custom public due date message when provided", async () => {
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
-      name: "Baby Fern",
+      birthJourney: "labor",
       dueDate: null,
       dueDateDisplayMode: "message",
+      name: "Baby Fern",
       publicDueDateText: "Any day now",
-      birthJourney: "labor",
       theme: null,
     });
   });
@@ -308,11 +308,11 @@ test("keeps entered date and message values while toggling fields", async () => 
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
-      name: "Baby Fern",
+      birthJourney: "labor",
       dueDate: expect.stringContaining("2026-09-19"),
       dueDateDisplayMode: "message",
+      name: "Baby Fern",
       publicDueDateText: "Any day now",
-      birthJourney: "labor",
       theme: null,
     });
   });
@@ -329,8 +329,8 @@ test("shows a message-notification switch off by default", async () => {
 test("subscribes for visitor messages when the switch is on at submit", async () => {
   const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
     /* SAFETY: createBaby tests read publicId and babyId from the result. */ {
-      publicId: "baby-fern",
       babyId: TEST_BABY_ID,
+      publicId: "baby-fern",
     } as Awaited<ReturnType<CreateBaby>>,
   );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
@@ -351,16 +351,16 @@ test("subscribes for visitor messages when the switch is on at submit", async ()
   });
   expect(subscribeOwnerMessages).toHaveBeenCalledWith(TEST_BABY_ID);
   expect(navigate).toHaveBeenCalledWith({
-    to: "/baby/$publicId",
     params: { publicId: "baby-fern" },
+    to: "/baby/$publicId",
   });
 });
 
 test("does not subscribe for visitor messages when the switch stays off", async () => {
   const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
     /* SAFETY: createBaby tests read publicId and babyId from the result. */ {
-      publicId: "baby-fern",
       babyId: TEST_BABY_ID,
+      publicId: "baby-fern",
     } as Awaited<ReturnType<CreateBaby>>,
   );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
@@ -388,8 +388,8 @@ test("still navigates when message-notification subscribe fails", async () => {
   });
   const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
     /* SAFETY: createBaby tests read publicId and babyId from the result. */ {
-      publicId: "baby-fern",
       babyId: TEST_BABY_ID,
+      publicId: "baby-fern",
     } as Awaited<ReturnType<CreateBaby>>,
   );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
@@ -412,8 +412,8 @@ test("still navigates when message-notification subscribe fails", async () => {
   });
   expect(toastError).toHaveBeenCalledWith("Notification permission denied");
   expect(navigate).toHaveBeenCalledWith({
-    to: "/baby/$publicId",
     params: { publicId: "baby-fern" },
+    to: "/baby/$publicId",
   });
 });
 
@@ -424,8 +424,8 @@ test("toasts a generic subscribe failure when the error is not an Error", async 
   });
   const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
     /* SAFETY: createBaby tests read publicId and babyId from the result. */ {
-      publicId: "baby-fern",
       babyId: TEST_BABY_ID,
+      publicId: "baby-fern",
     } as Awaited<ReturnType<CreateBaby>>,
   );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
@@ -475,14 +475,14 @@ test("iOS Safari add-baby omits message notifications and does not subscribe", a
   window.matchMedia = (query: string) =>
     // SAFETY: Test fixture is a subset of the production type.
     ({
+      addEventListener: () => {},
+      addListener: () => {},
+      dispatchEvent: () => false,
       matches: false,
       media: query,
       onchange: null,
-      addEventListener: () => {},
       removeEventListener: () => {},
-      addListener: () => {},
       removeListener: () => {},
-      dispatchEvent: () => false,
     }) as MediaQueryList;
   restore.push(() => {
     window.matchMedia = originalMatchMedia;
@@ -495,8 +495,8 @@ test("iOS Safari add-baby omits message notifications and does not subscribe", a
 
   const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
     /* SAFETY: createBaby tests read publicId and babyId from the result. */ {
-      publicId: "baby-fern",
       babyId: TEST_BABY_ID,
+      publicId: "baby-fern",
     } as Awaited<ReturnType<CreateBaby>>,
   );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);

@@ -79,23 +79,13 @@ import { getLanguageName, useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
 import type { ReactNode } from "react";
 import { useWatch } from "react-hook-form";
-import * as z from "zod";
+import { z } from "zod";
 
 const emptyActionSchema = z.object({});
 
 type SettingsPanelProps = {
   baby: BabyData;
   birthJourney: BirthJourney;
-  onUpdate: BabyUpdateHandler;
-  onMilestoneRedate: MilestoneRedateHandler;
-  onMilestoneRemove: MilestoneRemoveHandler;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** Called after open/close animations finish (used for route-driven close). */
-  onOpenChangeComplete: ((open: boolean) => void) | null;
-  profileLocale: SupportedLocale;
-  /** Owner-only soft delete. Null on the preview page / for co-parents. */
-  onDelete: (() => void | Promise<void>) | null;
   /** Null on the preview page (no real baby id). */
   coParents: {
     babyId: Id<"baby">;
@@ -105,12 +95,22 @@ type SettingsPanelProps = {
   /** Null on the preview page (no push subscription). */
   messagePush: {
     babyId: Id<"baby">;
-    vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
     browserPush: InitiatedQuery<BrowserPushCapabilityFactory>;
+    vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
   } | null;
+  /** Owner-only soft delete. Null on the preview page / for co-parents. */
+  onDelete: (() => void | Promise<void>) | null;
+  onMilestoneRedate: MilestoneRedateHandler;
+  onMilestoneRemove: MilestoneRemoveHandler;
+  onOpenChange: (open: boolean) => void;
+  /** Called after open/close animations finish (used for route-driven close). */
+  onOpenChangeComplete: ((open: boolean) => void) | null;
+  onUpdate: BabyUpdateHandler;
+  open: boolean;
+  profileLocale: SupportedLocale;
 };
 
-function SettingsSection(props: { title: string; children: ReactNode }) {
+function SettingsSection(props: { children: ReactNode; title: string }) {
   return (
     <section className="flex flex-col gap-2">
       <h3 className="px-0.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -124,22 +124,23 @@ function SettingsSection(props: { title: string; children: ReactNode }) {
 }
 
 function BabyLanguageSelect(props: {
-  value: SupportedLocale | null | undefined;
   inheritedLocale: SupportedLocale;
   onUpdate: BabyUpdateHandler;
+  value: SupportedLocale | null | undefined;
 }) {
   const { locale, t } = useI18n();
   const inheritLabel = t("Use my profile language ({{language}})", {
     language: getLanguageName(props.inheritedLocale, locale),
   });
   const languageItems = [
-    { value: "inherit", label: inheritLabel },
+    { label: inheritLabel, value: "inherit" },
     ...SUPPORTED_LOCALES.map((supportedLocale) => ({
-      value: supportedLocale,
       label: getLanguageName(supportedLocale, locale),
+      value: supportedLocale,
     })),
   ];
   const form = useZodForm({
+    defaultValues: { locale: props.value ?? "inherit" },
     schema: z
       .object({
         locale: z.union([z.literal("inherit"), z.enum(SUPPORTED_LOCALES)]),
@@ -147,7 +148,6 @@ function BabyLanguageSelect(props: {
       .transform((values) => ({
         locale: values.locale === "inherit" ? null : values.locale,
       })),
-    defaultValues: { locale: props.value ?? "inherit" },
   });
   const selectedLocale = useWatch({ control: form.control, name: "locale" });
 
@@ -165,7 +165,6 @@ function BabyLanguageSelect(props: {
     >
       <Select
         items={languageItems}
-        value={selectedLocale}
         onValueChange={(value) => {
           if (value !== "inherit" && !(isString(value) && isSupportedLocale(value))) {
             return;
@@ -173,8 +172,9 @@ function BabyLanguageSelect(props: {
           form.setValue("locale", value, { shouldDirty: true });
           form.formRef.current?.requestSubmit();
         }}
+        value={selectedLocale}
       >
-        <SelectTrigger aria-label={t("Language")} size="sm" className="max-w-44">
+        <SelectTrigger aria-label={t("Language")} className="max-w-44" size="sm">
           <SelectValue />
         </SelectTrigger>
         {/* Wider than the capped trigger so long inherit labels are not clipped */}
@@ -196,15 +196,15 @@ function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Pr
   const { t } = useI18n();
   const overlay = useFormGuard({ onOpenChange: undefined });
   const form = useZodForm({
-    schema: emptyActionSchema,
     defaultValues: {},
+    schema: emptyActionSchema,
   });
 
   return (
     <AlertDialog {...overlay.rootProps}>
       <AlertDialogTrigger
         render={
-          <Button variant="destructive" size="sm">
+          <Button size="sm" variant="destructive">
             {t("Delete")}
           </Button>
         }
@@ -233,9 +233,9 @@ function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Pr
               </AlertDialogCancel>
               <SubmitButton
                 form="context"
-                variant="destructive"
                 IconComponent={Trash}
                 iconPosition="start"
+                variant="destructive"
               >
                 {t("Delete page")}
               </SubmitButton>
@@ -357,10 +357,10 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     <ItemActions>
                       <StatusDateEditor
                         baby={props.baby}
-                        status="labor_started"
                         currentDate={props.baby.laborStarted}
                         onRedate={props.onMilestoneRedate}
                         onRemove={props.onMilestoneRemove}
+                        status="labor_started"
                       />
                     </ItemActions>
                   </Item>
@@ -387,10 +387,10 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     <ItemActions>
                       <StatusDateEditor
                         baby={props.baby}
-                        status="gone_to_hospital"
                         currentDate={props.baby.wentToHospital}
                         onRedate={props.onMilestoneRedate}
                         onRemove={props.onMilestoneRemove}
+                        status="gone_to_hospital"
                       />
                     </ItemActions>
                   </Item>
@@ -417,10 +417,10 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     <ItemActions>
                       <StatusDateEditor
                         baby={props.baby}
-                        status="born"
                         currentDate={props.baby.babyBorn}
                         onRedate={props.onMilestoneRedate}
                         onRemove={props.onMilestoneRemove}
+                        status="born"
                       />
                     </ItemActions>
                   </Item>
@@ -460,9 +460,9 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 </ItemContent>
                 <ItemActions>
                   <BabyLanguageSelect
-                    value={props.baby.locale}
                     inheritedLocale={inheritedLocale}
                     onUpdate={props.onUpdate}
+                    value={props.baby.locale}
                   />
                 </ItemActions>
               </Item>
@@ -472,15 +472,15 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <SettingsSection title={t("Notifications")}>
                 <OwnerMessageNotifyLiveSwitch
                   babyId={messagePush.babyId}
-                  vapidPublicKey={messagePush.vapidPublicKey}
                   browserPush={messagePush.browserPush}
+                  vapidPublicKey={messagePush.vapidPublicKey}
                 />
               </SettingsSection>
             )}
 
             {coParents && (
               <SettingsSection title={t("Access")}>
-                <Item variant="default" className="items-start">
+                <Item className="items-start" variant="default">
                   <ItemMedia variant="icon">
                     <Users className="w-4 h-4" />
                   </ItemMedia>

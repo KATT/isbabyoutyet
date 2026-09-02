@@ -5,15 +5,14 @@
  * .convex.site URL is derived from it.
  */
 import { execFileSync } from "node:child_process";
-import * as path from "node:path";
-import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const convexUrl = process.env.VITE_CONVEX_URL;
 if (!convexUrl) {
   throw new Error("VITE_CONVEX_URL is not set (expected to be set by `convex deploy --cmd`)");
 }
 
-const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const workspaceRoot = path.resolve(import.meta.dirname, "../../..");
 
 const hasDemoLogin =
   process.env.VITE_HAS_DEMO_LOGIN === "true" || process.env.VERCEL_ENV === "preview";
@@ -29,6 +28,6 @@ if (hasDemoLogin) {
 
 execFileSync("pnpm", ["turbo", "build", "--filter=web"], {
   cwd: workspaceRoot,
-  stdio: "inherit",
   env: buildEnv,
+  stdio: "inherit",
 });

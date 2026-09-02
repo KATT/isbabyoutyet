@@ -45,16 +45,16 @@ interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseF
   TContext,
   TOutput
 > {
-  id: ReturnType<typeof useId>;
   formRef: RefObject<HTMLFormElement | null>;
+  id: ReturnType<typeof useId>;
 }
 /**
  * Reusable hook for zod + react-hook-form
  */
 export function useZodForm<TInput extends FieldValues, TContext, TOutput>(
   props: Omit<UseFormProps<TInput, TContext, TOutput>, "resolver" | "defaultValues"> & {
-    schema: z.ZodType<TOutput, TInput>;
     defaultValues: DefaultValues<NoInfer<TInput>>;
+    schema: z.ZodType<TOutput, TInput>;
   },
 ): UseZodForm<TInput, TContext, TOutput> {
   const id = useId();
@@ -66,15 +66,15 @@ export function useZodForm<TInput extends FieldValues, TContext, TOutput>(
 
   return {
     ...form,
-    id,
     formRef,
+    id,
   };
 }
 
 const DEV_SUBMIT_DELAY_MS = 500;
 
 /** Wrap form content so child {@link Form}s register submits and dirty state. */
-export function FormGuardProvider(props: { guard: FormGuardHandle; children: ReactNode }) {
+export function FormGuardProvider(props: { children: ReactNode; guard: FormGuardHandle }) {
   return (
     <GuardProvider
       guard={props.guard}
@@ -91,13 +91,13 @@ function FormDiscardDialog(props: DiscardPromptProps) {
   const discardingRef = useRef(false);
   return (
     <AlertDialog
-      open={props.open}
       onOpenChange={(nextOpen) => {
         if (nextOpen || discardingRef.current) {
           return;
         }
         props.onOpenChange(false);
       }}
+      open={props.open}
     >
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -109,11 +109,11 @@ function FormDiscardDialog(props: DiscardPromptProps) {
         <AlertDialogFooter>
           <AlertDialogCancel>{t("Keep editing")}</AlertDialogCancel>
           <AlertDialogAction
-            variant="destructive"
             onClick={() => {
               discardingRef.current = true;
               props.onDiscard();
             }}
+            variant="destructive"
           >
             {t("Discard")}
           </AlertDialogAction>
@@ -135,15 +135,14 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
   // unsaved-edits guard on its own (`isSubmitSuccessful` stays false).
   useRegisterFormState({
     isDirty: formState.isDirty,
-    isSubmitting: formState.isSubmitting,
     isSubmitSuccessful: formState.isSubmitSuccessful,
+    isSubmitting: formState.isSubmitting,
   });
-  const { id, formRef, ...rest } = props.form;
+  const { formRef, id, ...rest } = props.form;
   return (
     <FormProvider {...rest}>
       <form
         id={id}
-        ref={formRef}
         onSubmit={(event) => {
           // Errors propagate through RHF's handleSubmit so `isSubmitSuccessful`
           // reflects the real outcome; the outer catch only reports them.
@@ -151,16 +150,16 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
             .handleSubmit(async (values) => {
               // Dev-only pause so submit spinners are visible while clicking around locally.
               /* v8 ignore next 3 */
-              if (import.meta.env.DEV) {
+              if (import.meta.env.DEV && import.meta.env.MODE !== "test") {
                 await new Promise((resolve) => setTimeout(resolve, DEV_SUBMIT_DELAY_MS));
               }
               await props.handleSubmit(values);
             })(event)
             .catch((error) => {
-              console.error("Uncaught error in form", error);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             });
         }}
+        ref={formRef}
       >
         {props.children}
       </form>
@@ -172,8 +171,8 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
 type SubmitIcon = Icon | string;
 
 type SubmitTargetForm<TFieldValues extends FieldValues> = {
-  id: string;
   control: Control<TFieldValues>;
+  id: string;
 };
 
 type CancelTargetForm<TFieldValues extends FieldValues> = {
@@ -195,13 +194,13 @@ export function FormCancelButton<TFieldValues extends FieldValues>(
   const { isSubmitting } = useFormState<TFieldValues>(
     props.form === "context" ? {} : { control: props.form.control },
   );
-  const { form: _form, disabled, variant, ...buttonProps } = props;
+  const { disabled, form: _form, variant, ...buttonProps } = props;
   return (
     <Button
       {...buttonProps}
+      disabled={isSubmitting || Boolean(disabled)}
       type="button"
       variant={variant ?? "outline"}
-      disabled={isSubmitting || Boolean(disabled)}
     />
   );
 }
@@ -242,11 +241,11 @@ export function SubmitButton<TFieldValues extends FieldValues>(
     props.form === "context" ? {} : { control: props.form.control },
   );
 
-  const { form: formProp, IconComponent, iconPosition, disabled, children, ...buttonProps } = props;
+  const { children, disabled, form: formProp, IconComponent, iconPosition, ...buttonProps } = props;
 
   const showIcon = IconComponent != null || isSubmitting;
   const icon = showIcon ? (
-    <span className="relative inline-grid size-4 shrink-0 place-items-center" aria-hidden="true">
+    <span aria-hidden="true" className="relative inline-grid size-4 shrink-0 place-items-center">
       {isSubmitting ? (
         <span className="submit-icon-swap-in inline-grid place-items-center">
           <Spinner className="size-4" />
@@ -262,10 +261,10 @@ export function SubmitButton<TFieldValues extends FieldValues>(
   return (
     <Button
       {...buttonProps}
-      form={formProp === "context" ? undefined : formProp.id}
-      type="submit"
       aria-busy={isSubmitting}
       disabled={isSubmitting || Boolean(disabled)}
+      form={formProp === "context" ? undefined : formProp.id}
+      type="submit"
     >
       {iconPosition === "start" ? icon : null}
       {children}

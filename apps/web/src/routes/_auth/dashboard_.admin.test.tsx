@@ -26,13 +26,13 @@ const t = ((key: string) => key) as TranslationFunction;
 
 const sampleBaby = {
   _id: "baby-1",
+  createdAt: 1,
+  demo: true,
+  managerEmails: ["owner@example.com", "co@example.com"],
   name: "Avery",
   publicId: "baby-waiting",
   status: "not_yet" as const,
-  demo: true,
-  createdAt: 1,
   updatedAt: 2,
-  managerEmails: ["owner@example.com", "co@example.com"],
 };
 
 function renderAdmin(ui: ReactElement) {
@@ -59,26 +59,26 @@ test("formatWhen returns a locale-aware timestamp", () => {
 
 test("nextSortSearch defaults to desc and only toggles to asc on the active desc column", () => {
   expect(
-    nextSortSearch({ currentSort: "updated", currentOrder: "desc", clicked: "updated" }),
-  ).toEqual({ sort: "updated", order: "asc" });
+    nextSortSearch({ clicked: "updated", currentOrder: "desc", currentSort: "updated" }),
+  ).toEqual({ order: "asc", sort: "updated" });
   expect(
-    nextSortSearch({ currentSort: "updated", currentOrder: "asc", clicked: "updated" }),
-  ).toEqual({ sort: "updated", order: "desc" });
+    nextSortSearch({ clicked: "updated", currentOrder: "asc", currentSort: "updated" }),
+  ).toEqual({ order: "desc", sort: "updated" });
   expect(
-    nextSortSearch({ currentSort: "updated", currentOrder: "asc", clicked: "created" }),
-  ).toEqual({ sort: "created", order: "desc" });
+    nextSortSearch({ clicked: "created", currentOrder: "asc", currentSort: "updated" }),
+  ).toEqual({ order: "desc", sort: "created" });
   expect(
-    nextSortSearch({ currentSort: "created", currentOrder: "desc", clicked: "updated" }),
-  ).toEqual({ sort: "updated", order: "desc" });
+    nextSortSearch({ clicked: "updated", currentOrder: "desc", currentSort: "created" }),
+  ).toEqual({ order: "desc", sort: "updated" });
 });
 
 test("language requests section shows empty and rows", async () => {
   await using empty = await renderAdmin(
     <LanguageRequestsSection
-      requests={[]}
       hasNextPage={false}
       isFetchingNextPage={false}
       onLoadMore={() => undefined}
+      requests={[]}
     />,
   );
   expect(empty.getByText("No language requests yet")).toBeTruthy();
@@ -91,17 +91,17 @@ test("language requests section shows empty and rows", async () => {
       requests={[
         {
           _id: "req-1",
-          requestedLocale: "French",
           createdAt: Date.UTC(2026, 0, 15, 12, 0),
-          userId: "user-1",
+          requestedLocale: "French",
           userEmail: "a@example.com",
+          userId: "user-1",
         },
         {
           _id: "req-2",
-          requestedLocale: "German",
           createdAt: Date.UTC(2026, 0, 16, 12, 0),
-          userId: "user-2",
+          requestedLocale: "German",
           userEmail: null,
+          userId: "user-2",
         },
       ]}
     />,
@@ -114,10 +114,10 @@ test("language requests section shows empty and rows", async () => {
 test("users section shows empty and rows", async () => {
   await using empty = await renderAdmin(
     <UsersSection
-      users={[]}
       hasNextPage={false}
       isFetchingNextPage={false}
       onLoadMore={() => undefined}
+      users={[]}
     />,
   );
   expect(empty.getByText("No users yet")).toBeTruthy();
@@ -130,20 +130,20 @@ test("users section shows empty and rows", async () => {
       users={[
         {
           _id: "user-1",
-          name: "Ada",
-          email: "ada@example.com",
-          createdAt: Date.UTC(2026, 0, 15, 12, 0),
           babies: [
-            { name: "River", publicId: "baby-river", demo: false },
-            { name: "Sky", publicId: "baby-sky", demo: true },
+            { demo: false, name: "River", publicId: "baby-river" },
+            { demo: true, name: "Sky", publicId: "baby-sky" },
           ],
+          createdAt: Date.UTC(2026, 0, 15, 12, 0),
+          email: "ada@example.com",
+          name: "Ada",
         },
         {
           _id: "user-2",
-          name: "Bob",
-          email: "bob@example.com",
-          createdAt: Date.UTC(2026, 0, 16, 12, 0),
           babies: [],
+          createdAt: Date.UTC(2026, 0, 16, 12, 0),
+          email: "bob@example.com",
+          name: "Bob",
         },
       ]}
     />,
@@ -166,10 +166,10 @@ test("users section shows loading-more spinner", async () => {
       users={[
         {
           _id: "user-1",
-          name: "Ada",
-          email: "ada@example.com",
+          babies: [{ demo: false, name: "River", publicId: "baby-river" }],
           createdAt: Date.UTC(2026, 0, 15, 12, 0),
-          babies: [{ name: "River", publicId: "baby-river", demo: false }],
+          email: "ada@example.com",
+          name: "Ada",
         },
       ]}
     />,
@@ -181,26 +181,26 @@ test("users section shows loading-more spinner", async () => {
 test("babies section sorts via clickable header links", async () => {
   await using view = await renderAdmin(
     <BabiesSection
-      sort="updated"
-      order="desc"
-      tab="babies"
-      hideDemo={true}
-      hasNextPage={false}
-      isFetchingNextPage={false}
-      onLoadMore={() => undefined}
       babies={[
         sampleBaby,
         {
           _id: "baby-2",
+          createdAt: 3,
+          demo: false,
+          managerEmails: ["owner@example.com"],
           name: "Milo",
           publicId: "baby-born",
           status: "born",
-          demo: false,
-          createdAt: 3,
           updatedAt: 4,
-          managerEmails: ["owner@example.com"],
         },
       ]}
+      hasNextPage={false}
+      hideDemo={true}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+      order="desc"
+      sort="updated"
+      tab="babies"
     />,
   );
 
@@ -221,14 +221,14 @@ test("babies section sorts via clickable header links", async () => {
 test("babies section shows a spinner while loading more", async () => {
   await using loadingMore = await renderAdmin(
     <BabiesSection
-      sort="created"
-      order="desc"
-      tab="babies"
-      hideDemo={true}
+      babies={[{ ...sampleBaby, demo: false, managerEmails: [] }]}
       hasNextPage={true}
+      hideDemo={true}
       isFetchingNextPage={true}
       onLoadMore={() => undefined}
-      babies={[{ ...sampleBaby, demo: false, managerEmails: [] }]}
+      order="desc"
+      sort="created"
+      tab="babies"
     />,
   );
   expect(loadingMore.getByText("Avery")).toBeTruthy();
@@ -244,10 +244,10 @@ test("language requests section shows loading-more spinner", async () => {
       requests={[
         {
           _id: "req-1",
-          requestedLocale: "French",
           createdAt: Date.UTC(2026, 0, 15, 12, 0),
-          userId: "user-1",
+          requestedLocale: "French",
           userEmail: "a@example.com",
+          userId: "user-1",
         },
       ]}
     />,
@@ -259,7 +259,7 @@ test("language requests section shows loading-more spinner", async () => {
 test("infinite scroll sentinel requests another page when visible", async () => {
   const onLoadMore = vi.fn<() => void>();
   type ObserverCallback = IntersectionObserverCallback;
-  const observers: ObserverCallback[] = [];
+  const observers: Array<ObserverCallback> = [];
 
   const OriginalObserver = globalThis.IntersectionObserver;
   class MockIntersectionObserver {
@@ -289,14 +289,14 @@ test("infinite scroll sentinel requests another page when visible", async () => 
 
   await using _view = await renderAdmin(
     <BabiesSection
-      sort="updated"
-      order="desc"
-      tab="babies"
-      hideDemo={true}
+      babies={[sampleBaby]}
       hasNextPage={true}
+      hideDemo={true}
       isFetchingNextPage={false}
       onLoadMore={onLoadMore}
-      babies={[sampleBaby]}
+      order="desc"
+      sort="updated"
+      tab="babies"
     />,
   );
 
@@ -311,15 +311,15 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
 
   await using view = await renderAdmin(
     <AdminDashboardView
-      tab="babies"
-      sort="created"
-      order="desc"
-      hideDemo={true}
-      onTabChange={onTabChange}
-      onHideDemoChange={onHideDemoChange}
       babiesTab={<div>babies body</div>}
-      usersTab={<div>users body</div>}
+      hideDemo={true}
       languagesTab={<div>languages body</div>}
+      onHideDemoChange={onHideDemoChange}
+      onTabChange={onTabChange}
+      order="desc"
+      sort="created"
+      tab="babies"
+      usersTab={<div>users body</div>}
     />,
   );
   expect(view.getByText("Admin dashboard")).toBeTruthy();
@@ -346,10 +346,10 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
 
 test("admin defaults to created-desc babies and recognizes every admin tab", () => {
   expect(ADMIN_DEFAULT_SEARCH).toEqual({
-    tab: "babies",
-    sort: "created",
-    order: "desc",
     hideDemo: true,
+    order: "desc",
+    sort: "created",
+    tab: "babies",
   });
   expect(isAdminTab("babies")).toBe(true);
   expect(isAdminTab("languages")).toBe(true);
@@ -360,13 +360,14 @@ test("admin defaults to created-desc babies and recognizes every admin tab", () 
 test("users tab body renders without the hide-demo filter", async () => {
   await using view = await renderAdmin(
     <AdminDashboardView
-      tab="users"
-      sort="created"
-      order="desc"
-      hideDemo={true}
-      onTabChange={() => undefined}
-      onHideDemoChange={() => undefined}
       babiesTab={<div>babies body</div>}
+      hideDemo={true}
+      languagesTab={<div>languages body</div>}
+      onHideDemoChange={() => undefined}
+      onTabChange={() => undefined}
+      order="desc"
+      sort="created"
+      tab="users"
       usersTab={
         <UsersSection
           hasNextPage={false}
@@ -375,15 +376,14 @@ test("users tab body renders without the hide-demo filter", async () => {
           users={[
             {
               _id: "user-1",
-              name: "Ada",
-              email: "ada@example.com",
+              babies: [{ demo: false, name: "River", publicId: "baby-river" }],
               createdAt: Date.UTC(2026, 0, 15, 12, 0),
-              babies: [{ name: "River", publicId: "baby-river", demo: false }],
+              email: "ada@example.com",
+              name: "Ada",
             },
           ]}
         />
       }
-      languagesTab={<div>languages body</div>}
     />,
   );
   expect(view.getByText("Ada")).toBeTruthy();
@@ -392,7 +392,7 @@ test("users tab body renders without the hide-demo filter", async () => {
   expect(view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
 });
 
-const ADMIN_EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
+const ADMIN_EMPTY_PAGE = { continueCursor: "", isDone: true, page: [] };
 
 import type { JsonValue } from "@workspace/runtime/json";
 type AdminQueryHandler = JsonValue | (() => never);
@@ -407,7 +407,6 @@ function makeAdminLoaderQueryClient(handlers: AdminQueryHandlers) {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        retry: false,
         queryFn: (ctx) => {
           const name = String(ctx.queryKey[1]);
           if (name in handlers) {
@@ -415,6 +414,7 @@ function makeAdminLoaderQueryClient(handlers: AdminQueryHandlers) {
           }
           return Promise.resolve(null);
         },
+        retry: false,
       },
     },
   });
@@ -422,7 +422,7 @@ function makeAdminLoaderQueryClient(handlers: AdminQueryHandlers) {
 
 async function runAdminLoader(
   handlers: AdminQueryHandlers,
-  profile: { locale: string; timeZone: string; isAdmin: boolean },
+  profile: { isAdmin: boolean; locale: string; timeZone: string },
 ) {
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
@@ -435,22 +435,22 @@ async function runAdminLoader(
     options: {
       loader: (opts: {
         context: {
-          queryClient: QueryClient;
           convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-          profile: { input: Record<string, never>; initialData: typeof profile };
+          profile: { initialData: typeof profile; input: Record<string, never> };
+          queryClient: QueryClient;
         };
-        deps: { tab: string; sort: string; order: string; hideDemo: boolean };
+        deps: { hideDemo: boolean; order: string; sort: string; tab: string };
       }) => Promise<AdminLoaderResult>;
     };
   } = AdminRoute;
   const queryClient = makeAdminLoaderQueryClient(handlers);
   return await route.options.loader({
     context: {
-      queryClient,
       convexPreloader: getConvexQueryPreloader(queryClient),
-      profile: { input: {}, initialData: profile },
+      profile: { initialData: profile, input: {} },
+      queryClient,
     },
-    deps: { tab: "babies", sort: "created", order: "desc", hideDemo: true },
+    deps: { hideDemo: true, order: "desc", sort: "created", tab: "babies" },
   });
 }
 
@@ -461,11 +461,11 @@ test("loader prefetches babies, users, and language requests in parallel for adm
       "admin:listLanguageRequests": ADMIN_EMPTY_PAGE,
       "admin:listUsers": ADMIN_EMPTY_PAGE,
     },
-    { locale: "en-GB", timeZone: "Europe/London", isAdmin: true },
+    { isAdmin: true, locale: "en-GB", timeZone: "Europe/London" },
   );
 
   expect(result.babies).toMatchObject({
-    input: { sortBy: "created", sortOrder: "desc", hideDemo: true },
+    input: { hideDemo: true, sortBy: "created", sortOrder: "desc" },
     numItems: 20,
   });
   expect(result.languages).toMatchObject({ input: {}, numItems: 20 });
@@ -486,7 +486,7 @@ test("loader redirects non-admins without prefetching admin queries", async () =
           throw new Error("admin:listUsers should not run for non-admins");
         },
       },
-      { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
+      { isAdmin: false, locale: "en-GB", timeZone: "Europe/London" },
     );
     expect.unreachable("expected a redirect");
   } catch (error) {

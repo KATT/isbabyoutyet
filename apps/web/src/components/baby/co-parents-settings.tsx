@@ -4,7 +4,7 @@ import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/com
 import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
 import { UserMinus, UserPlus, X } from "@phosphor-icons/react";
-import * as z from "zod";
+import { z } from "zod";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -38,8 +38,8 @@ function InviteCoParentForm(props: {
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: inviteCoParentSchema(t, props.babyId),
     defaultValues: { email: "" },
+    schema: inviteCoParentSchema(t, props.babyId),
   });
 
   return (
@@ -62,7 +62,7 @@ function InviteCoParentForm(props: {
           render={({ field }) => (
             <FormItem className="flex-1">
               <FormControl>
-                <Input type="email" placeholder="partner@example.com" {...field} />
+                <Input placeholder="partner@example.com" type="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -77,14 +77,14 @@ function InviteCoParentForm(props: {
 }
 
 function RemoveCoParentForm(props: {
-  email: string;
   coParentId: Id<"babyCoParents">;
+  email: string;
   onRemove: (args: { coParentId: Id<"babyCoParents"> }) => Promise<void>;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: z.object({}),
     defaultValues: {},
+    schema: z.object({}),
   });
 
   return (
@@ -96,12 +96,12 @@ function RemoveCoParentForm(props: {
       }}
     >
       <SubmitButton
+        aria-label={t("Remove {{email}}", { email: props.email })}
         form="context"
-        variant="ghost"
-        size="icon-sm"
         IconComponent={UserMinus}
         iconPosition="start"
-        aria-label={t("Remove {{email}}", { email: props.email })}
+        size="icon-sm"
+        variant="ghost"
       />
     </Form>
   );
@@ -114,8 +114,8 @@ function CancelInviteForm(props: {
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: z.object({}),
     defaultValues: {},
+    schema: z.object({}),
   });
 
   return (
@@ -127,12 +127,12 @@ function CancelInviteForm(props: {
       }}
     >
       <SubmitButton
+        aria-label={t("Cancel invite to {{email}}", { email: props.email })}
         form="context"
-        variant="ghost"
-        size="icon-sm"
         IconComponent={X}
         iconPosition="start"
-        aria-label={t("Cancel invite to {{email}}", { email: props.email })}
+        size="icon-sm"
+        variant="ghost"
       />
     </Form>
   );
@@ -164,15 +164,15 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
     <div className="space-y-3 w-full">
       <ul className="space-y-2">
         {listing.coParents.map((row) => (
-          <li key={row._id} className="flex items-center justify-between gap-2 text-sm">
+          <li className="flex items-center justify-between gap-2 text-sm" key={row._id}>
             <div className="min-w-0">
               <div className="font-medium truncate">{row.name || row.email}</div>
               {row.name ? <div className="text-muted-foreground truncate">{row.email}</div> : null}
             </div>
             {props.isOwner ? (
               <RemoveCoParentForm
-                email={row.email}
                 coParentId={row._id}
+                email={row.email}
                 onRemove={async (args) => {
                   await removeCoParent(args);
                 }}
@@ -181,7 +181,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
           </li>
         ))}
         {listing.invites.map((row) => (
-          <li key={row._id} className="flex items-center justify-between gap-2 text-sm">
+          <li className="flex items-center justify-between gap-2 text-sm" key={row._id}>
             <div className="min-w-0">
               <div className="font-medium truncate">{row.email}</div>
               <div className="text-muted-foreground">{t("Invite pending")}</div>

@@ -11,17 +11,17 @@ import {
 } from "./onboarding-optimistic";
 
 const base: OnboardingProgress = {
-  welcomeDismissed: false,
+  activeCoachmarkStepId: "share_link",
+  allDone: false,
   checklistDismissed: false,
-  minimized: false,
   completedSteps: [],
+  effectiveSteps: ["add_baby"],
   hasBaby: true,
   hasUpdate: false,
-  effectiveSteps: ["add_baby"],
-  allDone: false,
-  tourBaby: { publicId: "juniper", name: "Juniper" },
-  activeCoachmarkStepId: "share_link",
+  minimized: false,
   restartHintVisible: false,
+  tourBaby: { name: "Juniper", publicId: "juniper" },
+  welcomeDismissed: false,
 };
 
 function createMineStore(seed: OnboardingProgress | undefined) {
@@ -31,12 +31,12 @@ function createMineStore(seed: OnboardingProgress | undefined) {
       expect(args[1]).toEqual({});
       return value;
     },
+    read() {
+      return value;
+    },
     setQuery(...args: [unknown, unknown, OnboardingProgress]) {
       expect(args[1]).toEqual({});
       value = args[2];
-    },
-    read() {
-      return value;
     },
   };
   // SAFETY: Test fixture is a subset of the production type.
@@ -60,17 +60,17 @@ test("completeStep is a no-op when the step is already completed", () => {
 });
 
 test("completeStep credits hasUpdate into effectiveSteps when posting an update", () => {
-  const withUpdate = { ...base, hasUpdate: true, hasBaby: false, effectiveSteps: [] };
+  const withUpdate = { ...base, effectiveSteps: [], hasBaby: false, hasUpdate: true };
   const next = optimisticallyCompleteStep(withUpdate, "post_update");
   expect(next.effectiveSteps).toEqual(["post_update"]);
 });
 
 test("dismissChecklist hides the tour chrome and clears the open coachmark", () => {
   expect(optimisticallyDismissChecklist(base)).toMatchObject({
-    checklistDismissed: true,
-    welcomeDismissed: true,
-    minimized: true,
     activeCoachmarkStepId: null,
+    checklistDismissed: true,
+    minimized: true,
+    welcomeDismissed: true,
   });
 });
 

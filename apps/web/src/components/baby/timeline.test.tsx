@@ -30,14 +30,14 @@ function isMutationArgsRecord<TArgs>(args: TArgs): args is TArgs & object {
 }
 
 const notYetBaby: BabyData = {
-  name: "Baby Smith",
-  timeZone: "Europe/London",
+  babyBorn: null,
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
-  publicDueDateText: null,
   laborStarted: null,
+  name: "Baby Smith",
+  publicDueDateText: null,
+  timeZone: "Europe/London",
   wentToHospital: null,
-  babyBorn: null,
 };
 
 const laborStartedBaby: BabyData = {
@@ -50,18 +50,18 @@ const VISITOR_ID_STORAGE_KEY = "encouragement-visitor-id";
 async function seedOwnerBaby(harness: ConvexTestHarness) {
   const ownerId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: ownerId });
-  return await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  return await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 }
 
 function renderComposerTree(
   harness: ConvexTestHarness,
   opts: {
-    babyId: Id<"baby">;
     baby: BabyData;
+    babyId: Id<"baby">;
     locale: SupportedLocale;
   },
 ) {
@@ -73,8 +73,8 @@ function renderComposerTree(
       >
         <LocaleProvider locale={opts.locale}>
           <UpdateComposer
-            babyId={opts.babyId}
             baby={opts.baby}
+            babyId={opts.babyId}
             babyName={opts.baby.name}
             onPosted={() => {}}
           />
@@ -87,20 +87,20 @@ function renderComposerTree(
 async function renderComposer(
   harness: ConvexTestHarness,
   opts: {
-    babyId: Id<"baby">;
     baby: BabyData;
+    babyId: Id<"baby">;
     locale: SupportedLocale | undefined;
   },
 ) {
   let baby: BabyData = opts.baby;
   const locale = opts.locale ?? "en-GB";
-  const view = render(renderComposerTree(harness, { babyId: opts.babyId, baby, locale }));
+  const view = render(renderComposerTree(harness, { baby, babyId: opts.babyId, locale }));
   const controls = {
-    view,
     setBaby(nextBaby: BabyData) {
       baby = nextBaby;
-      view.rerender(renderComposerTree(harness, { babyId: opts.babyId, baby, locale }));
+      view.rerender(renderComposerTree(harness, { baby, babyId: opts.babyId, locale }));
     },
+    view,
   };
   return makeResource(controls, () => {
     view.unmount();
@@ -118,10 +118,10 @@ async function prefetchTimeline(harness: ConvexTestHarness, publicId: string) {
 async function renderTimelineFeed(
   harness: ConvexTestHarness,
   opts: {
-    babyId: Id<"baby">;
-    publicId: string;
     baby: BabyData;
+    babyId: Id<"baby">;
     isOwner: boolean;
+    publicId: string;
     visitorId: string | undefined;
   },
 ) {
@@ -140,11 +140,11 @@ async function renderTimelineFeed(
       >
         <LocaleProvider locale="en-GB">
           <TimelineFeed
-            babyId={opts.babyId}
-            publicId={opts.publicId}
             baby={opts.baby}
+            babyId={opts.babyId}
             babyName={opts.baby.name}
             isOwner={opts.isOwner}
+            publicId={opts.publicId}
             timeline={timeline}
           />
         </LocaleProvider>
@@ -157,7 +157,9 @@ async function renderTimelineFeed(
 async function updateRow(view: ReturnType<typeof render>, message: string) {
   const messageNode = await view.findByText(message);
   const row = messageNode.closest(".group");
-  if (!row) throw new Error(`Timeline row missing for "${message}"`);
+  if (!row) {
+    throw new Error(`Timeline row missing for "${message}"`);
+  }
   return within(htmlElement(row));
 }
 
@@ -165,8 +167,8 @@ test("the status radio group is labelled and offers only future stages", async (
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await using composer = await renderComposer(harness, {
-    babyId: baby.babyId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     locale: undefined,
   });
   const view = composer.view;
@@ -190,8 +192,8 @@ test("the milestone metadata resolves through the Swedish catalog", async () => 
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await using composer = await renderComposer(harness, {
-    babyId: baby.babyId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     locale: "sv",
   });
   const view = composer.view;
@@ -207,12 +209,12 @@ test("the composer only offers visible future milestones", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await using composer = await renderComposer(harness, {
-    babyId: baby.babyId,
     baby: {
       ...notYetBaby,
-      milestoneVisibility: { showLabor: false, showHospital: true },
       laborStarted: "2026-08-20T08:00:00.000Z",
+      milestoneVisibility: { showHospital: true, showLabor: false },
     },
+    babyId: baby.babyId,
     locale: undefined,
   });
   const view = composer.view;
@@ -226,8 +228,8 @@ test("a stale milestone selection is cleared when the status advances elsewhere"
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await using composer = await renderComposer(harness, {
-    babyId: baby.babyId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     locale: undefined,
   });
   const view = composer.view;
@@ -255,8 +257,8 @@ test("an empty event-time picker does not post occurredAt", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await using composer = await renderComposer(harness, {
-    babyId: baby.babyId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     locale: undefined,
   });
   const view = composer.view;
@@ -270,13 +272,15 @@ test("an empty event-time picker does not post occurredAt", async () => {
   await vi.waitFor(async () => {
     const feed = await harness.client.query(api.timeline.listByBaby, {
       babyId: baby.publicId,
-      paginationOpts: { numItems: 20, cursor: null },
+      paginationOpts: { cursor: null, numItems: 20 },
       visitorId: null,
     });
     const milestoneUpdate = feed.page.find(
       (item) => item.kind === "update" && item.update.milestone === "labor_started",
     );
-    if (milestoneUpdate?.kind !== "update") throw new Error("expected milestone update");
+    if (milestoneUpdate?.kind !== "update") {
+      throw new Error("expected milestone update");
+    }
     expect(milestoneUpdate.update.occurredAt).toBeGreaterThanOrEqual(postedBefore);
     expect(milestoneUpdate.update.occurredAt).toBeLessThanOrEqual(Date.now() + 60_000);
   });
@@ -286,8 +290,8 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await using composer = await renderComposer(harness, {
-    babyId: baby.babyId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     locale: undefined,
   });
   const view = composer.view;
@@ -301,13 +305,15 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
   await vi.waitFor(async () => {
     const feed = await harness.client.query(api.timeline.listByBaby, {
       babyId: baby.publicId,
-      paginationOpts: { numItems: 20, cursor: null },
+      paginationOpts: { cursor: null, numItems: 20 },
       visitorId: null,
     });
     const milestoneUpdate = feed.page.find(
       (item) => item.kind === "update" && item.update.milestone === "labor_started",
     );
-    if (milestoneUpdate?.kind !== "update") throw new Error("expected milestone update");
+    if (milestoneUpdate?.kind !== "update") {
+      throw new Error("expected milestone update");
+    }
     expect(milestoneUpdate.update.occurredAt).toBe(Date.parse("2026-08-10T07:30:00.000Z"));
   });
 });
@@ -322,14 +328,16 @@ test("the composer previews a selected photo and can remove it", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await using composer = await renderComposer(harness, {
-    babyId: baby.babyId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     locale: undefined,
   });
   const view = composer.view;
 
   const fileInput = view.container.querySelector('input[type="file"]');
-  if (!fileInput) throw new Error("hidden file input missing");
+  if (!fileInput) {
+    throw new Error("hidden file input missing");
+  }
 
   fireEvent.change(fileInput, {
     target: { files: [new File(["png"], "baby.png", { type: "image/png" })] },
@@ -360,14 +368,14 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   });
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: {
       ...laborStartedBaby,
-      wentToHospital: "2026-08-20T12:00:00.000Z",
       babyBorn: "2026-08-21T03:00:00.000Z",
+      wentToHospital: "2026-08-20T12:00:00.000Z",
     },
+    babyId: baby.babyId,
     isOwner: true,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
 
@@ -377,7 +385,9 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   expect(blockedDeleteButtons.length).toBeGreaterThan(0);
   const deleteButton = htmlButton(blockedDeleteButtons[0]);
   const tooltipTrigger = deleteButton.closest('[data-slot="tooltip-trigger"]');
-  if (!tooltipTrigger) throw new Error("Tooltip trigger missing");
+  if (!tooltipTrigger) {
+    throw new Error("Tooltip trigger missing");
+  }
   expect(tooltipTrigger.getAttribute("aria-label")).toBe("Delete the Born status first");
   expect(feed.queryByRole("alertdialog")).toBeNull();
 });
@@ -386,16 +396,16 @@ test("shows the loaded first page instead of a spinner while the live query sync
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await seedTimelineEncouragement(harness, {
-    babyId: baby.babyId,
     authorName: "Grandma",
+    babyId: baby.babyId,
     message: "Can't wait to meet you!",
   });
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     isOwner: false,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
 
@@ -408,16 +418,16 @@ test("does not pop in encouragements from the first loaded page", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await seedTimelineEncouragement(harness, {
-    babyId: baby.babyId,
     authorName: "Grandma",
+    babyId: baby.babyId,
     message: "Can't wait to meet you!",
   });
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     isOwner: false,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
 
@@ -428,27 +438,27 @@ test("pops in an encouragement that arrives after the first snapshot", async () 
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await seedTimelineEncouragement(harness, {
-    babyId: baby.babyId,
     authorName: "Grandma",
+    babyId: baby.babyId,
     message: "Can't wait to meet you!",
   });
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     isOwner: false,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
 
   await harness.convexClient.mutation(api.encouragements.create, {
-    babyId: baby.babyId,
     authorName: "Auntie",
-    message: "So exciting!",
-    visitorId: "visitor-live",
-    userAgent: null,
+    babyId: baby.babyId,
     locale: null,
+    message: "So exciting!",
     timezone: null,
+    userAgent: null,
+    visitorId: "visitor-live",
   });
 
   const liveMessage = await vi.waitFor(() => feed.getByText("So exciting!"));
@@ -461,22 +471,22 @@ test("pops in the first encouragement on a previously empty feed", async () => {
   const baby = await seedOwnerBaby(harness);
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     isOwner: false,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
   expect(feed.getByText("Nothing here yet")).toBeTruthy();
 
   await harness.convexClient.mutation(api.encouragements.create, {
-    babyId: baby.babyId,
     authorName: "Auntie",
-    message: "Hello little one!",
-    visitorId: "visitor-live",
-    userAgent: null,
+    babyId: baby.babyId,
     locale: null,
+    message: "Hello little one!",
     timezone: null,
+    userAgent: null,
+    visitorId: "visitor-live",
   });
 
   const liveMessage = await vi.waitFor(() => feed.getByText("Hello little one!"));
@@ -487,10 +497,10 @@ test("shows the empty feed, not a spinner, when the loaded first page is empty",
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     isOwner: false,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
 
@@ -508,14 +518,14 @@ test("renders historical milestone badges regardless of current selection", asyn
   });
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: {
       ...notYetBaby,
-      milestoneVisibility: { showLabor: false, showHospital: true },
       laborStarted: "2026-08-20T08:00:00.000Z",
+      milestoneVisibility: { showHospital: true, showLabor: false },
     },
+    babyId: baby.babyId,
     isOwner: false,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
 
@@ -532,10 +542,10 @@ test("timeline photos link to the update photo overlay", async () => {
   });
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     isOwner: false,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
 
@@ -555,16 +565,16 @@ test("owners can delete an encouragement and toast success", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await seedTimelineEncouragement(harness, {
-    babyId: baby.babyId,
     authorName: "Grandma",
+    babyId: baby.babyId,
     message: "Can't wait!",
   });
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     isOwner: true,
+    publicId: baby.publicId,
     visitorId: undefined,
   });
 
@@ -579,7 +589,7 @@ test("owners can delete an encouragement and toast success", async () => {
   });
   const timeline = await harness.client.query(api.timeline.listByBaby, {
     babyId: baby.publicId,
-    paginationOpts: { numItems: 20, cursor: null },
+    paginationOpts: { cursor: null, numItems: 20 },
     visitorId: null,
   });
   expect(timeline.page.some((item) => item.kind === "encouragement")).toBe(false);
@@ -593,20 +603,20 @@ test("authors can edit their own encouragement within the edit window", async ()
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
   await harness.client.mutation(api.encouragements.create, {
-    babyId: baby.babyId,
     authorName: "Me",
-    message: "Original message",
-    visitorId: "visitor-1",
-    userAgent: null,
+    babyId: baby.babyId,
     locale: null,
+    message: "Original message",
     timezone: null,
+    userAgent: null,
+    visitorId: "visitor-1",
   });
 
   await using feed = await renderTimelineFeed(harness, {
-    babyId: baby.babyId,
-    publicId: baby.publicId,
     baby: notYetBaby,
+    babyId: baby.babyId,
     isOwner: false,
+    publicId: baby.publicId,
     visitorId: "visitor-1",
   });
 
@@ -623,7 +633,7 @@ test("authors can edit their own encouragement within the edit window", async ()
   });
   const timeline = await harness.client.query(api.timeline.listByBaby, {
     babyId: baby.publicId,
-    paginationOpts: { numItems: 20, cursor: null },
+    paginationOpts: { cursor: null, numItems: 20 },
     visitorId: "visitor-1",
   });
   expect(
@@ -650,10 +660,10 @@ test("update delete and set-as-photo handlers toast on success and error", async
 
   {
     await using feed = await renderTimelineFeed(harness, {
-      babyId: baby.babyId,
-      publicId: baby.publicId,
       baby: notYetBaby,
+      babyId: baby.babyId,
       isOwner: true,
+      publicId: baby.publicId,
       visitorId: undefined,
     });
     fireEvent.click(feed.getByRole("button", { name: "Delete update" }));
@@ -663,7 +673,7 @@ test("update delete and set-as-photo handlers toast on success and error", async
     });
     const afterDelete = await harness.client.query(api.timeline.listByBaby, {
       babyId: baby.publicId,
-      paginationOpts: { numItems: 20, cursor: null },
+      paginationOpts: { cursor: null, numItems: 20 },
       visitorId: null,
     });
     expect(afterDelete.page.some((item) => item.kind === "update")).toBe(false);
@@ -679,10 +689,10 @@ test("update delete and set-as-photo handlers toast on success and error", async
   });
   {
     await using feed = await renderTimelineFeed(harness, {
-      babyId: baby.babyId,
-      publicId: baby.publicId,
       baby: notYetBaby,
+      babyId: baby.babyId,
       isOwner: true,
+      publicId: baby.publicId,
       visitorId: undefined,
     });
     await vi.waitFor(() => {
@@ -713,10 +723,10 @@ test("update delete and set-as-photo handlers toast on success and error", async
 
   {
     await using feed = await renderTimelineFeed(harness, {
-      babyId: baby.babyId,
-      publicId: baby.publicId,
       baby: notYetBaby,
+      babyId: baby.babyId,
       isOwner: true,
+      publicId: baby.publicId,
       visitorId: undefined,
     });
     const row = await updateRow(feed, "Delete me");
@@ -741,10 +751,10 @@ test("update delete and set-as-photo handlers toast on success and error", async
 
   {
     await using feed = await renderTimelineFeed(harness, {
-      babyId: baby.babyId,
-      publicId: baby.publicId,
       baby: notYetBaby,
+      babyId: baby.babyId,
       isOwner: true,
+      publicId: baby.publicId,
       visitorId: undefined,
     });
     await vi.waitFor(() => {
@@ -830,17 +840,13 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
   fireEvent.change(view.getByLabelText("Message"), { target: { value: "Thinking of you!" } });
   fireEvent.click(view.getByRole("button", { name: "Send some love" }));
 
-  await vi.waitFor(
-    () => {
-      expect(htmlButton(view.getByRole("button", { name: "Send some love" })).disabled).toBe(false);
-    },
-    // Form DEV delay (500ms) + encouragement toast DEV delay (1000ms)
-    { timeout: 5000 },
-  );
+  await vi.waitFor(() => {
+    expect(htmlButton(view.getByRole("button", { name: "Send some love" })).disabled).toBe(false);
+  });
 
   const feed = await harness.client.query(api.timeline.listByBaby, {
     babyId: baby.publicId,
-    paginationOpts: { numItems: 20, cursor: null },
+    paginationOpts: { cursor: null, numItems: 20 },
     visitorId: null,
   });
   expect(

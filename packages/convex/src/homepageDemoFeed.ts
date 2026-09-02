@@ -7,11 +7,11 @@ export const HOMEPAGE_DEMO_PHOTO_KEYS = ["bump", "bag", "labor", "hospital", "bo
 export type HomepageDemoPhotoKey = (typeof HOMEPAGE_DEMO_PHOTO_KEYS)[number];
 
 export const HOMEPAGE_DEMO_PHOTO_FILES = {
-  bump: "bump.jpg",
   bag: "bag.jpg",
-  labor: "labor.jpg",
-  hospital: "hospital.jpg",
   born: "born.jpg",
+  bump: "bump.jpg",
+  hospital: "hospital.jpg",
+  labor: "labor.jpg",
 } satisfies Record<HomepageDemoPhotoKey, string>;
 
 /** Due date is two days before "now" — slightly overdue when labour starts. */
@@ -20,8 +20,8 @@ export const HOMEPAGE_DEMO_DUE_DATE_MINUTES_AGO = 48 * 60;
 export type HomepageDemoFeedSlot =
   | {
       kind: "update";
-      minutesAgo: number;
       milestone?: Milestone;
+      minutesAgo: number;
       photo?: HomepageDemoPhotoKey;
     }
   | {
@@ -32,16 +32,16 @@ export type HomepageDemoFeedSlot =
 export type HomepageDemoFeedItem =
   | {
       kind: "update";
-      minutesAgo: number;
       message: string;
       milestone?: Milestone;
+      minutesAgo: number;
       photo?: HomepageDemoPhotoKey;
     }
   | {
-      kind: "encouragement";
-      minutesAgo: number;
       authorName: string;
+      kind: "encouragement";
       message: string;
+      minutesAgo: number;
     };
 
 export type HomepageDemoEncouragementCopy = {
@@ -50,8 +50,8 @@ export type HomepageDemoEncouragementCopy = {
 };
 
 export type HomepageDemoLocaleCopy = {
-  updates: readonly string[];
-  encouragements: readonly HomepageDemoEncouragementCopy[];
+  encouragements: ReadonlyArray<HomepageDemoEncouragementCopy>;
+  updates: ReadonlyArray<string>;
 };
 
 /**
@@ -62,14 +62,14 @@ export const HOMEPAGE_DEMO_FEED_SLOTS = [
   { kind: "update", minutesAgo: 48 * 60, photo: "bump" },
   { kind: "encouragement", minutesAgo: 46 * 60 },
   { kind: "encouragement", minutesAgo: 44 * 60 },
-  { kind: "update", minutesAgo: 41 * 60, milestone: "labor_started" },
+  { kind: "update", milestone: "labor_started", minutesAgo: 41 * 60 },
   { kind: "encouragement", minutesAgo: 40 * 60 },
   { kind: "encouragement", minutesAgo: 38 * 60 },
   { kind: "update", minutesAgo: 33 * 60, photo: "bag" },
   { kind: "encouragement", minutesAgo: 32 * 60 },
   { kind: "update", minutesAgo: 26 * 60, photo: "labor" },
   { kind: "encouragement", minutesAgo: 25 * 60 },
-  { kind: "update", minutesAgo: 20 * 60, milestone: "gone_to_hospital" },
+  { kind: "update", milestone: "gone_to_hospital", minutesAgo: 20 * 60 },
   { kind: "encouragement", minutesAgo: 19 * 60 },
   { kind: "encouragement", minutesAgo: 18 * 60 },
   { kind: "update", minutesAgo: 14 * 60, photo: "hospital" },
@@ -77,7 +77,7 @@ export const HOMEPAGE_DEMO_FEED_SLOTS = [
   { kind: "update", minutesAgo: 8 * 60 },
   { kind: "encouragement", minutesAgo: 7 * 60 },
   { kind: "encouragement", minutesAgo: 4 * 60 },
-  { kind: "update", minutesAgo: 150, milestone: "born", photo: "born" },
+  { kind: "update", milestone: "born", minutesAgo: 150, photo: "born" },
   { kind: "encouragement", minutesAgo: 120 },
   { kind: "encouragement", minutesAgo: 90 },
   { kind: "encouragement", minutesAgo: 45 },
@@ -86,16 +86,6 @@ export const HOMEPAGE_DEMO_FEED_SLOTS = [
 
 export const HOMEPAGE_DEMO_FEED_COPY = {
   "en-GB": {
-    updates: [
-      "40 weeks and this bump is out of control. Restless night. Is tonight the night?",
-      "Okay, this is it!! Contractions every 7 minutes. Timing them in the app and trying not to lose the plot.",
-      "Contractions are 4 or 5 minutes apart and a lot stronger. Bag's by the door. Midwife says we can stay home a little longer.",
-      "Long night on the ball. Slow, wave-by-wave labour. Every message helps 💛",
-      "Heading in! Contractions are intense and close together. Time to meet our girl.",
-      "Everyone's lovely, the lights are low and the epidural's doing its thing. Now we wait.",
-      "8 cm!! So close now. My partner has been an absolute rock.",
-      "She's here!! Juniper Mae Hale, 7 lb 2 oz. It was a long labour and we're completely smitten. Thanks for all the love these past two days.",
-    ],
     encouragements: [
       { authorName: "Grandma Helen", message: "Rest up, sweetheart. Can't wait to meet her! 💕" },
       {
@@ -134,18 +124,18 @@ export const HOMEPAGE_DEMO_FEED_COPY = {
       },
       { authorName: "Jess", message: "Welcome to the world, Juniper. Best news ever." },
     ],
-  },
-  "en-US": {
     updates: [
       "40 weeks and this bump is out of control. Restless night. Is tonight the night?",
-      "Okay, this is it!! Contractions every 7 minutes. Timing them in the app and trying not to freak out.",
+      "Okay, this is it!! Contractions every 7 minutes. Timing them in the app and trying not to lose the plot.",
       "Contractions are 4 or 5 minutes apart and a lot stronger. Bag's by the door. Midwife says we can stay home a little longer.",
-      "Long night on the ball. Slow, wave-by-wave labor. Every message helps 💛",
+      "Long night on the ball. Slow, wave-by-wave labour. Every message helps 💛",
       "Heading in! Contractions are intense and close together. Time to meet our girl.",
       "Everyone's lovely, the lights are low and the epidural's doing its thing. Now we wait.",
       "8 cm!! So close now. My partner has been an absolute rock.",
-      "She's here!! Willow Jane Brooks, 7 lb 2 oz. It was a long labor and we're completely smitten. Thanks for all the love these past two days.",
+      "She's here!! Juniper Mae Hale, 7 lb 2 oz. It was a long labour and we're completely smitten. Thanks for all the love these past two days.",
     ],
+  },
+  "en-US": {
     encouragements: [
       { authorName: "Grandma Linda", message: "Rest up, sweetheart. Can't wait to meet her! 💕" },
       {
@@ -184,71 +174,18 @@ export const HOMEPAGE_DEMO_FEED_COPY = {
       },
       { authorName: "Jess", message: "Welcome to the world, Willow. Best news ever." },
     ],
-  },
-  sv: {
     updates: [
-      "Vecka 40 och magen har officiellt tagit över hela kroppen. Sov knappt en blund i natt. Är det i natt det händer?",
-      "Okej, nu händer det!! Värkar var sjunde minut. Vi tar tiden i appen och försöker att inte flippa ur.",
-      "Värkarna kommer med fyra till fem minuters mellanrum och känns rejält mycket mer. BB-väskan står vid dörren. Barnmorskan tycker att vi kan vara hemma lite till.",
-      "Har hängt på pilatesbollen hela natten. Det går långsamt, en värk i taget. Tack för alla meddelanden. De hjälper på riktigt 💛",
-      "Nu åker vi in! Värkarna kommer tätt och satan vad de känns. Snart får vi träffa vår lilla tjej.",
-      "Nu är vi inne och har landat. Dämpad belysning, epiduralen gör sitt och vi väntar på att hon ska bli redo. Personalen är helt underbar.",
-      "8 cm!! Nu är det nära. Min partner är en jävla klippa. Vi känner att hon är på gång.",
-      "Hon är här!! Ella Linnea Holm, 3 240 gram, född efter en lång och helt otrolig förlossning. Vi är kära upp över öronen. Tack för att ni hängt med och hejat hela vägen.",
-    ],
-    encouragements: [
-      {
-        authorName: "Mormor Ingrid",
-        message: "Vila nu, älskling. Längtar så efter att träffa henne! 💕",
-      },
-      {
-        authorName: "Kim",
-        message: "Oj vad ni boar! Skickar världens största kram. Det här fixar ni.",
-      },
-      {
-        authorName: "Maja",
-        message: "NI FIXAR DET HÄR. Släpper inte mobilen en sekund. Älskar er båda.",
-      },
-      { authorName: "Farbror Erik", message: "En värk i taget. Så stolt över er." },
-      { authorName: "Lisa", message: "Tänker på er!! Hör av er när ni kan." },
-      {
-        authorName: "Sara",
-        message: "Du är grym! Vi tar hand om hunden, så tänk inte på det ❤️",
-      },
-      { authorName: "Mormor Ingrid", message: "Kör försiktigt. Tänker på er konstant!" },
-      { authorName: "Faster Anna", message: "JAAAA, nu händer det!! Älskar er." },
-      { authorName: "Kim", message: "Ett andetag i taget. Är så stolt över dig." },
-      {
-        authorName: "Maja",
-        message: "AAAAAAAA jag kan inte sitta still. Kom igen Ella, nu kör vi!!",
-      },
-      { authorName: "Farbror Erik", message: "Så nära nu! Skickar all kraft jag har." },
-      {
-        authorName: "Mormor Ingrid",
-        message: "VÄLKOMMEN ELLA LINNEA HOLM 💕💕💕 Mormor fulgråter av lycka.",
-      },
-      {
-        authorName: "Kim",
-        message: "ELLA!!!! Hon är här, hon är här, hon är här! Titta på de små kinderna.",
-      },
-      {
-        authorName: "Sara",
-        message: "Grattis, ni två! Herregud vilken grej. Vila nu, vi kommer med mat.",
-      },
-      { authorName: "Lisa", message: "Välkommen till världen, Ella! Så himla underbart." },
+      "40 weeks and this bump is out of control. Restless night. Is tonight the night?",
+      "Okay, this is it!! Contractions every 7 minutes. Timing them in the app and trying not to freak out.",
+      "Contractions are 4 or 5 minutes apart and a lot stronger. Bag's by the door. Midwife says we can stay home a little longer.",
+      "Long night on the ball. Slow, wave-by-wave labor. Every message helps 💛",
+      "Heading in! Contractions are intense and close together. Time to meet our girl.",
+      "Everyone's lovely, the lights are low and the epidural's doing its thing. Now we wait.",
+      "8 cm!! So close now. My partner has been an absolute rock.",
+      "She's here!! Willow Jane Brooks, 7 lb 2 oz. It was a long labor and we're completely smitten. Thanks for all the love these past two days.",
     ],
   },
   es: {
-    updates: [
-      "40 semanas y esta barriga ya tiene vida propia. Noche movidita... ¿será hoy?",
-      "¡Ahora sí! Contracciones cada 7 minutos. Las estamos cronometrando con la app e intentando mantener la calma.",
-      "Las contracciones llegan cada 4 o 5 minutos y vienen mucho más fuertes. La bolsa para el hospital ya está junto a la puerta. Nos dijeron que todavía podemos quedarnos un rato en casa.",
-      "Noche larga sobre la pelota de parto. Todo avanza despacio, contracción a contracción. Gracias por cada mensaje. De verdad ayudan 💛",
-      "¡Nos vamos! Las contracciones están fuertes y muy seguidas. Es hora de conocer a nuestra niña.",
-      "Ya estamos en el hospital. Luces bajas, la epidural está haciendo efecto. Esperamos a que nuestra niña se abra camino. Todo el mundo aquí ha sido un amor.",
-      "¡8 cm! Ya falta poco. Mi pareja ha sido una roca. Sentimos que ya viene.",
-      "¡Ya está aquí! Lucía Mar Navarro, 3240 g. Nació tras un parto largo y precioso. No cabemos de amor. Gracias por acompañarnos durante estos dos días.",
-    ],
     encouragements: [
       { authorName: "Abuela Carmen", message: "Descansa, mi vida. ¡Qué ganas de conocerla! 💕" },
       {
@@ -297,18 +234,18 @@ export const HOMEPAGE_DEMO_FEED_COPY = {
       },
       { authorName: "Laura", message: "Bienvenida al mundo, Lucía. ¡Qué alegría!" },
     ],
+    updates: [
+      "40 semanas y esta barriga ya tiene vida propia. Noche movidita... ¿será hoy?",
+      "¡Ahora sí! Contracciones cada 7 minutos. Las estamos cronometrando con la app e intentando mantener la calma.",
+      "Las contracciones llegan cada 4 o 5 minutos y vienen mucho más fuertes. La bolsa para el hospital ya está junto a la puerta. Nos dijeron que todavía podemos quedarnos un rato en casa.",
+      "Noche larga sobre la pelota de parto. Todo avanza despacio, contracción a contracción. Gracias por cada mensaje. De verdad ayudan 💛",
+      "¡Nos vamos! Las contracciones están fuertes y muy seguidas. Es hora de conocer a nuestra niña.",
+      "Ya estamos en el hospital. Luces bajas, la epidural está haciendo efecto. Esperamos a que nuestra niña se abra camino. Todo el mundo aquí ha sido un amor.",
+      "¡8 cm! Ya falta poco. Mi pareja ha sido una roca. Sentimos que ya viene.",
+      "¡Ya está aquí! Lucía Mar Navarro, 3240 g. Nació tras un parto largo y precioso. No cabemos de amor. Gracias por acompañarnos durante estos dos días.",
+    ],
   },
   "pt-BR": {
-    updates: [
-      "40 semanas e essa barriga já não cabe em lugar nenhum. Noite agitada. Será que é hoje?",
-      "É agora!! Contrações a cada 7 minutos. Estamos contando o intervalo pelo app e tentando manter a calma.",
-      "As contrações vêm a cada 4 ou 5 minutos e estão bem mais fortes. A mala já está na porta. A obstetra disse que ainda dá para ficar mais um pouco em casa.",
-      "Noite longa na bola. O trabalho de parto vai devagar, uma contração de cada vez. Obrigada por cada mensagem. Elas ajudam de verdade 💛",
-      "Partiu hospital! As contrações estão intensas e bem próximas. Hora de conhecer nossa menina.",
-      "Já demos entrada e estamos acomodadas. Luz baixinha, peridural fazendo efeito. Agora é esperar ela chegar. Todo mundo aqui tem sido um amor.",
-      "8 cm!! Falta pouco. Minha parceira está sendo meu porto seguro. Dá para sentir que ela está chegando.",
-      "Ela chegou!! Helena Luz Costa, 3.240 g, nasceu depois de um trabalho de parto longo e lindo. Estamos completamente apaixonadas. Obrigada por ficarem com a gente nesses dois dias.",
-    ],
     encouragements: [
       {
         authorName: "Vovó Ana",
@@ -361,6 +298,69 @@ export const HOMEPAGE_DEMO_FEED_COPY = {
       },
       { authorName: "Júlia", message: "Bem-vinda ao mundo, Helena! Que notícia linda." },
     ],
+    updates: [
+      "40 semanas e essa barriga já não cabe em lugar nenhum. Noite agitada. Será que é hoje?",
+      "É agora!! Contrações a cada 7 minutos. Estamos contando o intervalo pelo app e tentando manter a calma.",
+      "As contrações vêm a cada 4 ou 5 minutos e estão bem mais fortes. A mala já está na porta. A obstetra disse que ainda dá para ficar mais um pouco em casa.",
+      "Noite longa na bola. O trabalho de parto vai devagar, uma contração de cada vez. Obrigada por cada mensagem. Elas ajudam de verdade 💛",
+      "Partiu hospital! As contrações estão intensas e bem próximas. Hora de conhecer nossa menina.",
+      "Já demos entrada e estamos acomodadas. Luz baixinha, peridural fazendo efeito. Agora é esperar ela chegar. Todo mundo aqui tem sido um amor.",
+      "8 cm!! Falta pouco. Minha parceira está sendo meu porto seguro. Dá para sentir que ela está chegando.",
+      "Ela chegou!! Helena Luz Costa, 3.240 g, nasceu depois de um trabalho de parto longo e lindo. Estamos completamente apaixonadas. Obrigada por ficarem com a gente nesses dois dias.",
+    ],
+  },
+  sv: {
+    encouragements: [
+      {
+        authorName: "Mormor Ingrid",
+        message: "Vila nu, älskling. Längtar så efter att träffa henne! 💕",
+      },
+      {
+        authorName: "Kim",
+        message: "Oj vad ni boar! Skickar världens största kram. Det här fixar ni.",
+      },
+      {
+        authorName: "Maja",
+        message: "NI FIXAR DET HÄR. Släpper inte mobilen en sekund. Älskar er båda.",
+      },
+      { authorName: "Farbror Erik", message: "En värk i taget. Så stolt över er." },
+      { authorName: "Lisa", message: "Tänker på er!! Hör av er när ni kan." },
+      {
+        authorName: "Sara",
+        message: "Du är grym! Vi tar hand om hunden, så tänk inte på det ❤️",
+      },
+      { authorName: "Mormor Ingrid", message: "Kör försiktigt. Tänker på er konstant!" },
+      { authorName: "Faster Anna", message: "JAAAA, nu händer det!! Älskar er." },
+      { authorName: "Kim", message: "Ett andetag i taget. Är så stolt över dig." },
+      {
+        authorName: "Maja",
+        message: "AAAAAAAA jag kan inte sitta still. Kom igen Ella, nu kör vi!!",
+      },
+      { authorName: "Farbror Erik", message: "Så nära nu! Skickar all kraft jag har." },
+      {
+        authorName: "Mormor Ingrid",
+        message: "VÄLKOMMEN ELLA LINNEA HOLM 💕💕💕 Mormor fulgråter av lycka.",
+      },
+      {
+        authorName: "Kim",
+        message: "ELLA!!!! Hon är här, hon är här, hon är här! Titta på de små kinderna.",
+      },
+      {
+        authorName: "Sara",
+        message: "Grattis, ni två! Herregud vilken grej. Vila nu, vi kommer med mat.",
+      },
+      { authorName: "Lisa", message: "Välkommen till världen, Ella! Så himla underbart." },
+    ],
+    updates: [
+      "Vecka 40 och magen har officiellt tagit över hela kroppen. Sov knappt en blund i natt. Är det i natt det händer?",
+      "Okej, nu händer det!! Värkar var sjunde minut. Vi tar tiden i appen och försöker att inte flippa ur.",
+      "Värkarna kommer med fyra till fem minuters mellanrum och känns rejält mycket mer. BB-väskan står vid dörren. Barnmorskan tycker att vi kan vara hemma lite till.",
+      "Har hängt på pilatesbollen hela natten. Det går långsamt, en värk i taget. Tack för alla meddelanden. De hjälper på riktigt 💛",
+      "Nu åker vi in! Värkarna kommer tätt och satan vad de känns. Snart får vi träffa vår lilla tjej.",
+      "Nu är vi inne och har landat. Dämpad belysning, epiduralen gör sitt och vi väntar på att hon ska bli redo. Personalen är helt underbar.",
+      "8 cm!! Nu är det nära. Min partner är en jävla klippa. Vi känner att hon är på gång.",
+      "Hon är här!! Ella Linnea Holm, 3 240 gram, född efter en lång och helt otrolig förlossning. Vi är kära upp över öronen. Tack för att ni hängt med och hejat hela vägen.",
+    ],
   },
 } satisfies Record<SupportedLocale, HomepageDemoLocaleCopy>;
 
@@ -372,7 +372,7 @@ function encouragementSlotCount() {
   return HOMEPAGE_DEMO_FEED_SLOTS.filter((slot) => slot.kind === "encouragement").length;
 }
 
-export function homepageDemoFeedFor(locale: SupportedLocale): HomepageDemoFeedItem[] {
+export function homepageDemoFeedFor(locale: SupportedLocale): Array<HomepageDemoFeedItem> {
   const copy = HOMEPAGE_DEMO_FEED_COPY[locale];
   if (copy.updates.length !== updateSlotCount()) {
     throw new Error(`${locale} homepage demo is missing update copy`);
@@ -387,23 +387,27 @@ export function homepageDemoFeedFor(locale: SupportedLocale): HomepageDemoFeedIt
     if (slot.kind === "update") {
       const message = copy.updates[updateIndex];
       updateIndex += 1;
-      if (!message) throw new Error(`${locale} homepage demo is missing update copy`);
+      if (!message) {
+        throw new Error(`${locale} homepage demo is missing update copy`);
+      }
       return {
         kind: "update",
-        minutesAgo: slot.minutesAgo,
         message,
         milestone: slot.milestone,
+        minutesAgo: slot.minutesAgo,
         photo: slot.photo,
       };
     }
     const encouragement = copy.encouragements[encouragementIndex];
     encouragementIndex += 1;
-    if (!encouragement) throw new Error(`${locale} homepage demo is missing encouragement copy`);
+    if (!encouragement) {
+      throw new Error(`${locale} homepage demo is missing encouragement copy`);
+    }
     return {
-      kind: "encouragement",
-      minutesAgo: slot.minutesAgo,
       authorName: encouragement.authorName,
+      kind: "encouragement",
       message: encouragement.message,
+      minutesAgo: slot.minutesAgo,
     };
   });
 }
@@ -411,6 +415,6 @@ export function homepageDemoFeedFor(locale: SupportedLocale): HomepageDemoFeedIt
 /** @deprecated Prefer `homepageDemoFeedFor(locale)` — kept as the en-GB fixture. */
 export const HOMEPAGE_DEMO_FEED = homepageDemoFeedFor("en-GB");
 
-export function homepageDemoLocales(): SupportedLocale[] {
+export function homepageDemoLocales(): Array<SupportedLocale> {
   return [...SUPPORTED_LOCALES];
 }

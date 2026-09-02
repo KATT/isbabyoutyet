@@ -12,12 +12,12 @@ import {
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { htmlInput } from "@/test/htmlElement";
 
-type NewAccount = { name: string; email: string; password: string };
+type NewAccount = { email: string; name: string; password: string };
 type SignUpResult = { errorMessage: string | null };
 
 const NEW_ACCOUNT: NewAccount = {
-  name: "Test Parent",
   email: "parent@example.com",
+  name: "Test Parent",
   password: "password",
 };
 
@@ -39,11 +39,11 @@ function handoffDeps() {
   const waitForAuth = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
   const navigate = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
   return {
+    failedMessage: "Failed to sign up",
+    headers: () => ({ "x-time-zone": "Asia/Tokyo" }),
+    navigate,
     signUp,
     waitForAuth,
-    navigate,
-    headers: () => ({ "x-time-zone": "Asia/Tokyo" }),
-    failedMessage: "Failed to sign up",
   };
 }
 
@@ -127,8 +127,8 @@ test("SignupPage wires the real auth client into SignupCard", async () => {
 test("SignupPage sign-up path invokes the wired auth client", async () => {
   const signUpEmail = vi.fn().mockResolvedValue({ data: null, error: null });
   const original = {
-    signUpEmail: signupAuthAdapter.signUpEmail,
     headers: signupAuthAdapter.headers,
+    signUpEmail: signupAuthAdapter.signUpEmail,
     waitForAuth: signupAuthAdapter.waitForAuth,
   };
   // SAFETY: Mock constructor is installed in place of the browser global.

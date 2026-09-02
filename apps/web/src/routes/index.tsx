@@ -32,42 +32,42 @@ export const Route = createFileRoute("/")({
     );
     const imageUrl = absoluteUrl(homepageOgImagePath());
     return {
+      links: [{ href: canonicalUrl("/"), rel: "canonical" }],
       meta: [
         {
           title,
         },
         {
+          content: description,
           name: "description",
-          content: description,
         },
         {
+          content: title,
           property: "og:title",
-          content: title,
         },
         {
+          content: description,
           property: "og:description",
-          content: description,
         },
         {
-          property: "og:url",
           content: canonicalUrl("/"),
+          property: "og:url",
         },
         {
-          property: "og:type",
           content: "website",
+          property: "og:type",
         },
-        ...openGraphImageMeta({ imageUrl, alt: title }),
+        ...openGraphImageMeta({ alt: title, imageUrl }),
         {
-          name: "twitter:title",
           content: title,
+          name: "twitter:title",
         },
         {
-          name: "twitter:description",
           content: description,
+          name: "twitter:description",
         },
         ...searchRobotsMeta({ index: true }),
       ],
-      links: [{ rel: "canonical", href: canonicalUrl("/") }],
     };
   },
 });
@@ -75,7 +75,7 @@ export const Route = createFileRoute("/")({
 // lucide-react v1 removed brand icons (including Github), so inline the mark
 function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+    <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24" {...props}>
       <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
     </svg>
   );
@@ -89,28 +89,23 @@ function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
  */
 const HERO_HEADLINES = {
   "en-GB": {
-    before: "Is",
     after: "out yet?",
+    before: "Is",
     words: ["baby", "Juniper", "Alfie", "Poppy", "Noah", "Ivy", "Oscar", "Freya"],
   },
   "en-US": {
-    before: "Is",
     after: "out yet?",
+    before: "Is",
     words: ["baby", "Willow", "Liam", "Olivia", "Wyatt", "Luna", "Ezra", "Hazel"],
   },
-  sv: {
-    before: "Har",
-    after: "kommit?",
-    words: ["bäbis", "Ella", "Hugo", "Astrid", "Nils", "Maja", "Sixten", "Vera"],
-  },
   es: {
-    before: "¿Ya nació",
     after: "o todavía no?",
+    before: "¿Ya nació",
     words: ["bebé", "Lucía", "Mateo", "Sofía", "Leo", "Valentina", "Martín", "Emma"],
   },
   "pt-BR": {
-    before: "",
     after: "já nasceu?",
+    before: "",
     words: [
       "O bebê",
       "A Helena",
@@ -122,14 +117,19 @@ const HERO_HEADLINES = {
       "A Cecília",
     ],
   },
+  sv: {
+    after: "kommit?",
+    before: "Har",
+    words: ["bäbis", "Ella", "Hugo", "Astrid", "Nils", "Maja", "Sixten", "Vera"],
+  },
 } as const satisfies Record<
   SupportedLocale,
-  { before: string; after: string; words: readonly string[] }
+  { after: string; before: string; words: ReadonlyArray<string> }
 >;
 
 const NAME_ROTATE_INTERVAL_MS = 2400;
 
-function RotatingBabyName(props: { words: readonly string[] }) {
+function RotatingBabyName(props: { words: ReadonlyArray<string> }) {
   const indices = useRotatingIndex({
     intervalMs: NAME_ROTATE_INTERVAL_MS,
     itemCount: props.words.length,
@@ -144,16 +144,16 @@ function RotatingBabyName(props: { words: readonly string[] }) {
     >
       {indices.previous !== null ? (
         <span
-          key={`out-${indices.previous}-${indices.current}`}
           className="hero-word-out absolute left-0 top-0"
+          key={`out-${indices.previous}-${indices.current}`}
         >
           {props.words[indices.previous]}
         </span>
       ) : null}
       <span
+        className="hero-word-in inline-block"
         key={`in-${indices.current}`}
         ref={measureCurrentWord}
-        className="hero-word-in inline-block"
       >
         {props.words[indices.current]}
       </span>
@@ -167,73 +167,73 @@ function useCurrentDate() {
 
 const FEATURES = [
   {
-    emoji: "📣",
-    title: "Update your status",
     description:
       "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.",
+    emoji: "📣",
+    title: "Update your status",
   },
   {
-    emoji: "📅",
-    title: "Countdown to due date",
     description:
       'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.',
+    emoji: "📅",
+    title: "Countdown to due date",
   },
   {
-    emoji: "🎨",
-    title: "Make it yours",
     description:
       "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.",
+    emoji: "🎨",
+    title: "Make it yours",
   },
   {
-    emoji: "🔗",
-    title: "No account needed",
     description:
       "Anyone with the link can check in anytime. Grandma doesn't need to download an app or create an account.",
+    emoji: "🔗",
+    title: "No account needed",
   },
   {
-    emoji: "💌",
-    title: "Send encouragement",
     description:
       "Visitors can leave messages of love and support. Like a digital guestbook filled with well-wishes you'll treasure.",
+    emoji: "💌",
+    title: "Send encouragement",
   },
   {
-    emoji: "🔔",
-    title: "Get notified",
     description:
       "Family can subscribe to push notifications and be the first to know the moment baby arrives.",
+    emoji: "🔔",
+    title: "Get notified",
   },
 ] as const satisfies ReadonlyArray<{
+  description: TranslationKey;
   emoji: string;
   title: TranslationKey;
-  description: TranslationKey;
 }>;
 
 const HOW_IT_WORKS = [
   {
+    description: "Sign up and add your baby's name and due date. That's it.",
     step: "1",
     title: "Create your page",
-    description: "Sign up and add your baby's name and due date. That's it.",
   },
   {
-    step: "2",
-    title: "Share the link",
     description:
       "Send it to family and friends. They can check in anytime and subscribe for notifications.",
+    step: "2",
+    title: "Share the link",
   },
   {
-    step: "3",
-    title: "Update as you go",
     description:
       "When things start happening, update your status. Everyone gets notified automatically.",
+    step: "3",
+    title: "Update as you go",
   },
 ] as const satisfies ReadonlyArray<{
+  description: TranslationKey;
   step: string;
   title: TranslationKey;
-  description: TranslationKey;
 }>;
 
 export function HomePage() {
-  const { t, locale } = useI18n();
+  const { locale, t } = useI18n();
   const demoBaby = homepageDemoBabyFor(locale);
   const headline = HERO_HEADLINES[locale];
   const sessionData = authClient.useSession();
@@ -249,45 +249,45 @@ export function HomePage() {
 
   const previewStages = [
     {
-      emoji: "👶",
-      title: "Waiting",
       description: "Before labour starts",
+      emoji: "👶",
       rotate: "group-hover:-rotate-1",
       search: { name: "Emma" },
+      title: "Waiting",
     },
     {
-      emoji: "💫",
-      title: "Labour started",
       description: "Things are happening!",
+      emoji: "💫",
       rotate: "group-hover:rotate-1",
-      search: { name: "Oliver", dueDate: hoursAgo(0), laborStarted: hoursAgo(2) },
+      search: { dueDate: hoursAgo(0), laborStarted: hoursAgo(2), name: "Oliver" },
+      title: "Labour started",
     },
     {
-      emoji: "🏥",
-      title: "Gone to hospital",
       description: "Almost there!",
+      emoji: "🏥",
       rotate: "group-hover:-rotate-1",
       search: {
-        name: "Sophia",
-        laborStarted: hoursAgo(4),
-        wentToHospital: hoursAgo(1),
         hospitalMessage: "We've made it in! More news when we have it 💕",
+        laborStarted: hoursAgo(4),
+        name: "Sophia",
         theme: "bubblegum",
+        wentToHospital: hoursAgo(1),
       },
+      title: "Gone to hospital",
     },
     {
-      emoji: "🎉",
-      title: "Baby born!",
       description: "Celebrate the arrival",
+      emoji: "🎉",
       rotate: "group-hover:rotate-1",
       search: {
-        name: "Liam",
-        laborStarted: hoursAgo(6),
-        wentToHospital: hoursAgo(3),
         babyBorn: hoursAgo(0.5),
         babyBornMessage: "Welcome to the world, little one! 🎉",
+        laborStarted: hoursAgo(6),
+        name: "Liam",
         theme: "sunny-days",
+        wentToHospital: hoursAgo(3),
       },
+      title: "Baby born!",
     },
   ] as const;
 
@@ -305,29 +305,29 @@ export function HomePage() {
           <div className="flex items-center gap-2">
             {sessionData.data ? (
               <Button
-                size="sm"
                 className="rounded-full font-bold"
-                render={<Link to="/dashboard" />}
                 nativeButton={false}
+                render={<Link to="/dashboard" />}
+                size="sm"
               >
                 {t("Dashboard")}
               </Button>
             ) : (
               <>
                 <Button
+                  className="rounded-full font-bold border-2"
+                  nativeButton={false}
+                  render={<Link to="/auth/login" />}
                   size="sm"
                   variant="outline"
-                  className="rounded-full font-bold border-2"
-                  render={<Link to="/auth/login" />}
-                  nativeButton={false}
                 >
                   {t("Sign in")}
                 </Button>
                 <Button
-                  size="sm"
                   className="rounded-full font-bold"
-                  render={<Link to="/auth/signup" />}
                   nativeButton={false}
+                  render={<Link to="/auth/signup" />}
+                  size="sm"
                 >
                   {t("Get started")}
                 </Button>
@@ -360,29 +360,29 @@ export function HomePage() {
             <div className="flex flex-wrap justify-center gap-3">
               {sessionData.data ? (
                 <Button
-                  size="lg"
                   className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                  render={<Link to="/dashboard" />}
                   nativeButton={false}
+                  render={<Link to="/dashboard" />}
+                  size="lg"
                 >
                   {t("Go to Dashboard")}
                 </Button>
               ) : (
                 <>
                   <Button
-                    size="lg"
                     className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                    render={<Link to="/auth/signup" />}
                     nativeButton={false}
+                    render={<Link to="/auth/signup" />}
+                    size="lg"
                   >
                     {t("Create your page 🎈")}
                   </Button>
                   <Button
+                    className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
+                    nativeButton={false}
+                    render={<Link to="/auth/login" />}
                     size="lg"
                     variant="outline"
-                    className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
-                    render={<Link to="/auth/login" />}
-                    nativeButton={false}
                   >
                     {t("Sign in")}
                   </Button>
@@ -390,11 +390,11 @@ export function HomePage() {
               )}
             </div>
             <Button
+              className="h-auto rounded-full border-2 border-primary/30 bg-primary/10 px-6 py-3 text-sm font-extrabold text-primary pop-shadow hover:bg-primary/20 hover:text-primary"
+              nativeButton={false}
+              render={<Link params={{ publicId: demoBaby.publicId }} to="/baby/$publicId" />}
               size="lg"
               variant="secondary"
-              className="h-auto rounded-full border-2 border-primary/30 bg-primary/10 px-6 py-3 text-sm font-extrabold text-primary pop-shadow hover:bg-primary/20 hover:text-primary"
-              render={<Link to="/baby/$publicId" params={{ publicId: demoBaby.publicId }} />}
-              nativeButton={false}
             >
               {t("See a live page")} 👀
             </Button>
@@ -414,12 +414,12 @@ export function HomePage() {
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((feature, index) => (
               <div
-                key={feature.title}
                 className={`rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform hover:-translate-y-1 ${
                   index % 2 === 0 ? "hover:-rotate-1" : "hover:rotate-1"
                 }`}
+                key={feature.title}
               >
-                <span className="text-3xl" aria-hidden="true">
+                <span aria-hidden="true" className="text-3xl">
                   {feature.emoji}
                 </span>
                 <h3 className="mt-3 text-lg font-extrabold text-foreground">{t(feature.title)}</h3>
@@ -444,12 +444,12 @@ export function HomePage() {
             </p>
           </div>
           <Link
-            to="/baby/$publicId"
-            params={{ publicId: demoBaby.publicId }}
             className="group mt-10 block"
+            params={{ publicId: demoBaby.publicId }}
+            to="/baby/$publicId"
           >
             <div className="rounded-[2rem] border-2 border-primary/30 bg-primary/10 p-8 text-center pop-shadow-strong transition-transform group-hover:-translate-y-1 md:p-10">
-              <span className="text-5xl" aria-hidden="true">
+              <span aria-hidden="true" className="text-5xl">
                 🍼
               </span>
               <h3 className="mt-4 text-2xl font-black text-foreground">
@@ -470,11 +470,11 @@ export function HomePage() {
           </p>
           <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {previewStages.map((stage) => (
-              <Link key={stage.title} to="/preview" search={stage.search} className="group">
+              <Link className="group" key={stage.title} search={stage.search} to="/preview">
                 <div
                   className={`h-full rounded-3xl border-2 border-border bg-card p-6 text-center pop-shadow transition-transform group-hover:-translate-y-1 ${stage.rotate}`}
                 >
-                  <span className="text-4xl" aria-hidden="true">
+                  <span aria-hidden="true" className="text-4xl">
                     {stage.emoji}
                   </span>
                   <h3 className="mt-3 font-extrabold text-foreground">{t(stage.title)}</h3>
@@ -499,7 +499,7 @@ export function HomePage() {
           </div>
           <div className="mt-10 grid gap-8 md:grid-cols-3">
             {HOW_IT_WORKS.map((item) => (
-              <div key={item.step} className="flex flex-col items-center text-center">
+              <div className="flex flex-col items-center text-center" key={item.step}>
                 <div className="flex h-14 w-14 -rotate-3 items-center justify-center rounded-2xl border-2 border-primary/30 bg-primary/15 text-2xl font-black text-primary pop-shadow">
                   {item.step}
                 </div>
@@ -515,7 +515,7 @@ export function HomePage() {
         {/* CTA */}
         <section className="py-16 text-center">
           <div className="mx-auto max-w-2xl rounded-[2rem] border-2 border-primary/25 bg-primary/10 px-8 py-12 pop-shadow-strong">
-            <p className="text-4xl" aria-hidden="true">
+            <p aria-hidden="true" className="text-4xl">
               💖
             </p>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground md:text-4xl">
@@ -531,19 +531,19 @@ export function HomePage() {
             <div className="mt-7">
               {sessionData.data ? (
                 <Button
-                  size="lg"
                   className="rounded-full font-extrabold"
-                  render={<Link to="/dashboard" />}
                   nativeButton={false}
+                  render={<Link to="/dashboard" />}
+                  size="lg"
                 >
                   {t("Go to Dashboard")}
                 </Button>
               ) : (
                 <Button
-                  size="lg"
                   className="rounded-full font-extrabold"
-                  render={<Link to="/auth/signup" />}
                   nativeButton={false}
+                  render={<Link to="/auth/signup" />}
+                  size="lg"
                 >
                   {t("Get Started Free 🎉")}
                 </Button>
@@ -557,7 +557,6 @@ export function HomePage() {
       <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8 text-center">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-4">
           <LanguagePicker
-            value={locale}
             disabled={false}
             label={t("Language")}
             onValueChange={async (value) => {
@@ -565,12 +564,13 @@ export function HomePage() {
               // reloads so SSR and the hydrated page use the same locale.
               await setLocale(value);
             }}
+            value={locale}
           />
           <a
-            href="https://github.com/KATT/isbabyoutyet"
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
+            href="https://github.com/KATT/isbabyoutyet"
+            rel="noopener noreferrer"
+            target="_blank"
           >
             <GithubIcon className="h-5 w-5" />
             <span>{t("Open source on GitHub")}</span>

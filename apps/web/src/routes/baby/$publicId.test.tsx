@@ -29,20 +29,20 @@ const { docToBabyData, managerDocToBabyData } = routeModule;
 test("parent route caches public overlays and keeps manager overlays private", () => {
   // @ts-expect-error — stub opts are the fields headers reads
   const headers: (opts: {
-    params: { publicId: string };
     matches: Array<{ routeId: string }>;
+    params: { publicId: string };
   }) => Record<string, string> = routeModule.Route.options.headers;
   const publicHeaders = headers({
-    params: { publicId: "juniper-hale" },
     matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/share" }],
+    params: { publicId: "juniper-hale" },
   });
   const privateHeaders = headers({
-    params: { publicId: "juniper-hale" },
     matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/settings" }],
+    params: { publicId: "juniper-hale" },
   });
   const loginHeaders = headers({
-    params: { publicId: "juniper-hale" },
     matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/login" }],
+    params: { publicId: "juniper-hale" },
   });
 
   expect(publicHeaders["Cache-Control"]).toContain("public");
@@ -74,13 +74,13 @@ function BabyDetailPage(props: { baby: PublicBaby }) {
     <div>
       <h1>Is {baby.name} out yet?</h1>
       <StatusDisplay
-        publicId={null}
         baby={baby}
-        currentStatus={currentStatus}
-        photoUrl={null}
-        thumbnailUrl={null}
         blurDataUrl={null}
+        currentStatus={currentStatus}
         latestUpdate={null}
+        photoUrl={null}
+        publicId={null}
+        thumbnailUrl={null}
       />
     </div>
   );
@@ -97,16 +97,16 @@ test("renders a baby detail page from local convex-test data", async () => {
   const created = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Baby Smith",
       dueDate: "2026-09-01",
+      name: "Baby Smith",
     }),
   );
 
   const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(baby).toMatchObject({
+    dueDate: "2026-09-01",
     name: "Baby Smith",
     publicId: "baby-smith",
-    dueDate: "2026-09-01",
   });
   if (!baby) {
     throw new Error("expected baby from getByPublicId");
@@ -124,36 +124,36 @@ test("renders a baby detail page from local convex-test data", async () => {
   expect(
     docToBabyData({
       ...baby,
-      theme: "baby-blue",
-      locale: "sv",
-      laborStarted: "2026-08-10T08:00:00.000Z",
-      wentToHospital: "2026-08-10T12:00:00.000Z",
       babyBorn: "2026-08-11T03:00:00.000Z",
+      laborStarted: "2026-08-10T08:00:00.000Z",
+      locale: "sv",
+      theme: "baby-blue",
+      wentToHospital: "2026-08-10T12:00:00.000Z",
       // SAFETY: Seeded convex-test document id.
       photoId: "photo-id" as Id<"_storage">,
     }),
   ).toMatchObject({
-    theme: "baby-blue",
-    locale: "sv",
-    laborStarted: "2026-08-10T08:00:00.000Z",
-    wentToHospital: "2026-08-10T12:00:00.000Z",
     babyBorn: "2026-08-11T03:00:00.000Z",
+    laborStarted: "2026-08-10T08:00:00.000Z",
+    locale: "sv",
     photoId: "photo-id",
+    theme: "baby-blue",
+    wentToHospital: "2026-08-10T12:00:00.000Z",
   });
   expect(
     managerDocToBabyData({
       ...managerDoc,
-      theme: "baby-blue",
       locale: "sv",
       publicDueDateText: "Retained message",
+      theme: "baby-blue",
       // SAFETY: Seeded convex-test document id.
       photoId: "photo-id" as Id<"_storage">,
     }),
   ).toMatchObject({
-    theme: "baby-blue",
     locale: "sv",
-    publicDueDateText: "Retained message",
     photoId: "photo-id",
+    publicDueDateText: "Retained message",
+    theme: "baby-blue",
   });
 
   await using view = renderResource(<BabyDetailPage baby={baby} />);
@@ -172,9 +172,9 @@ test("renders optional public due date text without exposing the exact day", asy
   const created = await t.withIdentity({ subject: "alice" }).mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Baby Smith",
       dueDate: null,
       dueDateDisplayMode: "message",
+      name: "Baby Smith",
       publicDueDateText: "Any day now",
     }),
   );
@@ -208,9 +208,9 @@ test("hides the due date box when message mode has no public text", async () => 
   const created = await t.withIdentity({ subject: "alice" }).mutation(
     api.baby.create,
     createBabyArgs({
-      name: "Baby Smith",
       dueDate: "2026-09-01",
       dueDateDisplayMode: "message",
+      name: "Baby Smith",
       publicDueDateText: null,
     }),
   );
@@ -233,26 +233,26 @@ test("hides the due date box when message mode has no public text", async () => 
 test("renders the public baby status in the baby's Swedish override", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby: BabyData = {
-    name: "Nova",
-    timeZone: "Europe/London",
+    babyBorn: null,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
-    publicDueDateText: null,
     laborStarted: null,
+    name: "Nova",
+    publicDueDateText: null,
+    timeZone: "Europe/London",
     wentToHospital: null,
-    babyBorn: null,
   };
 
   await using view = renderResource(
     <LocaleProvider locale="sv">
       <StatusDisplay
-        publicId={null}
         baby={baby}
-        currentStatus={getCurrentStatus(baby)}
-        photoUrl={null}
-        thumbnailUrl={null}
         blurDataUrl={null}
+        currentStatus={getCurrentStatus(baby)}
         latestUpdate={null}
+        photoUrl={null}
+        publicId={null}
+        thumbnailUrl={null}
       />
     </LocaleProvider>,
   );
@@ -265,26 +265,26 @@ test("renders the public baby status in the baby's Swedish override", async () =
 test("renders the public baby status in Brazilian Portuguese", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby: BabyData = {
-    name: "Nova",
-    timeZone: "Europe/London",
+    babyBorn: null,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
-    publicDueDateText: null,
     laborStarted: null,
+    name: "Nova",
+    publicDueDateText: null,
+    timeZone: "Europe/London",
     wentToHospital: null,
-    babyBorn: null,
   };
 
   await using view = renderResource(
     <LocaleProvider locale="pt-BR">
       <StatusDisplay
-        publicId={null}
         baby={baby}
-        currentStatus={getCurrentStatus(baby)}
-        photoUrl={null}
-        thumbnailUrl={null}
         blurDataUrl={null}
+        currentStatus={getCurrentStatus(baby)}
         latestUpdate={null}
+        photoUrl={null}
+        publicId={null}
+        thumbnailUrl={null}
       />
     </LocaleProvider>,
   );
@@ -297,28 +297,27 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
 // --- Route loader: awaited handles plus the owner/visitor branching ---
 
 const BABY_DOC = { _id: "baby-1", publicId: "baby-smith", resolvedLocale: "en-GB" };
-const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
+const EMPTY_PAGE = { continueCursor: "", isDone: true, page: [] };
 
 import type { JsonValue } from "@workspace/runtime/json";
 type QueryHandlers = Record<string, JsonValue>;
 type BabyLoaderResult = {
   baby: unknown;
-  vapidPublicKey: unknown;
-  myAccess: unknown;
+  browserPush: unknown;
   latestUpdate: unknown;
   managerBaby: unknown;
-  timeline: unknown;
+  myAccess: unknown;
+  onboarding: unknown;
   scheduledNotifications: unknown;
   subscriptionCount: unknown;
-  onboarding: unknown;
-  browserPush: unknown;
+  timeline: unknown;
+  vapidPublicKey: unknown;
 };
 
 function makeLoaderQueryClient(handlers: QueryHandlers) {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        retry: false,
         queryFn: (ctx) => {
           const name = String(ctx.queryKey[1]);
           if (name in handlers) {
@@ -326,21 +325,22 @@ function makeLoaderQueryClient(handlers: QueryHandlers) {
           }
           return Promise.resolve(null);
         },
+        retry: false,
       },
     },
   });
 }
 
 type LoaderOptions = {
-  token: string | null | undefined;
-  isAuthenticated: boolean | undefined;
-  locale: string | undefined;
   convexClient:
     | {
-        setAuth: ReturnType<typeof vi.fn>;
         mutation: ReturnType<typeof vi.fn>;
+        setAuth: ReturnType<typeof vi.fn>;
       }
     | undefined;
+  isAuthenticated: boolean | undefined;
+  locale: string | undefined;
+  token: string | null | undefined;
 };
 
 async function setupBabyLoader(
@@ -361,28 +361,28 @@ async function setupBabyLoader(
   // @ts-expect-error — stub context is the subset the loader reads
   const loader: (opts: {
     context: {
-      queryClient: QueryClient;
+      convexClient: { mutation: typeof mutation; setAuth: typeof setAuth };
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-      convexClient: { setAuth: typeof setAuth; mutation: typeof mutation };
-      token: string | null;
       isAuthenticated: boolean;
       locale: string;
+      queryClient: QueryClient;
+      token: string | null;
     };
     params: { publicId: string };
   }) => Promise<BabyLoaderResult> = routeModule.Route.options.loader;
   const queryClient = makeLoaderQueryClient(handlers);
   const result = await loader({
     context: {
-      queryClient,
+      convexClient: { mutation, setAuth },
       convexPreloader: getConvexQueryPreloader(queryClient),
-      convexClient: { setAuth, mutation },
-      token: options?.token ?? null,
       isAuthenticated: options?.isAuthenticated ?? false,
       locale: options?.locale ?? "en-GB",
+      queryClient,
+      token: options?.token ?? null,
     },
     params: { publicId: "baby-smith" },
   });
-  return { result, queryClient };
+  return { queryClient, result };
 }
 
 async function runBabyLoader(
@@ -396,11 +396,11 @@ async function runBabyLoader(
 test("loader queries the same set for visitors; gated queries come back forbidden", async () => {
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
-    "coParents:myAccess": { canManage: false, isOwner: false },
     "baby:getManagerBaby": "forbidden",
-    "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": "forbidden",
+    "coParents:myAccess": { canManage: false, isOwner: false },
     "pushSubscriptions:getSubscriptionCount": "forbidden",
+    "timeline:listByBaby": EMPTY_PAGE,
   });
 
   expect(result.baby).toMatchObject({ initialData: BABY_DOC });
@@ -414,20 +414,20 @@ test("loader queries the same set for visitors; gated queries come back forbidde
 test("loader gives managers the same handles with real data", async () => {
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
-    "coParents:myAccess": { canManage: true, isOwner: true },
     "baby:getManagerBaby": { ...BABY_DOC, birthJourney: "labor" },
-    "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": [],
+    "coParents:myAccess": { canManage: true, isOwner: true },
     "pushSubscriptions:getSubscriptionCount": 2,
+    "timeline:listByBaby": EMPTY_PAGE,
   });
 
   expect(result.scheduledNotifications).toMatchObject({
-    input: { babyId: "baby-smith" },
     initialData: [],
+    input: { babyId: "baby-smith" },
   });
   expect(result.subscriptionCount).toMatchObject({
-    input: { babyId: "baby-smith" },
     initialData: 2,
+    input: { babyId: "baby-smith" },
   });
   expect(result.onboarding).toMatchObject({ input: {} });
   expect(result.managerBaby).toMatchObject({
@@ -439,23 +439,23 @@ test("beforeLoad 404s unknown babies", async () => {
   // @ts-expect-error — stub opts are the fields beforeLoad reads
   const beforeLoad: (opts: {
     context: {
-      queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+      queryClient: QueryClient;
     };
+    location: { search: Record<string, string | boolean> };
     params: { publicId: string };
     search: { settings: boolean | undefined };
-    location: { search: Record<string, string | boolean> };
   }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
 
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": null });
   const pending = beforeLoad({
     context: {
-      queryClient,
       convexPreloader: getConvexQueryPreloader(queryClient),
+      queryClient,
     },
+    location: { search: {} },
     params: { publicId: "baby-smith" },
     search: { settings: undefined },
-    location: { search: {} },
   });
 
   await expect(pending).rejects.toMatchObject({ isNotFound: true });
@@ -465,30 +465,30 @@ test("beforeLoad redirects legacy settings links", async () => {
   // @ts-expect-error — stub opts are the fields beforeLoad reads
   const beforeLoad: (opts: {
     context: {
-      queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+      queryClient: QueryClient;
     };
+    location: { search: Record<string, string | boolean> };
     params: { publicId: string };
     search: { settings: boolean | undefined };
-    location: { search: Record<string, string | boolean> };
   }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": BABY_DOC });
 
   await expect(
     beforeLoad({
       context: {
-        queryClient,
         convexPreloader: getConvexQueryPreloader(queryClient),
+        queryClient,
       },
+      location: { search: { settings: true } },
       params: { publicId: "baby-smith" },
       search: { settings: true },
-      location: { search: { settings: true } },
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/baby/$publicId/settings",
       params: { publicId: "baby-smith" },
       replace: true,
+      to: "/baby/$publicId/settings",
     },
   });
 });
@@ -500,17 +500,17 @@ test("loader does not mutate profiles for authenticated visitors", async () => {
   const result = await runBabyLoader(
     {
       "baby:getByPublicId": BABY_DOC,
-      "coParents:myAccess": { canManage: true, isOwner: true },
       "baby:getManagerBaby": BABY_DOC,
-      "timeline:listByBaby": EMPTY_PAGE,
       "baby:getScheduledNotifications": [],
+      "coParents:myAccess": { canManage: true, isOwner: true },
       "pushSubscriptions:getSubscriptionCount": 0,
+      "timeline:listByBaby": EMPTY_PAGE,
     },
     {
-      token: "layout-token",
+      convexClient: { mutation, setAuth: vi.fn() },
       isAuthenticated: true,
       locale: "en-GB",
-      convexClient: { setAuth: vi.fn(), mutation },
+      token: "layout-token",
     },
   );
 
@@ -519,7 +519,7 @@ test("loader does not mutate profiles for authenticated visitors", async () => {
 });
 
 test("loader prefetches browser push capability on the client", async () => {
-  const { result, queryClient } = await setupBabyLoader({
+  const { queryClient, result } = await setupBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "timeline:listByBaby": EMPTY_PAGE,
   });
@@ -535,24 +535,24 @@ test("loader prefetches browser push capability on the client", async () => {
 test("docToBabyData coalesces missing public due date text to null", () => {
   expect(
     docToBabyData({
+      _creationTime: 1,
       // SAFETY: Seeded convex-test document id.
       _id: "baby-1" as Id<"baby">,
-      _creationTime: 1,
-      name: "Nova",
-      dueDateDisplayMode: "message",
-      publicDueDateText: undefined,
-      theme: "baby-blue",
-      locale: "en-GB",
-      resolvedLocale: "en-GB",
-      timeZone: "Europe/London",
-      laborStarted: null,
-      wentToHospital: null,
       babyBorn: null,
-      milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
-      publicId: "nova",
-      photoUrl: null,
-      thumbnailUrl: null,
       blurDataUrl: null,
+      dueDateDisplayMode: "message",
+      laborStarted: null,
+      locale: "en-GB",
+      milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
+      name: "Nova",
+      photoUrl: null,
+      publicDueDateText: undefined,
+      publicId: "nova",
+      resolvedLocale: "en-GB",
+      theme: "baby-blue",
+      thumbnailUrl: null,
+      timeZone: "Europe/London",
+      wentToHospital: null,
     }),
   ).toMatchObject({
     dueDateDisplayMode: "message",
@@ -563,24 +563,24 @@ test("docToBabyData coalesces missing public due date text to null", () => {
 test("share preview uses the canonical route slug while reactive baby data changes", () => {
   const seo = getBabySeo(
     {
+      _creationTime: 1,
       // SAFETY: Seeded convex-test document id.
       _id: "baby-1" as Id<"baby">,
-      _creationTime: 1,
-      name: "Juniper Hale",
-      dueDateDisplayMode: "message",
-      publicDueDateText: undefined,
-      theme: "baby-blue",
-      locale: "en-GB",
-      resolvedLocale: "en-GB",
-      timeZone: "Europe/London",
-      laborStarted: null,
-      wentToHospital: null,
       babyBorn: null,
-      milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
-      publicId: "juniper-hale-1",
-      photoUrl: null,
-      thumbnailUrl: null,
       blurDataUrl: null,
+      dueDateDisplayMode: "message",
+      laborStarted: null,
+      locale: "en-GB",
+      milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
+      name: "Juniper Hale",
+      photoUrl: null,
+      publicDueDateText: undefined,
+      publicId: "juniper-hale-1",
+      resolvedLocale: "en-GB",
+      theme: "baby-blue",
+      thumbnailUrl: null,
+      timeZone: "Europe/London",
+      wentToHospital: null,
     },
     "juniper-hale",
   );
@@ -591,15 +591,15 @@ test("share preview uses the canonical route slug while reactive baby data chang
 
 test("logged-out visitors see a sign-in icon in the top dock", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   harness.withIdentity(null);
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: routeModule.Route,
-    path: "/baby/$publicId",
     initialEntry: `/baby/${baby.publicId}`,
     overlayHistory: null,
+    path: "/baby/$publicId",
+    route: routeModule.Route,
     wrap: null,
   });
 
@@ -615,14 +615,14 @@ test("logged-out visitors see a sign-in icon in the top dock", async () => {
 
 test("owners see a dashboard icon instead of sign-in", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: routeModule.Route,
-    path: "/baby/$publicId",
     initialEntry: `/baby/${baby.publicId}`,
     overlayHistory: null,
+    path: "/baby/$publicId",
+    route: routeModule.Route,
     wrap: null,
   });
 
@@ -638,14 +638,14 @@ test("owners see a dashboard icon instead of sign-in", async () => {
 
 test("notification #feed landmark is the messages list, not the compose box", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
 
   await using ctx = await renderMountedFileRoute({
     harness,
-    route: routeModule.Route,
-    path: "/baby/$publicId",
     initialEntry: `/baby/${baby.publicId}`,
     overlayHistory: null,
+    path: "/baby/$publicId",
+    route: routeModule.Route,
     wrap: null,
   });
 

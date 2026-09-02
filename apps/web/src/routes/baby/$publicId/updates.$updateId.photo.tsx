@@ -18,9 +18,9 @@ export const Route = createFileRoute("/baby/$publicId/updates/$updateId/photo")(
     }
     if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
-        to: "/baby/$publicId/updates/$updateId/photo",
         params: { publicId: babyDoc.publicId, updateId: opts.params.updateId },
         replace: true,
+        to: "/baby/$publicId/updates/$updateId/photo",
       });
     }
   },
@@ -34,9 +34,9 @@ export const Route = createFileRoute("/baby/$publicId/updates/$updateId/photo")(
     );
     if (!updatePhoto.initialData) {
       throw redirect({
-        to: "/baby/$publicId",
         params: { publicId: opts.params.publicId },
         resetScroll: false,
+        to: "/baby/$publicId",
       });
     }
     const imagePrefetch = prefetchBrowserImage(
@@ -45,8 +45,8 @@ export const Route = createFileRoute("/baby/$publicId/updates/$updateId/photo")(
     );
     // oxlint-disable-next-line workspace/use-loader-preloads -- Snapshot must stay stable while the lightbox is open.
     return {
-      updatePhoto,
       imagePrefetch,
+      updatePhoto,
     };
   },
   component: BabyUpdatePhotoOverlay,
@@ -68,10 +68,10 @@ export function BabyUpdatePhotoOverlay() {
 
   return (
     <PhotoLightbox
-      photoUrl={updatePhoto.photoUrl}
-      blurDataUrl={updatePhoto.blurDataUrl}
       alt={t("Photo of {{name}}", { name: updatePhoto.babyName })}
+      blurDataUrl={updatePhoto.blurDataUrl}
       overlay={photo}
+      photoUrl={updatePhoto.photoUrl}
     />
   );
 }

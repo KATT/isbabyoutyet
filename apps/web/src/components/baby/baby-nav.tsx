@@ -19,30 +19,30 @@ function PostUpdateLabel(props: { label: string }) {
 }
 
 type BabyNavProps = {
-  /** Open-share link (push). Null when sharing is unavailable. */
-  shareButton: LinkProps | null;
-  shareOpen: boolean;
-  /** When share is open, dismiss via history.back / replace fallback. */
-  onDismissShare: (() => void) | null;
-  /** Open-settings link (push). Null when the visitor cannot manage. */
-  settingsButton: LinkProps | null;
-  settingsOpen: boolean;
+  /** Dashboard link for signed-in visitors. Null when logged out. */
+  dashboardButton: LinkProps | null;
+  /** When post-update is open, dismiss via history.back / replace fallback. */
+  onDismissPostUpdate: (() => void) | null;
   /** When settings is open, dismiss via history.back / replace fallback. */
   onDismissSettings: (() => void) | null;
+  /** When share is open, dismiss via history.back / replace fallback. */
+  onDismissShare: (() => void) | null;
+  /** When login is open, dismiss via history.back / replace fallback. */
+  onDismissSignIn: (() => void) | null;
+  /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
+  onSettingsOpened: (() => void) | null;
   /** Open post-update link (push). Null when the visitor cannot manage. */
   postUpdateButton: LinkProps | null;
   postUpdateOpen: boolean;
-  /** When post-update is open, dismiss via history.back / replace fallback. */
-  onDismissPostUpdate: (() => void) | null;
-  /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
-  onSettingsOpened: (() => void) | null;
+  /** Open-settings link (push). Null when the visitor cannot manage. */
+  settingsButton: LinkProps | null;
+  settingsOpen: boolean;
+  /** Open-share link (push). Null when sharing is unavailable. */
+  shareButton: LinkProps | null;
+  shareOpen: boolean;
   /** Open parent login overlay. Null when the visitor is signed in. */
   signInButton: LinkProps | null;
   signInOpen: boolean;
-  /** When login is open, dismiss via history.back / replace fallback. */
-  onDismissSignIn: (() => void) | null;
-  /** Dashboard link for signed-in visitors. Null when logged out. */
-  dashboardButton: LinkProps | null;
 };
 
 export function BabyNav(props: BabyNavProps) {
@@ -50,27 +50,27 @@ export function BabyNav(props: BabyNavProps) {
   const hasOwnerActions = !!(props.postUpdateButton || props.settingsButton);
 
   const ownerActions = hasOwnerActions ? (
-    <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
+    <div aria-label={t("Owner actions")} className="flex items-center gap-1" role="group">
       {props.postUpdateButton && (
         <Tooltip>
           <TooltipTrigger
             render={
               props.postUpdateOpen && props.onDismissPostUpdate ? (
                 <Button
-                  variant="default"
                   className={postUpdateButtonClassName}
                   data-tour-id="post_update"
                   onClick={props.onDismissPostUpdate}
+                  variant="default"
                 >
                   <PostUpdateLabel label={t("Post update")} />
                 </Button>
               ) : (
                 <Button
-                  variant="ghost"
                   className={postUpdateButtonClassName}
-                  render={<Link {...props.postUpdateButton} />}
-                  nativeButton={false}
                   data-tour-id="post_update"
+                  nativeButton={false}
+                  render={<Link {...props.postUpdateButton} />}
+                  variant="ghost"
                 >
                   <PostUpdateLabel label={t("Post update")} />
                 </Button>
@@ -86,27 +86,27 @@ export function BabyNav(props: BabyNavProps) {
             render={
               props.settingsOpen && props.onDismissSettings ? (
                 <Button
-                  variant="default"
-                  size="icon"
-                  className="rounded-full"
                   aria-label={t("Close settings")}
+                  className="rounded-full"
                   data-tour-id="explore_settings"
                   onClick={props.onDismissSettings}
+                  size="icon"
+                  variant="default"
                 >
                   <GearSix />
                 </Button>
               ) : (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full"
-                  render={<Link {...props.settingsButton} />}
-                  nativeButton={false}
                   aria-label={t("Settings")}
+                  className="rounded-full"
                   data-tour-id="explore_settings"
+                  nativeButton={false}
                   onClick={() => {
                     props.onSettingsOpened?.();
                   }}
+                  render={<Link {...props.settingsButton} />}
+                  size="icon"
+                  variant="ghost"
                 >
                   <GearSix />
                 </Button>
@@ -127,22 +127,22 @@ export function BabyNav(props: BabyNavProps) {
         render={
           props.signInOpen && props.onDismissSignIn ? (
             <Button
-              variant="default"
-              size="icon"
-              className="rounded-full"
               aria-label={t("Sign in")}
+              className="rounded-full"
               onClick={props.onDismissSignIn}
+              size="icon"
+              variant="default"
             >
               <SignIn />
             </Button>
           ) : (
             <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              render={<Link {...props.signInButton} />}
-              nativeButton={false}
               aria-label={t("Sign in")}
+              className="rounded-full"
+              nativeButton={false}
+              render={<Link {...props.signInButton} />}
+              size="icon"
+              variant="ghost"
             >
               <SignIn />
             </Button>
@@ -156,12 +156,12 @@ export function BabyNav(props: BabyNavProps) {
       <TooltipTrigger
         render={
           <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            render={<Link {...props.dashboardButton} />}
-            nativeButton={false}
             aria-label={t("Dashboard")}
+            className="rounded-full"
+            nativeButton={false}
+            render={<Link {...props.dashboardButton} />}
+            size="icon"
+            variant="ghost"
           >
             <House />
           </Button>
@@ -172,31 +172,31 @@ export function BabyNav(props: BabyNavProps) {
   ) : null;
 
   const pageActions = (
-    <div role="group" aria-label={t("Page actions")} className="flex items-center gap-1">
+    <div aria-label={t("Page actions")} className="flex items-center gap-1" role="group">
       <Tooltip>
         <TooltipTrigger
           render={
             props.shareOpen && props.onDismissShare ? (
               <Button
-                variant="default"
-                size="icon"
-                className="rounded-full"
                 aria-label={t("Close share preview")}
+                className="rounded-full"
                 data-tour-id="share_link"
                 onClick={props.onDismissShare}
+                size="icon"
+                variant="default"
               >
                 <ShareNetwork />
               </Button>
             ) : (
               <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                render={props.shareButton ? <Link {...props.shareButton} /> : undefined}
-                nativeButton={!props.shareButton}
-                disabled={!props.shareButton}
                 aria-label={t("Share the link")}
+                className="rounded-full"
                 data-tour-id="share_link"
+                disabled={!props.shareButton}
+                nativeButton={!props.shareButton}
+                render={props.shareButton ? <Link {...props.shareButton} /> : undefined}
+                size="icon"
+                variant="ghost"
               >
                 <ShareNetwork />
               </Button>
@@ -217,7 +217,7 @@ export function BabyNav(props: BabyNavProps) {
   return (
     <div className="flex shrink-0 items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
       {ownerActions}
-      {ownerActions && <span className="h-5 w-px bg-border" aria-hidden="true" />}
+      {ownerActions && <span aria-hidden="true" className="h-5 w-px bg-border" />}
       {pageActions}
     </div>
   );

@@ -14,15 +14,15 @@ function useFakeTimersResource(now: Date) {
 }
 
 const baby: BabyData = {
-  name: "Nova",
-  timeZone: "Europe/London",
+  babyBorn: null,
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
-  publicDueDateText: null,
-  milestoneVisibility: { showLabor: true, showHospital: true },
   laborStarted: null,
+  milestoneVisibility: { showHospital: true, showLabor: true },
+  name: "Nova",
+  publicDueDateText: null,
+  timeZone: "Europe/London",
   wentToHospital: null,
-  babyBorn: null,
 };
 
 test.each([
@@ -46,13 +46,13 @@ test.each([
   const currentBaby = { ...baby, ...testCase.dates };
   await using view = await renderWithTestRouter(
     <StatusDisplay
-      publicId={null}
       baby={currentBaby}
-      currentStatus={getCurrentStatus(currentBaby)}
-      photoUrl={null}
-      thumbnailUrl={null}
       blurDataUrl={null}
+      currentStatus={getCurrentStatus(currentBaby)}
       latestUpdate={null}
+      photoUrl={null}
+      publicId={null}
+      thumbnailUrl={null}
     />,
   );
 
@@ -63,18 +63,18 @@ test.each([
 test("home-birth labour copy does not mention hospital", async () => {
   const homeBirthBaby: BabyData = {
     ...baby,
-    milestoneVisibility: { showLabor: true, showHospital: false },
     laborStarted: "2026-08-18T07:00:00.000Z",
+    milestoneVisibility: { showHospital: false, showLabor: true },
   };
   await using view = await renderWithTestRouter(
     <StatusDisplay
-      publicId={null}
       baby={homeBirthBaby}
-      currentStatus={getCurrentStatus(homeBirthBaby)}
-      photoUrl={null}
-      thumbnailUrl={null}
       blurDataUrl={null}
+      currentStatus={getCurrentStatus(homeBirthBaby)}
       latestUpdate={null}
+      photoUrl={null}
+      publicId={null}
+      thumbnailUrl={null}
     />,
   );
 
@@ -85,13 +85,13 @@ test("home-birth labour copy does not mention hospital", async () => {
 test("shows the latest family message when present", async () => {
   await using view = await renderWithTestRouter(
     <StatusDisplay
-      publicId={null}
       baby={baby}
-      currentStatus={getCurrentStatus(baby)}
-      photoUrl={null}
-      thumbnailUrl={null}
       blurDataUrl={null}
+      currentStatus={getCurrentStatus(baby)}
       latestUpdate={{ message: "Everything is calm", postedAt: Date.now() }}
+      photoUrl={null}
+      publicId={null}
+      thumbnailUrl={null}
     />,
   );
 
@@ -106,13 +106,13 @@ test.each([
   const currentBaby = { ...baby, dueDate: testCase.dueDate };
   await using view = await renderWithTestRouter(
     <StatusDisplay
-      publicId={null}
       baby={currentBaby}
-      currentStatus={getCurrentStatus(currentBaby)}
-      photoUrl={null}
-      thumbnailUrl={null}
       blurDataUrl={null}
+      currentStatus={getCurrentStatus(currentBaby)}
       latestUpdate={null}
+      photoUrl={null}
+      publicId={null}
+      thumbnailUrl={null}
     />,
   );
 
@@ -123,18 +123,18 @@ test("custom public due date text replaces the exact date and countdown", async 
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   await using view = await renderWithTestRouter(
     <StatusDisplay
-      publicId={null}
       baby={{
         ...baby,
         dueDate: null,
         dueDateDisplayMode: "message",
         publicDueDateText: "Any day now",
       }}
-      currentStatus={getCurrentStatus(baby)}
-      photoUrl={null}
-      thumbnailUrl={null}
       blurDataUrl={null}
+      currentStatus={getCurrentStatus(baby)}
       latestUpdate={null}
+      photoUrl={null}
+      publicId={null}
+      thumbnailUrl={null}
     />,
   );
 
@@ -147,18 +147,18 @@ test("hides the due date box when message mode has no public text", async () => 
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   await using view = await renderWithTestRouter(
     <StatusDisplay
-      publicId={null}
       baby={{
         ...baby,
         dueDate: null,
         dueDateDisplayMode: "message",
         publicDueDateText: null,
       }}
-      currentStatus={getCurrentStatus(baby)}
-      photoUrl={null}
-      thumbnailUrl={null}
       blurDataUrl={null}
+      currentStatus={getCurrentStatus(baby)}
       latestUpdate={null}
+      photoUrl={null}
+      publicId={null}
+      thumbnailUrl={null}
     />,
   );
 
@@ -171,13 +171,13 @@ test("blank public due date text keeps the exact date and countdown", async () =
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   await using view = await renderWithTestRouter(
     <StatusDisplay
-      publicId={null}
       baby={{ ...baby, publicDueDateText: "   " }}
-      currentStatus={getCurrentStatus(baby)}
-      photoUrl={null}
-      thumbnailUrl={null}
       blurDataUrl={null}
+      currentStatus={getCurrentStatus(baby)}
       latestUpdate={null}
+      photoUrl={null}
+      publicId={null}
+      thumbnailUrl={null}
     />,
   );
 
@@ -188,13 +188,13 @@ test("blank public due date text keeps the exact date and countdown", async () =
 test("uses the thumbnail inline and links to the photo overlay", async () => {
   await using view = await renderWithTestRouter(
     <StatusDisplay
-      publicId="baby-nova"
       baby={baby}
-      currentStatus={getCurrentStatus(baby)}
-      photoUrl="https://example.com/full.jpg"
-      thumbnailUrl="https://example.com/thumb.jpg"
       blurDataUrl="data:image/jpeg;base64,abc"
+      currentStatus={getCurrentStatus(baby)}
       latestUpdate={null}
+      photoUrl="https://example.com/full.jpg"
+      publicId="baby-nova"
+      thumbnailUrl="https://example.com/thumb.jpg"
     />,
   );
 

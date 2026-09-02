@@ -28,7 +28,9 @@ test("prefetches the image into the query cache in the browser", async () => {
   class MockImage {
     #load: (() => void) | null = null;
     addEventListener(type: string, listener: () => void) {
-      if (type === "load") this.#load = listener;
+      if (type === "load") {
+        this.#load = listener;
+      }
     }
     set src(_value: string) {
       queueMicrotask(() => {
@@ -46,8 +48,8 @@ test("prefetches the image into the query cache in the browser", async () => {
   expect(handle).toMatchObject({ input: url });
   await vi.waitFor(() => {
     expect(queryClient.getQueryData(browserImageFactory(url).queryKey)).toEqual({
-      url,
       ok: true,
+      url,
     });
   });
 });
@@ -82,7 +84,9 @@ test("soft-fails when the image fails to load", async () => {
   class MockImage {
     #error: (() => void) | null = null;
     addEventListener(type: string, listener: () => void) {
-      if (type === "error") this.#error = listener;
+      if (type === "error") {
+        this.#error = listener;
+      }
     }
     set src(_value: string) {
       queueMicrotask(() => {
@@ -99,8 +103,8 @@ test("soft-fails when the image fails to load", async () => {
 
   await vi.waitFor(() => {
     expect(queryClient.getQueryData(browserImageFactory(url).queryKey)).toEqual({
-      url,
       ok: false,
+      url,
     });
   });
 });

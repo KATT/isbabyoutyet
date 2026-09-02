@@ -1,5 +1,5 @@
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import * as z from "zod";
+import { z } from "zod";
 
 export const ENCOURAGEMENT_MESSAGE_DRAFT_DEBOUNCE_MS = 500;
 const ENCOURAGEMENT_MESSAGE_DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -51,12 +51,12 @@ export function readEncouragementFormDraft(babyId: Id<"baby">): EncouragementFor
 } {
   const raw = readRawDraft(babyId);
   if (!raw) {
-    return { authorName: "", message: "", hasDraft: false };
+    return { authorName: "", hasDraft: false, message: "" };
   }
   return {
     authorName: raw.record.authorName ?? "",
-    message: raw.record.message,
     hasDraft: true,
+    message: raw.record.message,
   };
 }
 

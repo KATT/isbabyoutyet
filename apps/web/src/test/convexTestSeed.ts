@@ -8,16 +8,16 @@ import type { ConvexTestHarness } from "@/test/convexTestHarness";
 export async function seedOwnedBaby(
   harness: ConvexTestHarness,
   opts: {
-    name: string;
     dueDate: string | null;
+    name: string;
   },
 ) {
   const created = await harness.client.mutation(api.baby.create, {
-    name: opts.name,
+    birthJourney: "labor",
     dueDate: opts.dueDate,
     dueDateDisplayMode: opts.dueDate ? "exact" : "message",
+    name: opts.name,
     publicDueDateText: null,
-    birthJourney: "labor",
     theme: null,
   });
   return {
@@ -32,8 +32,8 @@ export async function signUpTestUser(
   harness: ConvexTestHarness,
   opts: {
     email: string;
-    password: string;
     name: string;
+    password: string;
   },
 ) {
   return await harness.t.run(async (ctx) => {
@@ -41,8 +41,8 @@ export async function signUpTestUser(
     const result = await auth.api.signUpEmail({
       body: {
         email: opts.email,
-        password: opts.password,
         name: opts.name,
+        password: opts.password,
       },
     });
     return result.user.id;
@@ -61,8 +61,8 @@ export async function storeTestBlob(harness: ConvexTestHarness) {
 export async function seedBabyWithPhoto(
   harness: ConvexTestHarness,
   opts: {
-    name: string;
     dueDate: string | null;
+    name: string;
   },
 ) {
   const baby = await seedOwnedBaby(harness, opts);
@@ -93,7 +93,7 @@ export async function seedTimelineUpdateWithPhoto(
     occurredAt: null,
     photoId,
   });
-  return { updateId, photoId };
+  return { photoId, updateId };
 }
 
 /** Registers push subscriptions for a baby (manager-only count query). */
@@ -106,10 +106,10 @@ export async function seedPushSubscriptions(
 ) {
   for (let index = 0; index < opts.count; index += 1) {
     await harness.client.mutation(api.pushSubscriptions.subscribe, {
+      auth: "private-auth-secret",
       babyId: opts.babyId,
       endpoint: `https://push.example/subscription-${index}`,
       p256dh: "public-key",
-      auth: "private-auth-secret",
       userAgent: "vitest",
     });
   }
@@ -158,18 +158,18 @@ export async function postTestUpdate(
 export async function seedTimelineEncouragement(
   harness: ConvexTestHarness,
   opts: {
-    babyId: Id<"baby">;
     authorName: string;
+    babyId: Id<"baby">;
     message: string;
   },
 ) {
   await harness.client.mutation(api.encouragements.create, {
-    babyId: opts.babyId,
     authorName: opts.authorName,
-    message: opts.message,
-    visitorId: "visitor-test",
-    userAgent: null,
+    babyId: opts.babyId,
     locale: null,
+    message: opts.message,
     timezone: null,
+    userAgent: null,
+    visitorId: "visitor-test",
   });
 }

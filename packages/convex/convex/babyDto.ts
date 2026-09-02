@@ -10,14 +10,14 @@ async function toBabyBaseDto(ctx: QueryCtx, baby: Doc<"baby">) {
     resolveBabyPreferences(ctx.db, baby),
   ]);
   const {
-    userId: _userId,
-    ownerTokenIdentifier: _ownerTokenIdentifier,
-    lastActivityAt: _lastActivityAt,
-    subscriptionCount: _subscriptionCount,
     birthJourney: _birthJourney,
     dueDate: _dueDate,
     dueDateDisplayMode: _dueDateDisplayMode,
+    lastActivityAt: _lastActivityAt,
+    ownerTokenIdentifier: _ownerTokenIdentifier,
     publicDueDateText: _publicDueDateText,
+    subscriptionCount: _subscriptionCount,
+    userId: _userId,
     ...publicBaby
   } = baby;
   return {
@@ -38,8 +38,8 @@ export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
       }
       return {
         ...publicBaby,
-        dueDateDisplayMode: "exact" as const,
         dueDate: baby.dueDate,
+        dueDateDisplayMode: "exact" as const,
       };
     }
     case "message": {

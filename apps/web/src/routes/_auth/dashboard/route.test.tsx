@@ -23,31 +23,31 @@ import { DashboardBabyList, DashboardHeader, Route } from "@/routes/_auth/dashbo
 const babySmith = {
   // SAFETY: Seeded convex-test document id.
   _id: "baby-id" as Id<"baby">,
-  name: "Baby Smith",
-  timeZone: "Europe/London",
-  publicId: "baby-smith",
-  dueDate: "2026-12-01",
-  dueDateDisplayMode: "exact" as const,
-  publicDueDateText: null,
-  laborStarted: null,
-  wentToHospital: null,
   babyBorn: null,
   birthJourney: "labor" as const,
+  dueDate: "2026-12-01",
+  dueDateDisplayMode: "exact" as const,
+  laborStarted: null,
+  name: "Baby Smith",
+  publicDueDateText: null,
+  publicId: "baby-smith",
   role: "owner" as const,
+  timeZone: "Europe/London",
+  wentToHospital: null,
 };
 
 const onboardingProgress: FunctionReturnType<typeof api.onboarding.getMine> = {
-  welcomeDismissed: true,
+  activeCoachmarkStepId: null,
+  allDone: true,
   checklistDismissed: true,
-  minimized: false,
   completedSteps: [],
+  effectiveSteps: [],
   hasBaby: true,
   hasUpdate: true,
-  effectiveSteps: [],
-  allDone: true,
-  tourBaby: null,
-  activeCoachmarkStepId: null,
+  minimized: false,
   restartHintVisible: false,
+  tourBaby: null,
+  welcomeDismissed: true,
 };
 
 /**
@@ -61,7 +61,7 @@ const onboardingProgress: FunctionReturnType<typeof api.onboarding.getMine> = {
  */
 function reparentRoute<TRoute extends AnyRoute>(
   route: TRoute,
-  opts: { path: string; getParentRoute: () => AnyRoute },
+  opts: { getParentRoute: () => AnyRoute; path: string },
 ): TRoute {
   // SAFETY: Test fixture is a subset of the production type.
   const update = route.update as (options: typeof opts) => TRoute;
@@ -71,16 +71,16 @@ function reparentRoute<TRoute extends AnyRoute>(
 type FetchQueryData = (
   query: Parameters<typeof getFunctionName>[0],
   input: Record<string, never>,
-) => Promise<{ input: Record<string, never>; initialData: unknown }>;
+) => Promise<{ initialData: unknown; input: Record<string, never> }>;
 
-function stubPreloader(babies: (typeof babySmith)[]) {
-  const calls: string[] = [];
+function stubPreloader(babies: Array<typeof babySmith>) {
+  const calls: Array<string> = [];
   const fetchQueryData = vi.fn<FetchQueryData>((query, input) => {
     const name = getFunctionName(query);
     calls.push(name);
     return Promise.resolve({
-      input,
       initialData: name === getFunctionName(api.baby.listByUser) ? babies : onboardingProgress,
+      input,
     });
   });
   return { calls, context: { convexPreloader: { fetchQueryData } } };
@@ -129,19 +129,19 @@ test("parent dashboard stays mounted while child routes render through its outle
     },
   });
   const dashboardRoute = reparentRoute(Route, {
-    path: "/dashboard",
     getParentRoute: () => rootRoute,
+    path: "/dashboard",
   });
   const childRoute = createRoute({
+    component: () => <div data-testid="dashboard-outlet" />,
     getParentRoute: () => dashboardRoute,
     path: "/",
-    component: () => <div data-testid="dashboard-outlet" />,
   });
   const router = createRouter({
-    routeTree: rootRoute.addChildren([dashboardRoute.addChildren([childRoute])]),
-    history: createMemoryHistory({ initialEntries: ["/dashboard"] }),
-    defaultPendingMinMs: 0,
     context: preloader.context,
+    defaultPendingMinMs: 0,
+    history: createMemoryHistory({ initialEntries: ["/dashboard"] }),
+    routeTree: rootRoute.addChildren([dashboardRoute.addChildren([childRoute])]),
   });
   await router.load();
 
@@ -175,7 +175,7 @@ test("parent dashboard loader refetches auth-scoped reads without a waterfall", 
 
 test("shows prefetched babies without a spinner", async () => {
   await using view = await renderWithTestRouter(
-    <DashboardBabyList tourBabyPublicId="baby-smith" babies={[babySmith]} />,
+    <DashboardBabyList babies={[babySmith]} tourBabyPublicId="baby-smith" />,
   );
 
   expect(view.queryByRole("status", { name: "Loading" })).toBeNull();

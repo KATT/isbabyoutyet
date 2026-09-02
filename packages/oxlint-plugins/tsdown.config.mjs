@@ -1,9 +1,9 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["workspace.ts", "anti-slop/index.ts"],
+  clean: true,
+  entry: ["workspace.ts", "anti-slop/index.ts", "nkzw/index.ts"],
   format: "esm",
   outDir: "dist",
-  clean: true,
   outExtensions: () => ({ js: ".js" }),
 });

@@ -21,7 +21,6 @@ export const run = migrations.runner();
 
 // Migration to generate thumbnails for existing photos
 export const generateThumbnailsForExistingPhotos = migrations.define({
-  table: "baby",
   migrateOne: async (ctx, baby) => {
     // Only process babies that have a photo but no thumbnail
     if (baby.photoId && !baby.thumbnailId) {
@@ -33,6 +32,7 @@ export const generateThumbnailsForExistingPhotos = migrations.define({
       });
     }
   },
+  table: "baby",
 });
 
 /**
@@ -42,8 +42,12 @@ export async function generatePushImagesForExistingPhotosDoc(
   ctx: MutationCtx,
   update: Doc<"updates">,
 ) {
-  if (!isActive(update)) return;
-  if (!update.photoId || update.pushImageId) return;
+  if (!isActive(update)) {
+    return;
+  }
+  if (!update.photoId || update.pushImageId) {
+    return;
+  }
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
     babyId: update.babyId,
     photoId: update.photoId,
@@ -52,8 +56,8 @@ export async function generatePushImagesForExistingPhotosDoc(
 }
 
 export const generatePushImagesForExistingPhotos = migrations.define({
-  table: "updates",
   migrateOne: generatePushImagesForExistingPhotosDoc,
+  table: "updates",
 });
 
 /**
@@ -63,8 +67,12 @@ export async function generateBlurDataUrlsForExistingPhotosDoc(
   ctx: MutationCtx,
   update: Doc<"updates">,
 ) {
-  if (!isActive(update)) return;
-  if (!update.photoId || update.blurDataUrl) return;
+  if (!isActive(update)) {
+    return;
+  }
+  if (!update.photoId || update.blurDataUrl) {
+    return;
+  }
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateBlurDataUrl, {
     babyId: update.babyId,
     photoId: update.photoId,
@@ -73,8 +81,8 @@ export async function generateBlurDataUrlsForExistingPhotosDoc(
 }
 
 export const generateBlurDataUrlsForExistingPhotos = migrations.define({
-  table: "updates",
   migrateOne: generateBlurDataUrlsForExistingPhotosDoc,
+  table: "updates",
 });
 
 /**
@@ -85,8 +93,12 @@ export async function generateBlurDataUrlsForExistingBabyPhotosDoc(
   ctx: MutationCtx,
   baby: Doc<"baby">,
 ) {
-  if (!isActive(baby)) return;
-  if (!baby.photoId || baby.blurDataUrl) return;
+  if (!isActive(baby)) {
+    return;
+  }
+  if (!baby.photoId || baby.blurDataUrl) {
+    return;
+  }
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateBlurDataUrl, {
     babyId: baby._id,
     photoId: baby.photoId,
@@ -95,8 +107,8 @@ export async function generateBlurDataUrlsForExistingBabyPhotosDoc(
 }
 
 export const generateBlurDataUrlsForExistingBabyPhotos = migrations.define({
-  table: "baby",
   migrateOne: generateBlurDataUrlsForExistingBabyPhotosDoc,
+  table: "baby",
 });
 
 /**
@@ -112,7 +124,9 @@ export async function backfillEncouragementTimelineDoc(
   ctx: MutationCtx,
   encouragement: EncouragementTimelineBackfill,
 ) {
-  if (encouragement.timelineItemId) return;
+  if (encouragement.timelineItemId) {
+    return;
+  }
 
   const timelineItemId = await insertEncouragementTimelineItem(ctx, {
     babyId: encouragement.babyId,
@@ -122,8 +136,8 @@ export async function backfillEncouragementTimelineDoc(
 }
 
 export const backfillEncouragementTimeline = migrations.define({
-  table: "encouragements",
   migrateOne: backfillEncouragementTimelineDoc,
+  table: "encouragements",
 });
 
 const SKIP_TOUR_BATCH_SIZE = 50;
@@ -161,9 +175,9 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
     .unique();
   if (sentinel) {
     return {
-      isDone: true,
-      continueCursor: "",
       alreadyRan: true,
+      continueCursor: "",
+      isDone: true,
       processed: 0,
     };
   }
@@ -171,30 +185,32 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
   const page = await ctx.runQuery(components.betterAuth.adapter.findMany, {
     model: "user",
     paginationOpts: {
-      numItems: SKIP_TOUR_BATCH_SIZE,
       cursor,
+      numItems: SKIP_TOUR_BATCH_SIZE,
     },
   });
 
   for (const user of page.page) {
-    if (authUserEmail(user) === DEMO_EMPTY_USER.email) continue;
+    if (authUserEmail(user) === DEMO_EMPTY_USER.email) {
+      continue;
+    }
     await skipUserOnboarding(ctx, authUserId(user));
   }
 
   if (page.isDone) {
     await skipUserOnboarding(ctx, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL);
     return {
-      isDone: true,
-      continueCursor: page.continueCursor,
       alreadyRan: false,
+      continueCursor: page.continueCursor,
+      isDone: true,
       processed: page.page.length,
     };
   }
 
   return {
-    isDone: false,
-    continueCursor: page.continueCursor,
     alreadyRan: false,
+    continueCursor: page.continueCursor,
+    isDone: false,
     processed: page.page.length,
   };
 }
@@ -219,27 +235,40 @@ export const skipTourForExistingUsers = internalMutation({
  * PR can tighten the field to required.
  */
 export async function backfillUpdatePostedByUserIdDoc(ctx: MutationCtx, update: Doc<"updates">) {
-  if (update.postedByUserId != null) return;
+  if (update.postedByUserId != null) {
+    return;
+  }
   const baby = await ctx.db.get(update.babyId);
-  if (!baby) return;
+  if (!baby) {
+    return;
+  }
   await ctx.db.patch(update._id, { postedByUserId: baby.userId });
 }
 
 export const backfillUpdatePostedByUserId = migrations.define({
-  table: "updates",
   migrateOne: backfillUpdatePostedByUserIdDoc,
+  table: "updates",
 });
 
-export async function backfillBabyOwnerTokenIdentifierDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  if (baby.ownerTokenIdentifier !== undefined) return;
+type BabyOwnerTokenBackfill = Omit<Doc<"baby">, "ownerTokenIdentifier"> & {
+  ownerTokenIdentifier: Doc<"baby">["ownerTokenIdentifier"] | undefined;
+};
+
+export async function backfillBabyOwnerTokenIdentifierDoc(
+  ctx: MutationCtx,
+  baby: BabyOwnerTokenBackfill,
+) {
+  if (baby.ownerTokenIdentifier !== undefined) {
+    return;
+  }
   await ctx.db.patch(baby._id, {
     ownerTokenIdentifier: tokenIdentifierForAuthUserId(baby.userId),
   });
 }
 
 export const backfillBabyOwnerTokenIdentifier = migrations.define({
-  table: "baby",
   migrateOne: backfillBabyOwnerTokenIdentifierDoc,
+  table: "baby",
 });
 
 /**
@@ -255,13 +284,15 @@ export async function backfillBabyBirthJourneyDoc(
   ctx: MutationCtx,
   baby: BabyBirthJourneyBackfill,
 ) {
-  if (baby.birthJourney !== undefined) return;
+  if (baby.birthJourney !== undefined) {
+    return;
+  }
   await ctx.db.patch(baby._id, { birthJourney: "labor" });
 }
 
 export const backfillBabyBirthJourney = migrations.define({
-  table: "baby",
   migrateOne: backfillBabyBirthJourneyDoc,
+  table: "baby",
 });
 
 /**
@@ -282,8 +313,8 @@ export async function backfillBabyDueDateDisplayDoc(ctx: MutationCtx, baby: Doc<
 }
 
 export const backfillBabyDueDateDisplay = migrations.define({
-  table: "baby",
   migrateOne: backfillBabyDueDateDisplayDoc,
+  table: "baby",
 });
 
 type BabyLastActivityAtBackfill = Omit<Doc<"baby">, "lastActivityAt"> & {
@@ -294,7 +325,9 @@ export async function backfillBabyLastActivityAtDoc(
   ctx: MutationCtx,
   baby: BabyLastActivityAtBackfill,
 ) {
-  if (baby.lastActivityAt !== undefined) return;
+  if (baby.lastActivityAt !== undefined) {
+    return;
+  }
   const timelineItems = await ctx.db
     .query("timelineItems")
     .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", baby._id))
@@ -307,8 +340,8 @@ export async function backfillBabyLastActivityAtDoc(
 }
 
 export const backfillBabyLastActivityAt = migrations.define({
-  table: "baby",
   migrateOne: backfillBabyLastActivityAtDoc,
+  table: "baby",
 });
 
 export async function backfillBabySubscriptionCountDoc(ctx: MutationCtx, baby: Doc<"baby">) {
@@ -323,8 +356,8 @@ export async function backfillBabySubscriptionCountDoc(ctx: MutationCtx, baby: D
 }
 
 export const backfillBabySubscriptionCount = migrations.define({
-  table: "baby",
   migrateOne: backfillBabySubscriptionCountDoc,
+  table: "baby",
 });
 
 /**
@@ -339,63 +372,83 @@ export async function removeBabyEncouragementsDisabledDoc(
   ctx: MutationCtx,
   baby: LegacyBabyWithEncouragementsDisabled,
 ) {
-  if (baby.encouragementsDisabled === undefined) return;
+  if (baby.encouragementsDisabled === undefined) {
+    return;
+  }
   const { encouragementsDisabled: _removed, ...rest } = baby;
   await ctx.db.replace("baby", baby._id, rest);
 }
 
 export const removeBabyEncouragementsDisabled = migrations.define({
-  table: "baby",
   migrateOne: removeBabyEncouragementsDisabledDoc,
+  table: "baby",
 });
+
+type ProfileTokenBackfill = Omit<Doc<"userProfiles">, "tokenIdentifier"> & {
+  tokenIdentifier: Doc<"userProfiles">["tokenIdentifier"] | undefined;
+};
 
 export async function backfillProfileTokenIdentifierDoc(
   ctx: MutationCtx,
-  profile: Doc<"userProfiles">,
+  profile: ProfileTokenBackfill,
 ) {
-  if (profile.tokenIdentifier !== undefined) return;
+  if (profile.tokenIdentifier !== undefined) {
+    return;
+  }
   await ctx.db.patch(profile._id, {
     tokenIdentifier: tokenIdentifierForAuthUserId(profile.userId),
   });
 }
 
 export const backfillProfileTokenIdentifier = migrations.define({
-  table: "userProfiles",
   migrateOne: backfillProfileTokenIdentifierDoc,
+  table: "userProfiles",
 });
+
+type OnboardingTokenBackfill = Omit<Doc<"userOnboarding">, "tokenIdentifier"> & {
+  tokenIdentifier: Doc<"userOnboarding">["tokenIdentifier"] | undefined;
+};
 
 export async function backfillOnboardingTokenIdentifierDoc(
   ctx: MutationCtx,
-  onboarding: Doc<"userOnboarding">,
+  onboarding: OnboardingTokenBackfill,
 ) {
-  if (onboarding.tokenIdentifier !== undefined) return;
+  if (onboarding.tokenIdentifier !== undefined) {
+    return;
+  }
   await ctx.db.patch(onboarding._id, {
     tokenIdentifier: tokenIdentifierForAuthUserId(onboarding.userId),
   });
 }
 
 export const backfillOnboardingTokenIdentifier = migrations.define({
-  table: "userOnboarding",
   migrateOne: backfillOnboardingTokenIdentifierDoc,
+  table: "userOnboarding",
 });
+
+type CoParentTokenBackfill = Omit<Doc<"babyCoParents">, "tokenIdentifier"> & {
+  tokenIdentifier: Doc<"babyCoParents">["tokenIdentifier"] | undefined;
+};
 
 export async function backfillCoParentTokenIdentifierDoc(
   ctx: MutationCtx,
-  coParent: Doc<"babyCoParents">,
+  coParent: CoParentTokenBackfill,
 ) {
-  if (coParent.tokenIdentifier !== undefined) return;
+  if (coParent.tokenIdentifier !== undefined) {
+    return;
+  }
   await ctx.db.patch(coParent._id, {
     tokenIdentifier: tokenIdentifierForAuthUserId(coParent.userId),
   });
 }
 
 export const backfillCoParentTokenIdentifier = migrations.define({
-  table: "babyCoParents",
   migrateOne: backfillCoParentTokenIdentifierDoc,
+  table: "babyCoParents",
 });
 
 type LegacyUserOnboardingWithRetiredSteps = Omit<Doc<"userOnboarding">, "completedSteps"> & {
-  completedSteps: string[];
+  completedSteps: Array<string>;
 };
 
 export async function sanitizeOnboardingStepsDoc(
@@ -403,13 +456,15 @@ export async function sanitizeOnboardingStepsDoc(
   onboarding: LegacyUserOnboardingWithRetiredSteps,
 ) {
   const completedSteps = onboarding.completedSteps.filter(isOnboardingStepId);
-  if (completedSteps.length === onboarding.completedSteps.length) return;
+  if (completedSteps.length === onboarding.completedSteps.length) {
+    return;
+  }
   await ctx.db.patch(onboarding._id, { completedSteps });
 }
 
 export const sanitizeOnboardingSteps = migrations.define({
-  table: "userOnboarding",
   migrateOne: sanitizeOnboardingStepsDoc,
+  table: "userOnboarding",
 });
 
 /**
@@ -420,13 +475,15 @@ export async function backfillUserProfileIsAdminDoc(
   ctx: MutationCtx,
   profile: Doc<"userProfiles">,
 ) {
-  if (profile.isAdmin !== undefined) return;
+  if (profile.isAdmin !== undefined) {
+    return;
+  }
   await ctx.db.patch(profile._id, { isAdmin: false });
 }
 
 export const backfillUserProfileIsAdmin = migrations.define({
-  table: "userProfiles",
   migrateOne: backfillUserProfileIsAdminDoc,
+  table: "userProfiles",
 });
 
 function isOwnKey<TRecord extends object>(record: TRecord, key: PropertyKey): key is keyof TRecord {
@@ -436,42 +493,46 @@ function isOwnKey<TRecord extends object>(record: TRecord, key: PropertyKey): ke
 async function patchMissingKeys<TTable extends keyof DataModel>(
   ctx: MutationCtx,
   opts: {
-    id: Id<TTable>;
-    doc: Doc<TTable>;
     defaults: Partial<Doc<TTable>>;
+    doc: Doc<TTable>;
+    id: Id<TTable>;
   },
 ) {
   const patch: Partial<Doc<TTable>> = {};
   for (const key in opts.defaults) {
-    if (!isOwnKey(opts.defaults, key)) continue;
+    if (!isOwnKey(opts.defaults, key)) {
+      continue;
+    }
     if (opts.doc[key] === undefined) {
       patch[key] = opts.defaults[key];
     }
   }
-  if (Object.keys(patch).length === 0) return;
+  if (Object.keys(patch).length === 0) {
+    return;
+  }
   await ctx.db.patch(opts.id, patch);
 }
 
 /** Writes omitted union/boolean keys so a later PR can drop `v.optional()`. */
 export async function backfillBabyOptionalKeysDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   await patchMissingKeys(ctx, {
-    id: baby._id,
-    doc: baby,
     defaults: {
-      theme: null,
+      blurDataUrl: null,
+      deletedAt: null,
+      demo: false,
       locale: null,
       photoId: null,
+      theme: null,
       thumbnailId: null,
-      blurDataUrl: null,
-      demo: false,
-      deletedAt: null,
     },
+    doc: baby,
+    id: baby._id,
   });
 }
 
 export const backfillBabyOptionalKeys = migrations.define({
-  table: "baby",
   migrateOne: backfillBabyOptionalKeysDoc,
+  table: "baby",
 });
 
 export async function backfillUserProfileOptionalKeysDoc(
@@ -479,15 +540,15 @@ export async function backfillUserProfileOptionalKeysDoc(
   profile: Doc<"userProfiles">,
 ) {
   await patchMissingKeys(ctx, {
-    id: profile._id,
-    doc: profile,
     defaults: { timeZone: DEFAULT_TIME_ZONE },
+    doc: profile,
+    id: profile._id,
   });
 }
 
 export const backfillUserProfileOptionalKeys = migrations.define({
-  table: "userProfiles",
   migrateOne: backfillUserProfileOptionalKeysDoc,
+  table: "userProfiles",
 });
 
 export async function backfillPushSubscriptionOptionalKeysDoc(
@@ -495,15 +556,15 @@ export async function backfillPushSubscriptionOptionalKeysDoc(
   subscription: Doc<"pushSubscriptions">,
 ) {
   await patchMissingKeys(ctx, {
-    id: subscription._id,
-    doc: subscription,
     defaults: { userAgent: null },
+    doc: subscription,
+    id: subscription._id,
   });
 }
 
 export const backfillPushSubscriptionOptionalKeys = migrations.define({
-  table: "pushSubscriptions",
   migrateOne: backfillPushSubscriptionOptionalKeysDoc,
+  table: "pushSubscriptions",
 });
 
 export async function backfillScheduledNotificationOptionalKeysDoc(
@@ -511,20 +572,20 @@ export async function backfillScheduledNotificationOptionalKeysDoc(
   notification: Doc<"scheduledNotifications">,
 ) {
   await patchMissingKeys(ctx, {
-    id: notification._id,
-    doc: notification,
     defaults: {
-      scheduledId: null,
       customMessage: null,
       photoId: null,
+      scheduledId: null,
       updateId: null,
     },
+    doc: notification,
+    id: notification._id,
   });
 }
 
 export const backfillScheduledNotificationOptionalKeys = migrations.define({
-  table: "scheduledNotifications",
   migrateOne: backfillScheduledNotificationOptionalKeysDoc,
+  table: "scheduledNotifications",
 });
 
 export async function backfillEncouragementOptionalKeysDoc(
@@ -532,21 +593,21 @@ export async function backfillEncouragementOptionalKeysDoc(
   encouragement: Doc<"encouragements">,
 ) {
   await patchMissingKeys(ctx, {
-    id: encouragement._id,
-    doc: encouragement,
     defaults: {
+      deletedAt: null,
       demoFixture: false,
-      userAgent: null,
       locale: null,
       timezone: null,
-      deletedAt: null,
+      userAgent: null,
     },
+    doc: encouragement,
+    id: encouragement._id,
   });
 }
 
 export const backfillEncouragementOptionalKeys = migrations.define({
-  table: "encouragements",
   migrateOne: backfillEncouragementOptionalKeysDoc,
+  table: "encouragements",
 });
 
 export async function backfillTimelineItemOptionalKeysDoc(
@@ -554,37 +615,37 @@ export async function backfillTimelineItemOptionalKeysDoc(
   item: Doc<"timelineItems">,
 ) {
   await patchMissingKeys(ctx, {
-    id: item._id,
-    doc: item,
     defaults: { deletedAt: null },
+    doc: item,
+    id: item._id,
   });
 }
 
 export const backfillTimelineItemOptionalKeys = migrations.define({
-  table: "timelineItems",
   migrateOne: backfillTimelineItemOptionalKeysDoc,
+  table: "timelineItems",
 });
 
 export async function backfillUpdateOptionalKeysDoc(ctx: MutationCtx, update: Doc<"updates">) {
   await patchMissingKeys(ctx, {
-    id: update._id,
-    doc: update,
     defaults: {
+      blurDataUrl: null,
+      deletedAt: null,
       message: null,
       milestone: null,
       occurredAt: null,
       photoId: null,
-      thumbnailId: null,
-      blurDataUrl: null,
       pushImageId: null,
-      deletedAt: null,
+      thumbnailId: null,
     },
+    doc: update,
+    id: update._id,
   });
 }
 
 export const backfillUpdateOptionalKeys = migrations.define({
-  table: "updates",
   migrateOne: backfillUpdateOptionalKeysDoc,
+  table: "updates",
 });
 
 export async function backfillUserOnboardingOptionalKeysDoc(
@@ -592,18 +653,18 @@ export async function backfillUserOnboardingOptionalKeysDoc(
   onboarding: Doc<"userOnboarding">,
 ) {
   await patchMissingKeys(ctx, {
-    id: onboarding._id,
-    doc: onboarding,
     defaults: {
       activeCoachmarkStepId: null,
       restartHintVisible: false,
     },
+    doc: onboarding,
+    id: onboarding._id,
   });
 }
 
 export const backfillUserOnboardingOptionalKeys = migrations.define({
-  table: "userOnboarding",
   migrateOne: backfillUserOnboardingOptionalKeysDoc,
+  table: "userOnboarding",
 });
 
 export async function backfillCoParentOptionalKeysDoc(
@@ -611,18 +672,18 @@ export async function backfillCoParentOptionalKeysDoc(
   coParent: Doc<"babyCoParents">,
 ) {
   await patchMissingKeys(ctx, {
-    id: coParent._id,
-    doc: coParent,
     defaults: {
-      name: null,
       deletedAt: null,
+      name: null,
     },
+    doc: coParent,
+    id: coParent._id,
   });
 }
 
 export const backfillCoParentOptionalKeys = migrations.define({
-  table: "babyCoParents",
   migrateOne: backfillCoParentOptionalKeysDoc,
+  table: "babyCoParents",
 });
 
 export async function backfillCoParentInviteOptionalKeysDoc(
@@ -630,15 +691,15 @@ export async function backfillCoParentInviteOptionalKeysDoc(
   invite: Doc<"babyCoParentInvites">,
 ) {
   await patchMissingKeys(ctx, {
-    id: invite._id,
-    doc: invite,
     defaults: { deletedAt: null },
+    doc: invite,
+    id: invite._id,
   });
 }
 
 export const backfillCoParentInviteOptionalKeys = migrations.define({
-  table: "babyCoParentInvites",
   migrateOne: backfillCoParentInviteOptionalKeysDoc,
+  table: "babyCoParentInvites",
 });
 
 export const runPushImageBackfill = migrations.runner(
@@ -714,15 +775,15 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillCoParentInviteOptionalKeys",
 ] as const;
 
-async function migrationDeploymentStatus(ctx: QueryCtx, names: readonly string[]) {
+async function migrationDeploymentStatus(ctx: QueryCtx, names: ReadonlyArray<string>) {
   const statuses = await migrations.getStatus(ctx, {
     migrations: [...names],
   });
   return {
-    isDone: statuses.length === names.length && statuses.every((status) => status.isDone),
     failed: statuses
       .filter((status) => status.error !== undefined)
       .map((status) => `${status.name}: ${status.error}`),
+    isDone: statuses.length === names.length && statuses.every((status) => status.isDone),
   };
 }
 
@@ -745,11 +806,11 @@ export const deploymentStatus = internalQuery({
 // Auth component), so it is kicked off alongside the serial table series.
 /** CLI-oriented report returned by `@convex-dev/migrations` runners. */
 type MigrationRunnerReport = {
-  readonly Name: string;
-  readonly Status: string;
-  readonly processed: number;
   readonly lastFinished: string;
   readonly lastStarted: string;
+  readonly Name: string;
+  readonly processed: number;
+  readonly Status: string;
   readonly toStartOver: string;
 };
 
@@ -784,11 +845,11 @@ export function parseMigrationRunnerReport<TResult>(result: TResult): MigrationR
     throw new Error("Migration runner returned an invalid report");
   }
   return {
-    Name,
-    Status,
-    processed,
     lastFinished,
     lastStarted,
+    Name,
+    processed,
+    Status,
     toStartOver,
   };
 }

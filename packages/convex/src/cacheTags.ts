@@ -3,7 +3,7 @@ const MAX_CACHE_TAG_LENGTH = 256;
 export const ALL_BABY_PAGES_CACHE_TAG = "baby-pages";
 
 function cacheTagPart(value: string) {
-  return value.replace(/[^A-Za-z0-9_.:-]/g, "-");
+  return value.replaceAll(/[^A-Za-z0-9_.:-]/g, "-");
 }
 
 function boundedCacheTag(prefix: string, value: string) {

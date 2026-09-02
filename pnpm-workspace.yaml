@@ -51,6 +51,8 @@ catalog:
   convex-test: ^0.0.56
   date-fns: ^4.4.0
   embla-carousel-react: ^8.6.0
+  eslint-plugin-no-only-tests: ^3.4.0
+  eslint-plugin-perfectionist: ^5.11.0
   input-otp: ^1.5.0
   jsdom: ^30.0.1
   knip: ^6.32.2

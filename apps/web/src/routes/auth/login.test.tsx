@@ -23,9 +23,9 @@ function renderLogin(props: {
     <LocaleProvider locale="en-GB">
       <LoginCard
         demoLoginEnabled={props.demoLoginEnabled}
+        homeLink={{ to: "/" }}
         onSignIn={props.onSignIn}
         variant="page"
-        homeLink={{ to: "/" }}
       />
     </LocaleProvider>,
     { path: "/auth/login" },
@@ -44,11 +44,11 @@ function handoffDeps() {
   const waitForAuth = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
   const navigate = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
   return {
+    failedMessage: "Failed to sign in",
+    headers: () => ({ "x-time-zone": "Asia/Tokyo" }),
+    navigate,
     signIn,
     waitForAuth,
-    navigate,
-    headers: () => ({ "x-time-zone": "Asia/Tokyo" }),
-    failedMessage: "Failed to sign in",
   };
 }
 
@@ -152,8 +152,8 @@ test("login route head sets the document title", () => {
 test("LoginPage sign-in path invokes the wired auth client", async () => {
   const signInEmail = vi.fn().mockResolvedValue({ data: null, error: null });
   const original = {
-    signInEmail: loginAuthAdapter.signInEmail,
     headers: loginAuthAdapter.headers,
+    signInEmail: loginAuthAdapter.signInEmail,
     waitForAuth: loginAuthAdapter.waitForAuth,
   };
   // SAFETY: Mock constructor is installed in place of the browser global.
@@ -192,8 +192,8 @@ test("LoginPage sign-in path invokes the wired auth client", async () => {
 test("LoginPage returns to an allowlisted baby page after sign-in", async () => {
   const signInEmail = vi.fn().mockResolvedValue({ data: null, error: null });
   const original = {
-    signInEmail: loginAuthAdapter.signInEmail,
     headers: loginAuthAdapter.headers,
+    signInEmail: loginAuthAdapter.signInEmail,
     waitForAuth: loginAuthAdapter.waitForAuth,
   };
   // SAFETY: Mock constructor is installed in place of the browser global.
@@ -227,8 +227,8 @@ test("LoginPage returns to an allowlisted baby page after sign-in", async () => 
 
   await vi.waitFor(() => {
     expect(navigate).toHaveBeenCalledWith({
-      to: "/baby/$publicId",
       params: { publicId: "baby-waiting" },
+      to: "/baby/$publicId",
     });
   });
 });
@@ -236,8 +236,8 @@ test("LoginPage returns to an allowlisted baby page after sign-in", async () => 
 test("LoginPage ignores an open-redirect after sign-in", async () => {
   const signInEmail = vi.fn().mockResolvedValue({ data: null, error: null });
   const original = {
-    signInEmail: loginAuthAdapter.signInEmail,
     headers: loginAuthAdapter.headers,
+    signInEmail: loginAuthAdapter.signInEmail,
     waitForAuth: loginAuthAdapter.waitForAuth,
   };
   // SAFETY: Test stub replaces the adapter's email sign-in method.

@@ -1,7 +1,7 @@
 import { useMutation } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { toast } from "sonner";
-import * as z from "zod";
+import { z } from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -58,14 +58,14 @@ type RequestLanguageHandler = (
 ) => Promise<FunctionReturnType<typeof api.profile.requestLanguage>>;
 
 function LanguageRequestForm(props: {
-  onRequestLanguage: RequestLanguageHandler;
   onClose: () => void;
+  onRequestLanguage: RequestLanguageHandler;
 }) {
   const { t } = useI18n();
   const requestLanguage = props.onRequestLanguage;
   const form = useZodForm({
-    schema: languageRequestSchema(t),
     defaultValues: { requestedLocale: "" },
+    schema: languageRequestSchema(t),
   });
 
   return (
@@ -122,8 +122,8 @@ const defaultTimeZoneOption = {
 };
 
 export function LanguageSettings(props: {
-  profile: PreloadedConvexQuery<typeof api.profile.get>;
   className: string | undefined;
+  profile: PreloadedConvexQuery<typeof api.profile.get>;
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const onUpdateLocale = useMutation(api.profile.updateLocale);
@@ -144,9 +144,9 @@ export function LanguageSettings(props: {
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
       <Combobox
+        disabled={!profile}
         items={timeZoneOptions}
         itemToStringValue={(option) => option.label}
-        value={selectedTimeZoneOption}
         onValueChange={(option) => {
           if (!option || option.value === optimisticTimeZone) {
             return;
@@ -162,15 +162,15 @@ export function LanguageSettings(props: {
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             });
         }}
-        disabled={!profile}
+        value={selectedTimeZoneOption}
       >
         <ComboboxInput
-          className="w-56"
           aria-label={t("Profile time zone")}
-          placeholder={t("Search time zones")}
+          className="w-56"
           onFocus={(event) => {
             event.currentTarget.select();
           }}
+          placeholder={t("Search time zones")}
         />
         <ComboboxContent>
           <ComboboxEmpty>{t("No time zones found")}</ComboboxEmpty>
@@ -185,19 +185,19 @@ export function LanguageSettings(props: {
       </Combobox>
 
       <LanguagePicker
-        value={selectedLocale}
         disabled={!profile}
         label={t("Profile language")}
         onValueChange={async (value) => {
           await onUpdateLocale({ locale: value });
           await setLocale(value);
         }}
+        value={selectedLocale}
       />
 
       <Dialog {...languageRequestOverlay.rootProps}>
         <DialogTrigger
           render={
-            <Button variant="outline" size="sm">
+            <Button size="sm" variant="outline">
               {t("Request another language")}
             </Button>
           }
@@ -211,8 +211,8 @@ export function LanguageSettings(props: {
               </DialogDescription>
             </DialogHeader>
             <LanguageRequestForm
-              onRequestLanguage={onRequestLanguage}
               onClose={languageRequestOverlay.close}
+              onRequestLanguage={onRequestLanguage}
             />
           </FormGuardProvider>
         </DialogContent>

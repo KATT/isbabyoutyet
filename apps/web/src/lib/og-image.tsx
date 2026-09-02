@@ -24,7 +24,7 @@ const fontCache = new Map<string, ArrayBuffer>();
  * Load a Nunito weight as ArrayBuffer for Satori. Uses the Google Fonts CSS
  * API with a text subset so we only pull glyphs we need.
  */
-async function loadNunitoFont(opts: { weight: 700 | 900; text: string }) {
+async function loadNunitoFont(opts: { text: string; weight: 700 | 900 }) {
   const cacheKey = `${opts.weight}:${opts.text}`;
   const cached = fontCache.get(cacheKey);
   if (cached) {
@@ -55,12 +55,12 @@ async function loadNunitoFont(opts: { weight: 700 | 900; text: string }) {
 
 async function pngResponse(opts: {
   element: ReactElement;
-  fonts: { name: string; data: ArrayBuffer; weight: 700 | 900; style: "normal" }[];
+  fonts: Array<{ data: ArrayBuffer; name: string; style: "normal"; weight: 700 | 900 }>;
 }) {
   const svg = await satori(opts.element, {
-    width: OG_IMAGE_WIDTH,
-    height: OG_IMAGE_HEIGHT,
     fonts: opts.fonts,
+    height: OG_IMAGE_HEIGHT,
+    width: OG_IMAGE_WIDTH,
   });
   const png = new Resvg(svg, {
     fitTo: { mode: "width", value: OG_IMAGE_WIDTH },
@@ -76,13 +76,13 @@ async function pngResponse(opts: {
 }
 
 type BabyOgImageBase = {
-  name: string;
-  theme: string | null | undefined;
-  locale: SupportedLocale;
   babyBorn: string | null | undefined;
-  wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
+  locale: SupportedLocale;
+  name: string;
   photoUrl: string | null;
+  theme: string | null | undefined;
+  wentToHospital: string | null | undefined;
 } & Partial<{ milestoneVisibility: MilestoneVisibility | null; timeZone: string }>;
 
 export type BabyOgImageInput = BabyOgImageBase & BabyDueDateDisplay;
@@ -111,111 +111,107 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
   const accent = colors[2];
   const status = getCurrentStatus(baby);
   const headline = translate(baby.locale, "Is {{name}} out yet?", { name: baby.name });
-  const statusText = babyStatusLabel({ status, locale: baby.locale });
+  const statusText = babyStatusLabel({ locale: baby.locale, status });
   const detail =
     status.type === "not_yet"
       ? babyStatusDetail({ baby, status })
       : babyPageDescription({
           name: baby.name,
           ...(baby.dueDateDisplayMode === "exact"
-            ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
+            ? { dueDate: baby.dueDate, dueDateDisplayMode: "exact" as const }
             : {
                 dueDateDisplayMode: "message" as const,
                 publicDueDateText: baby.publicDueDateText,
               }),
+          babyBorn: baby.babyBorn,
+          laborStarted: baby.laborStarted,
+          locale: baby.locale,
+          milestoneVisibility: baby.milestoneVisibility,
           publicId: "",
           theme: baby.theme,
-          locale: baby.locale,
           timeZone: baby.timeZone,
-          babyBorn: baby.babyBorn,
           wentToHospital: baby.wentToHospital,
-          laborStarted: baby.laborStarted,
-          milestoneVisibility: baby.milestoneVisibility,
         });
   const brand = translate(baby.locale, "Is Baby Out Yet?");
   const fontText = `${headline}${statusText}${detail}${brand}${SITE_HOST}`;
   const photoDataUrl = await resolvePhotoDataUrl(baby.photoUrl);
 
   const [bold, black] = await Promise.all([
-    loadNunitoFont({ weight: 700, text: fontText }),
-    loadNunitoFont({ weight: 900, text: fontText }),
+    loadNunitoFont({ text: fontText, weight: 700 }),
+    loadNunitoFont({ text: fontText, weight: 900 }),
   ]);
 
   const initial = baby.name.trim().slice(0, 1).toUpperCase() || baby.name;
 
   return pngResponse({
-    fonts: [
-      { name: "Nunito", data: bold, weight: 700, style: "normal" },
-      { name: "Nunito", data: black, weight: 900, style: "normal" },
-    ],
     element: (
       <div
         style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "64px 72px",
           backgroundImage: `linear-gradient(135deg, ${background} 0%, ${accent} 55%, ${primary}33 100%)`,
           color: "#0f172a",
+          display: "flex",
+          flexDirection: "column",
           fontFamily: "Nunito",
+          height: "100%",
+          justifyContent: "space-between",
+          padding: "64px 72px",
+          width: "100%",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
+        <div style={{ alignItems: "center", display: "flex", gap: 40 }}>
           {photoDataUrl ? (
             <img
-              src={photoDataUrl}
-              width={180}
               height={180}
+              src={photoDataUrl}
               style={{
-                width: 180,
-                height: 180,
-                borderRadius: 36,
-                objectFit: "cover",
                 border: `6px solid ${primary}`,
+                borderRadius: 36,
+                height: 180,
+                objectFit: "cover",
+                width: 180,
               }}
+              width={180}
             />
           ) : (
             <div
               style={{
-                width: 180,
-                height: 180,
-                borderRadius: 36,
-                display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
                 backgroundColor: primary,
+                borderRadius: 36,
                 color: "#fff",
+                display: "flex",
                 fontSize: 84,
                 fontWeight: 900,
+                height: 180,
+                justifyContent: "center",
+                width: 180,
               }}
             >
               {initial}
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1 }}>
+          <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: 20 }}>
             <div
               style={{
                 fontSize: 64,
                 fontWeight: 900,
-                lineHeight: 1.1,
                 letterSpacing: "-0.03em",
+                lineHeight: 1.1,
               }}
             >
               {headline}
             </div>
             <div
               style={{
-                display: "flex",
                 alignItems: "center",
                 alignSelf: "flex-start",
-                padding: "10px 22px",
-                borderRadius: 999,
                 backgroundColor: primary,
+                borderRadius: 999,
                 color: "#fff",
+                display: "flex",
                 fontSize: 28,
                 fontWeight: 700,
+                padding: "10px 22px",
               }}
             >
               {statusText}
@@ -225,14 +221,14 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
         </div>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
             alignItems: "flex-end",
             borderTop: `4px solid ${primary}55`,
-            paddingTop: 28,
+            color: primary,
+            display: "flex",
             fontSize: 28,
             fontWeight: 700,
-            color: primary,
+            justifyContent: "space-between",
+            paddingTop: 28,
           }}
         >
           <span>{brand}</span>
@@ -240,6 +236,10 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
         </div>
       </div>
     ),
+    fonts: [
+      { data: bold, name: "Nunito", style: "normal", weight: 700 },
+      { data: black, name: "Nunito", style: "normal", weight: 900 },
+    ],
   });
 }
 
@@ -255,42 +255,38 @@ export async function createHomepageOgImage(locale: SupportedLocale) {
   const fontText = `${title}${description}${SITE_HOST}`;
 
   const [bold, black] = await Promise.all([
-    loadNunitoFont({ weight: 700, text: fontText }),
-    loadNunitoFont({ weight: 900, text: fontText }),
+    loadNunitoFont({ text: fontText, weight: 700 }),
+    loadNunitoFont({ text: fontText, weight: 900 }),
   ]);
 
   return pngResponse({
-    fonts: [
-      { name: "Nunito", data: bold, weight: 700, style: "normal" },
-      { name: "Nunito", data: black, weight: 900, style: "normal" },
-    ],
     element: (
       <div
         style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: 28,
-          padding: "72px 80px",
           backgroundImage: `linear-gradient(145deg, ${background} 0%, ${accent} 45%, ${primary}44 100%)`,
           color: "#0f172a",
+          display: "flex",
+          flexDirection: "column",
           fontFamily: "Nunito",
+          gap: 28,
+          height: "100%",
+          justifyContent: "center",
+          padding: "72px 80px",
+          width: "100%",
         }}
       >
         <div
           style={{
-            display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            width: 96,
-            height: 96,
-            borderRadius: 28,
             backgroundColor: primary,
+            borderRadius: 28,
             color: "#fff",
+            display: "flex",
             fontSize: 52,
             fontWeight: 900,
+            height: 96,
+            justifyContent: "center",
+            width: 96,
           }}
         >
           {title.slice(0, 1)}
@@ -318,11 +314,15 @@ export async function createHomepageOgImage(locale: SupportedLocale) {
           {description}
         </div>
         <div
-          style={{ display: "flex", marginTop: 12, fontSize: 28, fontWeight: 700, color: primary }}
+          style={{ color: primary, display: "flex", fontSize: 28, fontWeight: 700, marginTop: 12 }}
         >
           {SITE_HOST}
         </div>
       </div>
     ),
+    fonts: [
+      { data: bold, name: "Nunito", style: "normal", weight: 700 },
+      { data: black, name: "Nunito", style: "normal", weight: 900 },
+    ],
   });
 }

@@ -33,7 +33,7 @@ async function resolveAuthUserProfile(ctx: QueryCtx | MutationCtx, userId: strin
  */
 export async function claimPendingInvitesForAuthUser(
   ctx: MutationCtx,
-  opts: { userId: string; email: string; name: string | null },
+  opts: { email: string; name: string | null; userId: string },
 ) {
   const email = normalizeEmail(opts.email);
   const caller = {
@@ -50,7 +50,9 @@ export async function claimPendingInvitesForAuthUser(
 
   let claimed = 0;
   for (const invite of invites) {
-    if (!isActive(invite)) continue;
+    if (!isActive(invite)) {
+      continue;
+    }
 
     const baby = await ctx.db.get(invite.babyId);
     if (!baby || !isActive(baby)) {
@@ -70,13 +72,13 @@ export async function claimPendingInvitesForAuthUser(
     });
     if (!existing) {
       await ctx.db.insert("babyCoParents", {
+        addedAt: Date.now(),
+        addedByUserId: invite.invitedByUserId,
         babyId: invite.babyId,
-        userId: caller.authUserId,
-        tokenIdentifier: caller.tokenIdentifier,
         email,
         name,
-        addedByUserId: invite.invitedByUserId,
-        addedAt: Date.now(),
+        tokenIdentifier: caller.tokenIdentifier,
+        userId: caller.authUserId,
       });
       claimed += 1;
     }
@@ -93,8 +95,8 @@ export async function claimPendingInvitesForAuthUserId(ctx: MutationCtx, userId:
     return 0;
   }
   return await claimPendingInvitesForAuthUser(ctx, {
-    userId,
     email: profile.email,
     name: profile.name,
+    userId,
   });
 }

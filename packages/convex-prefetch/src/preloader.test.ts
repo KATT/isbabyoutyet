@@ -5,7 +5,7 @@ import {
   type FunctionReference,
   type PaginationResult,
 } from "convex/server";
-import * as React from "react";
+import { createElement, type ReactNode } from "react";
 import { expect, test, vi } from "vitest";
 import { getConvexQueryPreloader } from "./preloader";
 import { registerConvexInfiniteQueryClient } from "./convexInfiniteQuery";
@@ -16,7 +16,7 @@ import {
 } from "./usePreloadedConvexQuery";
 import { testPreloadedConvexQuery } from "./test-helpers";
 
-type Profile = { locale: string; isAdmin: boolean };
+type Profile = { isAdmin: boolean; locale: string };
 type ProfileGetRef = FunctionReference<"query", "public", Record<string, never>, Profile>;
 type BabyByIdRef = FunctionReference<"query", "public", { id: string }, { name: string }>;
 const profileGet = makeFunctionReference<"query", Record<string, never>, Profile>("profile:get");
@@ -32,8 +32,8 @@ const pushIsSubscribed = makeFunctionReference<
 type TestInfinitePage = PaginationResult<string>;
 
 function createWrapper(queryClient: QueryClient) {
-  return function Wrapper(props: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, props.children);
+  return function Wrapper(props: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, props.children);
   };
 }
 
@@ -41,8 +41,8 @@ test("getConvexQueryPreloader awaits queries and returns handles with initialDat
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
+        queryFn: async () => ({ isAdmin: false, locale: "sv" }),
         retry: false,
-        queryFn: async () => ({ locale: "sv", isAdmin: false }),
       },
     },
   });
@@ -51,13 +51,13 @@ test("getConvexQueryPreloader awaits queries and returns handles with initialDat
   const handle = await preloader.ensureQueryData(profileGet, {});
 
   expect(handle.input).toEqual({});
-  expect(handle.initialData).toEqual({ locale: "sv", isAdmin: false });
+  expect(handle.initialData).toEqual({ isAdmin: false, locale: "sv" });
 });
 
 test("fetchQueryData replaces cached data with a fresh snapshot", async () => {
   const queryFn = vi.fn<() => Promise<{ name: string }>>(async () => ({ name: "Fresh baby" }));
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, queryFn } },
+    defaultOptions: { queries: { queryFn, retry: false } },
   });
   const queryKey = ["convexQuery", "baby:getByPublicId", { id: "baby-smith" }];
   queryClient.setQueryData(queryKey, { name: "Cached baby" });
@@ -75,9 +75,9 @@ test("getConvexQueryPreloader ensures infinite pages and stores numItems", async
     // @ts-expect-error — fixture only implements query
     convexClient: {
       query: vi.fn<() => Promise<TestInfinitePage>>(async () => ({
-        page: ["row"],
-        isDone: true,
         continueCursor: "",
+        isDone: true,
+        page: ["row"],
       })),
     },
     serverHttpClient: undefined,
@@ -94,16 +94,16 @@ test("getConvexQueryPreloader ensures infinite pages and stores numItems", async
   expect(handle.input).toEqual({ hideDemo: true });
   expect(handle.numItems).toBe(20);
   expect(handle.initialData.pages[0]).toEqual({
-    page: ["row"],
-    isDone: true,
     continueCursor: "",
+    isDone: true,
+    page: ["row"],
   });
 });
 
 test("initiateQueryData starts the fetch without awaiting and returns a data-less handle", async () => {
-  const queryFn = vi.fn<() => Promise<Profile>>(async () => ({ locale: "sv", isAdmin: false }));
+  const queryFn = vi.fn<() => Promise<Profile>>(async () => ({ isAdmin: false, locale: "sv" }));
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, queryFn } },
+    defaultOptions: { queries: { queryFn, retry: false } },
   });
 
   const preloader = getConvexQueryPreloader(queryClient);
@@ -118,9 +118,9 @@ test("initiateQueryData starts the fetch without awaiting and returns a data-les
 
 test("initiateInfiniteQueryData starts the first page without awaiting", async () => {
   const convexClientQuery = vi.fn<() => Promise<TestInfinitePage>>(async () => ({
-    page: ["row"],
-    isDone: true,
     continueCursor: "",
+    isDone: true,
+    page: ["row"],
   }));
   registerConvexInfiniteQueryClient({
     // @ts-expect-error — fixture only implements query
@@ -146,8 +146,8 @@ test("initiateInfiniteQueryData starts the first page without awaiting", async (
 
 test("preloadedConvexQueryOptions carries initialData only for preloaded handles", () => {
   const preloaded = testPreloadedConvexQuery<BabyByIdRef>({
-    input: { id: "b1" },
     initialData: { name: "Avery" },
+    input: { id: "b1" },
   });
 
   const withData = preloadedConvexQueryOptions(babyByPublicId, preloaded);
@@ -162,8 +162,8 @@ test("usePreloadedConvexQuery suspends on the handle's query", async () => {
     defaultOptions: { queries: { retry: false } },
   });
   const handle = testPreloadedConvexQuery<ProfileGetRef>({
+    initialData: { isAdmin: false, locale: "sv" },
     input: {},
-    initialData: { locale: "sv", isAdmin: false },
   });
 
   const { result } = renderHook(() => usePreloadedConvexQuery(profileGet, handle), {
@@ -171,14 +171,14 @@ test("usePreloadedConvexQuery suspends on the handle's query", async () => {
   });
 
   await waitFor(() => {
-    expect(result.current.data).toEqual({ locale: "sv", isAdmin: false });
+    expect(result.current.data).toEqual({ isAdmin: false, locale: "sv" });
   });
 });
 
 test("useInitiateConvexQuery starts the fetch and returns an initiated handle", async () => {
   const queryFn = vi.fn<() => Promise<boolean>>(async () => true);
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, queryFn } },
+    defaultOptions: { queries: { queryFn, retry: false } },
   });
 
   const { result } = renderHook(

@@ -1,17 +1,17 @@
 import { parseISO } from "date-fns";
-import * as z from "zod";
+import { z } from "zod";
 import type { TranslationFunction } from "@/lib/i18n";
 
 function zonedDateTimeParts(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
     hourCycle: "h23",
+    minute: "2-digit",
+    month: "2-digit",
+    second: "2-digit",
+    timeZone,
+    year: "numeric",
   }).formatToParts(date);
   const value = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((part) => part.type === type)?.value;
@@ -24,7 +24,7 @@ function zonedDateTimeParts(date: Date, timeZone: string) {
   if (!year || !month || !day || !hour || !minute || !second) {
     return null;
   }
-  return { year, month, day, hour, minute, second };
+  return { day, hour, minute, month, second, year };
 }
 
 /** `datetime-local` value (`YYYY-MM-DDTHH:mm`) in the baby's timezone. */
@@ -87,8 +87,12 @@ export function htmlDate(t: TranslationFunction) {
   return z.codec(pickerDate, z.union([z.string(), z.null()]), {
     decode: (value) => (value === "" ? null : `${value}T00:00:00.000Z`),
     encode: (iso) => {
-      if (iso === null) return "";
-      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+      if (iso === null) {
+        return "";
+      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+        return iso;
+      }
       return utcCalendarDate(parseISO(iso));
     },
   });
@@ -121,7 +125,9 @@ export function htmlDateTime(t: TranslationFunction, timeZone: string) {
 export function optionalHtmlDateTime(t: TranslationFunction, timeZone: string) {
   return z.codec(z.string(), z.number().nullable(), {
     decode: (value, payload) => {
-      if (value === "") return null;
+      if (value === "") {
+        return null;
+      }
       const ms = dateTimeLocalToEpochMs(value, timeZone);
       if (Number.isNaN(ms)) {
         payload.issues.push({

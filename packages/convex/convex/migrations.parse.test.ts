@@ -2,11 +2,11 @@ import { expect, test } from "vitest";
 import { parseMigrationRunnerReport } from "./migrations";
 
 const validReport = {
-  Name: "runTableMigrations",
-  Status: "done",
-  processed: 3,
   lastFinished: "2026-01-01",
   lastStarted: "2026-01-01",
+  Name: "runTableMigrations",
+  processed: 3,
+  Status: "done",
   toStartOver: "no",
 };
 

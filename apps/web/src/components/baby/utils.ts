@@ -15,58 +15,58 @@ import type { TranslationKey } from "@/lib/i18n";
 
 export const THEME_OPTIONS = [
   {
-    value: null,
-    labelKey: "Mango",
     colors: ["#ea580c", "#fef3c7", "#fed7aa"],
     css: null,
+    labelKey: "Mango",
+    value: null,
   }, // orange primary
   {
-    value: "violet-bloom",
-    labelKey: "Violet Bloom",
-    css: violetBloomCss,
     colors: ["#7033ff", "#fdfdfd", "#e2ebff"],
+    css: violetBloomCss,
+    labelKey: "Violet Bloom",
+    value: "violet-bloom",
   },
   {
-    value: BABY_BLUE_THEME,
-    labelKey: "Baby Blue",
-    css: babyBlueCss,
     colors: ["#1e9df1", "#ffffff", "#e3ecf6"],
+    css: babyBlueCss,
+    labelKey: "Baby Blue",
+    value: BABY_BLUE_THEME,
   },
   {
-    value: "bubblegum",
-    labelKey: "Bubblegum",
-    css: bubblegumCss,
     colors: ["#d04f99", "#f6e6ee", "#fbe2a7"],
+    css: bubblegumCss,
+    labelKey: "Bubblegum",
+    value: "bubblegum",
   },
   {
-    value: "catppuccin",
-    labelKey: "Catppuccin",
-    css: catppuccinCss,
     colors: ["#8839ef", "#eff1f5", "#04a5e5"],
+    css: catppuccinCss,
+    labelKey: "Catppuccin",
+    value: "catppuccin",
   },
   {
-    value: "mocha-mousse",
-    labelKey: "Mocha Mousse",
-    css: mochaMousseCss,
     colors: ["#a37764", "#f1f0e5", "#e4c7b8"],
+    css: mochaMousseCss,
+    labelKey: "Mocha Mousse",
+    value: "mocha-mousse",
   },
   {
-    value: "quantum-rose",
-    labelKey: "Quantum Rose",
-    css: quantumRoseCss,
     colors: ["#e6067a", "#fff0f8", "#ffc1e3"],
+    css: quantumRoseCss,
+    labelKey: "Quantum Rose",
+    value: "quantum-rose",
   },
   {
-    value: "sunny-days",
-    labelKey: "Sunny Days",
-    css: sunnyDaysCss,
     colors: ["#f2a614", "#fff9e8", "#8ed1c5"],
+    css: sunnyDaysCss,
+    labelKey: "Sunny Days",
+    value: "sunny-days",
   },
 ] as const satisfies ReadonlyArray<{
-  value: string | null;
-  labelKey: TranslationKey;
-  colors: readonly string[];
+  colors: ReadonlyArray<string>;
   css: string | null;
+  labelKey: TranslationKey;
+  value: string | null;
 }>;
 
 export function getThemeOption(theme: string | null | undefined) {
@@ -79,7 +79,9 @@ export function getThemeColors(theme: string | null | undefined) {
 
 /** Raw CSS for a theme preset, or null for the default (app) theme. */
 export function getThemeCss(theme: string | null | undefined): string | null {
-  if (!theme) return null;
+  if (!theme) {
+    return null;
+  }
   return getThemeOption(theme)?.css ?? null;
 }
 
@@ -104,9 +106,9 @@ type DateTimeFormatOptions = {
 export function formatDate(dateString: string, opts: DateTimeFormatOptions): string {
   const date = parseDate(dateString);
   const formatter = new Intl.DateTimeFormat(opts.locale, {
-    timeZone: opts.timeZone,
     dateStyle: "long",
     timeStyle: "short",
+    timeZone: opts.timeZone,
   });
   return formatter.format(date);
 }
@@ -119,15 +121,15 @@ export function getRelativeTime(dateString: string, locale: SupportedLocale): st
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
   const intervals = [
-    { unit: "year" as const, seconds: 31536000 },
-    { unit: "month" as const, seconds: 2592000 },
-    { unit: "week" as const, seconds: 604800 },
-    { unit: "day" as const, seconds: 86400 },
-    { unit: "hour" as const, seconds: 3600 },
-    { unit: "minute" as const, seconds: 60 },
+    { seconds: 31_536_000, unit: "year" as const },
+    { seconds: 2_592_000, unit: "month" as const },
+    { seconds: 604_800, unit: "week" as const },
+    { seconds: 86_400, unit: "day" as const },
+    { seconds: 3600, unit: "hour" as const },
+    { seconds: 60, unit: "minute" as const },
   ];
 
-  for (const { unit, seconds } of intervals) {
+  for (const { seconds, unit } of intervals) {
     const interval = Math.floor(Math.abs(diffInSeconds) / seconds);
     if (interval >= 1) {
       return rtf.format(diffInSeconds > 0 ? interval : -interval, unit);
@@ -139,17 +141,17 @@ export function getRelativeTime(dateString: string, locale: SupportedLocale): st
 
 export function formatDueDate(dateString: string, locale: SupportedLocale): string {
   return new Intl.DateTimeFormat(locale, {
-    timeZone: "UTC",
     dateStyle: "long",
+    timeZone: "UTC",
   }).format(parseCalendarDate(dateString));
 }
 
 function datePartsInTimeZone(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
     timeZone,
     year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
   }).formatToParts(date);
   const year = parts.find((part) => part.type === "year")?.value;
   const month = parts.find((part) => part.type === "month")?.value;
@@ -158,9 +160,9 @@ function datePartsInTimeZone(date: Date, timeZone: string) {
     return null;
   }
   return {
-    year: Number.parseInt(year),
-    month: Number.parseInt(month),
     day: Number.parseInt(day),
+    month: Number.parseInt(month),
+    year: Number.parseInt(year),
   };
 }
 

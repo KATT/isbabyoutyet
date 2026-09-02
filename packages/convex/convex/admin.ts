@@ -20,43 +20,43 @@ const sortOrderValidator = v.union(v.literal("asc"), v.literal("desc"));
 
 const languageRequestRowValidator = v.object({
   _id: v.id("languageRequests"),
-  requestedLocale: v.string(),
   createdAt: v.number(),
-  userId: v.string(),
+  requestedLocale: v.string(),
   userEmail: v.union(v.string(), v.null()),
+  userId: v.string(),
 });
 
 const babyRowValidator = v.object({
   _id: v.id("baby"),
-  name: v.string(),
-  publicId: v.string(),
+  createdAt: v.number(),
+  demo: v.boolean(),
   dueDate: v.union(v.string(), v.null()),
   dueDateDisplayMode: v.union(v.literal("exact"), v.literal("message")),
+  managerEmails: v.array(v.string()),
+  name: v.string(),
   publicDueDateText: v.union(v.string(), v.null()),
+  publicId: v.string(),
   status: v.union(
     v.literal("not_yet"),
     v.literal("labor_started"),
     v.literal("gone_to_hospital"),
     v.literal("born"),
   ),
-  demo: v.boolean(),
-  createdAt: v.number(),
   updatedAt: v.number(),
-  managerEmails: v.array(v.string()),
 });
 
 const userBabySummaryValidator = v.object({
+  demo: v.boolean(),
   name: v.string(),
   publicId: v.string(),
-  demo: v.boolean(),
 });
 
 const userRowValidator = v.object({
   _id: v.string(),
+  babies: v.array(userBabySummaryValidator),
+  createdAt: v.number(),
   email: v.string(),
   name: v.string(),
-  createdAt: v.number(),
-  babies: v.array(userBabySummaryValidator),
 });
 
 export function parseAuthUserPage<TResult>(result: TResult) {
@@ -70,18 +70,18 @@ export function parseAuthUserPage<TResult>(result: TResult) {
     throw new Error("Better Auth returned invalid user pagination");
   }
   return {
-    page: users,
-    isDone,
     continueCursor,
+    isDone,
+    page: users,
   };
 }
 
 function authUserRow(user: JsonObject) {
   return {
     _id: String(user._id),
+    createdAt: Number(user.createdAt),
     email: String(user.email),
     name: String(user.name),
-    createdAt: Number(user.createdAt),
   };
 }
 
@@ -93,11 +93,13 @@ async function ownedBabiesForUser(ctx: QueryCtx, userId: string) {
     .take(100);
   const rows = [];
   for (const baby of babies) {
-    if (!isActive(baby)) continue;
+    if (!isActive(baby)) {
+      continue;
+    }
     rows.push({
+      demo: baby.demo === true,
       name: baby.name,
       publicId: baby.publicId,
-      demo: baby.demo === true,
     });
   }
   return rows;
@@ -117,7 +119,9 @@ async function findUserEmail(ctx: QueryCtx, userId: string) {
       model: "user",
       where: [{ field: "_id", value: userId }],
     });
-    if (!user?.email) return null;
+    if (!user?.email) {
+      return null;
+    }
     return String(user.email);
   } catch {
     // Orphan / non-document userIds must not fail the whole admin list.
@@ -126,7 +130,7 @@ async function findUserEmail(ctx: QueryCtx, userId: string) {
 }
 
 async function managerEmailsForBaby(ctx: QueryCtx, baby: Doc<"baby">) {
-  const emails: string[] = [];
+  const emails: Array<string> = [];
   const ownerEmail = await findUserEmail(ctx, baby.userId);
   if (ownerEmail) {
     emails.push(ownerEmail);
@@ -138,7 +142,9 @@ async function managerEmailsForBaby(ctx: QueryCtx, baby: Doc<"baby">) {
     .order("desc")
     .take(100);
   for (const row of coParents) {
-    if (!isActive(row)) continue;
+    if (!isActive(row)) {
+      continue;
+    }
     if (!emails.includes(row.email)) {
       emails.push(row.email);
     }
@@ -150,7 +156,6 @@ export const listLanguageRequests = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
-  returns: paginationResultValidator(languageRequestRowValidator),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const result = await ctx.db
@@ -169,24 +174,24 @@ export const listLanguageRequests = query({
       }
       mapped.push({
         _id: row._id,
-        requestedLocale: row.requestedLocale,
         createdAt: row.createdAt,
-        userId: row.userId,
+        requestedLocale: row.requestedLocale,
         userEmail,
+        userId: row.userId,
       });
     }
     return { ...result, page: mapped };
   },
+  returns: paginationResultValidator(languageRequestRowValidator),
 });
 
 export const listBabies = query({
   args: {
-    sortBy: sortByValidator,
-    sortOrder: sortOrderValidator,
     hideDemo: v.boolean(),
     paginationOpts: paginationOptsValidator,
+    sortBy: sortByValidator,
+    sortOrder: sortOrderValidator,
   },
-  returns: paginationResultValidator(babyRowValidator),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const result =
@@ -198,7 +203,9 @@ export const listBabies = query({
             .order(args.sortOrder)
             .paginate(args.paginationOpts);
     const active = result.page.filter(isActive).filter((baby) => {
-      if (!args.hideDemo) return true;
+      if (!args.hideDemo) {
+        return true;
+      }
       return baby.demo !== true;
     });
 
@@ -207,20 +214,21 @@ export const listBabies = query({
       const createdAt = baby._creationTime;
       rows.push({
         _id: baby._id,
-        name: baby.name,
-        publicId: baby.publicId,
+        createdAt,
+        demo: baby.demo === true,
         dueDate: baby.dueDate,
         dueDateDisplayMode: baby.dueDateDisplayMode,
-        publicDueDateText: baby.publicDueDateText,
-        status: (await loadCurrentStatus(ctx, baby._id)).type,
-        demo: baby.demo === true,
-        createdAt,
-        updatedAt: Math.max(createdAt, baby.lastActivityAt),
         managerEmails: await managerEmailsForBaby(ctx, baby),
+        name: baby.name,
+        publicDueDateText: baby.publicDueDateText,
+        publicId: baby.publicId,
+        status: (await loadCurrentStatus(ctx, baby._id)).type,
+        updatedAt: Math.max(createdAt, baby.lastActivityAt),
       });
     }
     return { ...result, page: rows };
   },
+  returns: paginationResultValidator(babyRowValidator),
 });
 
 /** Newest Better Auth signups first — staff review of recent registrations. */
@@ -228,13 +236,12 @@ export const listUsers = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
-  returns: paginationResultValidator(userRowValidator),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const result = await ctx.runQuery(components.betterAuth.adapter.findMany, {
       model: "user",
-      sortBy: { field: "createdAt", direction: "desc" },
       paginationOpts: args.paginationOpts,
+      sortBy: { direction: "desc", field: "createdAt" },
     });
     const validated = parseAuthUserPage(result);
 
@@ -247,9 +254,10 @@ export const listUsers = query({
       });
     }
     return {
-      page,
-      isDone: validated.isDone,
       continueCursor: validated.continueCursor,
+      isDone: validated.isDone,
+      page,
     };
   },
+  returns: paginationResultValidator(userRowValidator),
 });

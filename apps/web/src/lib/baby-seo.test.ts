@@ -16,30 +16,30 @@ function useFakeTimersResource(now: Date) {
 }
 
 const publicBabyBase = {
+  _creationTime: 1,
   // SAFETY: Seeded convex-test document id.
   _id: "baby-1" as Id<"baby">,
-  _creationTime: 1,
-  name: "Juniper Hale",
-  theme: "baby-blue",
-  locale: "en-GB" as const,
-  resolvedLocale: "en-GB" as const,
-  timeZone: "Europe/London",
-  laborStarted: null,
-  wentToHospital: null,
   babyBorn: null,
-  milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
-  publicId: "juniper-hale-1",
-  photoUrl: null,
-  thumbnailUrl: null,
   blurDataUrl: null,
+  laborStarted: null,
+  locale: "en-GB" as const,
+  milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
+  name: "Juniper Hale",
+  photoUrl: null,
+  publicId: "juniper-hale-1",
+  resolvedLocale: "en-GB" as const,
+  theme: "baby-blue",
+  thumbnailUrl: null,
+  timeZone: "Europe/London",
+  wentToHospital: null,
 };
 
 test("getBabySeo maps exact mode onto the canonical route slug", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const doc = {
     ...publicBabyBase,
-    dueDateDisplayMode: "exact" as const,
     dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact" as const,
   } satisfies PublicBabyDoc;
 
   const seo = getBabySeo(doc, "juniper-hale");

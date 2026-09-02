@@ -42,9 +42,9 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     }
     if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
-        to: "/baby/$publicId/share",
         params: { publicId: babyDoc.publicId },
         replace: true,
+        to: "/baby/$publicId/share",
       });
     }
   },
@@ -108,19 +108,19 @@ export function BabyShareOverlay() {
       if (myAccessQuery.data.canManage) {
         void completeOnboardingStep({ stepId: "share_link" });
       }
-    } catch (cause) {
+    } catch (error) {
       toast.error(
         "Failed to copy to clipboard: " +
-          (cause instanceof Error ? cause.message : "Unknown error"),
+          (error instanceof Error ? error.message : "Unknown error"),
       );
     }
   }
 
   return (
     <Dialog
-      open={share.open}
       onOpenChange={share.onOpenChange}
       onOpenChangeComplete={share.onOpenChangeComplete}
+      open={share.open}
     >
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
@@ -129,11 +129,11 @@ export function BabyShareOverlay() {
         </DialogHeader>
         <Card>
           <img
-            src={sharePreview.imageUrl}
             alt={sharePreview.title}
-            width={1200}
-            height={630}
             className="aspect-[1200/630] w-full object-cover"
+            height={630}
+            src={sharePreview.imageUrl}
+            width={1200}
           />
           <CardHeader>
             <CardTitle className="line-clamp-2">{sharePreview.title}</CardTitle>

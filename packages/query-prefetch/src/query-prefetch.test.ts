@@ -5,7 +5,7 @@ import {
   queryOptions,
 } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
-import * as React from "react";
+import { createElement, type ReactNode } from "react";
 import { expect, test, vi } from "vitest";
 import {
   getQueryInitiator,
@@ -24,51 +24,51 @@ import {
 
 const postById = (input: { postId: string }) =>
   queryOptions({
-    queryKey: ["posts", "byId", input] as const,
     queryFn: async () => ({ id: input.postId, title: `Post ${input.postId}` }),
+    queryKey: ["posts", "byId", input] as const,
   });
 
 const postsInfinite = (input: { tag: string }) =>
   infiniteQueryOptions({
-    queryKey: ["posts", "infinite", input] as const,
+    getNextPageParam: () => null,
     queryFn: async () => ({
       page: [{ id: "1", tag: input.tag }],
       // SAFETY: Test fixture is a subset of the production type.
       nextCursor: null as string | null,
     }),
+    queryKey: ["posts", "infinite", input] as const,
     // SAFETY: Test fixture is a subset of the production type.
     initialPageParam: null as string | null,
-    getNextPageParam: () => null,
   });
 
 const accountSettings = () =>
   queryOptions({
-    queryKey: ["account", "settings"] as const,
     queryFn: async () => ({ theme: "dark" as const }),
+    queryKey: ["account", "settings"] as const,
   });
 
 const failingFactory = (input: { postId: string }) =>
   queryOptions({
-    queryKey: ["posts", "fail", input] as const,
     queryFn: async () => {
       throw new Error("boom");
     },
+    queryKey: ["posts", "fail", input] as const,
   });
 
 const failingInfinite = (input: { tag: string }) =>
   infiniteQueryOptions({
-    queryKey: ["posts", "infinite-fail", input] as const,
+    getNextPageParam: () => null,
     queryFn: async () => {
       throw new Error("infinite boom");
     },
+    queryKey: ["posts", "infinite-fail", input] as const,
     // SAFETY: Test fixture is a subset of the production type.
     initialPageParam: null as string | null,
-    getNextPageParam: () => null,
   });
 
 function createWrapper(queryClient: QueryClient) {
-  return function Wrapper(props: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, props.children);
+  return function Wrapper(props: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, props.children);
   };
 }
 
@@ -102,10 +102,10 @@ test("getQueryInitiator safely ignores background errors without an onError hand
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const ignoredFailureFactory = () =>
     queryOptions({
-      queryKey: ["posts", "ignored-failure"] as const,
       queryFn: async () => {
         throw new Error("ignored");
       },
+      queryKey: ["posts", "ignored-failure"] as const,
     });
 
   getQueryInitiator(queryClient).ensureQueryData(ignoredFailureFactory);
@@ -266,8 +266,8 @@ test("helpers build branded handles for unit tests", () => {
   const preloadedInfinite = testPreloadedInfiniteQuery(
     postsInfinite,
     {
-      pages: [{ page: [{ id: "1", tag: "t" }], nextCursor: null }],
       pageParams: [null],
+      pages: [{ nextCursor: null, page: [{ id: "1", tag: "t" }] }],
     },
     { tag: "t" },
   );

@@ -51,8 +51,8 @@ self.addEventListener("push", (event) => {
   let data;
   try {
     data = event.data.json();
-  } catch (e) {
-    console.error("Failed to parse push data:", e);
+  } catch (error) {
+    console.error("Failed to parse push data:", error);
     return;
   }
 
@@ -70,13 +70,13 @@ self.addEventListener("push", (event) => {
       }
 
       await self.registration.showNotification(data.title, {
-        body: data.body,
-        icon: data.icon,
         badge: data.icon, // Use same icon for badge
-        image: isString(data.image) ? data.image : undefined,
+        body: data.body,
         data: { url: data.url },
-        tag: data.tag,
+        icon: data.icon,
+        image: isString(data.image) ? data.image : undefined,
         requireInteraction: false,
+        tag: data.tag,
       });
     })(),
   );
@@ -93,8 +93,8 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     clients
       .matchAll({
-        type: "window",
         includeUncontrolled: true,
+        type: "window",
       })
       .then((clientList) => {
         for (const client of clientList) {

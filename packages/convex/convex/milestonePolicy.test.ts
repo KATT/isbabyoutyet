@@ -7,34 +7,34 @@ import {
 
 test("saved journey selections derive their available milestones", () => {
   expect(milestoneVisibilityForPreset("labor")).toEqual({
-    showLabor: true,
     showHospital: true,
+    showLabor: true,
   });
   expect(milestoneVisibilityForPreset("home_birth")).toEqual({
-    showLabor: true,
     showHospital: false,
+    showLabor: true,
   });
   expect(milestoneVisibilityForPreset("planned_c_section")).toEqual({
-    showLabor: false,
     showHospital: true,
+    showLabor: false,
   });
   expect(milestoneVisibilityForPreset("custom")).toEqual({
-    showLabor: false,
     showHospital: false,
+    showLabor: false,
   });
-  expect(birthJourneyForVisibility({ showLabor: true, showHospital: true })).toBe("labor");
-  expect(birthJourneyForVisibility({ showLabor: false, showHospital: false })).toBe("custom");
+  expect(birthJourneyForVisibility({ showHospital: true, showLabor: true })).toBe("labor");
+  expect(birthJourneyForVisibility({ showHospital: false, showLabor: false })).toBe("custom");
 });
 
 test("labour selection includes every milestone", () => {
   const policy = getMilestonePolicy({
+    babyBorn: null,
     birthJourney: "labor",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: null,
-    babyBorn: null,
   });
 
-  expect(policy.visibility).toEqual({ showLabor: true, showHospital: true });
+  expect(policy.visibility).toEqual({ showHospital: true, showLabor: true });
   expect(policy.visibleMilestones).toEqual(["labor_started", "gone_to_hospital", "born"]);
   expect(policy.currentStatus.type).toBe("labor_started");
   expect(Math.round(policy.progressPercent)).toBe(33);
@@ -42,10 +42,10 @@ test("labour selection includes every milestone", () => {
 
 test("planned C-section derives hospital and birth as available milestones", () => {
   const policy = getMilestonePolicy({
+    babyBorn: null,
     birthJourney: "planned_c_section",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: null,
-    babyBorn: null,
   });
 
   expect(policy.visibleMilestones).toEqual(["gone_to_hospital", "born"]);
@@ -58,10 +58,10 @@ test("planned C-section derives hospital and birth as available milestones", () 
 
 test("home birth keeps hospital data out of the derived current status", () => {
   const policy = getMilestonePolicy({
+    babyBorn: null,
     birthJourney: "home_birth",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: "2026-08-10T12:00:00.000Z",
-    babyBorn: null,
   });
 
   expect(policy.currentStatus.type).toBe("labor_started");
@@ -71,11 +71,11 @@ test("home birth keeps hospital data out of the derived current status", () => {
 test("public projections and defensive legacy inputs use neutral visibility", () => {
   expect(
     getMilestonePolicy({
-      milestoneVisibility: { showLabor: false, showHospital: false },
+      milestoneVisibility: { showHospital: false, showLabor: false },
     }).visibleMilestones,
   ).toEqual(["born"]);
   expect(getMilestonePolicy({}).visibility).toEqual({
-    showLabor: true,
     showHospital: true,
+    showLabor: true,
   });
 });

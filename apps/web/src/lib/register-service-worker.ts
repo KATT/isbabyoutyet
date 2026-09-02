@@ -7,12 +7,9 @@
 export const serviceWorkerRegistered = true;
 
 if (globalThis.navigator !== undefined && "serviceWorker" in navigator) {
-  void navigator.serviceWorker
-    .register("/sw.js")
-    .then((registration) => {
-      console.log("Service Worker registered:", registration);
-    })
-    .catch((error) => {
-      console.error("Service Worker registration failed:", error);
-    });
+  try {
+    await navigator.serviceWorker.register("/sw.js");
+  } catch (error) {
+    reportError(error);
+  }
 }

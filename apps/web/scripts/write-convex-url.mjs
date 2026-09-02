@@ -2,7 +2,7 @@
  * Tiny `convex deploy --cmd` so start_push runs immediately after claim.
  * The real web build runs after a successful push (see deploy-convex.ts).
  */
-import * as fs from "node:fs";
+import fs from "node:fs";
 
 const urlFile = process.env.CONVEX_URL_FILE;
 const convexUrl = process.env.VITE_CONVEX_URL;

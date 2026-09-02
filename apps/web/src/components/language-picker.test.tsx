@@ -13,15 +13,15 @@ test("shouldApplyLocaleChange rejects empty, unsupported, and unchanged values",
 });
 
 function renderPicker(opts: {
-  value: "en-GB" | "sv";
   onValueChange: (locale: "en-GB" | "sv" | "en-US" | "es" | "pt-BR") => Promise<void>;
+  value: "en-GB" | "sv";
 }) {
   return renderResource(
     <LanguagePicker
       disabled={false}
       label="Language"
-      value={opts.value}
       onValueChange={opts.onValueChange}
+      value={opts.value}
     />,
   );
 }
@@ -31,7 +31,7 @@ test("ignores selecting the already-active locale", async () => {
     async () => {},
   );
 
-  await using _view = renderPicker({ value: "en-GB", onValueChange });
+  await using _view = renderPicker({ onValueChange, value: "en-GB" });
 
   fireEvent.click(screen.getByRole("combobox", { name: "Language" }));
   // British English is listed with a region qualifier; avoid matching en-US.
@@ -47,7 +47,7 @@ test("calls onValueChange when picking a different locale", async () => {
     async () => {},
   );
 
-  await using _view = renderPicker({ value: "en-GB", onValueChange });
+  await using _view = renderPicker({ onValueChange, value: "en-GB" });
 
   fireEvent.click(screen.getByRole("combobox", { name: "Language" }));
   const swedish = screen.getByRole("option", { name: /^svenska$/i });

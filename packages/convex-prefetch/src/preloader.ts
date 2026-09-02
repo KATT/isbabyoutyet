@@ -45,7 +45,7 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
     ): Promise<PreloadedConvexQuery<TQuery>> {
       const options = convexQuery(funcRef, args);
       const initialData = await queryClient.ensureQueryData(options);
-      return { input: args, initialData };
+      return { initialData, input: args };
     },
 
     /**
@@ -61,7 +61,7 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
         ...options,
         staleTime: 0,
       });
-      return { input: args, initialData };
+      return { initialData, input: args };
     },
 
     /**
@@ -81,9 +81,9 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
       });
       const initialData = await queryClient.ensureInfiniteQueryData(options);
       return {
+        initialData,
         input: opts.args,
         numItems: opts.numItems,
-        initialData,
       };
     },
 

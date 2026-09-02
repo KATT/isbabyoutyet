@@ -33,23 +33,23 @@ class CallerObserver {
 
 function callerMatchMedia(query: string) {
   return {
-    matches: true,
-    media: query,
-    onchange: null,
-    addListener() {},
-    removeListener() {},
     addEventListener() {},
-    removeEventListener() {},
+    addListener() {},
     dispatchEvent() {
       return true;
     },
+    matches: true,
+    media: query,
+    onchange: null,
+    removeEventListener() {},
+    removeListener() {},
   };
 }
 
 function restoreNamedDescriptor(options: {
-  target: object;
-  key: string;
   descriptor: PropertyDescriptor | undefined;
+  key: string;
+  target: object;
 }) {
   if (options.descriptor) {
     Object.defineProperty(options.target, options.key, options.descriptor);
@@ -74,7 +74,7 @@ test("window scroll APIs stay quiet while stubJsdomWindow is held", async () => 
   expect(
     await notImplementedMessages(() => {
       window.scrollTo(0, 0);
-      window.scrollTo({ top: 0, behavior: "auto" });
+      window.scrollTo({ behavior: "auto", top: 0 });
       window.scroll(0, 0);
       window.scrollBy(0, 10);
     }),
@@ -160,35 +160,35 @@ test("does not replace caller-provided matchMedia or observers", async () => {
   Element.prototype.scrollTo = callerElementScrollTo;
   Object.defineProperty(Element.prototype, "scrollIntoView", {
     configurable: true,
-    writable: true,
     value: callerScrollIntoView,
+    writable: true,
   });
 
   await using _restoreCallers = makeResource({}, () => {
     restoreNamedDescriptor({
-      target: globalThis,
-      key: "matchMedia",
       descriptor: previousMatchMedia,
+      key: "matchMedia",
+      target: globalThis,
     });
     restoreNamedDescriptor({
-      target: globalThis,
-      key: "IntersectionObserver",
       descriptor: previousIntersectionObserver,
-    });
-    restoreNamedDescriptor({
+      key: "IntersectionObserver",
       target: globalThis,
-      key: "ResizeObserver",
+    });
+    restoreNamedDescriptor({
       descriptor: previousResizeObserver,
+      key: "ResizeObserver",
+      target: globalThis,
     });
     restoreNamedDescriptor({
-      target: Element.prototype,
-      key: "scrollTo",
       descriptor: previousElementScrollTo,
+      key: "scrollTo",
+      target: Element.prototype,
     });
     restoreNamedDescriptor({
-      target: Element.prototype,
-      key: "scrollIntoView",
       descriptor: previousScrollIntoView,
+      key: "scrollIntoView",
+      target: Element.prototype,
     });
   });
 

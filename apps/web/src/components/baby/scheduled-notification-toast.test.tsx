@@ -22,11 +22,11 @@ test("runs with empty notifications and no subscriptions", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const ownerId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: ownerId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const notifications = await harness.convexPreloader.ensureQueryData(
     api.baby.getScheduledNotifications,
     { babyId: baby.babyId },
@@ -52,15 +52,15 @@ test("treats forbidden notification data as empty", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const ownerId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: ownerId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const visitorId = await signUpTestUser(harness, {
     email: "visitor@example.com",
-    password: "password123",
     name: "Visitor",
+    password: "password123",
   });
   harness.withIdentity({ subject: visitorId });
 
@@ -88,11 +88,11 @@ test("shows the exact subscriber count in a pending notification toast", async (
   await using harness = await createConvexTestHarness({ identity: null });
   const ownerId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: ownerId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await seedPendingLaborNotification(harness, { babyId: baby.babyId });
   await seedPushSubscriptions(harness, { babyId: baby.babyId, count: 3 });
 
@@ -125,11 +125,11 @@ test("shows a pending notification countdown even with no subscribers", async ()
   await using harness = await createConvexTestHarness({ identity: null });
   const ownerId = await signUpTestUser(harness, {
     email: "owner@example.com",
-    password: "password123",
     name: "Owner",
+    password: "password123",
   });
   harness.withIdentity({ subject: ownerId });
-  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await seedPendingLaborNotification(harness, { babyId: baby.babyId });
 
   const notifications = await harness.convexPreloader.ensureQueryData(

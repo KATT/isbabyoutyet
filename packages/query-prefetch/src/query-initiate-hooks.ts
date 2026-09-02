@@ -14,15 +14,15 @@ import type {
 type InfiniteQueryPageParam = string | number | boolean | null | object;
 
 interface AnyInfiniteQueryOptions extends AnyQueryOptions {
-  initialPageParam: InfiniteQueryPageParam;
   getNextPageParam(
     ...args: [
       lastPage: unknown,
-      allPages: unknown[],
+      allPages: Array<unknown>,
       lastPageParam: InfiniteQueryPageParam,
-      allPageParams: InfiniteQueryPageParam[],
+      allPageParams: Array<InfiniteQueryPageParam>,
     ]
   ): InfiniteQueryPageParam | null | undefined;
+  initialPageParam: InfiniteQueryPageParam;
 }
 
 type RuntimeQueryOptionsFactory = {
@@ -33,7 +33,11 @@ function invokeFactory<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInput<TFactory> | undefined,
 ): ReturnType<TFactory>;
-function invokeFactory(factory: RuntimeQueryOptionsFactory, input: any) {
+function invokeFactory(
+  factory: RuntimeQueryOptionsFactory,
+  // oxlint-disable-next-line typescript/no-explicit-any -- overload implementation
+  input: any,
+) {
   return factory(input);
 }
 
@@ -47,7 +51,7 @@ function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
 ): InitiatedQuery<TFactory>;
 function createInitiatedQuery(
   _factory: RuntimeQueryOptionsFactory,
-  input: readonly unknown[],
+  input: ReadonlyArray<unknown>,
 ): RuntimeInitiatedQuery {
   return { input: input[0] };
 }
@@ -58,7 +62,7 @@ function createInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>(
 ): InitiatedInfiniteQuery<TFactory>;
 function createInitiatedInfiniteQuery(
   _factory: RuntimeQueryOptionsFactory,
-  input: readonly unknown[],
+  input: ReadonlyArray<unknown>,
 ): RuntimeInitiatedQuery {
   return { input: input[0] };
 }

@@ -14,8 +14,8 @@ export type OverlayDismissDecision = "allow" | "block" | "confirm";
  * - `allow`: forward the close (idle, or imperative success-close)
  */
 export function overlayDismissDecision(opts: {
-  isLocked: boolean;
   isDirty: boolean;
+  isLocked: boolean;
   isPickerDismiss: boolean;
   open: boolean;
   reason: string;
@@ -47,8 +47,8 @@ export function shouldBlockOverlayDismiss(opts: {
 }) {
   return (
     overlayDismissDecision({
-      isLocked: opts.isLocked,
       isDirty: false,
+      isLocked: opts.isLocked,
       isPickerDismiss: false,
       open: opts.open,
       reason: opts.reason,
@@ -66,9 +66,13 @@ export function isNativeDatePickerDismiss(reason: string) {
   }
   const activeElement = document.activeElement;
   return (
-    activeElement instanceof HTMLInputElement &&
+    isHtmlInput(activeElement) &&
     (activeElement.type === "date" ||
       activeElement.type === "datetime-local" ||
       activeElement.type === "time")
   );
+}
+
+function isHtmlInput(value: Element | null): value is HTMLInputElement {
+  return value !== null && Object.prototype.isPrototypeOf.call(HTMLInputElement.prototype, value);
 }

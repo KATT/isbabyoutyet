@@ -18,31 +18,34 @@ function serviceWorkerResource(register: () => Promise<ServiceWorkerRegistration
   });
 }
 
+function reportErrorResource(reportError: typeof globalThis.reportError) {
+  const previous = globalThis.reportError;
+  vi.stubGlobal("reportError", reportError);
+  return makeResource({}, () => {
+    vi.stubGlobal("reportError", previous);
+  });
+}
+
 test("registers the service worker during client bootstrap", async () => {
   const registration = { scope: "/" };
   const register = vi
     .fn<() => Promise<ServiceWorkerRegistrationLike>>()
     .mockResolvedValue(registration);
   await using _serviceWorker = serviceWorkerResource(register);
-  const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
-  await using _log = makeResource({}, () => log.mockRestore());
   vi.resetModules();
 
   await import("./register-service-worker");
   await vi.waitFor(() => expect(register).toHaveBeenCalledWith("/sw.js"));
-  expect(log).toHaveBeenCalledWith("Service Worker registered:", registration);
 });
 
 test("reports service worker registration failures", async () => {
   const cause = new Error("registration failed");
   const register = vi.fn<() => Promise<ServiceWorkerRegistrationLike>>().mockRejectedValue(cause);
   await using _serviceWorker = serviceWorkerResource(register);
-  const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-  await using _error = makeResource({}, () => error.mockRestore());
+  const reportError = vi.fn();
+  await using _reportError = reportErrorResource(reportError);
   vi.resetModules();
 
   await import("./register-service-worker");
-  await vi.waitFor(() =>
-    expect(error).toHaveBeenCalledWith("Service Worker registration failed:", cause),
-  );
+  await vi.waitFor(() => expect(reportError).toHaveBeenCalledWith(cause));
 });

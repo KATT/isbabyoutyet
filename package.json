@@ -31,6 +31,8 @@
     "@rrazvan.dev/oxlint-plugin-i18n-literal": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "eslint-plugin-no-only-tests": "catalog:",
+    "eslint-plugin-perfectionist": "catalog:",
     "knip": "catalog:",
     "npm-run-all": "catalog:",
     "oxlint": "catalog:",

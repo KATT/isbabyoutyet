@@ -35,21 +35,21 @@ type ConvexCallerMutation = <TArgs>(mutation: ConvexMutationRef, args: TArgs) =>
 type ConvexCallerAction = <TArgs>(action: ConvexActionRef, args: TArgs) => Promise<Value>;
 
 export type IntegrationConvexClient = {
-  query: ConvexCallerQuery;
-  mutation: ConvexCallerMutation;
   action: ConvexCallerAction;
-  watchQuery: <TArgs>(query: ConvexQueryRef, args: TArgs) => WatchQueryHandle;
-  setAuth: (fetchToken: ConvexAuthTokenFetcher, onChange: (authenticated: boolean) => void) => void;
   clearAuth: () => void;
+  mutation: ConvexCallerMutation;
+  query: ConvexCallerQuery;
+  setAuth: (fetchToken: ConvexAuthTokenFetcher, onChange: (authenticated: boolean) => void) => void;
+  watchQuery: <TArgs>(query: ConvexQueryRef, args: TArgs) => WatchQueryHandle;
 };
 
 export type ConvexTestHarness = {
-  t: ConvexTestRoot;
   client: ConvexTestCaller;
-  queryClient: QueryClient;
+  convexClient: IntegrationConvexClient;
   convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
   convexQueryClient: ConvexQueryClient;
-  convexClient: IntegrationConvexClient;
+  queryClient: QueryClient;
+  t: ConvexTestRoot;
   /** Switch the active caller on the shared in-memory backend. */
   withIdentity: (identity: Partial<UserIdentity> | null) => ConvexTestHarness;
 };
@@ -95,16 +95,20 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
   }
 
   const convexClient: IntegrationConvexClient = {
-    query: runQuery,
+    action: async (action, args) => {
+      const result = await runAction(action, args);
+      invalidateConvexQueries();
+      return result;
+    },
+    clearAuth: () => {},
     mutation: async (mutation, args) => {
       const result = await runMutation(mutation, args);
       invalidateConvexQueries();
       return result;
     },
-    action: async (action, args) => {
-      const result = await runAction(action, args);
-      invalidateConvexQueries();
-      return result;
+    query: runQuery,
+    setAuth: (_fetchToken, onChange) => {
+      onChange(opts.identity !== null);
     },
     watchQuery: (query, args) => {
       // SAFETY: Test fixture is a subset of the production type.
@@ -130,19 +134,15 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
         },
       };
     },
-    setAuth: (_fetchToken, onChange) => {
-      onChange(opts.identity !== null);
-    },
-    clearAuth: () => {},
   };
 
   const convexQueryClientFields = {
-    convexClient,
-    hashFn: () => JSON.stringify,
-    queryFn: () => Promise.resolve(null),
     connect: (nextQueryClient: QueryClient) => {
       queryClientForInvalidation = nextQueryClient;
     },
+    convexClient,
+    hashFn: () => JSON.stringify,
+    queryFn: () => Promise.resolve(null),
     serverHttpClient: undefined,
   } as const;
   // @ts-expect-error — stand-in only implements the members this harness reads
@@ -153,26 +153,26 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
   const queryClient = new QueryClientImpl({
     defaultOptions: {
       queries: {
-        retry: false,
         gcTime: Infinity,
-        staleTime: 0,
         queryFn: createIntegrationQueryFn(() => activeClient, convexQueryClient),
+        retry: false,
+        staleTime: 0,
       },
     },
   });
   convexQueryClient.connect(queryClient);
 
   const harness: ConvexTestHarness = {
-    get t() {
-      return t;
-    },
     get client() {
       return activeClient;
     },
-    queryClient,
+    convexClient,
     convexPreloader: getConvexQueryPreloader(queryClient),
     convexQueryClient,
-    convexClient,
+    queryClient,
+    get t() {
+      return t;
+    },
     withIdentity(identity) {
       activeClient = identity ? t.withIdentity(identity) : t;
       invalidateConvexQueries();

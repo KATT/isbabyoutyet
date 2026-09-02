@@ -21,26 +21,26 @@ function ShowExactDueDateToggleRow(props: {
   titleClassName: string | undefined;
 }) {
   const { t } = useI18n();
-  const { formItemId, formDescriptionId } = useFormField();
+  const { formDescriptionId, formItemId } = useFormField();
   const titleId = `${formItemId}-title`;
 
   return (
     <label
-      htmlFor={formItemId}
       className={cn("flex items-center justify-between", props.rowClassName)}
+      htmlFor={formItemId}
     >
       <div className="flex flex-col gap-1">
-        <span id={titleId} className={cn("text-sm leading-none font-medium", props.titleClassName)}>
+        <span className={cn("text-sm leading-none font-medium", props.titleClassName)} id={titleId}>
           {t("Show exact due date")}
         </span>
-        <span id={formDescriptionId} className="text-muted-foreground text-sm">
+        <span className="text-muted-foreground text-sm" id={formDescriptionId}>
           {props.checked
             ? t("Visitors see the exact date and countdown.")
             : t("Visitors see only your message.")}
         </span>
       </div>
       <FormControl aria-labelledby={titleId}>
-        <Switch id={formItemId} checked={props.checked} onCheckedChange={props.onCheckedChange} />
+        <Switch checked={props.checked} id={formItemId} onCheckedChange={props.onCheckedChange} />
       </FormControl>
     </label>
   );
