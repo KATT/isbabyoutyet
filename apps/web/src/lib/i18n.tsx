@@ -1219,8 +1219,10 @@ const sv: TranslationCatalog = {
   Account: "Konto",
   "Change email": "Byt e-post",
   "Change password": "Byt lösenord",
-  "Check your inbox to confirm the new address.": "Kolla inkorgen för att bekräfta den nya adressen.",
-  "Check your inbox to verify this email.": "Kolla inkorgen för att verifiera den här e-postadressen.",
+  "Check your inbox to confirm the new address.":
+    "Kolla inkorgen för att bekräfta den nya adressen.",
+  "Check your inbox to verify this email.":
+    "Kolla inkorgen för att verifiera den här e-postadressen.",
   "Choose a different email address.": "Välj en annan e-postadress.",
   "Current password": "Nuvarande lösenord",
   "Current password is required.": "Ange ditt nuvarande lösenord.",
@@ -2450,7 +2452,8 @@ const ptBR: TranslationCatalog = {
   "Change password": "Alterar senha",
   "Check your inbox to confirm the new address.":
     "Confira a caixa de entrada para confirmar o novo endereço.",
-  "Check your inbox to verify this email.": "Confira a caixa de entrada para verificar este e-mail.",
+  "Check your inbox to verify this email.":
+    "Confira a caixa de entrada para verificar este e-mail.",
   "Choose a different email address.": "Escolha outro endereço de e-mail.",
   "Current password": "Senha atual",
   "Current password is required.": "A senha atual é obrigatória.",

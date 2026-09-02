@@ -141,10 +141,6 @@ export const profileAuthAdapter = {
   updateUser: (body: { name: string }) => authClient.updateUser(body),
 };
 
-function authErrorMessage(result: { error: { message?: string } | null }) {
-  return { errorMessage: result.error ? (result.error.message ?? "") : null };
-}
-
 export const Route = createFileRoute("/_auth/dashboard_/profile")({
   component: ProfilePage,
   validateSearch: profileSearchSchema,
@@ -180,70 +176,70 @@ export function ProfilePage() {
       notice={search.notice ?? null}
       onChangeEmail={
         sessionUser
-          ? async (values) =>
-              completeProfileAuthAction(
-                authErrorMessage(
-                  await profileAuthAdapter.changeEmail({
-                    callbackURL: verifyCallbackUrl,
-                    newEmail: values.newEmail,
-                  }),
-                ),
+          ? async (values) => {
+              const result = await profileAuthAdapter.changeEmail({
+                callbackURL: verifyCallbackUrl,
+                newEmail: values.newEmail,
+              });
+              await completeProfileAuthAction(
+                { errorMessage: result.error ? (result.error.message ?? "") : null },
                 {
                   failedMessage: t("Unable to change your email"),
                   onSuccess: () => navigateNotice("email-change-sent"),
                 },
-              )
+              );
+            }
           : null
       }
       onChangePassword={
         sessionUser
-          ? async (values) =>
-              completeProfileAuthAction(
-                authErrorMessage(
-                  await profileAuthAdapter.changePassword({
-                    currentPassword: values.currentPassword,
-                    newPassword: values.newPassword,
-                    revokeOtherSessions: true,
-                  }),
-                ),
+          ? async (values) => {
+              const result = await profileAuthAdapter.changePassword({
+                currentPassword: values.currentPassword,
+                newPassword: values.newPassword,
+                revokeOtherSessions: true,
+              });
+              await completeProfileAuthAction(
+                { errorMessage: result.error ? (result.error.message ?? "") : null },
                 {
                   failedMessage: t("Unable to update your password"),
                   onSuccess: () => navigateNotice("password"),
                 },
-              )
+              );
+            }
           : null
       }
       onSendVerification={
         sessionUser
-          ? async () =>
-              completeProfileAuthAction(
-                authErrorMessage(
-                  await profileAuthAdapter.sendVerificationEmail({
-                    callbackURL: verifyCallbackUrl,
-                    email: sessionUser.email,
-                  }),
-                ),
+          ? async () => {
+              const result = await profileAuthAdapter.sendVerificationEmail({
+                callbackURL: verifyCallbackUrl,
+                email: sessionUser.email,
+              });
+              await completeProfileAuthAction(
+                { errorMessage: result.error ? (result.error.message ?? "") : null },
                 {
                   failedMessage: t("Unable to send a verification email"),
                   onSuccess: () => navigateNotice("verify-sent"),
                 },
-              )
+              );
+            }
           : null
       }
       onUpdateName={
         sessionUser
-          ? async (values) =>
-              completeProfileAuthAction(
-                authErrorMessage(
-                  await profileAuthAdapter.updateUser({
-                    name: values.name,
-                  }),
-                ),
+          ? async (values) => {
+              const result = await profileAuthAdapter.updateUser({
+                name: values.name,
+              });
+              await completeProfileAuthAction(
+                { errorMessage: result.error ? (result.error.message ?? "") : null },
                 {
                   failedMessage: t("Unable to update your name"),
                   onSuccess: () => navigateNotice("name"),
                 },
-              )
+              );
+            }
           : null
       }
       user={
@@ -474,9 +470,7 @@ function EmailCard(props: {
   );
 }
 
-function PasswordCard(props: {
-  onChangePassword: ProfilePageHandlers["onChangePassword"] | null;
-}) {
+function PasswordCard(props: { onChangePassword: ProfilePageHandlers["onChangePassword"] | null }) {
   const { t } = useI18n();
   const form = useZodForm({
     defaultValues: {

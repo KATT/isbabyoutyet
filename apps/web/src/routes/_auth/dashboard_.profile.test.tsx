@@ -99,6 +99,7 @@ test("completeProfileAuthAction continues after a successful auth call", async (
 });
 
 test("profileNoticeMessage covers every notice", () => {
+  // SAFETY: Identity translator used only to assert notice keys round-trip.
   const t = ((key: string) => key) as TranslationFunction;
   expect(profileNoticeMessage("name", t)).toBe("Your name has been updated.");
   expect(profileNoticeMessage("password", t)).toBe("Your password has been updated.");
