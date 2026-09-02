@@ -507,15 +507,6 @@ importers:
       convex-table-history:
         specifier: 'catalog:'
         version: 0.1.2(@standard-schema/spec@1.1.0)(convex@1.45.0(react@19.2.8))(react@19.2.8)(typescript@7.0.2)(zod@4.4.3)
-      react:
-        specifier: 'catalog:'
-        version: 19.2.8
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.8(react@19.2.8)
-      react-email:
-        specifier: 'catalog:'
-        version: 6.9.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       sharp:
         specifier: 'catalog:'
         version: 0.35.3(@types/node@26.2.0)
