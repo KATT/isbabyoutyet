@@ -636,6 +636,25 @@ export const backfillEncouragementAuthor = migrations.define({
   table: "encouragements",
 });
 
+/**
+ * Removes the retired top-level `userId` after identity lives on `author`.
+ */
+export async function removeEncouragementUserIdDoc(
+  ctx: MutationCtx,
+  encouragement: Doc<"encouragements"> & { userId?: string | null },
+) {
+  if (encouragement.userId === undefined) {
+    return;
+  }
+  const { userId: _removed, ...rest } = encouragement;
+  await ctx.db.replace("encouragements", encouragement._id, rest);
+}
+
+export const removeEncouragementUserId = migrations.define({
+  migrateOne: removeEncouragementUserIdDoc,
+  table: "encouragements",
+});
+
 export async function backfillTimelineItemOptionalKeysDoc(
   ctx: MutationCtx,
   item: Doc<"timelineItems">,
@@ -761,6 +780,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillScheduledNotificationOptionalKeys,
   internal.migrations.backfillEncouragementOptionalKeys,
   internal.migrations.backfillEncouragementAuthor,
+  internal.migrations.removeEncouragementUserId,
   internal.migrations.backfillTimelineItemOptionalKeys,
   internal.migrations.backfillUpdateOptionalKeys,
   internal.migrations.backfillUserOnboardingOptionalKeys,
@@ -796,6 +816,7 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillScheduledNotificationOptionalKeys",
   "migrations:backfillEncouragementOptionalKeys",
   "migrations:backfillEncouragementAuthor",
+  "migrations:removeEncouragementUserId",
   "migrations:backfillTimelineItemOptionalKeys",
   "migrations:backfillUpdateOptionalKeys",
   "migrations:backfillUserOnboardingOptionalKeys",

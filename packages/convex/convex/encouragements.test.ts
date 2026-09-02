@@ -79,14 +79,12 @@ test("visitors can create encouragements and list them", async () => {
         locale: null,
         timezone: null,
         userAgent: null,
-        userId: null,
       }),
       expect.objectContaining({
         author: { type: "visitor", visitorId: "visitor-2" },
         locale: null,
         timezone: null,
         userAgent: null,
-        userId: null,
       }),
     ]),
   );
@@ -378,9 +376,9 @@ test("a signed-in author stores their user id without changing the typed name", 
   expect(stored).toMatchObject({
     author: { type: "user", userId: "alice", visitorId: "alice-browser" },
     authorName: "Grandma Alice",
-    userId: "alice",
     visitorId: "alice-browser",
   });
+  expect(stored).not.toHaveProperty("userId");
 
   const listed = await asAlice.query(api.encouragements.listByBaby, {
     babyId,
@@ -414,9 +412,9 @@ test("a signed-in author can edit and delete on a new visitor id after claiming"
   expect(stored).toMatchObject({
     author: { type: "user", userId: "alice", visitorId: "guest-browser" },
     authorName: "Guest Name",
-    userId: "alice",
     visitorId: "guest-browser",
   });
+  expect(stored).not.toHaveProperty("userId");
 
   await asAlice.mutation(api.encouragements.update, {
     encouragementId,

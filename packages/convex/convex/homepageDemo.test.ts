@@ -614,6 +614,7 @@ test("daily reset leaves non-homepage documents and shared storage untouched", a
       postedAt: 101,
     });
     const encouragementId = await ctx.db.insert("encouragements", {
+      author: { type: "visitor", visitorId: "real-family-visitor" },
       authorName: "Grandma",
       babyId,
       createdAt: 101,

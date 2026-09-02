@@ -153,14 +153,13 @@ export default defineSchema({
     visitorId: v.string(), // Unique visitor ID (stored in localStorage)
     /**
      * Discriminated author: signed-in user or visitor id.
-     * Dual-written with `userId` / `visitorId` until the backfill PR.
-     * @todo Optional until every row sets this key.
+     * Required after `backfillEncouragementAuthor` populates every row.
      */
-    author: v.optional(encouragementAuthorValidator),
+    author: encouragementAuthorValidator,
     /**
-     * Better Auth user id when posted while signed in or later claimed.
-     * Guestbook `authorName` stays whatever was typed at send time.
-     * @todo Optional until every row sets this key (`null` for guests).
+     * Legacy parallel user id. Writers no longer set this; a strip walker
+     * deletes leftover keys.
+     * @todo Optional until the drop-userId PR removes the field.
      */
     userId: v.optional(v.union(v.string(), v.null())),
     /** Server-controlled marker for seeded homepage-demo encouragements. @todo Optional until every row sets this key. */

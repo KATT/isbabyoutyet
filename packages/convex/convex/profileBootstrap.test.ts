@@ -241,7 +241,6 @@ test("sign-up claims guest encouragements for the visitor id header", async () =
     {
       author: { type: "user", userId, visitorId: "visitor-to-claim" },
       authorName: "Guest Name",
-      userId,
       visitorId: "visitor-to-claim",
     },
   ]);
@@ -302,7 +301,6 @@ test("sign-in claims guest encouragements for the visitor id header", async () =
     {
       author: { type: "user", userId, visitorId: "returning-visitor" },
       authorName: "Still Guest",
-      userId,
       visitorId: "returning-visitor",
     },
   ]);
