@@ -131,7 +131,7 @@ export function resolveEmailSender(opts: ResolveEmailSenderOptions): EmailSender
       kind: "cloudflare",
       async send() {
         throw new Error(
-          "Cloudflare Email Service is not configured (set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_EMAIL_API_TOKEN). See docs/email.md.",
+          "Cloudflare Email Service is not configured (set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_EMAIL_API_TOKEN on Vercel Preview/Production).",
         );
       },
     };

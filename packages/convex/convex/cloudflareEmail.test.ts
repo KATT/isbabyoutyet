@@ -12,8 +12,6 @@ import {
   resolveEmailSender,
   type EmailSenderEnv,
 } from "./emailSender";
-import { buildPasswordResetEmail } from "./emailTemplates";
-
 function cloudflareConfiguredEnv(overrides: Partial<EmailSenderEnv> = {}): EmailSenderEnv {
   return {
     CLOUDFLARE_ACCOUNT_ID: "account-id",
@@ -24,23 +22,6 @@ function cloudflareConfiguredEnv(overrides: Partial<EmailSenderEnv> = {}): Email
     ...overrides,
   };
 }
-
-test("password reset template includes the reset link in text and html", () => {
-  const message = buildPasswordResetEmail({
-    from: { address: DEFAULT_PRODUCTION_FROM_EMAIL, name: "Is Baby Out Yet?" },
-    recipient: "parent@example.com",
-    resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
-    subjectPrefix: "",
-  });
-
-  expect(message.subject).toBe("Reset your Is Baby Out Yet? password");
-  expect(message.text).toContain(
-    "Reset your password: https://isbabyoutyet.com/auth/reset-password?token=secret",
-  );
-  expect(message.html).toContain(
-    'href="https://isbabyoutyet.com/auth/reset-password?token=secret"',
-  );
-});
 
 test("preview identity uses a distinct from address and subject prefix", () => {
   expect(resolveEmailIdentity(cloudflareConfiguredEnv({ VERCEL_ENV: "preview" }))).toEqual({
@@ -74,19 +55,6 @@ test("from-address env overrides win over the defaults", () => {
       }),
     ),
   ).toMatchObject({ address: "qa@isbabyoutyet.com" });
-});
-
-test("password reset html escapes special characters in the reset url", () => {
-  const message = buildPasswordResetEmail({
-    from: { address: DEFAULT_PRODUCTION_FROM_EMAIL, name: PRODUCTION_FROM_NAME },
-    recipient: "parent@example.com",
-    resetUrl: `https://isbabyoutyet.com/auth/reset-password?token=a&next="x"'<y>`,
-    subjectPrefix: "",
-  });
-
-  expect(message.html).toContain(
-    'href="https://isbabyoutyet.com/auth/reset-password?token=a&amp;next=&quot;x&quot;&#39;&lt;y&gt;"',
-  );
 });
 
 test("local backends resolve to the log sender", () => {

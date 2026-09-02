@@ -38,11 +38,15 @@
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
     "@convex-dev/migrations": "catalog:",
+    "@workspace/email": "workspace:*",
     "@workspace/runtime": "workspace:*",
     "better-auth": "catalog:",
     "convex": "catalog:",
     "convex-helpers": "catalog:",
     "convex-table-history": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-email": "catalog:",
     "sharp": "catalog:",
     "web-push": "catalog:"
   },

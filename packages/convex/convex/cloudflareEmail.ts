@@ -1,4 +1,4 @@
-import { buildPasswordResetEmail } from "./emailTemplates";
+import { renderPasswordResetEmail } from "@workspace/email";
 import {
   defaultEmailLog,
   resolveEmailIdentity,
@@ -36,17 +36,21 @@ export async function sendPasswordResetEmail(opts: {
       log: deps.log,
     });
 
-  await sender.send(
-    buildPasswordResetEmail({
-      from: {
-        address: identity.address,
-        name: identity.name,
-      },
-      recipient: opts.recipient,
-      resetUrl: opts.resetUrl,
-      subjectPrefix: identity.subjectPrefix,
-    }),
-  );
+  const rendered = await renderPasswordResetEmail({
+    resetUrl: opts.resetUrl,
+    subjectPrefix: identity.subjectPrefix,
+  });
+
+  await sender.send({
+    from: {
+      address: identity.address,
+      name: identity.name,
+    },
+    html: rendered.html,
+    subject: rendered.subject,
+    text: rendered.text,
+    to: opts.recipient,
+  });
 }
 
 function defaultPasswordResetEmailDeps(): PasswordResetEmailDeps {

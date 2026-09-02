@@ -27,4 +27,4 @@ The homepage also links to a locale-specific public live demo (Juniper Hale, Wil
 
 Demo photos live in Git LFS (`packages/convex/assets/homepage-demo/`). Vercel: enable Git LFS in the project Git settings so production/preview builds receive the actual images.
 
-Password-reset email uses Cloudflare Email Service. Local development logs instead of sending. See [`docs/email.md`](docs/email.md) for the one-time Cloudflare + Vercel finish steps.
+Password-reset mail is React Email in `@workspace/email`. `pnpm dev` also starts the template preview at http://localhost:3333. Local Convex logs instead of sending.
