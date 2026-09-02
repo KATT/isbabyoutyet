@@ -4,7 +4,7 @@ import { createClient } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { requireActionCtx } from "@convex-dev/better-auth/utils";
 import authConfig from "./auth.config";
-import { sendPasswordResetEmail } from "./cloudflareEmail";
+import { sendPasswordResetEmail, sendVerificationEmail } from "./cloudflareEmail";
 import { components, internal } from "./_generated/api";
 import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
@@ -33,6 +33,24 @@ export async function sendAuthResetPassword(
     deps: null,
     recipient: data.user.email,
     resetUrl: data.url,
+  });
+}
+
+/**
+ * Better Auth `sendVerificationEmail` hook. Same ActionCtx constraint as reset
+ * mail. Used for first-time verify and for change-email confirmation on the new
+ * address (Better Auth does not send a separate change-email template unless
+ * `sendChangeEmailConfirmation` is set).
+ */
+export async function sendAuthVerificationEmail(
+  ctx: GenericCtx<DataModel>,
+  data: { url: string; user: { email: string } },
+) {
+  requireActionCtx(ctx);
+  await sendVerificationEmail({
+    deps: null,
+    recipient: data.user.email,
+    verifyUrl: data.url,
   });
 }
 
@@ -115,6 +133,16 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async (data) => {
         await sendAuthResetPassword(convexCtx, data);
+      },
+    },
+    emailVerification: {
+      sendVerificationEmail: async (data) => {
+        await sendAuthVerificationEmail(convexCtx, data);
+      },
+    },
+    user: {
+      changeEmail: {
+        enabled: true,
       },
     },
     // Convex better-auth already exposes a rateLimit table; enable it on

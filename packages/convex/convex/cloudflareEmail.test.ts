@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { makeResource } from "./test.resource";
-import { sendPasswordResetEmail } from "./cloudflareEmail";
+import { sendPasswordResetEmail, sendVerificationEmail } from "./cloudflareEmail";
 import {
   DEFAULT_PREVIEW_FROM_EMAIL,
   DEFAULT_PRODUCTION_FROM_EMAIL,
@@ -251,4 +251,28 @@ test("omitted deps read Convex env and log on local backends", async () => {
       to: "parent@example.com",
     }),
   );
+});
+
+test("sends verification email through Cloudflare Email Service", async () => {
+  const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 200 }));
+
+  await sendVerificationEmail({
+    deps: {
+      env: cloudflareConfiguredEnv(),
+      fetchImpl: fetchMock,
+      log: vi.fn(),
+      sender: null,
+    },
+    recipient: "parent@example.com",
+    verifyUrl: "https://isbabyoutyet.com/dashboard/profile?notice=verified",
+  });
+
+  expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+    from: {
+      address: DEFAULT_PRODUCTION_FROM_EMAIL,
+      name: "Is Baby Out Yet?",
+    },
+    subject: "Verify your Is Baby Out Yet? email",
+    to: "parent@example.com",
+  });
 });

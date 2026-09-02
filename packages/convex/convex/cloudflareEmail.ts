@@ -1,4 +1,5 @@
-import { renderPasswordResetEmail } from "@workspace/email";
+import { renderPasswordResetEmail, renderVerifyEmail } from "@workspace/email";
+import type { RenderedEmail } from "@workspace/email";
 import {
   defaultEmailLog,
   resolveEmailIdentity,
@@ -8,7 +9,7 @@ import {
 } from "./emailSender";
 import { env } from "./_generated/server";
 
-export type PasswordResetEmailDeps = {
+export type EmailDeliveryDeps = {
   readonly env: EmailSenderEnv;
   readonly fetchImpl: typeof fetch;
   readonly log: typeof defaultEmailLog;
@@ -16,17 +17,15 @@ export type PasswordResetEmailDeps = {
   readonly sender: EmailSender | null;
 };
 
-/**
- * Build the password-reset template and deliver it through the resolved
- * {@link EmailSender}. Production passes `deps: null`; tests inject env /
- * fetch / sender.
- */
-export async function sendPasswordResetEmail(opts: {
-  deps: PasswordResetEmailDeps | null;
+/** @deprecated Use {@link EmailDeliveryDeps}. */
+export type PasswordResetEmailDeps = EmailDeliveryDeps;
+
+async function sendRenderedEmail(opts: {
+  deps: EmailDeliveryDeps | null;
   recipient: string;
-  resetUrl: string;
+  rendered: RenderedEmail;
 }) {
-  const deps = opts.deps ?? defaultPasswordResetEmailDeps();
+  const deps = opts.deps ?? defaultEmailDeliveryDeps();
   const identity = resolveEmailIdentity(deps.env);
   const sender =
     deps.sender ??
@@ -36,24 +35,62 @@ export async function sendPasswordResetEmail(opts: {
       log: deps.log,
     });
 
-  const rendered = await renderPasswordResetEmail({
-    resetUrl: opts.resetUrl,
-    subjectPrefix: identity.subjectPrefix,
-  });
-
   await sender.send({
     from: {
       address: identity.address,
       name: identity.name,
     },
-    html: rendered.html,
-    subject: rendered.subject,
-    text: rendered.text,
+    html: opts.rendered.html,
+    subject: opts.rendered.subject,
+    text: opts.rendered.text,
     to: opts.recipient,
   });
 }
 
-function defaultPasswordResetEmailDeps(): PasswordResetEmailDeps {
+/**
+ * Build the password-reset template and deliver it through the resolved
+ * {@link EmailSender}. Production passes `deps: null`; tests inject env /
+ * fetch / sender.
+ */
+export async function sendPasswordResetEmail(opts: {
+  deps: EmailDeliveryDeps | null;
+  recipient: string;
+  resetUrl: string;
+}) {
+  const deps = opts.deps ?? defaultEmailDeliveryDeps();
+  const identity = resolveEmailIdentity(deps.env);
+  await sendRenderedEmail({
+    deps,
+    recipient: opts.recipient,
+    rendered: await renderPasswordResetEmail({
+      resetUrl: opts.resetUrl,
+      subjectPrefix: identity.subjectPrefix,
+    }),
+  });
+}
+
+/**
+ * Verify-email and change-email confirmation (Better Auth sends this to the
+ * address being confirmed).
+ */
+export async function sendVerificationEmail(opts: {
+  deps: EmailDeliveryDeps | null;
+  recipient: string;
+  verifyUrl: string;
+}) {
+  const deps = opts.deps ?? defaultEmailDeliveryDeps();
+  const identity = resolveEmailIdentity(deps.env);
+  await sendRenderedEmail({
+    deps,
+    recipient: opts.recipient,
+    rendered: await renderVerifyEmail({
+      subjectPrefix: identity.subjectPrefix,
+      verifyUrl: opts.verifyUrl,
+    }),
+  });
+}
+
+function defaultEmailDeliveryDeps(): EmailDeliveryDeps {
   return {
     env: {
       CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID,

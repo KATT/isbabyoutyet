@@ -1,4 +1,4 @@
-import { Palette, Shield, SignOut } from "@phosphor-icons/react";
+import { Palette, Shield, SignOut, User } from "@phosphor-icons/react";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
@@ -145,6 +145,18 @@ export function DashboardSettingsSheetView(props: {
           </SheetHeader>
 
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
+            <SettingsSection title={t("Account")}>
+              <Item render={<Link preload="viewport" to="/dashboard/profile" />}>
+                <ItemMedia variant="icon">
+                  <User />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{t("Profile")}</ItemTitle>
+                  <ItemDescription>{t("Manage your name, email, and password.")}</ItemDescription>
+                </ItemContent>
+              </Item>
+            </SettingsSection>
+
             <SettingsSection title={t("Language and time zone")}>
               <Item>
                 <ItemContent>{props.languageSettings}</ItemContent>

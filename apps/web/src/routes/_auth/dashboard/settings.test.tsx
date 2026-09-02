@@ -49,6 +49,9 @@ test("profile sheet groups preferences and secondary dashboard actions", async (
 
   expect(view.getByRole("dialog")).toBeTruthy();
   expect(view.getByRole("heading", { name: "Settings" })).toBeTruthy();
+  expect(view.getByRole("link", { name: /Profile/ }).getAttribute("href")).toContain(
+    "/dashboard/profile",
+  );
   expect(view.getByText("Language and timezone controls")).toBeTruthy();
   expect(view.getByRole("button", { name: "Toggle theme" })).toBeTruthy();
   expect(view.getByRole("link", { name: "Admin dashboard" }).getAttribute("href")).toContain(
@@ -71,6 +74,9 @@ test("settings sheet omits the admin link for non-admins", async () => {
   });
 
   expect(view.getByRole("dialog")).toBeTruthy();
+  expect(view.getByRole("link", { name: /Profile/ }).getAttribute("href")).toContain(
+    "/dashboard/profile",
+  );
   expect(view.queryByRole("link", { name: "Admin dashboard" })).toBeNull();
   expect(view.queryByRole("button", { name: "Add Baby" })).toBeNull();
   expect(view.queryByRole("heading", { name: /Your babies/ })).toBeNull();

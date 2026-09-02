@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Body, Container, Head, Html, Preview, Section, Tailwind, Text } from "react-email";
-import { passwordResetCopy } from "./copy";
+import { emailBrandCopy } from "./copy";
 import { emailTailwindConfig, emailTheme } from "./theme";
 
 export type EmailLayoutProps = {
@@ -43,7 +43,7 @@ export function EmailLayout(props: EmailLayoutProps) {
                   textAlign: "center",
                 }}
               >
-                {passwordResetCopy.previewBanner}
+                {emailBrandCopy.previewBanner}
               </Text>
             </Section>
           ) : null}
@@ -79,7 +79,7 @@ export function EmailLayout(props: EmailLayoutProps) {
                 >
                   👶
                 </span>
-                {passwordResetCopy.wordmark}
+                {emailBrandCopy.wordmark}
               </Text>
             </Section>
             {props.children}

@@ -585,6 +585,35 @@ const enGB = {
   "Your Babies": "Your Babies",
   "Your kind words have been sent! 💕": "Sent! 💕",
   "Your name": "Your name",
+  // Account / profile
+  Account: "Account",
+  "Change email": "Change email",
+  "Change password": "Change password",
+  "Check your inbox to confirm the new address.": "Check your inbox to confirm the new address.",
+  "Check your inbox to verify this email.": "Check your inbox to verify this email.",
+  "Choose a different email address.": "Choose a different email address.",
+  "Current password": "Current password",
+  "Current password is required.": "Current password is required.",
+  "Email is unverified": "Email is unverified",
+  "Manage your name, email, and password.": "Manage your name, email, and password.",
+  "New email": "New email",
+  Profile: "Profile",
+  "Profile – Is Baby Out Yet?": "Profile | Is Baby Out Yet?",
+  "Save name": "Save name",
+  "Send verification email": "Send verification email",
+  "This is the name on your account.": "This is the name on your account.",
+  "Unable to change your email": "Unable to change your email",
+  "Unable to send a verification email": "Unable to send a verification email",
+  "Unable to update your name": "Unable to update your name",
+  "Unable to update your password": "Unable to update your password",
+  "Verify your current email before you can change it.":
+    "Verify your current email before you can change it.",
+  "We'll send a confirmation link to the new address.":
+    "We'll send a confirmation link to the new address.",
+  "Your email is now verified.": "Your email is now verified.",
+  "Your email is verified.": "Your email is verified.",
+  "Your name has been updated.": "Your name has been updated.",
+  "Your password has been updated.": "Your password has been updated.",
 } as const;
 
 export type TranslationKey = keyof typeof enGB;
@@ -1186,6 +1215,35 @@ const sv: TranslationCatalog = {
   "Your Babies": "Dina bäbisar",
   "Your kind words have been sent! 💕": "Din fina hälsning har skickats! 💕",
   "Your name": "Ditt namn",
+  // Account / profile
+  Account: "Konto",
+  "Change email": "Byt e-post",
+  "Change password": "Byt lösenord",
+  "Check your inbox to confirm the new address.": "Kolla inkorgen för att bekräfta den nya adressen.",
+  "Check your inbox to verify this email.": "Kolla inkorgen för att verifiera den här e-postadressen.",
+  "Choose a different email address.": "Välj en annan e-postadress.",
+  "Current password": "Nuvarande lösenord",
+  "Current password is required.": "Ange ditt nuvarande lösenord.",
+  "Email is unverified": "E-postadressen är inte verifierad",
+  "Manage your name, email, and password.": "Hantera namn, e-post och lösenord.",
+  "New email": "Ny e-post",
+  Profile: "Profil",
+  "Profile – Is Baby Out Yet?": "Profil | Har bäbisen kommit?",
+  "Save name": "Spara namn",
+  "Send verification email": "Skicka verifieringsmejl",
+  "This is the name on your account.": "Det här namnet syns på ditt konto.",
+  "Unable to change your email": "Kunde inte byta e-post",
+  "Unable to send a verification email": "Kunde inte skicka verifieringsmejl",
+  "Unable to update your name": "Kunde inte uppdatera namnet",
+  "Unable to update your password": "Kunde inte uppdatera lösenordet",
+  "Verify your current email before you can change it.":
+    "Verifiera din nuvarande e-post innan du kan byta den.",
+  "We'll send a confirmation link to the new address.":
+    "Vi skickar en bekräftelselänk till den nya adressen.",
+  "Your email is now verified.": "Din e-post är nu verifierad.",
+  "Your email is verified.": "Din e-post är verifierad.",
+  "Your name has been updated.": "Ditt namn har uppdaterats.",
+  "Your password has been updated.": "Ditt lösenord har uppdaterats.",
 };
 
 const es: TranslationCatalog = {
@@ -1768,6 +1826,36 @@ const es: TranslationCatalog = {
   "Your Babies": "Tus bebés",
   "Your kind words have been sent! 💕": "¡Tu mensaje ya está enviado! 💕",
   "Your name": "Tu nombre",
+  // Account / profile
+  Account: "Cuenta",
+  "Change email": "Cambiar correo",
+  "Change password": "Cambiar contraseña",
+  "Check your inbox to confirm the new address.":
+    "Revisa tu bandeja para confirmar la nueva dirección.",
+  "Check your inbox to verify this email.": "Revisa tu bandeja para verificar este correo.",
+  "Choose a different email address.": "Elige otra dirección de correo.",
+  "Current password": "Contraseña actual",
+  "Current password is required.": "La contraseña actual es obligatoria.",
+  "Email is unverified": "El correo no está verificado",
+  "Manage your name, email, and password.": "Gestiona tu nombre, correo y contraseña.",
+  "New email": "Correo nuevo",
+  Profile: "Perfil",
+  "Profile – Is Baby Out Yet?": "Perfil | ¿Ya nació el bebé?",
+  "Save name": "Guardar nombre",
+  "Send verification email": "Enviar correo de verificación",
+  "This is the name on your account.": "Este es el nombre de tu cuenta.",
+  "Unable to change your email": "No se pudo cambiar el correo",
+  "Unable to send a verification email": "No se pudo enviar el correo de verificación",
+  "Unable to update your name": "No se pudo actualizar el nombre",
+  "Unable to update your password": "No se pudo actualizar la contraseña",
+  "Verify your current email before you can change it.":
+    "Verifica tu correo actual antes de poder cambiarlo.",
+  "We'll send a confirmation link to the new address.":
+    "Enviaremos un enlace de confirmación a la nueva dirección.",
+  "Your email is now verified.": "Tu correo ya está verificado.",
+  "Your email is verified.": "Tu correo está verificado.",
+  "Your name has been updated.": "Tu nombre se ha actualizado.",
+  "Your password has been updated.": "Tu contraseña se ha actualizado.",
 };
 
 const ptBR: TranslationCatalog = {
@@ -2356,6 +2444,36 @@ const ptBR: TranslationCatalog = {
   "Your Babies": "Seus bebês",
   "Your kind words have been sent! 💕": "Sua mensagem foi enviada! 💕",
   "Your name": "Seu nome",
+  // Account / profile
+  Account: "Conta",
+  "Change email": "Alterar e-mail",
+  "Change password": "Alterar senha",
+  "Check your inbox to confirm the new address.":
+    "Confira a caixa de entrada para confirmar o novo endereço.",
+  "Check your inbox to verify this email.": "Confira a caixa de entrada para verificar este e-mail.",
+  "Choose a different email address.": "Escolha outro endereço de e-mail.",
+  "Current password": "Senha atual",
+  "Current password is required.": "A senha atual é obrigatória.",
+  "Email is unverified": "O e-mail não está verificado",
+  "Manage your name, email, and password.": "Gerencie nome, e-mail e senha.",
+  "New email": "Novo e-mail",
+  Profile: "Perfil",
+  "Profile – Is Baby Out Yet?": "Perfil | O bebê já nasceu?",
+  "Save name": "Salvar nome",
+  "Send verification email": "Enviar e-mail de verificação",
+  "This is the name on your account.": "Este é o nome da sua conta.",
+  "Unable to change your email": "Não foi possível alterar o e-mail",
+  "Unable to send a verification email": "Não foi possível enviar o e-mail de verificação",
+  "Unable to update your name": "Não foi possível atualizar o nome",
+  "Unable to update your password": "Não foi possível atualizar a senha",
+  "Verify your current email before you can change it.":
+    "Verifique seu e-mail atual antes de poder alterá-lo.",
+  "We'll send a confirmation link to the new address.":
+    "Vamos enviar um link de confirmação para o novo endereço.",
+  "Your email is now verified.": "Seu e-mail agora está verificado.",
+  "Your email is verified.": "Seu e-mail está verificado.",
+  "Your name has been updated.": "Seu nome foi atualizado.",
+  "Your password has been updated.": "Sua senha foi atualizada.",
 };
 
 const enUS: PartialTranslationCatalog = {
