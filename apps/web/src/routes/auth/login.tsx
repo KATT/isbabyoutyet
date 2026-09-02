@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
+import type { BrowserAuthHeaders } from "@/lib/auth-client";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -49,11 +50,11 @@ type Credentials = { email: string; password: string };
  */
 export type SignInHandoff = {
   failedMessage: string;
-  headers: () => Record<string, string>;
+  headers: () => BrowserAuthHeaders;
   navigate: () => Promise<void>;
   signIn: (
     body: Credentials & { rememberMe: boolean },
-    fetchOptions: { headers: Record<string, string> },
+    fetchOptions: { headers: BrowserAuthHeaders },
   ) => Promise<{ errorMessage: string | null }>;
   waitForAuth: () => Promise<void>;
 };
@@ -106,7 +107,7 @@ export const loginAuthAdapter = {
   headers: () => getBrowserAuthHeaders(),
   signInEmail: (
     body: Credentials & { rememberMe: boolean },
-    fetchOptions: { headers: Record<string, string> },
+    fetchOptions: { headers: BrowserAuthHeaders },
   ) => authClient.signIn.email(body, fetchOptions),
   waitForAuth: () => waitForConvexAuth(),
 };

@@ -4,25 +4,37 @@ import { isValidTimeZone, TIME_ZONE_HINT_HEADER } from "@workspace/convex/src/ti
 import { parseVisitorIdHint, VISITOR_ID_HINT_HEADER } from "@workspace/convex/src/visitorId";
 import { peekVisitorId } from "@/lib/use-visitor-id";
 
-export function getBrowserAuthHeaders(): Record<string, string> {
+function browserTimeZone() {
+  try {
+    const timeZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return timeZone && isValidTimeZone(timeZone) ? timeZone : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getBrowserAuthHeaders() {
   if (globalThis.window === undefined) {
     return {};
   }
-  const headers: Record<string, string> = {};
-  try {
-    const timeZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (timeZone && isValidTimeZone(timeZone)) {
-      headers[TIME_ZONE_HINT_HEADER] = timeZone;
-    }
-  } catch {
-    // Intl can throw in exotic environments; sign-in still works without the hint.
-  }
+  const timeZone = browserTimeZone();
   const visitorId = parseVisitorIdHint(peekVisitorId());
-  if (visitorId) {
-    headers[VISITOR_ID_HINT_HEADER] = visitorId;
+  if (timeZone && visitorId) {
+    return {
+      [TIME_ZONE_HINT_HEADER]: timeZone,
+      [VISITOR_ID_HINT_HEADER]: visitorId,
+    };
   }
-  return headers;
+  if (timeZone) {
+    return { [TIME_ZONE_HINT_HEADER]: timeZone };
+  }
+  if (visitorId) {
+    return { [VISITOR_ID_HINT_HEADER]: visitorId };
+  }
+  return {};
 }
+
+export type BrowserAuthHeaders = ReturnType<typeof getBrowserAuthHeaders>;
 
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_SITE_URL,

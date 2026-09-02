@@ -10,6 +10,7 @@ import {
   signUpAndHandoff,
 } from "@/routes/auth/signup";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import type { BrowserAuthHeaders } from "@/lib/auth-client";
 import { htmlInput } from "@/test/htmlElement";
 
 type NewAccount = { email: string; name: string; password: string };
@@ -33,7 +34,7 @@ function renderSignup(onSignUp: (values: NewAccount) => Promise<void>) {
 function handoffDeps() {
   const signUp = vi
     .fn<
-      (body: NewAccount, fetchOptions: { headers: Record<string, string> }) => Promise<SignUpResult>
+      (body: NewAccount, fetchOptions: { headers: BrowserAuthHeaders }) => Promise<SignUpResult>
     >()
     .mockResolvedValue({ errorMessage: null });
   const waitForAuth = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);

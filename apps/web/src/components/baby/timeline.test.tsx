@@ -827,6 +827,8 @@ test("EncouragementForm prefers a session name draft over committed localStorage
 });
 
 test("EncouragementForm prefills the account name when localStorage is empty", async () => {
+  localStorage.removeItem("encouragement-author-name");
+  sessionStorage.clear();
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
 

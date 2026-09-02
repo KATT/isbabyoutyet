@@ -85,8 +85,8 @@ function toPublicEncouragement(
 async function hydrateTimelineItem(
   ctx: QueryCtx,
   opts: {
-    currentPhotoId: Id<"_storage"> | null;
     author: EncouragementAuthor | null;
+    currentPhotoId: Id<"_storage"> | null;
     item: Doc<"timelineItems">;
   },
 ) {

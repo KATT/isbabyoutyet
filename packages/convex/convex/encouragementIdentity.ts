@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { appIdentity } from "./authIdentity";
 
@@ -30,10 +31,7 @@ export type EncouragementAuthor =
       visitorId: string;
     };
 
-export type EncouragementOwnership = {
-  userId: string | null | undefined;
-  visitorId: string;
-};
+export type EncouragementOwnership = Pick<Doc<"encouragements">, "userId" | "visitorId">;
 
 export async function resolveEncouragementAuthor(
   ctx: Pick<QueryCtx, "auth">,
