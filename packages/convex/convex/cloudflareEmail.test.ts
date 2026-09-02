@@ -65,14 +65,14 @@ test("sends password reset email through Cloudflare Email Service", async () => 
   vi.stubGlobal("fetch", fetchMock);
 
   await sendPasswordResetEmail({
-    recipient: "parent@example.com",
-    resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
     deps: {
       env: cloudflareConfiguredEnv(),
       fetchImpl: fetchMock,
       log: vi.fn(),
       sender: null,
     },
+    recipient: "parent@example.com",
+    resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
   });
 
   expect(fetchMock).toHaveBeenCalledOnce();
@@ -83,12 +83,12 @@ test("sends password reset email through Cloudflare Email Service", async () => 
     "Content-Type": "application/json",
   });
   expect(JSON.parse(String(init?.body))).toMatchObject({
-    to: "parent@example.com",
     from: {
       address: DEFAULT_PRODUCTION_FROM_EMAIL,
       name: "Is Baby Out Yet?",
     },
     subject: "Reset your Is Baby Out Yet? password",
+    to: "parent@example.com",
   });
 });
 
@@ -96,14 +96,14 @@ test("preview sends with prefixed subject and preview from address", async () =>
   const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 200 }));
 
   await sendPasswordResetEmail({
-    recipient: "parent@example.com",
-    resetUrl: "https://preview.example/auth/reset-password?token=secret",
     deps: {
       env: cloudflareConfiguredEnv({ VERCEL_ENV: "preview" }),
       fetchImpl: fetchMock,
       log: vi.fn(),
       sender: null,
     },
+    recipient: "parent@example.com",
+    resetUrl: "https://preview.example/auth/reset-password?token=secret",
   });
 
   expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
@@ -120,14 +120,14 @@ test("fails when Cloudflare rejects the email", async () => {
 
   await expect(
     sendPasswordResetEmail({
-      recipient: "parent@example.com",
-      resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
       deps: {
         env: cloudflareConfiguredEnv(),
         fetchImpl: fetchMock,
         log: vi.fn(),
         sender: null,
       },
+      recipient: "parent@example.com",
+      resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
     }),
   ).rejects.toThrow("Cloudflare Email Service rejected the message (403)");
 });
@@ -137,8 +137,6 @@ test("fails clearly when Email Service is not configured on Vercel", async () =>
 
   await expect(
     sendPasswordResetEmail({
-      recipient: "parent@example.com",
-      resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
       deps: {
         env: cloudflareConfiguredEnv({
           CLOUDFLARE_ACCOUNT_ID: undefined,
@@ -148,6 +146,8 @@ test("fails clearly when Email Service is not configured on Vercel", async () =>
         log: vi.fn(),
         sender: null,
       },
+      recipient: "parent@example.com",
+      resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
     }),
   ).rejects.toThrow("Cloudflare Email Service is not configured");
   expect(fetchMock).not.toHaveBeenCalled();
@@ -158,22 +158,22 @@ test("local delivery logs instead of calling Cloudflare", async () => {
   const log = vi.fn();
 
   await sendPasswordResetEmail({
-    recipient: "parent@example.com",
-    resetUrl: "http://localhost:3000/auth/reset-password?token=secret",
     deps: {
       env: cloudflareConfiguredEnv({ VERCEL_ENV: undefined }),
       fetchImpl: fetchMock,
       log,
       sender: createLogEmailSender(log),
     },
+    recipient: "parent@example.com",
+    resetUrl: "http://localhost:3000/auth/reset-password?token=secret",
   });
 
   expect(fetchMock).not.toHaveBeenCalled();
   expect(log).toHaveBeenCalledWith(
     "email.skipped_local_delivery",
     expect.objectContaining({
-      to: "parent@example.com",
       subject: "Reset your Is Baby Out Yet? password",
+      to: "parent@example.com",
     }),
   );
 });

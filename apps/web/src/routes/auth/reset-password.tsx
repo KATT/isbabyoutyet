@@ -100,13 +100,14 @@ export function ResetPasswordPage() {
   const { t } = useI18n();
   const router = useRouter();
   const search = Route.useSearch();
-  const invalidLink = !search.token || search.error === "INVALID_TOKEN";
+  const token = search.token;
+  const invalidLink = !token || search.error === "INVALID_TOKEN";
 
   return (
     <ResetPasswordCard
       invalidLink={invalidLink}
       onResetPassword={
-        search.token
+        token
           ? (values) =>
               resetPasswordAndRedirect(values, {
                 failedMessage: t("Unable to reset your password"),
@@ -115,7 +116,7 @@ export function ResetPasswordPage() {
                   const result = await resetPasswordAuthAdapter.resetPassword(body);
                   return { errorMessage: result.error ? (result.error.message ?? "") : null };
                 },
-                token: search.token,
+                token,
               })
           : null
       }

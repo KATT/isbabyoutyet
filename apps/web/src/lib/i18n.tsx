@@ -115,7 +115,6 @@ const enGB = {
   "Choose a theme that matches your style — your page, your way.":
     "Choose a theme that feels like you.",
   "Choose notifications": "Choose notifications",
-  "Confirm new password": "Confirm new password",
   "Click any stage to see how your page will look":
     "Click any stage to see how your page will look",
   "Close checklist": "Close checklist",
@@ -127,6 +126,7 @@ const enGB = {
   "Co-parent removed": "Co-parent removed",
   "Co-parents": "Co-parents",
   'Come back here and tap "Get Notifications"': 'Come back here and tap "Get Notifications"',
+  "Confirm new password": "Confirm new password",
   "Copied!": "Copied!",
   "Copied to clipboard": "Copied to clipboard",
   "Copy link to share": "Copy link to share",
@@ -255,10 +255,10 @@ const enGB = {
   "Home birth": "Home birth",
   "How It Works": "How It Works",
   "How it works": "How it works",
-  "If this photo is the current page photo, the previous one takes its place.":
-    "If this photo is the current page photo, the previous one takes its place.",
   "If an account exists for that address, a password reset email is on its way.":
     "If an account exists for that address, a password reset email is on its way.",
+  "If this photo is the current page photo, the previous one takes its place.":
+    "If this photo is the current page photo, the previous one takes its place.",
   "If you close now, your edits will be lost.": "If you close now, your edits will be lost.",
   "Install this app on your Home Screen before enabling push notifications on iOS.":
     "Add this page to your Home Screen before turning on notifications.",
@@ -430,7 +430,6 @@ const enGB = {
   "See it in action": "See it in action",
   "Send Encouragement": "Send some love",
   "Send encouragement": "Send some love",
-  "Send reset link": "Send reset link",
   "Sending...": "Sending...",
   "Sending notification...": "Sending notification...",
   "Sending your encouragement...": "Sending your message...",
@@ -439,6 +438,7 @@ const enGB = {
   "Send it to family and friends. They can follow along and subscribe without an account.":
     "Send it to family and friends. They can follow along and subscribe without an account.",
   "Send request": "Send request",
+  "Send reset link": "Send reset link",
   "Send some love": "Send some love",
   "September baby": "September baby",
   "Set as page photo": "Set as page photo",
@@ -509,10 +509,10 @@ const enGB = {
   "This is how your page will look when shared.": "This is how your page will look when shared.",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "We start with your browser language. New baby pages use it too.",
-  "This reset link is invalid or has expired.": "This reset link is invalid or has expired.",
   "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
     "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.",
   "This removes the update from the timeline.": "This removes the update from the timeline.",
+  "This reset link is invalid or has expired.": "This reset link is invalid or has expired.",
   "Time zone saved": "Time zone saved",
   "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.":
     "On iPhone or iPad, add this page to your Home Screen first. Tap for steps.",
@@ -529,22 +529,22 @@ const enGB = {
   "Unsubscribed from notifications!": "Notifications off",
   "Unsubscribing from notifications...": "Unsubscribing from notifications...",
   "Up and running in under a minute": "Up and running in under a minute",
-  "Use at least eight characters for your new password.":
-    "Use at least eight characters for your new password.",
   Update: "Update",
   "Update as You Go": "Update as You Go",
   "Update as you go": "Update as you go",
   Updated: "Updated",
   "Updated {{relative}}": "Updated {{relative}}",
   "Update message (optional)": "Update message (optional)",
+  "Update password": "Update password",
   "Update posted": "Update posted",
   "Update posted!": "Update posted!",
-  "Update password": "Update password",
   "Update removed": "Update removed",
   "Updates & encouragements": "Updates & messages",
   "Updates from the family will show up here.": "Updates from the family will show up here.",
   "Update Your Status": "Update Your Status",
   "Update your status": "Update your status",
+  "Use at least eight characters for your new password.":
+    "Use at least eight characters for your new password.",
   "Use my profile language ({{language}})": "Use my profile language ({{language}})",
   "Use this sparkle button to bring the guide back anytime.":
     "Use this sparkle button to bring the guide back anytime.",
@@ -694,6 +694,7 @@ const sv: TranslationCatalog = {
   "Baby Name": "Bäbisens namn",
   "Baby update": "Bäbisuppdatering",
   "Back to Dashboard": "Tillbaka till översikten",
+  "Back to sign in": "Tillbaka till inloggning",
   "Before labour starts": "Innan förlossningen börjar",
   "Birth journey": "Förlossningsresa",
   Born: "Född",
@@ -707,7 +708,10 @@ const sv: TranslationCatalog = {
   Change: "Ändra",
   "Change photo": "Byt foto",
   "Change theme": "Byt tema",
+  "Check your inbox for the next step.": "Kolla inkorgen för nästa steg.",
   "Choose a journey": "Välj en resa",
+  "Choose a new password": "Välj ett nytt lösenord",
+  "Choose a new password – Is Baby Out Yet?": "Välj ett nytt lösenord | Har bäbisen kommit?",
   "Choose a theme that matches your style — your page, your way.":
     "Välj ett tema som känns som ni. Det är ju er sida.",
   "Choose notifications": "Välj notiser",
@@ -721,6 +725,7 @@ const sv: TranslationCatalog = {
   "Co-parent removed": "Medföräldern har tagits bort",
   "Co-parents": "Medföräldrar",
   'Come back here and tap "Get Notifications"': 'Gå tillbaka hit och tryck på "Få notiser"',
+  "Confirm new password": "Bekräfta nytt lösenord",
   "Copied!": "Kopierat!",
   "Copied to clipboard": "Kopierat till urklipp",
   "Copy link to share": "Kopiera delningslänk",
@@ -779,6 +784,8 @@ const sv: TranslationCatalog = {
   "Enter a message for visitors": "Skriv ett meddelande till besökarna",
   "Enter baby's name": "Ange bäbisens namn",
   "Enter your baby's name and due date to get started": "Ange bäbisens namn och beräknade datum",
+  "Enter your email and we'll send you a secure reset link.":
+    "Ange din e-post så skickar vi en säker återställningslänk.",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
     "Alla ser hur många dagar som är kvar. Om bäbisen dröjer visar vi hur många dagar ni gått över tiden.",
   "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
@@ -806,6 +813,7 @@ const sv: TranslationCatalog = {
   "Feel free to post test messages — we reset this demo daily.":
     "Skriv gärna testmeddelanden — vi återställer demon varje dag.",
   "Follow {{name}}'s arrival": "Följ med tills {{name}} är här",
+  "Forgot your password?": "Glömt lösenordet?",
   "For You": "För dig",
   "For you, and for everyone waiting by the phone":
     "För dig och alla som sitter klistrade vid mobilen",
@@ -845,6 +853,8 @@ const sv: TranslationCatalog = {
   "Home birth": "Hemförlossning",
   "How It Works": "Så funkar det",
   "How it works": "Så funkar det",
+  "If an account exists for that address, a password reset email is on its way.":
+    "Om det finns ett konto för den adressen är ett mejl med återställningslänk på väg.",
   "If this photo is the current page photo, the previous one takes its place.":
     "Om det här är sidfotot tar det förra fotot över.",
   "If you close now, your edits will be lost.": "Om du stänger nu försvinner det du skrivit.",
@@ -899,6 +909,7 @@ const sv: TranslationCatalog = {
   "Name is required": "Fyll i ett namn",
   "Name must be {{count}} characters or less": "Namnet får vara högst {{count}} tecken",
   "Name must be at least 2 characters": "Namnet måste vara minst 2 tecken",
+  "New password": "Nytt lösenord",
   "New photo": "Nytt foto",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Snyggt! Dela sidan och njut av att slippa alla frågor om det hänt något.",
@@ -950,6 +961,8 @@ const sv: TranslationCatalog = {
   "Page photo": "Sidfoto",
   Password: "Lösenord",
   "Password must be at least 6 characters": "Lösenordet måste vara minst 6 tecken",
+  "Password must be at least 8 characters": "Lösenordet måste vara minst 8 tecken",
+  "Passwords do not match": "Lösenorden stämmer inte överens",
   "Peek at settings": "Titta i inställningarna",
   "People who can post updates and change settings":
     "Personer som kan lägga upp uppdateringar och ändra inställningar",
@@ -997,8 +1010,11 @@ const sv: TranslationCatalog = {
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Ett namnbyte kan ändra sidans adress, men länkar du redan har delat fortsätter att fungera.",
   "Request another language": "Önska ett annat språk",
+  "Request another link": "Begär en ny länk",
   "Requested languages": "Begärda språk",
   Requester: "Begärd av",
+  "Reset your password": "Återställ lösenordet",
+  "Reset your password – Is Baby Out Yet?": "Återställ lösenordet | Har bäbisen kommit?",
   "Restart getting started tour": "Starta om introduktionsguiden",
   "Restart tour": "Starta om guiden",
   "Review babies, users, and language requests across the platform.":
@@ -1021,6 +1037,7 @@ const sv: TranslationCatalog = {
   "Send it to family and friends. They can follow along and subscribe without an account.":
     "Skicka länken till familj och vänner. De kan följa med och slå på notiser utan konto.",
   "Send request": "Skicka önskemål",
+  "Send reset link": "Skicka återställningslänk",
   "Send some love": "Skicka lite kärlek",
   "September baby": "Septemberbäbis",
   "Set as page photo": "Använd som sidfoto",
@@ -1094,6 +1111,8 @@ const sv: TranslationCatalog = {
   "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
     "Då försvinner statusen och hela uppdateringen från tidslinjen, även meddelanden och foton. Det går inte att ångra.",
   "This removes the update from the timeline.": "Det tar bort uppdateringen från tidslinjen.",
+  "This reset link is invalid or has expired.":
+    "Den här återställningslänken är ogiltig eller har gått ut.",
   "Time zone saved": "Tidszonen har sparats",
   "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.":
     "Lägg först till sidan på hemskärmen för att få notiser på iOS. Tryck här för att se hur.",
@@ -1103,6 +1122,8 @@ const sv: TranslationCatalog = {
   "Track the progress of labour and birth": "Följ förlossningen",
   "Track the progress of labour and birth – know when baby arrives!":
     "Följ förlossningen och få veta direkt när bäbisen är här!",
+  "Unable to request a password reset": "Det gick inte att begära en återställning av lösenordet",
+  "Unable to reset your password": "Det gick inte att återställa lösenordet",
   Unsubscribe: "Stäng av notiser",
   "Unsubscribed from notifications!": "Notiserna är avstängda!",
   "Unsubscribing from notifications...": "Stänger av notiser...",
@@ -1113,6 +1134,7 @@ const sv: TranslationCatalog = {
   Updated: "Uppdaterad",
   "Updated {{relative}}": "Uppdaterat {{relative}}",
   "Update message (optional)": "Uppdateringsmeddelande (valfritt)",
+  "Update password": "Uppdatera lösenordet",
   "Update posted": "Uppdatering publicerad",
   "Update posted!": "Klart! Uppdateringen är ute.",
   "Update removed": "Uppdateringen har tagits bort",
@@ -1120,6 +1142,8 @@ const sv: TranslationCatalog = {
   "Updates from the family will show up here.": "Här dyker familjens uppdateringar upp.",
   "Update Your Status": "Uppdatera statusen",
   "Update your status": "Uppdatera statusen",
+  "Use at least eight characters for your new password.":
+    "Använd minst åtta tecken i det nya lösenordet.",
   "Use my profile language ({{language}})": "Använd språket i min profil ({{language}})",
   "Use this sparkle button to bring the guide back anytime.":
     "Använd den här gnistknappen för att ta fram guiden igen när du vill.",
@@ -1246,6 +1270,7 @@ const es: TranslationCatalog = {
   "Baby Name": "Nombre del bebé",
   "Baby update": "Novedad del bebé",
   "Back to Dashboard": "Volver al panel",
+  "Back to sign in": "Volver a iniciar sesión",
   "Before labour starts": "Antes de que comience el parto",
   "Birth journey": "Recorrido del parto",
   Born: "Nació",
@@ -1259,7 +1284,10 @@ const es: TranslationCatalog = {
   Change: "Cambiar",
   "Change photo": "Cambiar foto",
   "Change theme": "Cambiar tema",
+  "Check your inbox for the next step.": "Revisa tu correo para el siguiente paso.",
   "Choose a journey": "Elige un recorrido",
+  "Choose a new password": "Elige una contraseña nueva",
+  "Choose a new password – Is Baby Out Yet?": "Elige una contraseña nueva | ¿Ya nació el bebé?",
   "Choose a theme that matches your style — your page, your way.":
     "Elige el tema que más te guste y dale tu toque a la página.",
   "Choose notifications": "Elegir notificaciones",
@@ -1274,6 +1302,7 @@ const es: TranslationCatalog = {
   "Co-parent removed": "Acceso eliminado",
   "Co-parents": "Otras personas con acceso",
   'Come back here and tap "Get Notifications"': 'Vuelve aquí y toca "Recibir notificaciones"',
+  "Confirm new password": "Confirmar contraseña nueva",
   "Copied!": "¡Copiado!",
   "Copied to clipboard": "Copiado al portapapeles",
   "Copy link to share": "Copiar enlace para compartir",
@@ -1334,6 +1363,8 @@ const es: TranslationCatalog = {
   "Enter baby's name": "Introduce el nombre del bebé",
   "Enter your baby's name and due date to get started":
     "Introduce el nombre y la fecha prevista del bebé",
+  "Enter your email and we'll send you a secure reset link.":
+    "Escribe tu correo y te enviaremos un enlace seguro para restablecerla.",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
     "Todos ven cuántos días faltan y, si el bebé se hace esperar, cuántos días han pasado desde la fecha prevista.",
   "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
@@ -1361,6 +1392,7 @@ const es: TranslationCatalog = {
   "Feel free to post test messages — we reset this demo daily.":
     "Deja los mensajes de prueba que quieras — restablecemos esta demo cada día.",
   "Follow {{name}}'s arrival": "Sigue la llegada de {{name}}",
+  "Forgot your password?": "¿Olvidaste tu contraseña?",
   "For You": "Para ti",
   "For you, and for everyone waiting by the phone":
     "Para ti y para todos los que no sueltan el teléfono",
@@ -1401,6 +1433,8 @@ const es: TranslationCatalog = {
   "Home birth": "Parto en casa",
   "How It Works": "Cómo funciona",
   "How it works": "Cómo funciona",
+  "If an account exists for that address, a password reset email is on its way.":
+    "Si existe una cuenta con esa dirección, el correo para restablecer la contraseña ya está en camino.",
   "If this photo is the current page photo, the previous one takes its place.":
     "Si esta es la foto actual, la anterior ocupará su lugar.",
   "If you close now, your edits will be lost.": "Si cierras ahora, se perderán tus cambios.",
@@ -1456,6 +1490,7 @@ const es: TranslationCatalog = {
   "Name is required": "El nombre es obligatorio",
   "Name must be {{count}} characters or less": "El nombre debe tener {{count}} caracteres o menos",
   "Name must be at least 2 characters": "El nombre debe tener al menos 2 caracteres",
+  "New password": "Contraseña nueva",
   "New photo": "Foto nueva",
   "Nice work — share your page and enjoy the quiet inbox.":
     "¡Bien hecho! Comparte tu página y despídete del bombardeo de mensajes.",
@@ -1508,6 +1543,8 @@ const es: TranslationCatalog = {
   "Page photo": "Foto de la página",
   Password: "Contraseña",
   "Password must be at least 6 characters": "La contraseña debe tener al menos 6 caracteres",
+  "Password must be at least 8 characters": "La contraseña debe tener al menos 8 caracteres",
+  "Passwords do not match": "Las contraseñas no coinciden",
   "Peek at settings": "Echa un vistazo a Configuración",
   "People who can post updates and change settings":
     "Personas que pueden publicar novedades y cambiar la configuración",
@@ -1555,8 +1592,11 @@ const es: TranslationCatalog = {
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Cambiar el nombre puede modificar la dirección, pero los enlaces ya compartidos seguirán funcionando.",
   "Request another language": "Solicitar otro idioma",
+  "Request another link": "Pedir otro enlace",
   "Requested languages": "Idiomas solicitados",
   Requester: "Solicitante",
+  "Reset your password": "Restablece tu contraseña",
+  "Reset your password – Is Baby Out Yet?": "Restablece tu contraseña | ¿Ya nació el bebé?",
   "Restart getting started tour": "Reiniciar el recorrido de primeros pasos",
   "Restart tour": "Reiniciar recorrido",
   "Review babies, users, and language requests across the platform.":
@@ -1580,6 +1620,7 @@ const es: TranslationCatalog = {
   "Send it to family and friends. They can follow along and subscribe without an account.":
     "Envíalo a familiares y amigos. Pueden seguirlo y suscribirse sin tener una cuenta.",
   "Send request": "Enviar solicitud",
+  "Send reset link": "Enviar enlace de restablecimiento",
   "Send some love": "Manda un poco de cariño",
   "September baby": "Bebé de septiembre",
   "Set as page photo": "Usar como foto de la página",
@@ -1652,6 +1693,8 @@ const es: TranslationCatalog = {
   "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
     "Esto quita el estado y elimina su novedad del historial, incluido cualquier mensaje o foto. No se puede deshacer.",
   "This removes the update from the timeline.": "Esto elimina la novedad del historial.",
+  "This reset link is invalid or has expired.":
+    "Este enlace de restablecimiento no es válido o ha caducado.",
   "Time zone saved": "Zona horaria guardada",
   "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.":
     "Para recibir notificaciones en iOS, añade primero esta página a la pantalla de inicio. Toca para ver las instrucciones.",
@@ -1662,6 +1705,8 @@ const es: TranslationCatalog = {
   "Track the progress of labour and birth": "Sigue el progreso del parto",
   "Track the progress of labour and birth – know when baby arrives!":
     "Sigue el progreso del parto y entérate cuando nazca el bebé.",
+  "Unable to request a password reset": "No se pudo solicitar el restablecimiento de la contraseña",
+  "Unable to reset your password": "No se pudo restablecer la contraseña",
   Unsubscribe: "Cancelar suscripción",
   "Unsubscribed from notifications!": "¡Notificaciones desactivadas!",
   "Unsubscribing from notifications...": "Desactivando las notificaciones...",
@@ -1672,6 +1717,7 @@ const es: TranslationCatalog = {
   Updated: "Actualizado",
   "Updated {{relative}}": "Última actualización: {{relative}}",
   "Update message (optional)": "Mensaje de la novedad (opcional)",
+  "Update password": "Actualizar contraseña",
   "Update posted": "Novedad publicada",
   "Update posted!": "¡Novedad publicada!",
   "Update removed": "Novedad eliminada",
@@ -1679,6 +1725,8 @@ const es: TranslationCatalog = {
   "Updates from the family will show up here.": "Las novedades de la familia aparecerán aquí.",
   "Update Your Status": "Actualiza el estado",
   "Update your status": "Actualiza el estado",
+  "Use at least eight characters for your new password.":
+    "Usa al menos ocho caracteres para la contraseña nueva.",
   "Use my profile language ({{language}})": "Usar el idioma de mi perfil ({{language}})",
   "Use this sparkle button to bring the guide back anytime.":
     "Usa este botón de destellos para volver a abrir la guía cuando quieras.",
@@ -1804,6 +1852,7 @@ const ptBR: TranslationCatalog = {
   "Baby Name": "Nome do bebê",
   "Baby update": "Novidade do bebê",
   "Back to Dashboard": "Voltar ao painel",
+  "Back to sign in": "Voltar para entrar",
   "Before labour starts": "Antes do trabalho de parto começar",
   "Birth journey": "Jornada do parto",
   Born: "Nasceu",
@@ -1817,7 +1866,10 @@ const ptBR: TranslationCatalog = {
   Change: "Alterar",
   "Change photo": "Alterar foto",
   "Change theme": "Alterar tema",
+  "Check your inbox for the next step.": "Confira sua caixa de entrada para o próximo passo.",
   "Choose a journey": "Escolha uma jornada",
+  "Choose a new password": "Escolha uma senha nova",
+  "Choose a new password – Is Baby Out Yet?": "Escolha uma senha nova | Is Baby Out Yet?",
   "Choose a theme that matches your style — your page, your way.":
     "Escolha um tema que combine com seu estilo. A página é sua, do seu jeito.",
   "Choose notifications": "Escolher notificações",
@@ -1832,6 +1884,7 @@ const ptBR: TranslationCatalog = {
   "Co-parent removed": "Responsável removido",
   "Co-parents": "Outros responsáveis",
   'Come back here and tap "Get Notifications"': 'Volte aqui e toque em "Ativar notificações"',
+  "Confirm new password": "Confirmar senha nova",
   "Copied!": "Copiado!",
   "Copied to clipboard": "Copiado para a área de transferência",
   "Copy link to share": "Copiar link para compartilhar",
@@ -1892,6 +1945,8 @@ const ptBR: TranslationCatalog = {
   "Enter baby's name": "Digite o nome do bebê",
   "Enter your baby's name and due date to get started":
     "Digite o nome e a data prevista do bebê para começar",
+  "Enter your email and we'll send you a secure reset link.":
+    "Digite seu e-mail e enviaremos um link seguro para redefinir a senha.",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
     "Todo mundo vê quantos dias faltam. Se o bebê resolver ficar mais um pouquinho, a contagem continua depois da data prevista.",
   "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
@@ -1919,6 +1974,7 @@ const ptBR: TranslationCatalog = {
   "Feel free to post test messages — we reset this demo daily.":
     "Pode mandar mensagens de teste à vontade — redefinimos esta demo diariamente.",
   "Follow {{name}}'s arrival": "Acompanhe a chegada de {{name}}",
+  "Forgot your password?": "Esqueceu a senha?",
   "For You": "Para você",
   "For you, and for everyone waiting by the phone":
     "Para você e para todo mundo vidrado no celular",
@@ -1960,6 +2016,8 @@ const ptBR: TranslationCatalog = {
   "Home birth": "Parto em casa",
   "How It Works": "Como funciona",
   "How it works": "Como funciona",
+  "If an account exists for that address, a password reset email is on its way.":
+    "Se existir uma conta com esse endereço, o e-mail para redefinir a senha já está a caminho.",
   "If this photo is the current page photo, the previous one takes its place.":
     "Se esta for a foto atual da página, a foto anterior volta a aparecer.",
   "If you close now, your edits will be lost.":
@@ -2017,6 +2075,7 @@ const ptBR: TranslationCatalog = {
   "Name is required": "O nome é obrigatório",
   "Name must be {{count}} characters or less": "O nome deve ter no máximo {{count}} caracteres",
   "Name must be at least 2 characters": "O nome deve ter pelo menos 2 caracteres",
+  "New password": "Senha nova",
   "New photo": "Foto nova",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Mandou bem! Agora compartilhe sua página e aproveite o sossego nas mensagens.",
@@ -2068,6 +2127,8 @@ const ptBR: TranslationCatalog = {
   "Page photo": "Foto da página",
   Password: "Senha",
   "Password must be at least 6 characters": "A senha deve ter pelo menos 6 caracteres",
+  "Password must be at least 8 characters": "A senha deve ter pelo menos 8 caracteres",
+  "Passwords do not match": "As senhas não coincidem",
   "Peek at settings": "Dê uma olhada nas configurações",
   "People who can post updates and change settings":
     "Pessoas que podem publicar novidades e alterar as configurações",
@@ -2117,8 +2178,11 @@ const ptBR: TranslationCatalog = {
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Se você mudar o nome, o endereço da página também pode mudar. Os links que já foram compartilhados continuam funcionando.",
   "Request another language": "Pedir outro idioma",
+  "Request another link": "Pedir outro link",
   "Requested languages": "Idiomas solicitados",
   Requester: "Solicitante",
+  "Reset your password": "Redefina sua senha",
+  "Reset your password – Is Baby Out Yet?": "Redefina sua senha | Is Baby Out Yet?",
   "Restart getting started tour": "Reiniciar o tour de primeiros passos",
   "Restart tour": "Reiniciar o tour",
   "Review babies, users, and language requests across the platform.":
@@ -2142,6 +2206,7 @@ const ptBR: TranslationCatalog = {
   "Send it to family and friends. They can follow along and subscribe without an account.":
     "Envie para familiares e amigos. Eles podem acompanhar e receber notificações sem criar uma conta.",
   "Send request": "Enviar pedido",
+  "Send reset link": "Enviar link de redefinição",
   "Send some love": "Envie um pouco de carinho",
   "September baby": "Bebê de setembro",
   "Set as page photo": "Usar como foto da página",
@@ -2215,6 +2280,7 @@ const ptBR: TranslationCatalog = {
   "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
     "Isso remove o status e exclui a novidade da linha do tempo, incluindo mensagem ou foto. Não pode ser desfeito.",
   "This removes the update from the timeline.": "Isso remove a novidade da linha do tempo.",
+  "This reset link is invalid or has expired.": "Este link de redefinição é inválido ou expirou.",
   "Time zone saved": "Fuso horário salvo",
   "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.":
     "Para receber notificações no iOS, adicione esta página à Tela de Início. Toque para ver as instruções.",
@@ -2225,6 +2291,8 @@ const ptBR: TranslationCatalog = {
   "Track the progress of labour and birth": "Acompanhe o trabalho de parto e o nascimento",
   "Track the progress of labour and birth – know when baby arrives!":
     "Acompanhe o trabalho de parto e saiba quando o bebê nascer!",
+  "Unable to request a password reset": "Não foi possível solicitar a redefinição de senha",
+  "Unable to reset your password": "Não foi possível redefinir sua senha",
   Unsubscribe: "Desativar notificações",
   "Unsubscribed from notifications!": "Notificações desativadas!",
   "Unsubscribing from notifications...": "Desativando notificações...",
@@ -2235,6 +2303,7 @@ const ptBR: TranslationCatalog = {
   Updated: "Atualizado",
   "Updated {{relative}}": "Atualizado {{relative}}",
   "Update message (optional)": "Mensagem da novidade (opcional)",
+  "Update password": "Atualizar senha",
   "Update posted": "Novidade publicada",
   "Update posted!": "Novidade publicada!",
   "Update removed": "Novidade removida",
@@ -2242,6 +2311,8 @@ const ptBR: TranslationCatalog = {
   "Updates from the family will show up here.": "As novidades da família aparecerão aqui.",
   "Update Your Status": "Atualize o status",
   "Update your status": "Atualize o status",
+  "Use at least eight characters for your new password.":
+    "Use pelo menos oito caracteres na senha nova.",
   "Use my profile language ({{language}})": "Usar o idioma do meu perfil ({{language}})",
   "Use this sparkle button to bring the guide back anytime.":
     "Use este botão de brilho para reabrir o guia quando quiser.",

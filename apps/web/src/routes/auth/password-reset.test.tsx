@@ -1,14 +1,8 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
-import {
-  ForgotPasswordCard,
-  requestPasswordResetAndMarkSent,
-} from "@/routes/auth/forgot-password";
-import {
-  ResetPasswordCard,
-  resetPasswordAndRedirect,
-} from "@/routes/auth/reset-password";
+import { ForgotPasswordCard, requestPasswordResetAndMarkSent } from "@/routes/auth/forgot-password";
+import { ResetPasswordCard, resetPasswordAndRedirect } from "@/routes/auth/reset-password";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { htmlInput } from "@/test/htmlElement";
 
@@ -44,7 +38,9 @@ test("forgot password card shows the sent confirmation from the URL", async () =
   );
 
   expect(
-    screen.getByText("If an account exists for that address, a password reset email is on its way."),
+    screen.getByText(
+      "If an account exists for that address, a password reset email is on its way.",
+    ),
   ).toBeTruthy();
   expect(screen.getByRole("link", { name: "Back to sign in" })).toBeTruthy();
 });

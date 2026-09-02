@@ -22,9 +22,9 @@ export type PasswordResetEmailDeps = {
  * fetch / sender.
  */
 export async function sendPasswordResetEmail(opts: {
+  deps: PasswordResetEmailDeps | null;
   recipient: string;
   resetUrl: string;
-  deps: PasswordResetEmailDeps | null;
 }) {
   const deps = opts.deps ?? defaultPasswordResetEmailDeps();
   const identity = resolveEmailIdentity(deps.env);

@@ -109,10 +109,6 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
     // Convex better-auth already exposes a rateLimit table; enable it on
     // preview too (Better Auth defaults to production-only). Password-reset
     // endpoints are capped at 3 requests / 60s by Better Auth's built-ins.
-    rateLimit: {
-      enabled: true,
-      storage: "database",
-    },
     hooks: {
       after: createAuthMiddleware(async (ctx) => {
         if (ctx.path !== "/sign-up/email" && ctx.path !== "/sign-in/email") {
@@ -142,6 +138,10 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),
     ],
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+    },
   });
 };
 
