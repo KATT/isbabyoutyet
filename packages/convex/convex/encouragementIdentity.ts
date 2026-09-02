@@ -9,7 +9,6 @@ export {
   encouragementIsMine,
   storedEncouragementAuthor,
   storedEncouragementAuthorFromCaller,
-  storedEncouragementUserId,
 } from "./encouragementAuthor";
 
 export async function resolveEncouragementAuthor(

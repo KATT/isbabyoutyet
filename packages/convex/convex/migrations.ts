@@ -13,7 +13,6 @@ import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 import { isJsonObjectValue, parseJsonNumber, parseJsonString } from "@workspace/runtime/json";
 import { DEFAULT_TIME_ZONE } from "../src/timeZone";
-import { storedEncouragementAuthor } from "./encouragementAuthor";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -617,18 +616,19 @@ export const backfillEncouragementOptionalKeys = migrations.define({
  */
 export async function backfillEncouragementAuthorDoc(
   ctx: MutationCtx,
-  encouragement: Doc<"encouragements">,
+  encouragement: Doc<"encouragements"> & { userId?: string | null },
 ) {
   if (encouragement.author !== undefined) {
     return;
   }
-  await ctx.db.patch(encouragement._id, {
-    author: storedEncouragementAuthor({
-      author: undefined,
-      userId: encouragement.userId,
-      visitorId: encouragement.visitorId,
-    }),
-  });
+  const author = encouragement.userId
+    ? {
+        type: "user" as const,
+        userId: encouragement.userId,
+        visitorId: encouragement.visitorId,
+      }
+    : { type: "visitor" as const, visitorId: encouragement.visitorId };
+  await ctx.db.patch(encouragement._id, { author });
 }
 
 export const backfillEncouragementAuthor = migrations.define({
@@ -641,7 +641,7 @@ export const backfillEncouragementAuthor = migrations.define({
  */
 export async function removeEncouragementUserIdDoc(
   ctx: MutationCtx,
-  encouragement: Doc<"encouragements"> & { userId?: string | null },
+  encouragement: Doc<"encouragements"> & Partial<{ userId: string | null }>,
 ) {
   if (encouragement.userId === undefined) {
     return;

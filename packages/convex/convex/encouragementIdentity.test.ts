@@ -4,36 +4,18 @@ import {
   encouragementIsMine,
   storedEncouragementAuthor,
   storedEncouragementAuthorFromCaller,
-  storedEncouragementUserId,
 } from "./encouragementIdentity";
 
-test("storedEncouragementUserId is null for guests", () => {
-  expect(storedEncouragementUserId(null)).toBeNull();
-  expect(storedEncouragementUserId({ type: "visitor", visitorId: "v1" })).toBeNull();
-  expect(storedEncouragementUserId({ type: "user", userId: "alice", visitorId: "v1" })).toBe(
-    "alice",
-  );
-});
-
-test("storedEncouragementAuthor prefers the union field over legacy columns", () => {
+test("storedEncouragementAuthor returns the required union field", () => {
   expect(
     storedEncouragementAuthor({
       author: { type: "user", userId: "alice", visitorId: "v1" },
-      userId: "ignored",
       visitorId: "v1",
     }),
   ).toEqual({ type: "user", userId: "alice", visitorId: "v1" });
   expect(
     storedEncouragementAuthor({
-      author: undefined,
-      userId: "alice",
-      visitorId: "v1",
-    }),
-  ).toEqual({ type: "user", userId: "alice", visitorId: "v1" });
-  expect(
-    storedEncouragementAuthor({
-      author: undefined,
-      userId: null,
+      author: { type: "visitor", visitorId: "v1" },
       visitorId: "v1",
     }),
   ).toEqual({ type: "visitor", visitorId: "v1" });
@@ -56,32 +38,16 @@ test("storedEncouragementAuthorFromCaller always stores the browser visitor id",
   });
 });
 
-test("encouragementHasUserId reads the union or the legacy userId", () => {
+test("encouragementHasUserId is true only for the user variant", () => {
   expect(
     encouragementHasUserId({
       author: { type: "user", userId: "alice", visitorId: "v1" },
-      userId: null,
-      visitorId: "v1",
-    }),
-  ).toBe(true);
-  expect(
-    encouragementHasUserId({
-      author: undefined,
-      userId: "alice",
       visitorId: "v1",
     }),
   ).toBe(true);
   expect(
     encouragementHasUserId({
       author: { type: "visitor", visitorId: "v1" },
-      userId: "bob",
-      visitorId: "v1",
-    }),
-  ).toBe(true);
-  expect(
-    encouragementHasUserId({
-      author: { type: "visitor", visitorId: "v1" },
-      userId: null,
       visitorId: "v1",
     }),
   ).toBe(false);
@@ -92,7 +58,6 @@ test("a signed-in author matches by user id even on a new visitor id", () => {
     encouragementIsMine(
       {
         author: { type: "user", userId: "alice", visitorId: "old-browser" },
-        userId: "alice",
         visitorId: "old-browser",
       },
       { type: "user", userId: "alice", visitorId: "new-browser" },
@@ -105,7 +70,6 @@ test("a signed-in author still matches unclaimed guest posts from this browser",
     encouragementIsMine(
       {
         author: { type: "visitor", visitorId: "same-browser" },
-        userId: null,
         visitorId: "same-browser",
       },
       { type: "user", userId: "alice", visitorId: "same-browser" },
@@ -113,25 +77,10 @@ test("a signed-in author still matches unclaimed guest posts from this browser",
   ).toBe(true);
 });
 
-test("legacy rows without author still match by userId or visitorId", () => {
-  expect(
-    encouragementIsMine(
-      { author: undefined, userId: "alice", visitorId: "old-browser" },
-      { type: "user", userId: "alice", visitorId: "new-browser" },
-    ),
-  ).toBe(true);
-  expect(
-    encouragementIsMine(
-      { author: undefined, userId: null, visitorId: "v1" },
-      { type: "visitor", visitorId: "v1" },
-    ),
-  ).toBe(true);
-});
-
 test("a guest only matches their visitor id", () => {
   expect(
     encouragementIsMine(
-      { author: undefined, userId: null, visitorId: "v1" },
+      { author: { type: "visitor", visitorId: "v1" }, visitorId: "v1" },
       { type: "visitor", visitorId: "v1" },
     ),
   ).toBe(true);
@@ -139,7 +88,6 @@ test("a guest only matches their visitor id", () => {
     encouragementIsMine(
       {
         author: { type: "user", userId: "alice", visitorId: "v1" },
-        userId: "alice",
         visitorId: "v1",
       },
       { type: "visitor", visitorId: "v2" },
@@ -149,7 +97,6 @@ test("a guest only matches their visitor id", () => {
     encouragementIsMine(
       {
         author: { type: "user", userId: "alice", visitorId: "v1" },
-        userId: "alice",
         visitorId: "v1",
       },
       null,

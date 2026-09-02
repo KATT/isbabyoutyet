@@ -156,12 +156,6 @@ export default defineSchema({
      * Required after `backfillEncouragementAuthor` populates every row.
      */
     author: encouragementAuthorValidator,
-    /**
-     * Legacy parallel user id. Writers no longer set this; a strip walker
-     * deletes leftover keys.
-     * @todo Optional until the drop-userId PR removes the field.
-     */
-    userId: v.optional(v.union(v.string(), v.null())),
     /** Server-controlled marker for seeded homepage-demo encouragements. @todo Optional until every row sets this key. */
     demoFixture: v.optional(v.boolean()),
     /** @todo Optional until every row sets this key. */
@@ -176,8 +170,7 @@ export default defineSchema({
     .index("by_babyId", ["babyId"])
     .index("by_babyId_and_createdAt", ["babyId", "createdAt"])
     .index("by_timelineItemId", ["timelineItemId"])
-    .index("by_visitorId", ["visitorId"])
-    .index("by_userId", ["userId"]),
+    .index("by_visitorId", ["visitorId"]),
   // Binding table for the per-baby feed: owns ordering (postedAt) and the kind
   // discriminator; children (updates/encouragements) point at it via timelineItemId.
   // postedAt is when the item entered the feed (announce/post time) — never the

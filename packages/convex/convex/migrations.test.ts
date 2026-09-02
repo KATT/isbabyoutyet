@@ -243,7 +243,6 @@ test("backfillEncouragementAuthor is a no-op when author is already set", async 
       createdAt: 100,
       message: "Soon!",
       timelineItemId,
-      userId: "ignored",
       visitorId: "guest-browser",
     });
   });
@@ -294,7 +293,6 @@ test("removeEncouragementUserId strips the retired userId key", async () => {
       createdAt: 100,
       message: "Hi",
       timelineItemId,
-      userId: "bob",
       visitorId: "bob-browser",
     });
   });
@@ -304,7 +302,8 @@ test("removeEncouragementUserId strips the retired userId key", async () => {
     if (!encouragement) {
       throw new Error("Fixture missing");
     }
-    await removeEncouragementUserIdDoc(ctx, encouragement);
+    const legacy = { ...encouragement, userId: "bob" };
+    await removeEncouragementUserIdDoc(ctx, legacy);
     const updated = await ctx.db.get(encouragementId);
     if (!updated) {
       throw new Error("Fixture missing");

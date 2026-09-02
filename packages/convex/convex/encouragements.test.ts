@@ -458,7 +458,9 @@ test("claiming a visitor id does not steal comments already linked to another us
     }),
   );
   await t.run(async (ctx) => {
-    await ctx.db.patch(encouragementId, { userId: "bob" });
+    await ctx.db.patch(encouragementId, {
+      author: { type: "user", userId: "bob", visitorId: "shared-browser" },
+    });
   });
 
   const asAlice = t.withIdentity({ subject: "alice" });
@@ -467,8 +469,10 @@ test("claiming a visitor id does not steal comments already linked to another us
   });
 
   const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
-  expect(stored).toMatchObject({ authorName: "Bob", userId: "bob" });
-  expect(stored?.author).toMatchObject({ type: "visitor", visitorId: "shared-browser" });
+  expect(stored).toMatchObject({
+    author: { type: "user", userId: "bob", visitorId: "shared-browser" },
+    authorName: "Bob",
+  });
 });
 
 test("claiming visitor encouragements requires authentication", async () => {
