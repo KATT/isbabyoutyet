@@ -55,6 +55,9 @@ diff -ru packages/oxlint-plugins/nkzw/rules "$tmpdir/eslint-plugin/rules"
 rm -rf "$tmpdir"
 ```
 
+Upstream also ships `ensure-relay-types`; we do not vendor it because this app
+does not use Relay.
+
 ## Local conventions
 
 - Use Oxlint's ESTree API; do not add another production parser.

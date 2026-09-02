@@ -125,8 +125,8 @@
     "react/hooks": "error",
     "react/memo-dependencies": "error",
     // From @nkzw/oxlint-config (https://github.com/nkzw-tech/oxlint-config).
-    // The three @nkzw/eslint-plugin rules live in packages/oxlint-plugins/nkzw.
-    "nkzw/ensure-relay-types": "error",
+    // @nkzw/eslint-plugin rules live in packages/oxlint-plugins/nkzw.
+    // ensure-relay-types is omitted — this repo does not use Relay.
     "nkzw/no-instanceof": "error",
     "nkzw/require-use-effect-arguments": "error",
     "@typescript-eslint/array-type": ["error", { "default": "generic" }],

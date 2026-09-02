@@ -1,6 +1,5 @@
 import { eslintCompatPlugin } from "@oxlint/plugins";
 
-import { ensureRelayTypesRule } from "./rules/ensure-relay-types.ts";
 import { noInstanceofRule } from "./rules/no-instanceof.ts";
 import { requireUseEffectArgumentsRule } from "./rules/require-use-effect-arguments.ts";
 
@@ -8,7 +7,6 @@ import { requireUseEffectArgumentsRule } from "./rules/require-use-effect-argume
 const nkzwPlugin = eslintCompatPlugin({
   meta: { name: "nkzw" },
   rules: {
-    "ensure-relay-types": ensureRelayTypesRule,
     "no-instanceof": noInstanceofRule,
     "require-use-effect-arguments": requireUseEffectArgumentsRule,
   },
