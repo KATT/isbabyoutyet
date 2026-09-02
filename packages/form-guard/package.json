@@ -17,6 +17,7 @@
   "devDependencies": {
     "@tanstack/react-router": "catalog:",
     "@types/react": "catalog:",
+    "@workspace/tsconfig": "workspace:*",
     "jsdom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",

@@ -27,14 +27,14 @@
     "checks:verify:knip": "knip --production"
   },
   "devDependencies": {
-    "@oxlint/plugins": "^1.80.0",
-    "@rrazvan.dev/oxlint-plugin-i18n-literal": "^1.0.1",
+    "@oxlint/plugins": "catalog:",
+    "@rrazvan.dev/oxlint-plugin-i18n-literal": "catalog:",
     "@types/node": "catalog:",
-    "@vitest/coverage-v8": "^4.1.11",
-    "knip": "^6.32.2",
-    "npm-run-all": "^4.1.5",
+    "@vitest/coverage-v8": "catalog:",
+    "knip": "catalog:",
+    "npm-run-all": "catalog:",
     "oxlint": "catalog:",
-    "turbo": "^2.10.11",
+    "turbo": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

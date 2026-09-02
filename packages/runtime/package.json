@@ -16,6 +16,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@workspace/tsconfig": "workspace:*",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "typescript": "catalog:",

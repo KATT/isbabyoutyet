@@ -37,26 +37,27 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
-    "@convex-dev/migrations": "^0.3.6",
+    "@convex-dev/migrations": "catalog:",
     "@workspace/runtime": "workspace:*",
     "better-auth": "catalog:",
     "convex": "catalog:",
-    "convex-helpers": "^0.1.123",
-    "convex-table-history": "^0.1.2",
-    "sharp": "^0.35.3",
-    "web-push": "^3.6.7"
+    "convex-helpers": "catalog:",
+    "convex-table-history": "catalog:",
+    "sharp": "catalog:",
+    "web-push": "catalog:"
   },
   "devDependencies": {
-    "@edge-runtime/vm": "^5.0.0",
+    "@edge-runtime/vm": "catalog:",
     "@types/node": "catalog:",
-    "@types/web-push": "^3.6.4",
-    "convex-test": "^0.0.56",
-    "npm-run-all": "^4.1.5",
+    "@types/web-push": "catalog:",
+    "@workspace/tsconfig": "workspace:*",
+    "convex-test": "catalog:",
+    "npm-run-all": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "tsx": "^4.23.12",
+    "tsx": "catalog:",
     "typescript": "catalog:",
-    "vite": "^8.2.1",
+    "vite": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   }
