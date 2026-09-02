@@ -5,7 +5,9 @@ import {
   DEFAULT_PREVIEW_FROM_EMAIL,
   DEFAULT_PRODUCTION_FROM_EMAIL,
   PREVIEW_SUBJECT_PREFIX,
+  PRODUCTION_FROM_NAME,
   createLogEmailSender,
+  defaultEmailLog,
   resolveEmailIdentity,
   resolveEmailSender,
   type EmailSenderEnv,
@@ -46,6 +48,45 @@ test("preview identity uses a distinct from address and subject prefix", () => {
     name: "Is Baby Out Yet? (Preview)",
     subjectPrefix: PREVIEW_SUBJECT_PREFIX,
   });
+});
+
+test("production identity uses the production from address", () => {
+  expect(resolveEmailIdentity(cloudflareConfiguredEnv())).toEqual({
+    address: DEFAULT_PRODUCTION_FROM_EMAIL,
+    name: PRODUCTION_FROM_NAME,
+    subjectPrefix: "",
+  });
+});
+
+test("from-address env overrides win over the defaults", () => {
+  expect(
+    resolveEmailIdentity(
+      cloudflareConfiguredEnv({
+        EMAIL_FROM: "custom@isbabyoutyet.com",
+      }),
+    ),
+  ).toMatchObject({ address: "custom@isbabyoutyet.com" });
+  expect(
+    resolveEmailIdentity(
+      cloudflareConfiguredEnv({
+        EMAIL_FROM_PREVIEW: "qa@isbabyoutyet.com",
+        VERCEL_ENV: "preview",
+      }),
+    ),
+  ).toMatchObject({ address: "qa@isbabyoutyet.com" });
+});
+
+test("password reset html escapes special characters in the reset url", () => {
+  const message = buildPasswordResetEmail({
+    from: { address: DEFAULT_PRODUCTION_FROM_EMAIL, name: PRODUCTION_FROM_NAME },
+    recipient: "parent@example.com",
+    resetUrl: `https://isbabyoutyet.com/auth/reset-password?token=a&next="x"'<y>`,
+    subjectPrefix: "",
+  });
+
+  expect(message.html).toContain(
+    'href="https://isbabyoutyet.com/auth/reset-password?token=a&amp;next=&quot;x&quot;&#39;&lt;y&gt;"',
+  );
 });
 
 test("local backends resolve to the log sender", () => {
@@ -132,26 +173,39 @@ test("fails when Cloudflare rejects the email", async () => {
   ).rejects.toThrow("Cloudflare Email Service rejected the message (403)");
 });
 
-test("fails clearly when Email Service is not configured on Vercel", async () => {
-  const fetchMock = vi.fn<typeof fetch>();
+test.each([
+  {
+    CLOUDFLARE_ACCOUNT_ID: undefined,
+    CLOUDFLARE_EMAIL_API_TOKEN: undefined,
+  },
+  {
+    CLOUDFLARE_ACCOUNT_ID: undefined,
+    CLOUDFLARE_EMAIL_API_TOKEN: "email-token",
+  },
+  {
+    CLOUDFLARE_ACCOUNT_ID: "account-id",
+    CLOUDFLARE_EMAIL_API_TOKEN: undefined,
+  },
+] satisfies Array<Partial<EmailSenderEnv>>)(
+  "fails clearly when Email Service credentials are incomplete",
+  async (overrides) => {
+    const fetchMock = vi.fn<typeof fetch>();
 
-  await expect(
-    sendPasswordResetEmail({
-      deps: {
-        env: cloudflareConfiguredEnv({
-          CLOUDFLARE_ACCOUNT_ID: undefined,
-          CLOUDFLARE_EMAIL_API_TOKEN: undefined,
-        }),
-        fetchImpl: fetchMock,
-        log: vi.fn(),
-        sender: null,
-      },
-      recipient: "parent@example.com",
-      resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
-    }),
-  ).rejects.toThrow("Cloudflare Email Service is not configured");
-  expect(fetchMock).not.toHaveBeenCalled();
-});
+    await expect(
+      sendPasswordResetEmail({
+        deps: {
+          env: cloudflareConfiguredEnv(overrides),
+          fetchImpl: fetchMock,
+          log: vi.fn(),
+          sender: null,
+        },
+        recipient: "parent@example.com",
+        resetUrl: "https://isbabyoutyet.com/auth/reset-password?token=secret",
+      }),
+    ).rejects.toThrow("Cloudflare Email Service is not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
+  },
+);
 
 test("local delivery logs instead of calling Cloudflare", async () => {
   const fetchMock = vi.fn<typeof fetch>();
@@ -173,6 +227,59 @@ test("local delivery logs instead of calling Cloudflare", async () => {
     "email.skipped_local_delivery",
     expect.objectContaining({
       subject: "Reset your Is Baby Out Yet? password",
+      to: "parent@example.com",
+    }),
+  );
+});
+
+test("defaultEmailLog writes a structured console line", async () => {
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  await using _restore = makeResource({}, () => {
+    log.mockRestore();
+  });
+
+  defaultEmailLog("email.skipped_local_delivery", {
+    from: { address: DEFAULT_PRODUCTION_FROM_EMAIL, name: PRODUCTION_FROM_NAME },
+    html: "<p>Reset</p>",
+    subject: "Reset your Is Baby Out Yet? password",
+    text: "Reset your password",
+    to: "parent@example.com",
+  });
+
+  expect(log).toHaveBeenCalledWith(
+    "email.skipped_local_delivery",
+    expect.objectContaining({
+      subject: "Reset your Is Baby Out Yet? password",
+      to: "parent@example.com",
+    }),
+  );
+});
+
+test("omitted deps read Convex env and log on local backends", async () => {
+  const previousVercelEnv = process.env.VERCEL_ENV;
+  await using _env = makeResource({}, () => {
+    if (previousVercelEnv === undefined) {
+      delete process.env.VERCEL_ENV;
+    } else {
+      process.env.VERCEL_ENV = previousVercelEnv;
+    }
+  });
+  delete process.env.VERCEL_ENV;
+
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  await using _restore = makeResource({}, () => {
+    log.mockRestore();
+  });
+
+  await sendPasswordResetEmail({
+    deps: null,
+    recipient: "parent@example.com",
+    resetUrl: "http://localhost:3000/auth/reset-password?token=secret",
+  });
+
+  expect(log).toHaveBeenCalledWith(
+    "email.skipped_local_delivery",
+    expect.objectContaining({
       to: "parent@example.com",
     }),
   );

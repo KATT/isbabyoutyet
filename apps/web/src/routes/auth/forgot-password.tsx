@@ -64,7 +64,12 @@ export async function requestPasswordResetAndMarkSent(
 export const Route = createFileRoute("/auth/forgot-password")({
   component: ForgotPasswordPage,
   validateSearch: z.object({
-    sent: z.literal("1").optional(),
+    // TanStack JSON-parses `?sent=1` as a number; keep the success flag
+    // after a cold load of the same URL the form navigates to.
+    sent: z
+      .union([z.literal("1"), z.literal(1)])
+      .optional()
+      .transform((value) => (value === undefined ? undefined : ("1" as const))),
   }),
   headers: authPageCacheHeaders,
   head: (opts) => ({

@@ -20,6 +20,22 @@ export function resolveAuthBaseUrl(siteUrl: string | undefined, convexSiteUrl: s
   return siteUrl ?? convexSiteUrl;
 }
 
+/**
+ * Better Auth only invokes this from the HTTP action that serves
+ * `/api/auth/*`. `requireActionCtx` rejects query/mutation contexts.
+ */
+export async function sendAuthResetPassword(
+  ctx: GenericCtx<DataModel>,
+  data: { url: string; user: { email: string } },
+) {
+  requireActionCtx(ctx);
+  await sendPasswordResetEmail({
+    deps: null,
+    recipient: data.user.email,
+    resetUrl: data.url,
+  });
+}
+
 function requireAuthMutationCtx(ctx: GenericCtx<DataModel>) {
   if (!("runMutation" in ctx)) {
     throw new Error("Auth hooks require a context that can run mutations");
@@ -98,12 +114,7 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
       resetPasswordTokenExpiresIn: 60 * 30,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async (data) => {
-        requireActionCtx(convexCtx);
-        await sendPasswordResetEmail({
-          deps: null,
-          recipient: data.user.email,
-          resetUrl: data.url,
-        });
+        await sendAuthResetPassword(convexCtx, data);
       },
     },
     // Convex better-auth already exposes a rateLimit table; enable it on
