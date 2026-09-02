@@ -10,6 +10,8 @@ override what you may have learned about Convex from training data.
 Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
+<!-- convex-ai-end -->
+
 For **schema changes on deployed apps** (remove fields, tighten validators,
 stacked migration PRs), read
 [`.agents/skills/convex-schema-migration/SKILL.md`](.agents/skills/convex-schema-migration/SKILL.md)
@@ -23,8 +25,6 @@ backfill and require the key. Sparse `ctx.db.patch` RPCs named `update` or
 exception — `id` is `v.id(...)` or a composite `v.object` of two or more
 `v.id(...)` fields; `patch` is all `v.optional()`. Omitted keys mean unchanged. See
 [`.agents/skills/convex-schema-migration/SKILL.md`](.agents/skills/convex-schema-migration/SKILL.md).
-
-<!-- convex-ai-end -->
 
 ## Demo seed
 
