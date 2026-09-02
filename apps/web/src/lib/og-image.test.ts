@@ -6,6 +6,8 @@ import { isString } from "@workspace/runtime/guards";
 import { createHomepageOgImage, createBabyOgImage } from "@/lib/og-image";
 
 const TEST_FONT_URL = "https://fonts.gstatic.com/s/test.ttf";
+const MISSING_PHOTO_URL = "https://cdn.example/missing.jpg";
+const THROW_PHOTO_URL = "https://cdn.example/throw.jpg";
 
 function requestUrl(input: RequestInfo | URL) {
   if (isString(input)) {
@@ -29,6 +31,12 @@ async function stubOgImageFonts() {
     }
     if (url === TEST_FONT_URL) {
       return new Response(fontBytes);
+    }
+    if (url === MISSING_PHOTO_URL) {
+      return new Response("missing", { status: 404 });
+    }
+    if (url === THROW_PHOTO_URL) {
+      throw new Error("photo fetch failed");
     }
     return originalFetch(input, init);
   };
@@ -88,4 +96,39 @@ test("baby OG image renders message-mode due date copy as PNG", async () => {
   const bytes = new Uint8Array(await response.arrayBuffer());
   expect(Array.from(bytes.slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
   expect(bytes.byteLength).toBeGreaterThan(5000);
+});
+
+test("baby OG image still renders when the photo cannot be fetched", async () => {
+  await using _fonts = await stubOgImageFonts();
+  const missing = await createBabyOgImage({
+    babyBorn: null,
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    laborStarted: null,
+    locale: "en-GB",
+    name: "Juniper",
+    photoUrl: MISSING_PHOTO_URL,
+    theme: "sunny-days",
+    wentToHospital: null,
+  });
+  expect(missing.status).toBe(200);
+  expect(Array.from(new Uint8Array(await missing.arrayBuffer()).slice(0, 8))).toEqual([
+    137, 80, 78, 71, 13, 10, 26, 10,
+  ]);
+
+  const thrown = await createBabyOgImage({
+    babyBorn: null,
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    laborStarted: null,
+    locale: "en-GB",
+    name: "Juniper",
+    photoUrl: THROW_PHOTO_URL,
+    theme: "sunny-days",
+    wentToHospital: null,
+  });
+  expect(thrown.status).toBe(200);
+  expect(Array.from(new Uint8Array(await thrown.arrayBuffer()).slice(0, 8))).toEqual([
+    137, 80, 78, 71, 13, 10, 26, 10,
+  ]);
 });
