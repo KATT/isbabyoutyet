@@ -13,6 +13,7 @@ import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 import { isJsonObjectValue, parseJsonNumber, parseJsonString } from "@workspace/runtime/json";
 import { DEFAULT_TIME_ZONE } from "../src/timeZone";
+import { storedEncouragementAuthor } from "./encouragementAuthor";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -610,6 +611,36 @@ export const backfillEncouragementOptionalKeys = migrations.define({
   table: "encouragements",
 });
 
+/**
+ * Writes the discriminated `author` union from legacy `userId` / `visitorId`.
+ * Idempotent: a row that already has `author` is left alone.
+ */
+type EncouragementAuthorBackfill = Omit<Doc<"encouragements">, "author" | "userId"> & {
+  author: Doc<"encouragements">["author"] | undefined;
+  userId: Doc<"encouragements">["userId"] | undefined;
+};
+
+export async function backfillEncouragementAuthorDoc(
+  ctx: MutationCtx,
+  encouragement: EncouragementAuthorBackfill,
+) {
+  if (encouragement.author !== undefined) {
+    return;
+  }
+  await ctx.db.patch(encouragement._id, {
+    author: storedEncouragementAuthor({
+      author: undefined,
+      userId: encouragement.userId,
+      visitorId: encouragement.visitorId,
+    }),
+  });
+}
+
+export const backfillEncouragementAuthor = migrations.define({
+  migrateOne: backfillEncouragementAuthorDoc,
+  table: "encouragements",
+});
+
 export async function backfillTimelineItemOptionalKeysDoc(
   ctx: MutationCtx,
   item: Doc<"timelineItems">,
@@ -734,6 +765,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillPushSubscriptionOptionalKeys,
   internal.migrations.backfillScheduledNotificationOptionalKeys,
   internal.migrations.backfillEncouragementOptionalKeys,
+  internal.migrations.backfillEncouragementAuthor,
   internal.migrations.backfillTimelineItemOptionalKeys,
   internal.migrations.backfillUpdateOptionalKeys,
   internal.migrations.backfillUserOnboardingOptionalKeys,
@@ -768,6 +800,7 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillPushSubscriptionOptionalKeys",
   "migrations:backfillScheduledNotificationOptionalKeys",
   "migrations:backfillEncouragementOptionalKeys",
+  "migrations:backfillEncouragementAuthor",
   "migrations:backfillTimelineItemOptionalKeys",
   "migrations:backfillUpdateOptionalKeys",
   "migrations:backfillUserOnboardingOptionalKeys",
