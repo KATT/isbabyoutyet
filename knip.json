@@ -38,11 +38,13 @@
       "entry": [
         "workspace.ts!",
         "anti-slop/index.ts!",
+        "ensure-relay-types.ts!",
         "infer-callback-params.ts!",
         "inline-jsx-callback.ts!",
         "no-banned-react-reexport.ts!",
         "no-convex-optional.ts!",
         "no-convex-query-hooks.ts!",
+        "no-instanceof.ts!",
         "no-invalid-convex-client.ts!",
         "no-manual-memoization.ts!",
         "no-mock.ts!",
@@ -54,6 +56,7 @@
         "no-use-state.ts!",
         "query-prefetch-shared.ts!",
         "require-preloaded-query-options.ts!",
+        "require-use-effect-arguments.ts!",
         "use-loader-preloads.ts!"
       ]
     },
