@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { encouragementAuthorValidator } from "./encouragementAuthor";
 import { supportedLocaleValidator } from "./i18n";
 import { onboardingStepIdValidator } from "./onboardingValidators";
 import { notifiableStatusValidator } from "./pushValidators";
@@ -129,6 +130,12 @@ export default defineSchema({
     timelineItemId: v.id("timelineItems"), // Binding to the timeline feed
     // Metadata
     visitorId: v.string(), // Unique visitor ID (stored in localStorage)
+    /**
+     * Discriminated author: signed-in user or visitor id.
+     * Dual-written with `userId` / `visitorId` until the backfill PR.
+     * @todo Optional until every row sets this key.
+     */
+    author: v.optional(encouragementAuthorValidator),
     /**
      * Better Auth user id when posted while signed in or later claimed.
      * Guestbook `authorName` stays whatever was typed at send time.

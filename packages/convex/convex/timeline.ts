@@ -65,7 +65,7 @@ async function hydrateUpdate(
 
 /**
  * Public shape of an encouragement in the feed. Deliberately excludes
- * `visitorId` (it is the edit/delete credential), `userId`, and the
+ * `author`, `visitorId` (the edit/delete credential), `userId`, and the
  * `userAgent` / `locale` / `timezone` metadata. `isMine` is computed from
  * the server-resolved author (signed-in user and/or visitor id).
  */
