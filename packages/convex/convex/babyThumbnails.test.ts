@@ -9,6 +9,7 @@ import {
   renderPushImage,
 } from "../src/photoDerivatives";
 import {
+  generateBlurDataUrlsForExistingBabyPhotosDoc,
   generateBlurDataUrlsForExistingPhotosDoc,
   generatePushImagesForExistingPhotosDoc,
 } from "./migrations";
@@ -288,8 +289,9 @@ test("push image backfill only schedules photo updates that still need a derivat
       name: "Backfill Baby",
     }),
   );
+  const source = await jpegBytes({ height: 64, width: 64 });
   const photo = await t.run(async (ctx) => {
-    return await ctx.storage.store(new Blob(["photo"], { type: "image/jpeg" }));
+    return await ctx.storage.store(new Blob([new Uint8Array(source)], { type: "image/jpeg" }));
   });
   const pushImage = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["push"], { type: "image/jpeg" }));
@@ -333,17 +335,31 @@ test("push image backfill only schedules photo updates that still need a derivat
       timelineItemId,
     });
   });
+  const needsPushImage = await t.run(async (ctx) => {
+    const timelineItemId = await ctx.db.insert("timelineItems", {
+      babyId: created.babyId,
+      kind: "update",
+      postedAt: Date.now(),
+    });
+    return await ctx.db.insert("updates", {
+      babyId: created.babyId,
+      photoId: photo,
+      timelineItemId,
+    });
+  });
 
   await t.run(async (ctx) => {
     const done = await ctx.db.get(alreadyDone);
     const gone = await ctx.db.get(deleted);
     const text = await ctx.db.get(messageOnly);
-    if (!done || !gone || !text) {
+    const needs = await ctx.db.get(needsPushImage);
+    if (!done || !gone || !text || !needs) {
       throw new Error("expected fixture updates");
     }
     expect(await generatePushImagesForExistingPhotosDoc(ctx, done)).toBeUndefined();
     expect(await generatePushImagesForExistingPhotosDoc(ctx, gone)).toBeUndefined();
     expect(await generatePushImagesForExistingPhotosDoc(ctx, text)).toBeUndefined();
+    expect(await generatePushImagesForExistingPhotosDoc(ctx, needs)).toBeUndefined();
   });
 });
 
@@ -358,8 +374,9 @@ test("blur data URL backfill only schedules photo updates that still need a plac
       name: "Blur Backfill Baby",
     }),
   );
+  const source = await jpegBytes({ height: 64, width: 64 });
   const photo = await t.run(async (ctx) => {
-    return await ctx.storage.store(new Blob(["photo"], { type: "image/jpeg" }));
+    return await ctx.storage.store(new Blob([new Uint8Array(source)], { type: "image/jpeg" }));
   });
 
   const alreadyDone = await t.run(async (ctx) => {
@@ -400,17 +417,80 @@ test("blur data URL backfill only schedules photo updates that still need a plac
       timelineItemId,
     });
   });
+  const needsBlur = await t.run(async (ctx) => {
+    const timelineItemId = await ctx.db.insert("timelineItems", {
+      babyId: created.babyId,
+      kind: "update",
+      postedAt: Date.now(),
+    });
+    return await ctx.db.insert("updates", {
+      babyId: created.babyId,
+      photoId: photo,
+      timelineItemId,
+    });
+  });
 
   await t.run(async (ctx) => {
     const done = await ctx.db.get(alreadyDone);
     const gone = await ctx.db.get(deleted);
     const text = await ctx.db.get(messageOnly);
-    if (!done || !gone || !text) {
+    const needs = await ctx.db.get(needsBlur);
+    if (!done || !gone || !text || !needs) {
       throw new Error("expected fixture updates");
     }
     expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, done)).toBeUndefined();
     expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, gone)).toBeUndefined();
     expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, text)).toBeUndefined();
+    expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, needs)).toBeUndefined();
+  });
+});
+
+test("baby photo blur backfill only schedules babies that still need a placeholder", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      dueDate: "2026-09-01",
+      name: "Baby Photo Blur",
+    }),
+  );
+  const source = await jpegBytes({ height: 64, width: 64 });
+  const photo = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob([new Uint8Array(source)], { type: "image/jpeg" }));
+  });
+
+  await t.run(async (ctx) => {
+    const noPhoto = await ctx.db.get(created.babyId);
+    if (!noPhoto) {
+      throw new Error("expected fixture baby");
+    }
+    expect(await generateBlurDataUrlsForExistingBabyPhotosDoc(ctx, noPhoto)).toBeUndefined();
+
+    await ctx.db.patch(created.babyId, { deletedAt: Date.now(), photoId: photo });
+    const deleted = await ctx.db.get(created.babyId);
+    if (!deleted) {
+      throw new Error("expected deleted baby");
+    }
+    expect(await generateBlurDataUrlsForExistingBabyPhotosDoc(ctx, deleted)).toBeUndefined();
+
+    await ctx.db.patch(created.babyId, {
+      blurDataUrl: "data:image/jpeg;base64,already",
+      deletedAt: null,
+    });
+    const done = await ctx.db.get(created.babyId);
+    if (!done) {
+      throw new Error("expected backfilled baby");
+    }
+    expect(await generateBlurDataUrlsForExistingBabyPhotosDoc(ctx, done)).toBeUndefined();
+
+    await ctx.db.patch(created.babyId, { blurDataUrl: null });
+    const needs = await ctx.db.get(created.babyId);
+    if (!needs) {
+      throw new Error("expected baby needing a placeholder");
+    }
+    expect(await generateBlurDataUrlsForExistingBabyPhotosDoc(ctx, needs)).toBeUndefined();
   });
 });
 

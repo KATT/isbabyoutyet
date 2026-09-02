@@ -250,7 +250,14 @@ export const backfillUpdatePostedByUserId = migrations.define({
   table: "updates",
 });
 
-export async function backfillBabyOwnerTokenIdentifierDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+type BabyOwnerTokenBackfill = Omit<Doc<"baby">, "ownerTokenIdentifier"> & {
+  ownerTokenIdentifier: Doc<"baby">["ownerTokenIdentifier"] | undefined;
+};
+
+export async function backfillBabyOwnerTokenIdentifierDoc(
+  ctx: MutationCtx,
+  baby: BabyOwnerTokenBackfill,
+) {
   if (baby.ownerTokenIdentifier !== undefined) {
     return;
   }
@@ -377,9 +384,13 @@ export const removeBabyEncouragementsDisabled = migrations.define({
   table: "baby",
 });
 
+type ProfileTokenBackfill = Omit<Doc<"userProfiles">, "tokenIdentifier"> & {
+  tokenIdentifier: Doc<"userProfiles">["tokenIdentifier"] | undefined;
+};
+
 export async function backfillProfileTokenIdentifierDoc(
   ctx: MutationCtx,
-  profile: Doc<"userProfiles">,
+  profile: ProfileTokenBackfill,
 ) {
   if (profile.tokenIdentifier !== undefined) {
     return;
@@ -394,9 +405,13 @@ export const backfillProfileTokenIdentifier = migrations.define({
   table: "userProfiles",
 });
 
+type OnboardingTokenBackfill = Omit<Doc<"userOnboarding">, "tokenIdentifier"> & {
+  tokenIdentifier: Doc<"userOnboarding">["tokenIdentifier"] | undefined;
+};
+
 export async function backfillOnboardingTokenIdentifierDoc(
   ctx: MutationCtx,
-  onboarding: Doc<"userOnboarding">,
+  onboarding: OnboardingTokenBackfill,
 ) {
   if (onboarding.tokenIdentifier !== undefined) {
     return;
@@ -411,9 +426,13 @@ export const backfillOnboardingTokenIdentifier = migrations.define({
   table: "userOnboarding",
 });
 
+type CoParentTokenBackfill = Omit<Doc<"babyCoParents">, "tokenIdentifier"> & {
+  tokenIdentifier: Doc<"babyCoParents">["tokenIdentifier"] | undefined;
+};
+
 export async function backfillCoParentTokenIdentifierDoc(
   ctx: MutationCtx,
-  coParent: Doc<"babyCoParents">,
+  coParent: CoParentTokenBackfill,
 ) {
   if (coParent.tokenIdentifier !== undefined) {
     return;

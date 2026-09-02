@@ -125,6 +125,56 @@ test("retained migrations skip linked rows and backfill update metadata and coun
   ).resolves.toBeTruthy();
 });
 
+test("posted-by backfill skips updates whose baby row is gone", async () => {
+  const t = convexTest(schema, modules);
+  await registerMigrationsComponent(t);
+
+  const updateId = await t.run(async (ctx) => {
+    const babyId = await ctx.db.insert("baby", {
+      birthJourney: "labor",
+      dueDate: "2026-09-01",
+      dueDateDisplayMode: "exact",
+      lastActivityAt: 1,
+      name: "Orphan Update Baby",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      publicDueDateText: null,
+      publicId: "orphan-update-baby",
+      subscriptionCount: 0,
+      userId: "alice",
+    });
+    const timelineItemId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "update",
+      postedAt: 500,
+    });
+    const id = await ctx.db.insert("updates", {
+      babyId,
+      message: "Hello",
+      timelineItemId,
+    });
+    await ctx.db.delete(babyId);
+    return id;
+  });
+
+  await t.run(async (ctx) => {
+    const update = await ctx.db.get(updateId);
+    if (!update) {
+      throw new Error("Fixture missing");
+    }
+    expect(await backfillUpdatePostedByUserIdDoc(ctx, update)).toBeUndefined();
+  });
+
+  expect(await t.run(async (ctx) => await ctx.db.get(updateId))).toMatchObject({
+    message: "Hello",
+  });
+  expect(
+    await t.run(async (ctx) => {
+      const update = await ctx.db.get(updateId);
+      return update?.postedByUserId ?? null;
+    }),
+  ).toBeNull();
+});
+
 test("sanitizeOnboardingSteps strips unknown retired step ids", async () => {
   const t = convexTest(schema, modules);
   await registerMigrationsComponent(t);

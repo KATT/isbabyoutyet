@@ -106,6 +106,89 @@ test("auth identity migrations remain idempotent after backfill", async () => {
   expect(migrated.coParent?.tokenIdentifier).toBe("https://convex.test|bob");
 });
 
+test("auth identity migrations write omitted token identifiers", async () => {
+  const t = convexTest(schema, modules);
+
+  const ids = await t.run(async (ctx) => {
+    const babyId = await ctx.db.insert("baby", {
+      birthJourney: "labor",
+      dueDate: "2026-09-01",
+      dueDateDisplayMode: "exact",
+      lastActivityAt: 1,
+      name: "Sparse Identity Baby",
+      ownerTokenIdentifier: "https://convex.test|placeholder",
+      publicDueDateText: null,
+      publicId: "sparse-identity-baby",
+      subscriptionCount: 0,
+      userId: "alice",
+    });
+    const profileId = await ctx.db.insert("userProfiles", {
+      isAdmin: false,
+      locale: "en-GB",
+      tokenIdentifier: "https://convex.test|placeholder",
+      userId: "alice",
+    });
+    const onboardingId = await ctx.db.insert("userOnboarding", {
+      checklistDismissed: false,
+      completedSteps: [],
+      minimized: false,
+      tokenIdentifier: "https://convex.test|placeholder",
+      userId: "alice",
+      welcomeDismissed: false,
+    });
+    const coParentId = await ctx.db.insert("babyCoParents", {
+      addedAt: 1,
+      addedByUserId: "alice",
+      babyId,
+      email: "bob@example.com",
+      tokenIdentifier: "https://convex.test|placeholder",
+      userId: "bob",
+    });
+    return { babyId, coParentId, onboardingId, profileId };
+  });
+
+  await t.run(async (ctx) => {
+    const baby = await ctx.db.get(ids.babyId);
+    const profile = await ctx.db.get(ids.profileId);
+    const onboarding = await ctx.db.get(ids.onboardingId);
+    const coParent = await ctx.db.get(ids.coParentId);
+    if (!baby || !profile || !onboarding || !coParent) {
+      throw new Error("Migration fixture missing");
+    }
+
+    await backfillBabyOwnerTokenIdentifierDoc(ctx, {
+      ...baby,
+      ownerTokenIdentifier: undefined,
+    });
+    await backfillProfileTokenIdentifierDoc(ctx, {
+      ...profile,
+      tokenIdentifier: undefined,
+    });
+    await backfillOnboardingTokenIdentifierDoc(ctx, {
+      ...onboarding,
+      tokenIdentifier: undefined,
+    });
+    await backfillCoParentTokenIdentifierDoc(ctx, {
+      ...coParent,
+      tokenIdentifier: undefined,
+    });
+  });
+
+  const migrated = await t.run(async (ctx) => {
+    return {
+      baby: await ctx.db.get(ids.babyId),
+      coParent: await ctx.db.get(ids.coParentId),
+      onboarding: await ctx.db.get(ids.onboardingId),
+      profile: await ctx.db.get(ids.profileId),
+    };
+  });
+
+  expect(migrated.baby?.ownerTokenIdentifier).toBe("https://convex.test|alice");
+  expect(migrated.profile?.tokenIdentifier).toBe("https://convex.test|alice");
+  expect(migrated.onboarding?.tokenIdentifier).toBe("https://convex.test|alice");
+  expect(migrated.coParent?.tokenIdentifier).toBe("https://convex.test|bob");
+});
+
 test("due date display migration preserves and normalizes existing messages", async () => {
   const t = convexTest(schema, modules);
   const babyId = await t.run(async (ctx) => {

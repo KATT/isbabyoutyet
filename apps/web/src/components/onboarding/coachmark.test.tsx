@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { Coachmark } from "./coachmark";
 import { renderResource } from "@/test/renderResource";
+import { stubJsdomWindow } from "@/test/stubJsdomWindow";
 
 test("scrolls the target into view and can hide the tip", async () => {
   const onDismiss = vi.fn<() => void>();
@@ -184,5 +185,47 @@ test("uses a bounded mobile card on narrow viewports", async () => {
     expect(dialog.className).toContain("max-w-xs");
   });
   fireEvent.click(screen.getByRole("button", { name: /hide tip/i }));
+  expect(onDismiss).toHaveBeenCalledOnce();
+});
+
+test("still highlights the target when matchMedia is missing", async () => {
+  await using _window = stubJsdomWindow();
+  const matchMediaDescriptor = Object.getOwnPropertyDescriptor(window, "matchMedia");
+  await using _matchMedia = makeResource({}, () => {
+    if (matchMediaDescriptor) {
+      Object.defineProperty(window, "matchMedia", matchMediaDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "matchMedia");
+    }
+  });
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: undefined,
+  });
+
+  const onDismiss = vi.fn<() => void>();
+  const target = document.createElement("button");
+  target.setAttribute("data-tour-id", "share_link");
+  target.textContent = "Share";
+  target.scrollIntoView = vi.fn<() => void>();
+  Object.defineProperty(target, "getBoundingClientRect", {
+    value: () => ({ bottom: 72, height: 32, left: 40, right: 120, top: 40, width: 80 }),
+  });
+  document.body.append(target);
+  await using _target = makeResource({}, () => target.remove());
+
+  await using _view = renderResource(
+    <Coachmark
+      completeOnDismiss={undefined}
+      description="Copy the page URL for family."
+      onComplete={undefined}
+      onDismiss={onDismiss}
+      targetId="share_link"
+      title="Share the link"
+    />,
+  );
+
+  expect(screen.getByText("Share the link")).toBeTruthy();
+  fireEvent.click(target);
   expect(onDismiss).toHaveBeenCalledOnce();
 });
