@@ -1,4 +1,4 @@
-import { Palette, Shield, SignOut } from "@phosphor-icons/react";
+import { Check, Palette, Shield, SignOut, User } from "@phosphor-icons/react";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
@@ -26,9 +26,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@workspace/ui/components/form";
+import { Input } from "@workspace/ui/components/input";
 import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
+import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
@@ -66,18 +75,19 @@ type OverlayControl = {
 };
 
 /**
- * Mutable sign-out adapter so sheet tests can avoid the Proxy-backed
+ * Mutable auth adapter so sheet tests can avoid the Proxy-backed
  * better-auth client without `vi.mock`.
  *
  * @internal
  */
 export const settingsAuthAdapter = {
   signOut: (opts: Parameters<typeof authClient.signOut>[0]) => authClient.signOut(opts),
+  updateUser: (body: { name: string }) => authClient.updateUser(body),
 };
 
 /**
  * Convex-wired sheet: resolves the admin flag from the preloaded profile and
- * owns sign-out.
+ * owns sign-out and account name updates.
  *
  * @internal exported for tests
  */
@@ -87,11 +97,20 @@ export function DashboardSettingsSheet(props: {
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const settings = useDashboardSettingsOverlayNav();
+  const session = authClient.useSession();
+  const { t } = useI18n();
 
   return (
     <DashboardSettingsSheetView
+      accountName={session.data?.user.name ?? ""}
       isAdmin={profileQuery.data?.isAdmin === true}
       languageSettings={<LanguageSettings className="justify-start" profile={props.profile} />}
+      onSaveName={async (name) => {
+        const result = await settingsAuthAdapter.updateUser({ name });
+        if (result.error) {
+          throw new Error(result.error.message ?? t("Failed to update name"));
+        }
+      }}
       onSignOut={async () => {
         props.queryClient.clear();
         await settingsAuthAdapter.signOut({
@@ -117,8 +136,10 @@ export function DashboardSettingsSheet(props: {
  * @internal exported for tests
  */
 export function DashboardSettingsSheetView(props: {
+  accountName: string;
   isAdmin: boolean;
   languageSettings: ReactNode;
+  onSaveName: (name: string) => void | Promise<void>;
   onSignOut: () => void | Promise<void>;
   overlay: OverlayControl;
 }) {
@@ -145,6 +166,17 @@ export function DashboardSettingsSheetView(props: {
           </SheetHeader>
 
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
+            <SettingsSection title={t("Profile")}>
+              <Item>
+                <ItemMedia variant="icon">
+                  <User />
+                </ItemMedia>
+                <ItemContent>
+                  <AccountNameForm accountName={props.accountName} onSaveName={props.onSaveName} />
+                </ItemContent>
+              </Item>
+            </SettingsSection>
+
             <SettingsSection title={t("Language and time zone")}>
               <Item>
                 <ItemContent>{props.languageSettings}</ItemContent>
@@ -190,6 +222,65 @@ export function DashboardSettingsSheetView(props: {
         </FormGuardProvider>
       </SheetContent>
     </Sheet>
+  );
+}
+
+const MAX_NAME_LENGTH = 50;
+
+function accountNameSchema(t: TranslationFunction) {
+  return z.object({
+    name: z
+      .string()
+      .trim()
+      .min(2, t("Name must be at least 2 characters"))
+      .max(
+        MAX_NAME_LENGTH,
+        t("Name must be {{count}} characters or less", { count: MAX_NAME_LENGTH }),
+      ),
+  });
+}
+
+function AccountNameForm(props: {
+  accountName: string;
+  onSaveName: (name: string) => void | Promise<void>;
+}) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    defaultValues: { name: props.accountName },
+    schema: accountNameSchema(t),
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onSaveName(values.name);
+        form.reset({ name: values.name });
+        toast.success(t("Name saved"));
+      }}
+    >
+      <div className="flex flex-col gap-3">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("Name")}</FormLabel>
+              <FormControl>
+                <Input maxLength={MAX_NAME_LENGTH} placeholder={t("Your name")} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <p className="text-xs text-muted-foreground">
+          {t("Past guestbook messages keep the name you wrote then.")}
+        </p>
+        <SubmitButton form="context" IconComponent={Check} iconPosition="start">
+          {t("Save")}
+        </SubmitButton>
+      </div>
+    </Form>
   );
 }
 

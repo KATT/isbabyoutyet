@@ -14,19 +14,24 @@ import {
 } from "./settings";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { signUpTestUser } from "@/test/convexTestSeed";
+import { htmlInput } from "@/test/htmlElement";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 function renderSettings(opts: {
+  accountName: string;
   isAdmin: boolean;
   languageSettings: ReactNode;
+  onSaveName: (name: string) => void;
   onSignOut: () => void;
 }) {
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <DashboardSettingsSheetView
+        accountName={opts.accountName}
         isAdmin={opts.isAdmin}
         languageSettings={opts.languageSettings}
+        onSaveName={opts.onSaveName}
         onSignOut={opts.onSignOut}
         overlay={{
           onOpenChange: () => undefined,
@@ -42,13 +47,16 @@ function renderSettings(opts: {
 test("profile sheet groups preferences and secondary dashboard actions", async () => {
   const onSignOut = vi.fn<() => void>();
   await using view = await renderSettings({
+    accountName: "Ada",
     isAdmin: true,
     languageSettings: <div>Language and timezone controls</div>,
+    onSaveName: () => undefined,
     onSignOut,
   });
 
   expect(view.getByRole("dialog")).toBeTruthy();
   expect(view.getByRole("heading", { name: "Settings" })).toBeTruthy();
+  expect(htmlInput(view.getByLabelText("Name")).value).toBe("Ada");
   expect(view.getByText("Language and timezone controls")).toBeTruthy();
   expect(view.getByRole("button", { name: "Toggle theme" })).toBeTruthy();
   expect(view.getByRole("link", { name: "Admin dashboard" }).getAttribute("href")).toContain(
@@ -65,8 +73,10 @@ test("settings route renders only its route-backed sheet overlay", () => {
 
 test("settings sheet omits the admin link for non-admins", async () => {
   await using view = await renderSettings({
+    accountName: "Ada",
     isAdmin: false,
     languageSettings: <div>Language and timezone controls</div>,
+    onSaveName: () => undefined,
     onSignOut: () => undefined,
   });
 
@@ -101,11 +111,30 @@ test("DashboardSettingsSheet wires the preloaded profile into the view", async (
   expect(view.getByRole("button", { name: "Log out" })).toBeTruthy();
 });
 
+test("settings sheet save name button invokes the injected handler", async () => {
+  const onSaveName = vi.fn<(name: string) => void>();
+  await using view = await renderSettings({
+    accountName: "Ada",
+    isAdmin: false,
+    languageSettings: <div>Language and timezone controls</div>,
+    onSaveName,
+    onSignOut: () => undefined,
+  });
+
+  fireEvent.change(view.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() => {
+    expect(onSaveName).toHaveBeenCalledWith("Ada Lovelace");
+  });
+});
+
 test("settings sheet log-out button invokes the injected handler", async () => {
   const onSignOut = vi.fn<() => void>();
   await using view = await renderSettings({
+    accountName: "Ada",
     isAdmin: false,
     languageSettings: <div>Language and timezone controls</div>,
+    onSaveName: () => undefined,
     onSignOut,
   });
 

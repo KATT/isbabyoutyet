@@ -2,6 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
@@ -9,6 +10,11 @@ import { appIdentity } from "./authIdentity";
 import { canManageBaby } from "./babyAccess";
 import { resolveBabyPreferences } from "./babyPreferences";
 import type { OwnerMessagePushEvent } from "../src/pushMessages";
+import {
+  encouragementIsMine,
+  resolveEncouragementAuthor,
+  storedEncouragementUserId,
+} from "./encouragementIdentity";
 import { isActive } from "./softDelete";
 import { mutationWithTriggers } from "./triggers";
 
@@ -109,6 +115,7 @@ export const create = mutationWithTriggers({
     }
 
     const createdAt = Date.now();
+    const author = await resolveEncouragementAuthor(ctx, args.visitorId);
     const timelineItemId = await insertEncouragementTimelineItem(ctx, {
       babyId: args.babyId,
       postedAt: createdAt,
@@ -122,6 +129,7 @@ export const create = mutationWithTriggers({
       timelineItemId,
       timezone: args.timezone,
       userAgent: args.userAgent,
+      userId: storedEncouragementUserId(author),
       visitorId: args.visitorId,
     });
 
@@ -151,8 +159,8 @@ export const update = mutationWithTriggers({
       throw new Error("Encouragement not found");
     }
 
-    // Validate visitor ID matches
-    if (encouragement.visitorId !== args.visitorId) {
+    const author = await resolveEncouragementAuthor(ctx, args.visitorId);
+    if (!encouragementIsMine(encouragement, author)) {
       throw new Error("Not authorized to edit this encouragement");
     }
 
@@ -198,15 +206,17 @@ export const listByBaby = query({
       .order("desc")
       .paginate(args.paginationOpts);
 
-    // Public DTO: never return visitorId (the edit/delete credential) or the
-    // userAgent/locale/timezone metadata. Soft-deleted rows are omitted.
+    const author = await resolveEncouragementAuthor(ctx, args.visitorId);
+
+    // Public DTO: never return visitorId (the edit/delete credential), userId,
+    // or the userAgent/locale/timezone metadata. Soft-deleted rows are omitted.
     return {
       ...result,
       page: result.page.filter(isActive).map((encouragement) => ({
         _id: encouragement._id,
         authorName: encouragement.authorName,
         createdAt: encouragement.createdAt,
-        isMine: args.visitorId != null && encouragement.visitorId === args.visitorId,
+        isMine: encouragementIsMine(encouragement, author),
         message: encouragement.message,
       })),
     };
@@ -235,13 +245,11 @@ export const remove = mutationWithTriggers({
       ? await canManageBaby(ctx, { baby, identity: appIdentity(identity) })
       : false;
 
-    // Check if visitor can delete (matches visitorId and within time window)
-    const canVisitorDelete =
-      args.visitorId &&
-      encouragement.visitorId === args.visitorId &&
-      isWithinEditWindow(encouragement.createdAt);
+    const author = await resolveEncouragementAuthor(ctx, args.visitorId);
+    const canAuthorDelete =
+      encouragementIsMine(encouragement, author) && isWithinEditWindow(encouragement.createdAt);
 
-    if (!isManager && !canVisitorDelete) {
+    if (!isManager && !canAuthorDelete) {
       throw new Error("Not authorized to delete this encouragement");
     }
 
@@ -251,5 +259,47 @@ export const remove = mutationWithTriggers({
     });
 
     await deleteEncouragementWithTimelineItem(ctx, encouragement);
+  },
+});
+
+export async function claimEncouragementsForVisitor(
+  ctx: MutationCtx,
+  opts: { userId: string; visitorId: string },
+) {
+  const rows = await ctx.db
+    .query("encouragements")
+    .withIndex("by_visitorId", (q) => q.eq("visitorId", opts.visitorId))
+    .collect();
+  for (const row of rows) {
+    if (row.demoFixture === true || row.userId != null) {
+      continue;
+    }
+    await ctx.db.patch(row._id, { userId: opts.userId });
+  }
+}
+
+export const claimVisitorEncouragements = mutationWithTriggers({
+  args: {
+    visitorId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+    await claimEncouragementsForVisitor(ctx, {
+      userId: appIdentity(identity).authUserId,
+      visitorId: args.visitorId,
+    });
+  },
+});
+
+export const claimVisitorEncouragementsForAuthUserMutation = internalMutation({
+  args: {
+    userId: v.string(),
+    visitorId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await claimEncouragementsForVisitor(ctx, args);
   },
 });

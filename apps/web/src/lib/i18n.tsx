@@ -201,6 +201,7 @@ const enGB = {
   "Failed to unsubscribe from notifications": "Failed to unsubscribe from notifications",
   "Failed to update encouragement": "Couldn't update the message",
   "Failed to update journey": "Failed to update journey",
+  "Failed to update name": "Failed to update name",
   "Failed to update theme": "Failed to update theme",
   "Failed to upload photo": "Failed to upload photo",
   "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
@@ -300,6 +301,7 @@ const enGB = {
   "Name is required": "Name is required",
   "Name must be {{count}} characters or less": "Name must be {{count}} characters or less",
   "Name must be at least 2 characters": "Name must be at least 2 characters",
+  "Name saved": "Name saved",
   "New photo": "New photo",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Nice work. Share your page and enjoy fewer 'any news?' texts.",
@@ -351,6 +353,8 @@ const enGB = {
   "Page photo": "Page photo",
   Password: "Password",
   "Password must be at least 6 characters": "Password must be at least 6 characters",
+  "Past guestbook messages keep the name you wrote then.":
+    "Past guestbook messages keep the name you wrote then.",
   "Peek at settings": "Peek at settings",
   "People who can post updates and change settings":
     "People who can post updates and change settings",
@@ -384,6 +388,7 @@ const enGB = {
   "Preview – {{title}}": "Preview: {{title}}",
   "Preview how your baby tracking page will look at different stages.":
     "See how your baby page looks at each stage.",
+  Profile: "Profile",
   "Profile language": "Profile language",
   "Profile time zone": "Profile time zone",
   "Public due date message": "Public due date message",
@@ -776,6 +781,7 @@ const sv: TranslationCatalog = {
   "Failed to unsubscribe from notifications": "Det gick inte att stänga av notiserna",
   "Failed to update encouragement": "Det gick inte att uppdatera hälsningen",
   "Failed to update journey": "Det gick inte att uppdatera resan",
+  "Failed to update name": "Det gick inte att uppdatera namnet",
   "Failed to update theme": "Det gick inte att uppdatera temat",
   "Failed to upload photo": "Det gick inte att ladda upp fotot",
   "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
@@ -876,6 +882,7 @@ const sv: TranslationCatalog = {
   "Name is required": "Fyll i ett namn",
   "Name must be {{count}} characters or less": "Namnet får vara högst {{count}} tecken",
   "Name must be at least 2 characters": "Namnet måste vara minst 2 tecken",
+  "Name saved": "Namnet har sparats",
   "New photo": "Nytt foto",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Snyggt! Dela sidan och njut av att slippa alla frågor om det hänt något.",
@@ -927,6 +934,8 @@ const sv: TranslationCatalog = {
   "Page photo": "Sidfoto",
   Password: "Lösenord",
   "Password must be at least 6 characters": "Lösenordet måste vara minst 6 tecken",
+  "Past guestbook messages keep the name you wrote then.":
+    "Tidigare gästbokshälsningar behåller namnet du skrev då.",
   "Peek at settings": "Titta i inställningarna",
   "People who can post updates and change settings":
     "Personer som kan lägga upp uppdateringar och ändra inställningar",
@@ -960,6 +969,7 @@ const sv: TranslationCatalog = {
   "Preview – {{title}}": "Förhandsvisning: {{title}}",
   "Preview how your baby tracking page will look at different stages.":
     "Se hur bäbissidan ser ut i de olika stegen.",
+  Profile: "Profil",
   "Profile language": "Profilspråk",
   "Profile time zone": "Profiltidszon",
   "Public due date message": "Offentligt meddelande om beräknat datum",
@@ -1331,6 +1341,7 @@ const es: TranslationCatalog = {
   "Failed to unsubscribe from notifications": "No se pudieron desactivar las notificaciones",
   "Failed to update encouragement": "No se pudo actualizar el mensaje de ánimo",
   "Failed to update journey": "No se pudo actualizar el recorrido",
+  "Failed to update name": "No se pudo actualizar el nombre",
   "Failed to update theme": "No se pudo actualizar el tema",
   "Failed to upload photo": "No se pudo subir la foto",
   "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
@@ -1433,6 +1444,7 @@ const es: TranslationCatalog = {
   "Name is required": "El nombre es obligatorio",
   "Name must be {{count}} characters or less": "El nombre debe tener {{count}} caracteres o menos",
   "Name must be at least 2 characters": "El nombre debe tener al menos 2 caracteres",
+  "Name saved": "Nombre guardado",
   "New photo": "Foto nueva",
   "Nice work — share your page and enjoy the quiet inbox.":
     "¡Bien hecho! Comparte tu página y despídete del bombardeo de mensajes.",
@@ -1485,6 +1497,8 @@ const es: TranslationCatalog = {
   "Page photo": "Foto de la página",
   Password: "Contraseña",
   "Password must be at least 6 characters": "La contraseña debe tener al menos 6 caracteres",
+  "Past guestbook messages keep the name you wrote then.":
+    "Los mensajes anteriores del libro de visitas conservan el nombre que escribiste entonces.",
   "Peek at settings": "Echa un vistazo a Configuración",
   "People who can post updates and change settings":
     "Personas que pueden publicar novedades y cambiar la configuración",
@@ -1518,6 +1532,7 @@ const es: TranslationCatalog = {
   "Preview – {{title}}": "Vista previa: {{title}}",
   "Preview how your baby tracking page will look at different stages.":
     "Comprueba cómo se verá la página del bebé en las distintas etapas.",
+  Profile: "Perfil",
   "Profile language": "Idioma del perfil",
   "Profile time zone": "Zona horaria del perfil",
   "Public due date message": "Mensaje público sobre la fecha prevista",
@@ -1889,6 +1904,7 @@ const ptBR: TranslationCatalog = {
   "Failed to unsubscribe from notifications": "Não foi possível desativar as notificações",
   "Failed to update encouragement": "Não foi possível atualizar a mensagem de carinho",
   "Failed to update journey": "Não foi possível atualizar a jornada",
+  "Failed to update name": "Não foi possível atualizar o nome",
   "Failed to update theme": "Não foi possível atualizar o tema",
   "Failed to upload photo": "Não foi possível enviar a foto",
   "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
@@ -1994,6 +2010,7 @@ const ptBR: TranslationCatalog = {
   "Name is required": "O nome é obrigatório",
   "Name must be {{count}} characters or less": "O nome deve ter no máximo {{count}} caracteres",
   "Name must be at least 2 characters": "O nome deve ter pelo menos 2 caracteres",
+  "Name saved": "Nome salvo",
   "New photo": "Foto nova",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Mandou bem! Agora compartilhe sua página e aproveite o sossego nas mensagens.",
@@ -2045,6 +2062,8 @@ const ptBR: TranslationCatalog = {
   "Page photo": "Foto da página",
   Password: "Senha",
   "Password must be at least 6 characters": "A senha deve ter pelo menos 6 caracteres",
+  "Past guestbook messages keep the name you wrote then.":
+    "As mensagens anteriores do livro de visitas mantêm o nome que você escreveu na hora.",
   "Peek at settings": "Dê uma olhada nas configurações",
   "People who can post updates and change settings":
     "Pessoas que podem publicar novidades e alterar as configurações",
@@ -2080,6 +2099,7 @@ const ptBR: TranslationCatalog = {
   "Preview – {{title}}": "Prévia: {{title}}",
   "Preview how your baby tracking page will look at different stages.":
     "Veja como a página do bebê ficará em cada etapa.",
+  Profile: "Perfil",
   "Profile language": "Idioma do perfil",
   "Profile time zone": "Fuso horário do perfil",
   "Public due date message": "Mensagem pública sobre a data prevista",
