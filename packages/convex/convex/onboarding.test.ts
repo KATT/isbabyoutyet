@@ -316,27 +316,40 @@ test("skipTourForExistingUsers leaves the empty demo login on the first-run tour
   });
 });
 
-test("skipTourForExistingUsers continues onto the next page when a batch is full", async () => {
-  const t = await setup();
-  const emails = Array.from({ length: 51 }, (_, index) => `batch${index}@example.com`);
-  for (const email of emails) {
-    await signUpUser(t, { email, name: "Batch" });
-  }
+test(
+  "skipTourForExistingUsers continues onto the next page when a batch is full",
+  { timeout: 20_000 },
+  async () => {
+    const t = await setup();
+    await t.run(async (ctx) => {
+      const auth = createAuth(ctx);
+      const emails = Array.from({ length: 51 }, (_, index) => `batch${index}@example.com`);
+      for (const email of emails) {
+        await auth.api.signUpEmail({
+          body: {
+            email,
+            name: "Batch",
+            password: "password123",
+          },
+        });
+      }
+    });
 
-  const first = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
-  expect(first).toMatchObject({ alreadyRan: false, isDone: false, processed: 50 });
+    const first = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
+    expect(first).toMatchObject({ alreadyRan: false, isDone: false, processed: 50 });
 
-  const rest = await t.mutation(internal.migrations.skipTourForExistingUsers, {
-    cursor: first.continueCursor,
-  });
-  expect(rest).toMatchObject({ alreadyRan: false, isDone: true });
-  expect(rest.processed).toBeGreaterThan(0);
+    const rest = await t.mutation(internal.migrations.skipTourForExistingUsers, {
+      cursor: first.continueCursor,
+    });
+    expect(rest).toMatchObject({ alreadyRan: false, isDone: true });
+    expect(rest.processed).toBeGreaterThan(0);
 
-  const sentinel = await t.run(async (ctx) => {
-    return await ctx.db
-      .query("userOnboarding")
-      .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
-      .unique();
-  });
-  expect(sentinel).toBeTruthy();
-});
+    const sentinel = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("userOnboarding")
+        .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
+        .unique();
+    });
+    expect(sentinel).toBeTruthy();
+  },
+);
