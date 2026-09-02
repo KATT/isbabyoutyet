@@ -1,6 +1,7 @@
 import { RuleTester } from "oxlint/plugins-dev";
 import { describe, it } from "vitest";
-import plugin from "./workspace.ts";
+
+import { requireUseEffectArgumentsRule } from "./require-use-effect-arguments.ts";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -9,7 +10,7 @@ const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: "tsx" } },
 });
 
-tester.run("require-use-effect-arguments", plugin.rules["require-use-effect-arguments"], {
+tester.run("require-use-effect-arguments", requireUseEffectArgumentsRule, {
   valid: [
     `import { useEffect } from "react"; useEffect(() => {}, []);`,
     `import { useEffect } from "react"; useEffect(() => {}, [a]);`,

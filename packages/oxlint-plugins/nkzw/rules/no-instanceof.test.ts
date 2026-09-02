@@ -1,13 +1,14 @@
 import { RuleTester } from "oxlint/plugins-dev";
 import { describe, it } from "vitest";
-import plugin from "./workspace.ts";
+
+import { noInstanceofRule } from "./no-instanceof.ts";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
 
 const tester = new RuleTester();
 
-tester.run("no-instanceof", plugin.rules["no-instanceof"], {
+tester.run("no-instanceof", noInstanceofRule, {
   valid: [
     `if (value instanceof Error) {}`,
     `if (value instanceof CustomError) {}`,

@@ -1,6 +1,7 @@
 import { RuleTester } from "oxlint/plugins-dev";
 import { describe, it } from "vitest";
-import plugin from "./workspace.ts";
+
+import { ensureRelayTypesRule } from "./ensure-relay-types.ts";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -9,7 +10,7 @@ const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: "tsx" } },
 });
 
-tester.run("ensure-relay-types", plugin.rules["ensure-relay-types"], {
+tester.run("ensure-relay-types", ensureRelayTypesRule, {
   valid: [
     `import { useMutation } from "react-relay/hooks.js"; useMutation<Mut>(mutation, options);`,
     `import { usePaginationFragment } from "react-relay/hooks.js"; usePaginationFragment<Frag>(fragment, options);`,

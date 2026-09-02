@@ -1,20 +1,12 @@
 import { defineRule } from "@oxlint/plugins";
 
-/**
- * Require type parameters on `useMutation` / `usePaginationFragment` from
- * `react-relay/hooks.js`.
- *
- * Ported from `@nkzw/eslint-plugin` (`ensure-relay-types`) so we can keep the
- * nkzw oxlint-config rule without depending on that package.
- */
-
 function importedName(node) {
   return node.imported.type === "Identifier" ? node.imported.name : node.imported.value;
 }
 
 const TRACKED_HOOKS = new Set(["useMutation", "usePaginationFragment"]);
 
-const ensureRelayTypes = defineRule({
+export const ensureRelayTypesRule = defineRule({
   meta: {
     type: "problem",
     docs: {
@@ -57,5 +49,3 @@ const ensureRelayTypes = defineRule({
     };
   },
 });
-
-export { ensureRelayTypes };

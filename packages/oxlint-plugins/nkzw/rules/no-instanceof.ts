@@ -1,15 +1,8 @@
 import { defineRule } from "@oxlint/plugins";
 
-/**
- * Ban `instanceof` except for `*Error` / `*Exception` constructors.
- *
- * Ported from `@nkzw/eslint-plugin` (`no-instanceof`) so we can keep the
- * nkzw oxlint-config rule without depending on that package.
- */
-
 const MESSAGE = 'The "instanceof" operator is not allowed.';
 
-const noInstanceof = defineRule({
+export const noInstanceofRule = defineRule({
   meta: {
     type: "problem",
     docs: {
@@ -38,5 +31,3 @@ const noInstanceof = defineRule({
     };
   },
 });
-
-export { noInstanceof };

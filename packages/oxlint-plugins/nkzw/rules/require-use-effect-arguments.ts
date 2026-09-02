@@ -1,17 +1,10 @@
 import { defineRule } from "@oxlint/plugins";
 
-/**
- * Require React `useEffect` calls to pass a second argument.
- *
- * Ported from `@nkzw/eslint-plugin` (`require-use-effect-arguments`) so we
- * can keep the nkzw oxlint-config rule without depending on that package.
- */
-
 function importedName(node) {
   return node.imported.type === "Identifier" ? node.imported.name : node.imported.value;
 }
 
-const requireUseEffectArguments = defineRule({
+export const requireUseEffectArgumentsRule = defineRule({
   meta: {
     type: "problem",
     docs: {
@@ -67,5 +60,3 @@ const requireUseEffectArguments = defineRule({
     };
   },
 });
-
-export { requireUseEffectArguments };

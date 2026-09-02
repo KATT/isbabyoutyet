@@ -26,6 +26,10 @@
       "specifier": "./packages/oxlint-plugins/dist/anti-slop/index.js"
     },
     {
+      "name": "nkzw",
+      "specifier": "./packages/oxlint-plugins/dist/nkzw/index.js"
+    },
+    {
       "name": "workspace",
       "specifier": "./packages/oxlint-plugins/dist/workspace.js"
     },
@@ -121,11 +125,10 @@
     "react/hooks": "error",
     "react/memo-dependencies": "error",
     // From @nkzw/oxlint-config (https://github.com/nkzw-tech/oxlint-config).
-    // The three @nkzw/eslint-plugin rules are vendored in the workspace plugin
-    // so we do not take a dependency on that package.
-    "workspace/ensure-relay-types": "error",
-    "workspace/no-instanceof": "error",
-    "workspace/require-use-effect-arguments": "error",
+    // The three @nkzw/eslint-plugin rules live in packages/oxlint-plugins/nkzw.
+    "nkzw/ensure-relay-types": "error",
+    "nkzw/no-instanceof": "error",
+    "nkzw/require-use-effect-arguments": "error",
     "@typescript-eslint/array-type": ["error", { "default": "generic" }],
     "@typescript-eslint/no-duplicate-enum-values": "error",
     "@typescript-eslint/no-empty-object-type": "error",
