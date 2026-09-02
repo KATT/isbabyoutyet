@@ -5,6 +5,10 @@
     "**/_generated/**",
     "**/routeTree.gen.ts",
     "packages/oxlint-plugins/dist/**",
-    "packages/scripts/dist/**"
+    "packages/scripts/dist/**",
+    // Vendor Convex skills from `npx convex ai-files update` — oxfmt would
+    // rewrite their fenced TS and undo the CLI install.
+    "packages/convex/.agents/skills/**",
+    "packages/convex/.claude/skills/**"
   ]
 }
