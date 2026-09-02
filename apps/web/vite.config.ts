@@ -162,6 +162,9 @@ const config = defineConfig({
       cookieName: "PARAGLIDE_LOCALE",
       strategy: ["cookie", "preferredLanguage", "baseLocale"],
     }),
+    // Nitro Vite plugin is what Vercel uses to turn TanStack Start into
+    // Functions + Fluid compute:
+    // https://vercel.com/kb/guide/deploy-a-tanstack-start-app-to-vercel
     // Base UI grows the Nitro SSR rebundle enough that Rolldown's default split
     // creates circular `ssr`/`ssr2` chunks and drops `ssr_exports` (preview 500).
     // Keep the SSR service graph in one chunk; still split real node_modules
