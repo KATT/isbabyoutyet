@@ -213,7 +213,7 @@ test("seedDemoData clears onboarding for the empty demo user", async () => {
 test("empty demo user stays on the first-run tour after seed and skipTour", async () => {
   const t = await setup();
   const seeded = await t.mutation(internal.seed.seedDemoData, {});
-  await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
+  await t.mutation(internal.migrations.skipTourForExistingUsers, { batchSize: null, cursor: null });
 
   const asEmpty = t.withIdentity({ subject: seeded.emptyUserId });
   expect(await asEmpty.query(api.onboarding.getMine, {})).toMatchObject({

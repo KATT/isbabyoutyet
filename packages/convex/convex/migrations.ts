@@ -168,7 +168,10 @@ function authUserEmail<TUser>(user: TUser) {
  * Idempotent: a sentinel `userOnboarding` row is written on the last page,
  * so later `runAll` deploys are a no-op.
  */
-export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: string | null) {
+export async function skipTourForExistingUsersPage(
+  ctx: MutationCtx,
+  opts: { batchSize: number; cursor: string | null },
+) {
   const sentinel = await ctx.db
     .query("userOnboarding")
     .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
@@ -185,8 +188,8 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
   const page = await ctx.runQuery(components.betterAuth.adapter.findMany, {
     model: "user",
     paginationOpts: {
-      cursor,
-      numItems: SKIP_TOUR_BATCH_SIZE,
+      cursor: opts.cursor,
+      numItems: opts.batchSize,
     },
   });
 
@@ -217,12 +220,17 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
 
 export const skipTourForExistingUsers = internalMutation({
   args: {
+    batchSize: v.union(v.number(), v.null()),
     cursor: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
-    const result = await skipTourForExistingUsersPage(ctx, args.cursor);
+    const result = await skipTourForExistingUsersPage(ctx, {
+      batchSize: args.batchSize ?? SKIP_TOUR_BATCH_SIZE,
+      cursor: args.cursor,
+    });
     if (!result.isDone && !result.alreadyRan) {
       await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
+        batchSize: args.batchSize,
         cursor: result.continueCursor,
       });
     }
@@ -873,6 +881,7 @@ export const runAll = internalMutation({
   },
   handler: async (ctx, args): Promise<MigrationRunnerReport> => {
     await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
+      batchSize: null,
       cursor: null,
     });
     const historical = parseMigrationRunnerReport(
