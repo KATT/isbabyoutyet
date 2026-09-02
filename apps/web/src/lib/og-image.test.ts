@@ -30,3 +30,22 @@ test("baby OG image includes status-aware card as PNG", async () => {
   expect(Array.from(bytes.slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
   expect(bytes.byteLength).toBeGreaterThan(5000);
 }, 30_000);
+
+test("baby OG image renders message-mode due date copy as PNG", async () => {
+  const response = await createBabyOgImage({
+    babyBorn: null,
+    dueDateDisplayMode: "message",
+    laborStarted: null,
+    locale: "en-GB",
+    name: "Nova",
+    photoUrl: null,
+    publicDueDateText: "Any day now",
+    theme: "sunny-days",
+    wentToHospital: null,
+  });
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toContain("image/png");
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  expect(Array.from(bytes.slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+  expect(bytes.byteLength).toBeGreaterThan(5000);
+}, 30_000);

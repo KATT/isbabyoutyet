@@ -24,14 +24,14 @@ type BabySeoBase = {
   timeZone: string;
 }>;
 
-type BabyDueDateDisplay =
+export type BabyDueDateDisplay =
   | { dueDate: string; dueDateDisplayMode: "exact" }
   | { dueDateDisplayMode: "message"; publicDueDateText: string };
 
-type BabySeoInput = BabySeoBase & Partial<BabyDueDateDisplay>;
+type BabySeoInput = BabySeoBase & BabyDueDateDisplay;
 
 function babyPageTitle(baby: BabySeoInput) {
-  const exactDueDate = baby.dueDateDisplayMode === "exact" && baby.dueDate ? baby.dueDate : null;
+  const exactDueDate = baby.dueDateDisplayMode === "exact" ? baby.dueDate : null;
   const timeZone = baby.timeZone ?? DEFAULT_TIME_ZONE;
   const overdueDays = exactDueDate ? getOverdueDays(exactDueDate, timeZone) : 0;
   const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate, timeZone) : 0;
@@ -110,7 +110,7 @@ export function babyStatusLabel(opts: { locale: SupportedLocale; status: BabySta
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<BabySeoBase, "babyBorn" | "locale" | "timeZone"> & Partial<BabyDueDateDisplay>;
+  baby: Pick<BabySeoBase, "babyBorn" | "locale" | "timeZone"> & BabyDueDateDisplay;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -121,30 +121,27 @@ export function babyStatusDetail(opts: {
     return babyStatusLabel({ locale, status: opts.status });
   }
   if (opts.baby.dueDateDisplayMode === "message") {
-    const message = opts.baby.publicDueDateText?.trim() ?? "";
+    const message = opts.baby.publicDueDateText.trim();
     if (message) {
       return message;
     }
     return babyStatusLabel({ locale, status: opts.status });
   }
-  if (opts.baby.dueDateDisplayMode === "exact" && opts.baby.dueDate) {
-    const timeZone = opts.baby.timeZone ?? DEFAULT_TIME_ZONE;
-    const overdueDays = getOverdueDays(opts.baby.dueDate, timeZone);
-    if (overdueDays > 0) {
-      return translate(
-        locale,
-        overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue",
-        { count: overdueDays },
-      );
-    }
-    const daysUntil = getDaysUntilDueDate(opts.baby.dueDate, timeZone);
+  const timeZone = opts.baby.timeZone ?? DEFAULT_TIME_ZONE;
+  const overdueDays = getOverdueDays(opts.baby.dueDate, timeZone);
+  if (overdueDays > 0) {
     return translate(
       locale,
-      daysUntil === 1 ? "{{count}} day until due date" : "{{count}} days until due date",
-      { count: daysUntil },
+      overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue",
+      { count: overdueDays },
     );
   }
-  return babyStatusLabel({ locale, status: opts.status });
+  const daysUntil = getDaysUntilDueDate(opts.baby.dueDate, timeZone);
+  return translate(
+    locale,
+    daysUntil === 1 ? "{{count}} day until due date" : "{{count}} days until due date",
+    { count: daysUntil },
+  );
 }
 
 function babyOgImagePath(publicId: string) {

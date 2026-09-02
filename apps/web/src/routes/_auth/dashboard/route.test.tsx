@@ -24,6 +24,7 @@ const babySmith = {
   // SAFETY: Seeded convex-test document id.
   _id: "baby-id" as Id<"baby">,
   babyBorn: null,
+  birthJourney: "labor" as const,
   dueDate: "2026-12-01",
   dueDateDisplayMode: "exact" as const,
   laborStarted: null,

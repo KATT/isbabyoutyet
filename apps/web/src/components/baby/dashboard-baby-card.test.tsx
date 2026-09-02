@@ -15,6 +15,7 @@ function useFakeTimersResource(now: Date) {
 
 const alma: DashboardBabyCardBaby = {
   babyBorn: "2026-01-11T04:14:00.000Z",
+  birthJourney: "labor" as const,
   dueDate: "2025-12-31",
   dueDateDisplayMode: "exact",
   laborStarted: "2026-01-10T12:00:00.000Z",
@@ -43,6 +44,7 @@ test("an unborn baby past the due date still shows overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
     babyBorn: null,
+    birthJourney: "labor" as const,
     dueDate: "2025-12-31",
     dueDateDisplayMode: "exact",
     laborStarted: null,
@@ -66,6 +68,7 @@ test("labour in progress beats a past due date", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const inLabor: DashboardBabyCardBaby = {
     babyBorn: null,
+    birthJourney: "labor" as const,
     dueDate: "2025-12-31",
     dueDateDisplayMode: "exact",
     laborStarted: "2026-08-13T08:00:00.000Z",
@@ -96,13 +99,17 @@ test("marks the tour baby card for coachmarks", async () => {
 test("an unborn baby before the due date shows days remaining", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
+    babyBorn: null,
+    birthJourney: "labor" as const,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
+    laborStarted: null,
     name: "Avery",
     publicDueDateText: null,
     publicId: "baby-waiting",
     role: "coParent",
     timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
     <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
@@ -114,13 +121,17 @@ test("an unborn baby before the due date shows days remaining", async () => {
 
 test("a message-mode baby card does not show a due date", async () => {
   const waiting: DashboardBabyCardBaby = {
+    babyBorn: null,
+    birthJourney: "labor" as const,
     dueDate: null,
     dueDateDisplayMode: "message",
+    laborStarted: null,
     name: "Avery",
     publicDueDateText: "Any day now",
     publicId: "baby-waiting",
     role: "owner",
     timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
     <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
@@ -133,13 +144,17 @@ test("a message-mode baby card does not show a due date", async () => {
 
 test("a message-mode baby card with no text shows a hidden label", async () => {
   const waiting: DashboardBabyCardBaby = {
+    babyBorn: null,
+    birthJourney: "labor" as const,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "message",
+    laborStarted: null,
     name: "Avery",
     publicDueDateText: null,
     publicId: "baby-waiting",
     role: "owner",
     timeZone: "Europe/London",
+    wentToHospital: null,
   };
   await using view = await renderWithTestRouter(
     <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
@@ -147,4 +162,72 @@ test("a message-mode baby card with no text shows a hidden label", async () => {
 
   expect(view.getByText("Due date hidden")).toBeTruthy();
   expect(view.queryByText(/Due 1 September/)).toBeNull();
+});
+
+test("gone to hospital beats a past due date", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
+  const atHospital: DashboardBabyCardBaby = {
+    babyBorn: null,
+    birthJourney: "labor" as const,
+    dueDate: "2025-12-31",
+    dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-13T08:00:00.000Z",
+    name: "Rowan",
+    publicDueDateText: null,
+    publicId: "baby-at-hospital",
+    role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: "2026-08-13T10:00:00.000Z",
+  };
+  await using view = await renderWithTestRouter(
+    <DashboardBabyCard baby={atHospital} dataTourId={undefined} index={0} />,
+  );
+
+  expect(view.getByText("Gone to hospital")).toBeTruthy();
+  expect(view.queryByText(/overdue/i)).toBeNull();
+  expect(view.queryByText("Baby born")).toBeNull();
+});
+
+test("an unborn baby due today shows due today", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
+  const dueToday: DashboardBabyCardBaby = {
+    babyBorn: null,
+    birthJourney: "labor" as const,
+    dueDate: "2026-08-13",
+    dueDateDisplayMode: "exact",
+    laborStarted: null,
+    name: "Sage",
+    publicDueDateText: null,
+    publicId: "baby-due-today",
+    role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: null,
+  };
+  await using view = await renderWithTestRouter(
+    <DashboardBabyCard baby={dueToday} dataTourId={undefined} index={0} />,
+  );
+
+  expect(view.getByText("Due today!")).toBeTruthy();
+  expect(view.getByText("Due 13 August 2026")).toBeTruthy();
+});
+
+test("an exact-mode baby without a due date shows not yet", async () => {
+  const waiting: DashboardBabyCardBaby = {
+    babyBorn: null,
+    birthJourney: "labor" as const,
+    dueDate: null,
+    dueDateDisplayMode: "exact",
+    laborStarted: null,
+    name: "Avery",
+    publicDueDateText: null,
+    publicId: "baby-waiting",
+    role: "owner",
+    timeZone: "Europe/London",
+    wentToHospital: null,
+  };
+  await using view = await renderWithTestRouter(
+    <DashboardBabyCard baby={waiting} dataTourId={undefined} index={0} />,
+  );
+
+  expect(view.getByText("Not yet")).toBeTruthy();
 });

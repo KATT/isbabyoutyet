@@ -47,7 +47,7 @@ export const Route = createFileRoute("/og/baby/$publicId")({
               ? { dueDate: baby.dueDate, dueDateDisplayMode: "exact" as const }
               : {
                   dueDateDisplayMode: "message" as const,
-                  publicDueDateText: baby.publicDueDateText,
+                  publicDueDateText: baby.publicDueDateText ?? "",
                 }),
             babyBorn: baby.babyBorn,
             laborStarted: baby.laborStarted,

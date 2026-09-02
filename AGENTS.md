@@ -117,6 +117,10 @@ When working under `packages/convex/`, also follow
 For route loaders and other project skills, see
 [`.agents/AGENTS.md`](.agents/AGENTS.md).
 
+When reading or editing TypeScript, follow
+[`.agents/skills/typescript-best-practices/SKILL.md`](.agents/skills/typescript-best-practices/SKILL.md)
+(discriminated unions, no `any`, earned casts only, schema-derived types).
+
 ## Pull requests
 
 Fill every section in [`.github/pull_request_template.md`](.github/pull_request_template.md).

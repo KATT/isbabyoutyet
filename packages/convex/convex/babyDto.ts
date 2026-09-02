@@ -49,6 +49,10 @@ export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
         publicDueDateText: baby.publicDueDateText?.trim(),
       };
     }
+    default: {
+      const _exhaustive: never = baby.dueDateDisplayMode;
+      return _exhaustive;
+    }
   }
 }
 

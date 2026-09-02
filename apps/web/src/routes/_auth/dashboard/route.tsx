@@ -5,8 +5,7 @@ import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Baby as BabyIcon, Plus, User } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import type { BirthJourney } from "@workspace/convex/src/types";
+import type { FunctionReturnType } from "convex/server";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -122,21 +121,21 @@ export function DashboardHeader() {
   );
 }
 
-type DashboardBaby = {
-  _id: Id<"baby">;
-  dueDate: string | null;
-  dueDateDisplayMode: "exact" | "message";
-  name: string;
-  publicDueDateText: string | null;
-  publicId: string;
-  role: "owner" | "coParent";
-  timeZone: string;
-} & Partial<{
-  babyBorn: string | null;
-  birthJourney: BirthJourney;
-  laborStarted: string | null;
-  wentToHospital: string | null;
-}>;
+type DashboardBaby = Pick<
+  FunctionReturnType<typeof api.baby.listByUser>[number],
+  | "_id"
+  | "babyBorn"
+  | "birthJourney"
+  | "dueDate"
+  | "dueDateDisplayMode"
+  | "laborStarted"
+  | "name"
+  | "publicDueDateText"
+  | "publicId"
+  | "role"
+  | "timeZone"
+  | "wentToHospital"
+>;
 
 export function DashboardBabyList(props: {
   babies: Array<DashboardBaby>;
