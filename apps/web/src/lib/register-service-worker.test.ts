@@ -18,7 +18,7 @@ function serviceWorkerResource(register: () => Promise<ServiceWorkerRegistration
   });
 }
 
-function reportErrorResource(reportError: (error: unknown) => void) {
+function reportErrorResource(reportError: typeof globalThis.reportError) {
   const previous = globalThis.reportError;
   vi.stubGlobal("reportError", reportError);
   return makeResource({}, () => {

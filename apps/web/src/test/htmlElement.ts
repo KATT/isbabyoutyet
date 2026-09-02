@@ -8,9 +8,7 @@ function isHtml<T extends Element>(
   ctor: { prototype: T },
 ): node is T {
   return (
-    node !== null &&
-    node !== undefined &&
-    Object.prototype.isPrototypeOf.call(ctor.prototype, node)
+    node !== null && node !== undefined && Object.prototype.isPrototypeOf.call(ctor.prototype, node)
   );
 }
 
