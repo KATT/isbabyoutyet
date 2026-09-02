@@ -132,6 +132,7 @@ test("the public feed never leaks visitor credentials or metadata", async () => 
     throw new Error("expected encouragement item");
   }
   expect(item.encouragement).not.toHaveProperty("visitorId");
+  expect(item.encouragement).not.toHaveProperty("userId");
   expect(item.encouragement).not.toHaveProperty("userAgent");
   expect(item.encouragement).not.toHaveProperty("locale");
   expect(item.encouragement).not.toHaveProperty("timezone");

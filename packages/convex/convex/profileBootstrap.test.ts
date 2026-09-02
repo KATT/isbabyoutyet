@@ -1,10 +1,11 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { createAuth } from "./auth";
 import { localeFromAcceptLanguage } from "./profileBootstrap";
-import { modules, registerComponents } from "./test.setup";
+import { createEncouragementArgs, modules, registerComponents } from "./test.setup";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -183,4 +184,124 @@ test("sign-in does not replace saved browser preferences", async () => {
     locale: "sv",
     timeZone: "Asia/Tokyo",
   });
+});
+
+async function insertBaby(t: Awaited<ReturnType<typeof setup>>) {
+  return await t.run(async (ctx) => {
+    return await ctx.db.insert("baby", {
+      birthJourney: "labor",
+      dueDate: "2026-09-01",
+      dueDateDisplayMode: "exact",
+      lastActivityAt: 1,
+      name: "Baby Smith",
+      ownerTokenIdentifier: "https://convex.test|owner",
+      publicDueDateText: null,
+      publicId: "baby-smith-claim",
+      subscriptionCount: 0,
+      userId: "owner",
+    });
+  });
+}
+
+test("sign-up claims guest encouragements for the visitor id header", async () => {
+  const t = await setup();
+  const babyId: Id<"baby"> = await insertBaby(t);
+  await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      authorName: "Guest Name",
+      babyId,
+      message: "Posted before I had an account",
+      visitorId: "visitor-to-claim",
+    }),
+  );
+
+  const userId = await t.run(async (ctx) => {
+    const auth = createAuth(ctx);
+    const result = await auth.api.signUpEmail({
+      body: {
+        email: "claimer@example.com",
+        name: "Account Name",
+        password: "password123",
+      },
+      headers: {
+        "x-visitor-id": "visitor-to-claim",
+      },
+    });
+    return result.user.id;
+  });
+
+  const stored = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("encouragements")
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+      .collect();
+  });
+  expect(stored).toMatchObject([
+    {
+      authorName: "Guest Name",
+      userId,
+      visitorId: "visitor-to-claim",
+    },
+  ]);
+
+  const listed = await t.withIdentity({ subject: userId }).query(api.encouragements.listByBaby, {
+    babyId,
+    paginationOpts: { cursor: null, numItems: 10 },
+    visitorId: "another-device",
+  });
+  expect(listed.page).toMatchObject([{ authorName: "Guest Name", isMine: true }]);
+});
+
+test("sign-in claims guest encouragements for the visitor id header", async () => {
+  const t = await setup();
+  const babyId: Id<"baby"> = await insertBaby(t);
+  const userId = await t.run(async (ctx) => {
+    const auth = createAuth(ctx);
+    const result = await auth.api.signUpEmail({
+      body: {
+        email: "returner@example.com",
+        name: "Returner",
+        password: "password123",
+      },
+    });
+    return result.user.id;
+  });
+
+  await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      authorName: "Still Guest",
+      babyId,
+      message: "Posted while logged out",
+      visitorId: "returning-visitor",
+    }),
+  );
+
+  await t.run(async (ctx) => {
+    const auth = createAuth(ctx);
+    await auth.api.signInEmail({
+      body: {
+        email: "returner@example.com",
+        password: "password123",
+      },
+      headers: {
+        "x-visitor-id": "returning-visitor",
+      },
+    });
+  });
+
+  const stored = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("encouragements")
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+      .collect();
+  });
+  expect(stored).toMatchObject([
+    {
+      authorName: "Still Guest",
+      userId,
+      visitorId: "returning-visitor",
+    },
+  ]);
 });
