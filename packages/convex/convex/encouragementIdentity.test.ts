@@ -4,9 +4,9 @@ import { encouragementIsMine, storedEncouragementUserId } from "./encouragementI
 test("storedEncouragementUserId is null for guests", () => {
   expect(storedEncouragementUserId(null)).toBeNull();
   expect(storedEncouragementUserId({ type: "visitor", visitorId: "v1" })).toBeNull();
-  expect(
-    storedEncouragementUserId({ type: "user", userId: "alice", visitorId: "v1" }),
-  ).toBe("alice");
+  expect(storedEncouragementUserId({ type: "user", userId: "alice", visitorId: "v1" })).toBe(
+    "alice",
+  );
 });
 
 test("a signed-in author matches by user id even on a new visitor id", () => {
@@ -29,16 +29,10 @@ test("a signed-in author still matches unclaimed guest posts from this browser",
 
 test("a guest only matches their visitor id", () => {
   expect(
-    encouragementIsMine(
-      { userId: null, visitorId: "v1" },
-      { type: "visitor", visitorId: "v1" },
-    ),
+    encouragementIsMine({ userId: null, visitorId: "v1" }, { type: "visitor", visitorId: "v1" }),
   ).toBe(true);
   expect(
-    encouragementIsMine(
-      { userId: "alice", visitorId: "v1" },
-      { type: "visitor", visitorId: "v2" },
-    ),
+    encouragementIsMine({ userId: "alice", visitorId: "v1" }, { type: "visitor", visitorId: "v2" }),
   ).toBe(false);
   expect(encouragementIsMine({ userId: "alice", visitorId: "v1" }, null)).toBe(false);
 });

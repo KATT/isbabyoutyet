@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
+import type { BrowserAuthHeaders } from "@/lib/auth-client";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -42,11 +43,11 @@ type NewAccount = { email: string; name: string; password: string };
  */
 export type SignUpHandoff = {
   failedMessage: string;
-  headers: () => Record<string, string>;
+  headers: () => BrowserAuthHeaders;
   navigate: () => Promise<void>;
   signUp: (
     body: NewAccount,
-    fetchOptions: { headers: Record<string, string> },
+    fetchOptions: { headers: BrowserAuthHeaders },
   ) => Promise<{ errorMessage: string | null }>;
   waitForAuth: () => Promise<void>;
 };
@@ -93,7 +94,7 @@ export const Route = createFileRoute("/auth/signup")({
  */
 export const signupAuthAdapter = {
   headers: () => getBrowserAuthHeaders(),
-  signUpEmail: (body: NewAccount, fetchOptions: { headers: Record<string, string> }) =>
+  signUpEmail: (body: NewAccount, fetchOptions: { headers: BrowserAuthHeaders }) =>
     authClient.signUp.email(body, fetchOptions),
   waitForAuth: () => waitForConvexAuth(),
 };

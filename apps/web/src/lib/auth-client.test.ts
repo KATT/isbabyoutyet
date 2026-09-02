@@ -7,8 +7,11 @@ test("getBrowserAuthHeaders includes the stored visitor id when present", () => 
   localStorage.setItem("encouragement-visitor-id", "visitor-from-guestbook");
   try {
     const headers = getBrowserAuthHeaders();
-    expect(headers[VISITOR_ID_HINT_HEADER]).toBe("visitor-from-guestbook");
-    expect(headers[TIME_ZONE_HINT_HEADER]).toEqual(expect.any(String));
+    expect(VISITOR_ID_HINT_HEADER in headers).toBe(true);
+    if (VISITOR_ID_HINT_HEADER in headers) {
+      expect(headers[VISITOR_ID_HINT_HEADER]).toBe("visitor-from-guestbook");
+    }
+    expect(TIME_ZONE_HINT_HEADER in headers).toBe(true);
   } finally {
     localStorage.removeItem("encouragement-visitor-id");
   }
@@ -17,5 +20,5 @@ test("getBrowserAuthHeaders includes the stored visitor id when present", () => 
 test("getBrowserAuthHeaders omits visitor id when none is stored", () => {
   localStorage.removeItem("encouragement-visitor-id");
   const headers = getBrowserAuthHeaders();
-  expect(headers[VISITOR_ID_HINT_HEADER]).toBeUndefined();
+  expect(VISITOR_ID_HINT_HEADER in headers).toBe(false);
 });

@@ -11,6 +11,7 @@ import {
   signInAndHandoff,
 } from "@/routes/auth/login";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import type { BrowserAuthHeaders } from "@/lib/auth-client";
 import { htmlInput } from "@/test/htmlElement";
 
 type SignInResult = { errorMessage: string | null };
@@ -37,7 +38,7 @@ function handoffDeps() {
     .fn<
       (
         body: { email: string; password: string; rememberMe: boolean },
-        fetchOptions: { headers: Record<string, string> },
+        fetchOptions: { headers: BrowserAuthHeaders },
       ) => Promise<SignInResult>
     >()
     .mockResolvedValue({ errorMessage: null });
