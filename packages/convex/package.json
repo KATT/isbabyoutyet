@@ -44,9 +44,6 @@
     "convex": "catalog:",
     "convex-helpers": "catalog:",
     "convex-table-history": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "react-email": "catalog:",
     "sharp": "catalog:",
     "web-push": "catalog:"
   },
