@@ -57,6 +57,8 @@
     // Ban module mocking everywhere — tests *and* shared test helpers, so a
     // helper cannot reintroduce it behind a seam.
     "workspace/no-mock": "error",
+    // Ban raising Vitest/waitFor timeouts. Make the test faster instead.
+    "workspace/no-custom-test-timeout": "error",
     "eslint/max-params": ["error", 2],
     // Type assertions can hide mismatches. Narrow values or use `satisfies` instead.
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],

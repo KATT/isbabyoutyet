@@ -119,7 +119,8 @@ function EncouragementFormFields(
           localStorage.setItem(STORAGE_KEY_NAME, values.authorName);
 
           const promise = createEncouragement(values).then(async (it) => {
-            if (import.meta.env.DEV) {
+            /* v8 ignore next 3 */
+            if (import.meta.env.DEV && import.meta.env.MODE !== "test") {
               await new Promise((resolve) => setTimeout(resolve, 1000));
             }
             return it;

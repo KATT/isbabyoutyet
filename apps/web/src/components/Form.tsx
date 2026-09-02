@@ -150,7 +150,7 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
             .handleSubmit(async (values) => {
               // Dev-only pause so submit spinners are visible while clicking around locally.
               /* v8 ignore next 3 */
-              if (import.meta.env.DEV) {
+              if (import.meta.env.DEV && import.meta.env.MODE !== "test") {
                 await new Promise((resolve) => setTimeout(resolve, DEV_SUBMIT_DELAY_MS));
               }
               await props.handleSubmit(values);

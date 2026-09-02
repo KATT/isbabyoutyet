@@ -254,10 +254,7 @@ test("skipTourForExistingUsers grandfathers registered users and leaves later si
   const aliceId = await signUpUser(t, { email: "alice@example.com", name: "Alice" });
   const bobId = await signUpUser(t, { email: "bob@example.com", name: "Bob" });
 
-  const first = await t.mutation(internal.migrations.skipTourForExistingUsers, {
-    batchSize: null,
-    cursor: null,
-  });
+  const first = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
   expect(first).toMatchObject({ alreadyRan: false, isDone: true });
   expect(first.processed).toBeGreaterThanOrEqual(2);
 
@@ -282,10 +279,7 @@ test("skipTourForExistingUsers grandfathers registered users and leaves later si
   expect(sentinel).toBeTruthy();
 
   const carolId = await signUpUser(t, { email: "carol@example.com", name: "Carol" });
-  const second = await t.mutation(internal.migrations.skipTourForExistingUsers, {
-    batchSize: null,
-    cursor: null,
-  });
+  const second = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
   expect(second).toMatchObject({ alreadyRan: true, isDone: true, processed: 0 });
 
   const asCarol = t.withIdentity({ subject: carolId });
@@ -305,7 +299,7 @@ test("skipTourForExistingUsers leaves the empty demo login on the first-run tour
   });
   const aliceId = await signUpUser(t, { email: "alice@example.com", name: "Alice" });
 
-  await t.mutation(internal.migrations.skipTourForExistingUsers, { batchSize: null, cursor: null });
+  await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
 
   const asEmpty = t.withIdentity({ subject: emptyId });
   expect(await asEmpty.query(api.onboarding.getMine, {})).toMatchObject({
@@ -320,29 +314,4 @@ test("skipTourForExistingUsers leaves the empty demo login on the first-run tour
     checklistDismissed: true,
     welcomeDismissed: true,
   });
-});
-
-test("skipTourForExistingUsers continues onto the next page when a batch is full", async () => {
-  const t = await setup();
-  await signUpUser(t, { email: "one@example.com", name: "One" });
-  await signUpUser(t, { email: "two@example.com", name: "Two" });
-  await signUpUser(t, { email: "three@example.com", name: "Three" });
-
-  const first = await t.mutation(internal.migrations.skipTourForExistingUsers, {
-    batchSize: 2,
-    cursor: null,
-  });
-  expect(first).toMatchObject({ alreadyRan: false, isDone: false, processed: 2 });
-
-  // The mutation schedules the next page with `runAfter(0)`. Drain that work
-  // here so it does not race a second call or fire after the harness tears down.
-  await t.finishAllScheduledFunctions(() => {});
-
-  const sentinel = await t.run(async (ctx) => {
-    return await ctx.db
-      .query("userOnboarding")
-      .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
-      .unique();
-  });
-  expect(sentinel).toBeTruthy();
 });

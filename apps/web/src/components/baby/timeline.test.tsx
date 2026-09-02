@@ -840,13 +840,9 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
   fireEvent.change(view.getByLabelText("Message"), { target: { value: "Thinking of you!" } });
   fireEvent.click(view.getByRole("button", { name: "Send some love" }));
 
-  await vi.waitFor(
-    () => {
-      expect(htmlButton(view.getByRole("button", { name: "Send some love" })).disabled).toBe(false);
-    },
-    // Form DEV delay (500ms) + encouragement toast DEV delay (1000ms)
-    { timeout: 5000 },
-  );
+  await vi.waitFor(() => {
+    expect(htmlButton(view.getByRole("button", { name: "Send some love" })).disabled).toBe(false);
+  });
 
   const feed = await harness.client.query(api.timeline.listByBaby, {
     babyId: baby.publicId,
