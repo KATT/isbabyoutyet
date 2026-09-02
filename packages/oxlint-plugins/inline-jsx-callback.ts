@@ -151,6 +151,9 @@ const inlineJsxCallback = defineRule({
       }
 
       const reference = references[0];
+      if (reference === undefined) {
+        return;
+      }
       const attribute = jsxAttributeFor(reference.identifier);
       if (!attribute || repeatedCallbackFor(reference.identifier, declaration)) {
         return;

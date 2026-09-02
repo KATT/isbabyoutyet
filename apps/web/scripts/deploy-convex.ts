@@ -4,6 +4,13 @@
  * builds the web app, following the canonical Convex + Vercel setup:
  * https://docs.convex.dev/production/hosting/vercel
  *
+ * vercel.json pins `framework: "tanstack-start"` so this monorepo is not
+ * treated as Other. The Vercel TanStack Start guide says not to set a
+ * build command or output directory — we keep `buildCommand` only so
+ * Convex deploy runs before `vite build`, and we omit `outputDirectory`
+ * so Nitro can emit the Vercel Build Output API (functions + static).
+ * https://vercel.com/kb/guide/deploy-a-tanstack-start-app-to-vercel
+ *
  * Decision logic lives in `planConvexDeploy`. This script probes the
  * current preview fingerprint, logs one sentence, then runs a linear
  * step list:

@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
 import { ConvexProvider, type ConvexReactClient } from "convex/react";
 import {
-  anyApi,
   makeFunctionReference,
   type DefaultFunctionArgs,
   type FunctionReference,
@@ -239,9 +238,9 @@ test("useLiveConvexInfinitePages does not resubscribe when opts identities chang
     }) =>
       useLiveConvexInfinitePages({
         queryKey: props.queryKey,
-        // Fresh api-proxy identity each render, same function name.
+        // Fresh function-reference identity each render, same function name.
         args: props.args,
-        funcRef: anyApi.timeline.listByBaby,
+        funcRef: makeFunctionReference<"query">("timeline:listByBaby"),
         pageParams: props.pageParams,
       }),
     {
@@ -267,11 +266,13 @@ test("useLiveConvexInfinitePages does not resubscribe when opts identities chang
   expect(unsubscribers[0]).not.toHaveBeenCalled();
 
   // Object key insertion order must not force a resubscribe.
+  /* oxlint-disable perfectionist/sort-objects -- insertion order is the assertion */
   rerender({
-    args: { babyId: "b1", tag: "x" },
+    args: { tag: "x", babyId: "b1" },
     pageParams: [{ cursor: null, numItems: 20 }],
-    queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1", tag: "x" }],
+    queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { tag: "x", babyId: "b1" }],
   });
+  /* oxlint-enable perfectionist/sort-objects */
 
   expect(watchQuery).toHaveBeenCalledTimes(1);
   expect(unsubscribers[0]).not.toHaveBeenCalled();
@@ -298,7 +299,7 @@ test("useLiveConvexInfinitePages resubscribes when args contents change", () => 
     (props: LivePagesHookProps) =>
       useLiveConvexInfinitePages({
         args: props.args,
-        funcRef: anyApi.timeline.listByBaby,
+        funcRef: makeFunctionReference<"query">("timeline:listByBaby"),
         pageParams: [{ cursor: null, numItems: 20 }],
         queryKey: ["convexInfiniteQuery", "timeline:listByBaby", props.args],
       }),

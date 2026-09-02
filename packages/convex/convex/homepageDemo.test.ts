@@ -77,9 +77,8 @@ test("every locale has copy for every shared feed slot", () => {
   }
 
   expect(homepageDemoFeedFor("en-US").some((item) => item.message.includes("labor"))).toBe(true);
-  expect(
-    homepageDemoFeedFor("sv")[0]?.kind === "update" && homepageDemoFeedFor("sv")[0].message,
-  ).toContain("Vecka 40");
+  const firstSwedishItem = homepageDemoFeedFor("sv")[0];
+  expect(firstSwedishItem?.kind === "update" && firstSwedishItem.message).toContain("Vecka 40");
 });
 
 test("refresh creates Juniper Hale as born after a two-day labour with fixture encouragements", async () => {

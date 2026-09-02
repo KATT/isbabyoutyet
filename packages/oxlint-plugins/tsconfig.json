@@ -1,16 +1,10 @@
 {
-  "compilerOptions": {
-    "target": "ES2024",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": true,
-    "noImplicitAny": false,
-    "skipLibCheck": true,
-    "verbatimModuleSyntax": true,
-    "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
-    "noEmit": true
-  },
+  "extends": "@workspace/tsconfig/base.json",
   "include": ["**/*.ts", "vitest.config.ts"],
-  "exclude": ["**/*.test.ts", "tsdown.config.mjs"]
+  "exclude": ["**/*.test.ts", "tsdown.config.mjs", "dist", "node_modules"],
+  "compilerOptions": {
+    /* Oxlint visitor APIs are untyped; typed wrappers would be fiction. */
+    "noImplicitAny": false,
+    "rewriteRelativeImportExtensions": true
+  }
 }

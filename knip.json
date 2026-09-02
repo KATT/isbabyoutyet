@@ -67,6 +67,7 @@
     "packages/form-guard": {},
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},
-    "packages/ui": {}
+    "packages/ui": {},
+    "tooling/typescript": {}
   }
 }

@@ -16,9 +16,10 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@workspace/tsconfig": "workspace:*",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "tsdown": "^0.22.14",
+    "tsdown": "catalog:",
     "typescript": "catalog:"
   }
 }
