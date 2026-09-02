@@ -61,6 +61,7 @@ test("visitors can create encouragements and list them", async () => {
     { authorName: "Uncle Bob", isMine: true, message: "Good luck!" },
     { authorName: "Grandma", isMine: false, message: "We can't wait to meet you!" },
   ]);
+  expect(result.page[0]).not.toHaveProperty("author");
   expect(result.page[0]).not.toHaveProperty("visitorId");
   expect(result.page[0]).not.toHaveProperty("userId");
   expect(result.page[0]).not.toHaveProperty("userAgent");
@@ -71,10 +72,24 @@ test("visitors can create encouragements and list them", async () => {
       .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
       .collect();
   });
-  expect(stored).toMatchObject([
-    { locale: null, timezone: null, userAgent: null, userId: null },
-    { locale: null, timezone: null, userAgent: null, userId: null },
-  ]);
+  expect(stored).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        author: { type: "visitor", visitorId: "visitor-1" },
+        locale: null,
+        timezone: null,
+        userAgent: null,
+        userId: null,
+      }),
+      expect.objectContaining({
+        author: { type: "visitor", visitorId: "visitor-2" },
+        locale: null,
+        timezone: null,
+        userAgent: null,
+        userId: null,
+      }),
+    ]),
+  );
 });
 
 test("create persists visitor metadata when provided", async () => {
@@ -93,6 +108,7 @@ test("create persists visitor metadata when provided", async () => {
   );
   const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
   expect(stored).toMatchObject({
+    author: { type: "visitor", visitorId: "visitor-1" },
     locale: "en-US",
     timezone: "Europe/Stockholm",
     userAgent: "Mozilla/5.0",
@@ -360,6 +376,7 @@ test("a signed-in author stores their user id without changing the typed name", 
 
   const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
   expect(stored).toMatchObject({
+    author: { type: "user", userId: "alice", visitorId: "alice-browser" },
     authorName: "Grandma Alice",
     userId: "alice",
     visitorId: "alice-browser",
@@ -371,6 +388,7 @@ test("a signed-in author stores their user id without changing the typed name", 
     visitorId: "different-browser",
   });
   expect(listed.page).toMatchObject([{ authorName: "Grandma Alice", isMine: true }]);
+  expect(listed.page[0]).not.toHaveProperty("author");
   expect(listed.page[0]).not.toHaveProperty("userId");
 });
 
@@ -394,6 +412,7 @@ test("a signed-in author can edit and delete on a new visitor id after claiming"
 
   const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
   expect(stored).toMatchObject({
+    author: { type: "user", userId: "alice", visitorId: "guest-browser" },
     authorName: "Guest Name",
     userId: "alice",
     visitorId: "guest-browser",
@@ -451,6 +470,7 @@ test("claiming a visitor id does not steal comments already linked to another us
 
   const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
   expect(stored).toMatchObject({ authorName: "Bob", userId: "bob" });
+  expect(stored?.author).toMatchObject({ type: "visitor", visitorId: "shared-browser" });
 });
 
 test("claiming visitor encouragements requires authentication", async () => {

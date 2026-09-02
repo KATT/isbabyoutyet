@@ -318,14 +318,16 @@ async function insertFeedDocs(
         babyId,
         postedAt,
       });
+      const visitorId = `homepage-demo-${locale}-${slugAuthor(item.authorName)}`;
       await ctx.db.insert("encouragements", {
+        author: { type: "visitor", visitorId },
         authorName: item.authorName,
         babyId,
         createdAt: postedAt,
         demoFixture: true,
         message: item.message,
         timelineItemId,
-        visitorId: `homepage-demo-${locale}-${slugAuthor(item.authorName)}`,
+        visitorId,
       });
       continue;
     }

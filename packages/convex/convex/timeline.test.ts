@@ -131,6 +131,7 @@ test("the public feed never leaks visitor credentials or metadata", async () => 
   if (item?.kind !== "encouragement") {
     throw new Error("expected encouragement item");
   }
+  expect(item.encouragement).not.toHaveProperty("author");
   expect(item.encouragement).not.toHaveProperty("visitorId");
   expect(item.encouragement).not.toHaveProperty("userId");
   expect(item.encouragement).not.toHaveProperty("userAgent");

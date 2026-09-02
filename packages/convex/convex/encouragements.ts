@@ -11,8 +11,10 @@ import { canManageBaby } from "./babyAccess";
 import { resolveBabyPreferences } from "./babyPreferences";
 import type { OwnerMessagePushEvent } from "../src/pushMessages";
 import {
+  encouragementHasUserId,
   encouragementIsMine,
   resolveEncouragementAuthor,
+  storedEncouragementAuthorFromCaller,
   storedEncouragementUserId,
 } from "./encouragementIdentity";
 import { isActive } from "./softDelete";
@@ -121,6 +123,7 @@ export const create = mutationWithTriggers({
       postedAt: createdAt,
     });
     const encouragementId = await ctx.db.insert("encouragements", {
+      author: storedEncouragementAuthorFromCaller(author, args.visitorId),
       authorName: trimmedName,
       babyId: args.babyId,
       createdAt,
@@ -208,8 +211,9 @@ export const listByBaby = query({
 
     const author = await resolveEncouragementAuthor(ctx, args.visitorId);
 
-    // Public DTO: never return visitorId (the edit/delete credential), userId,
-    // or the userAgent/locale/timezone metadata. Soft-deleted rows are omitted.
+    // Public DTO: never return author, visitorId (the edit/delete credential),
+    // userId, or the userAgent/locale/timezone metadata. Soft-deleted rows are
+    // omitted.
     return {
       ...result,
       page: result.page.filter(isActive).map((encouragement) => ({
@@ -271,10 +275,17 @@ export async function claimEncouragementsForVisitor(
     .withIndex("by_visitorId", (q) => q.eq("visitorId", opts.visitorId))
     .collect();
   for (const row of rows) {
-    if (row.demoFixture === true || row.userId != null) {
+    if (row.demoFixture === true || encouragementHasUserId(row)) {
       continue;
     }
-    await ctx.db.patch(row._id, { userId: opts.userId });
+    await ctx.db.patch(row._id, {
+      author: {
+        type: "user",
+        userId: opts.userId,
+        visitorId: row.visitorId,
+      },
+      userId: opts.userId,
+    });
   }
 }
 
