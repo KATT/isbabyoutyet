@@ -7,43 +7,8 @@ import { getBabySeo } from "@/lib/baby-seo";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { seedOwnedBaby, patchOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
-import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
+import { runRouteLoader } from "@/test/routeTestContext";
 import { Route } from "@/routes/baby/$publicId/share";
-
-test("beforeLoad validates and canonicalizes the baby slug", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: "missing-baby" },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({ isNotFound: true });
-
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Nova" });
-  await patchOwnedBaby(harness, {
-    id: baby.babyId,
-    patch: {
-      name: "Renamed Nova",
-    },
-  });
-  const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: baby.publicId },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
-    options: {
-      params: { publicId: renamed?.publicId },
-      replace: true,
-      to: "/baby/$publicId/share",
-    },
-  });
-});
 
 test("loader prefetches the canonical OG image in the browser", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });

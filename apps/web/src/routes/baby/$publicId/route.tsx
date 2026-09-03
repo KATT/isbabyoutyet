@@ -29,6 +29,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { openGraphImageMeta } from "@/lib/seo";
 import { getBabySeo } from "@/lib/baby-seo";
 import { babyRouteCacheHeaders } from "@/lib/cachePolicy";
+import { replaceBabyPublicId } from "@/lib/baby-public-id-href";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth-client";
@@ -49,7 +50,6 @@ export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPageLayout,
   validateSearch: z.object({
     beta: z.boolean().optional(),
-    settings: z.boolean().optional(),
   }),
 
   beforeLoad: async (opts) => {
@@ -62,19 +62,13 @@ export const Route = createFileRoute("/baby/$publicId")({
       throw notFound();
     }
     if (babyDoc.publicId !== opts.params.publicId) {
-      throw redirect({
-        params: { publicId: babyDoc.publicId },
-        replace: true,
-        search: opts.location.search,
-        to: "/baby/$publicId",
-      });
-    }
-    if (opts.search.settings) {
-      throw redirect({
-        params: { publicId: babyDoc.publicId },
-        replace: true,
-        to: "/baby/$publicId/settings",
-      });
+      throw redirect(
+        replaceBabyPublicId({
+          fromPublicId: opts.params.publicId,
+          href: opts.location.href,
+          toPublicId: babyDoc.publicId,
+        }),
+      );
     }
     return { locale: babyDoc.resolvedLocale };
   },

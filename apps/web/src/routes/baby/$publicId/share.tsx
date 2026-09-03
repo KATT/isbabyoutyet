@@ -16,7 +16,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { CheckCircle } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { allKeyed, preloadedQueryOptions } from "@workspace/query-prefetch";
@@ -32,22 +32,6 @@ import { canonicalUrl } from "@/lib/site-url";
 import { useTransientFlag } from "@/lib/use-transient-flag";
 
 export const Route = createFileRoute("/baby/$publicId/share")({
-  beforeLoad: async (opts) => {
-    const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
-    });
-    const babyDoc = baby.initialData;
-    if (!babyDoc) {
-      throw notFound();
-    }
-    if (babyDoc.publicId !== opts.params.publicId) {
-      throw redirect({
-        params: { publicId: babyDoc.publicId },
-        replace: true,
-        to: "/baby/$publicId/share",
-      });
-    }
-  },
   loader: async (opts) => {
     const publicId = opts.params.publicId;
     const imageUrl = babyOgImageUrl(publicId, undefined);

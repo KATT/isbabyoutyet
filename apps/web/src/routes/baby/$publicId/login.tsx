@@ -5,30 +5,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
-import { api } from "@workspace/convex/convex/_generated/api";
+import { createFileRoute } from "@tanstack/react-router";
 import { hasDemoLogin } from "@/lib/has-demo-login";
 import { useI18n } from "@/lib/i18n";
 import { useBabyLoginOverlayNav } from "@/lib/overlay-nav";
 import { LoginCard, loginAuthAdapter, signInAndHandoff } from "@/routes/auth/login";
 
 export const Route = createFileRoute("/baby/$publicId/login")({
-  beforeLoad: async (opts) => {
-    const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
-    });
-    const babyDoc = baby.initialData;
-    if (!babyDoc) {
-      throw notFound();
-    }
-    if (babyDoc.publicId !== opts.params.publicId) {
-      throw redirect({
-        params: { publicId: babyDoc.publicId },
-        replace: true,
-        to: "/baby/$publicId/login",
-      });
-    }
-  },
   component: BabyLoginOverlay,
 });
 

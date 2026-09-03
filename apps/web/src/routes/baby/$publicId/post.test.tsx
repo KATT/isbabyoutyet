@@ -29,7 +29,7 @@ test("post loader fetches manager access data", async () => {
   });
 });
 
-test("post loader redirects non-managers to the public baby page", async () => {
+test("post loader 404s for non-managers", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const aliceId = await signUpTestUser(harness, {
     email: "alice@example.com",
@@ -47,11 +47,7 @@ test("post loader redirects non-managers to the public baby page", async () => {
       route: Route,
     }),
   ).rejects.toMatchObject({
-    options: {
-      params: { publicId: baby.publicId },
-      resetScroll: false,
-      to: "/baby/$publicId",
-    },
+    isNotFound: true,
   });
 });
 

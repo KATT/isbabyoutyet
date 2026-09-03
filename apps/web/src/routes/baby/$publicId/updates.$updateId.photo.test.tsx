@@ -2,77 +2,12 @@ import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import {
-  seedOwnedBaby,
-  seedTimelineUpdateWithPhoto,
-  patchOwnedBaby,
-  postTestUpdate,
-} from "@/test/convexTestSeed";
+import { seedOwnedBaby, seedTimelineUpdateWithPhoto, postTestUpdate } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
-import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
+import { runRouteLoader } from "@/test/routeTestContext";
 import { Route } from "@/routes/baby/$publicId/updates.$updateId.photo";
 
-test("update photo beforeLoad 404s unknown babies", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: "missing-baby", updateId: "jd7update00000000000000001" },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
-    isNotFound: true,
-  });
-});
-
-test("update photo beforeLoad redirects when the public id resolves to a different slug", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Nova" });
-  const update = await seedTimelineUpdateWithPhoto(harness, {
-    babyId: baby.babyId,
-    message: "Photo update",
-  });
-  await patchOwnedBaby(harness, {
-    id: baby.babyId,
-    patch: {
-      name: "Renamed Nova",
-    },
-  });
-  const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: baby.publicId, updateId: update.updateId },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
-    options: {
-      params: { publicId: renamed?.publicId, updateId: update.updateId },
-      replace: true,
-      to: "/baby/$publicId/updates/$updateId/photo",
-    },
-  });
-});
-
-test("update photo beforeLoad allows matching public ids", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
-  const update = await seedTimelineUpdateWithPhoto(harness, {
-    babyId: baby.babyId,
-    message: "Photo update",
-  });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: baby.publicId, updateId: update.updateId },
-      route: Route,
-    }),
-  ).resolves.toBeUndefined();
-});
-
-test("update photo loader redirects home when the update has no photo", async () => {
+test("update photo loader 404s when the update has no photo", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   const updateId = await postTestUpdate(harness, {
@@ -87,11 +22,7 @@ test("update photo loader redirects home when the update has no photo", async ()
       route: Route,
     }),
   ).rejects.toMatchObject({
-    options: {
-      params: { publicId: baby.publicId },
-      resetScroll: false,
-      to: "/baby/$publicId",
-    },
+    isNotFound: true,
   });
 });
 

@@ -3,9 +3,9 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import { expect, test, vi } from "vitest";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { seedOwnedBaby, signUpTestUser, patchOwnedBaby } from "@/test/convexTestSeed";
+import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
 import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
-import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
+import { runRouteLoader } from "@/test/routeTestContext";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 import { Route } from "@/routes/baby/$publicId/settings";
 import { htmlButton } from "@/test/htmlElement";
@@ -42,7 +42,7 @@ test("settings loader fetches only manager settings data", async () => {
   expect(result.browserPush).toMatchObject({ input: baby.publicId });
 });
 
-test("settings loader redirects non-managers to the public baby page", async () => {
+test("settings loader 404s for non-managers", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const aliceId = await signUpTestUser(harness, {
     email: "alice@example.com",
@@ -60,64 +60,8 @@ test("settings loader redirects non-managers to the public baby page", async () 
       route: Route,
     }),
   ).rejects.toMatchObject({
-    options: {
-      params: { publicId: baby.publicId },
-      resetScroll: false,
-      to: "/baby/$publicId",
-    },
-  });
-});
-
-test("beforeLoad 404s unknown babies", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: "missing-baby" },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
     isNotFound: true,
   });
-});
-
-test("beforeLoad redirects when the public id resolves to a different slug", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Working Title" });
-  await patchOwnedBaby(harness, {
-    id: baby.babyId,
-    patch: {
-      name: "Final Name",
-    },
-  });
-  const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: baby.publicId },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
-    options: {
-      params: { publicId: renamed?.publicId },
-      replace: true,
-      to: "/baby/$publicId/settings",
-    },
-  });
-});
-
-test("beforeLoad allows matching public ids", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: baby.publicId },
-      route: Route,
-    }),
-  ).resolves.toBeUndefined();
 });
 
 test("managerDocToBabyData maps manager fields for the settings panel", async () => {
@@ -211,6 +155,7 @@ test("settings overlay persists baby name edits through Convex", async () => {
     route: Route,
     wrap: null,
   });
+  const invalidate = vi.spyOn(ctx.router, "invalidate");
 
   await vi.waitFor(() => {
     expect(ctx.view.getByRole("dialog")).toBeTruthy();
@@ -229,6 +174,7 @@ test("settings overlay persists baby name edits through Convex", async () => {
     }
     expect(managerDoc.name).toBe("Nova Rae");
   });
+  expect(invalidate).toHaveBeenCalled();
 });
 
 test("settings overlay hides delete for co-parents", async () => {
