@@ -59,7 +59,7 @@ const adminSearchSchema = z.object({
   hideDemo: z.boolean().default(true),
   order: z.enum(["asc", "desc"]).default("desc"),
   sort: z.enum(["created", "updated"]).default("created"),
-  tab: z.enum(["babies", "languages", "users"]).default("babies"),
+  tab: z.enum(["babies", "languages", "transfers", "users"]).default("babies"),
 });
 
 type AdminTab = z.infer<typeof adminSearchSchema>["tab"];
@@ -637,20 +637,40 @@ export function BabiesSection(props: {
 }
 
 function AdminBabiesTab() {
-  const { t } = useI18n();
   const search = Route.useSearch();
   const loaderData = Route.useLoaderData();
-  const transferPublicId = useMutation(api.admin.transferPublicId);
   const babiesQuery = usePreloadedConvexInfiniteQuery(api.admin.listBabies, {
     handle: loaderData.babies,
     remixArgs: null,
   });
+
+  const babies = babiesQuery.data.pages.flatMap((page) => page.page);
+
+  return (
+    <BabiesSection
+      babies={babies}
+      hasNextPage={babiesQuery.hasNextPage}
+      hideDemo={search.hideDemo}
+      isFetchingNextPage={babiesQuery.isFetchingNextPage}
+      onLoadMore={() => {
+        void babiesQuery.fetchNextPage();
+      }}
+      order={search.order}
+      sort={search.sort}
+      tab={search.tab}
+    />
+  );
+}
+
+function AdminTransfersTab() {
+  const { t } = useI18n();
+  const loaderData = Route.useLoaderData();
+  const transferPublicId = useMutation(api.admin.transferPublicId);
   const transfersQuery = usePreloadedConvexInfiniteQuery(api.admin.listPublicIdTransfers, {
     handle: loaderData.transfers,
     remixArgs: null,
   });
 
-  const babies = babiesQuery.data.pages.flatMap((page) => page.page);
   const transfers = transfersQuery.data.pages.flatMap((page) => page.page);
 
   return (
@@ -668,18 +688,6 @@ function AdminBabiesTab() {
           void transfersQuery.fetchNextPage();
         }}
         transfers={transfers}
-      />
-      <BabiesSection
-        babies={babies}
-        hasNextPage={babiesQuery.hasNextPage}
-        hideDemo={search.hideDemo}
-        isFetchingNextPage={babiesQuery.isFetchingNextPage}
-        onLoadMore={() => {
-          void babiesQuery.fetchNextPage();
-        }}
-        order={search.order}
-        sort={search.sort}
-        tab={search.tab}
       />
     </div>
   );
@@ -728,7 +736,7 @@ function AdminUsersTab() {
 }
 
 export function isAdminTab(value: string): value is AdminTab {
-  return value === "babies" || value === "languages" || value === "users";
+  return value === "babies" || value === "languages" || value === "transfers" || value === "users";
 }
 
 export function AdminDashboardPage() {
@@ -753,6 +761,7 @@ export function AdminDashboardPage() {
       order={search.order}
       sort={search.sort}
       tab={search.tab}
+      transfersTab={<AdminTransfersTab />}
       usersTab={<AdminUsersTab />}
     />
   );
@@ -774,6 +783,7 @@ export function AdminDashboardView(props: {
   order: SortOrder;
   sort: SortBy;
   tab: AdminTab;
+  transfersTab: ReactNode;
   usersTab: ReactNode;
 }) {
   const { t } = useI18n();
@@ -848,6 +858,20 @@ export function AdminDashboardView(props: {
                       <Link
                         replace
                         resetScroll={false}
+                        search={tabSearch("transfers")}
+                        to="/dashboard/admin"
+                      />
+                    }
+                    value="transfers"
+                  >
+                    {t("Transfer permalink")}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    nativeButton={false}
+                    render={
+                      <Link
+                        replace
+                        resetScroll={false}
                         search={tabSearch("users")}
                         to="/dashboard/admin"
                       />
@@ -890,6 +914,10 @@ export function AdminDashboardView(props: {
 
               <TabsContent className="mt-0" value="babies">
                 {props.tab === "babies" ? props.babiesTab : null}
+              </TabsContent>
+
+              <TabsContent className="mt-0" value="transfers">
+                {props.tab === "transfers" ? props.transfersTab : null}
               </TabsContent>
 
               <TabsContent className="mt-0" value="users">

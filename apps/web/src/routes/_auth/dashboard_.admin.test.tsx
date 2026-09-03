@@ -382,7 +382,7 @@ test("infinite scroll sentinel requests another page when visible", async () => 
 });
 
 test("admin dashboard page exposes tab links and hide-demo filter", async () => {
-  const onTabChange = vi.fn<(tab: "babies" | "languages" | "users") => void>();
+  const onTabChange = vi.fn<(tab: "babies" | "languages" | "transfers" | "users") => void>();
   const onHideDemoChange = vi.fn<(hideDemo: boolean) => void>();
 
   await using view = await renderAdmin(
@@ -395,18 +395,22 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
       order="desc"
       sort="created"
       tab="babies"
+      transfersTab={<div>transfers body</div>}
       usersTab={<div>users body</div>}
     />,
   );
   expect(view.getByText("Admin dashboard")).toBeTruthy();
 
   const babiesTab = view.getByRole("tab", { name: "All babies" });
+  const transfersTab = view.getByRole("tab", { name: "Transfer permalink" });
   const usersTab = view.getByRole("tab", { name: "Recent users" });
   const languagesTab = view.getByRole("tab", { name: "Requested languages" });
   expect(babiesTab.tagName).toBe("A");
+  expect(transfersTab.tagName).toBe("A");
   expect(usersTab.tagName).toBe("A");
   expect(languagesTab.tagName).toBe("A");
   expect(babiesTab.getAttribute("href")).toContain("tab=babies");
+  expect(transfersTab.getAttribute("href")).toContain("tab=transfers");
   expect(usersTab.getAttribute("href")).toContain("tab=users");
   expect(languagesTab.getAttribute("href")).toContain("tab=languages");
 
@@ -429,6 +433,7 @@ test("admin defaults to created-desc babies and recognizes every admin tab", () 
   });
   expect(isAdminTab("babies")).toBe(true);
   expect(isAdminTab("languages")).toBe(true);
+  expect(isAdminTab("transfers")).toBe(true);
   expect(isAdminTab("users")).toBe(true);
   expect(isAdminTab("nope")).toBe(false);
 });
@@ -444,6 +449,7 @@ test("users tab body renders without the hide-demo filter", async () => {
       order="desc"
       sort="created"
       tab="users"
+      transfersTab={<div>transfers body</div>}
       usersTab={
         <UsersSection
           hasNextPage={false}
@@ -465,6 +471,28 @@ test("users tab body renders without the hide-demo filter", async () => {
   expect(view.getByText("Ada")).toBeTruthy();
   expect(view.getByText("ada@example.com")).toBeTruthy();
   expect(view.getByRole("link", { name: "River" })).toBeTruthy();
+  expect(view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
+});
+
+test("transfers tab body renders the form without the hide-demo filter", async () => {
+  const onTransfer = vi.fn().mockResolvedValue(undefined);
+  await using view = await renderAdmin(
+    <AdminDashboardView
+      babiesTab={<div>babies body</div>}
+      hideDemo={true}
+      languagesTab={<div>languages body</div>}
+      onHideDemoChange={() => undefined}
+      onTabChange={() => undefined}
+      order="desc"
+      sort="created"
+      tab="transfers"
+      transfersTab={<TransferPublicIdForm onTransfer={onTransfer} />}
+      usersTab={<div>users body</div>}
+    />,
+  );
+  expect(view.getByRole("tab", { name: "Transfer permalink" })).toBeTruthy();
+  expect(view.getByLabelText("Current permalink")).toBeTruthy();
+  expect(view.getByLabelText("Motivation")).toBeTruthy();
   expect(view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
 });
 
