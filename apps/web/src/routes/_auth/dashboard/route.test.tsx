@@ -94,19 +94,20 @@ test("shows the empty state once the list has loaded with no babies", async () =
   expect(view.getByText("No baby pages yet")).toBeTruthy();
 });
 
-test("dashboard header groups add baby, theme, and settings in a button group", async () => {
+test("dashboard header groups add baby separately from theme and settings", async () => {
   await using view = await renderWithTestRouter(<DashboardHeader />);
 
-  const actions = view.getByRole("group");
-  expect(actions.contains(view.getByRole("button", { name: "Add Baby" }))).toBe(true);
-  expect(actions.contains(view.getByRole("button", { name: "Toggle theme" }))).toBe(true);
-  expect(actions.contains(view.getByRole("button", { name: "Settings" }))).toBe(true);
-  expect(view.getByRole("button", { name: "Add Baby" }).getAttribute("href")).toBe(
-    "/dashboard/add",
-  );
-  expect(view.getByRole("button", { name: "Settings" }).getAttribute("href")).toBe(
-    "/dashboard/settings",
-  );
+  const ownerGroup = view.getByRole("group", { name: "Owner actions" });
+  const pageGroup = view.getByRole("group", { name: "Page actions" });
+  const addBaby = view.getByRole("button", { name: "Add Baby" });
+  const theme = view.getByRole("button", { name: "Toggle theme" });
+  const settings = view.getByRole("button", { name: "Settings" });
+
+  expect(ownerGroup.contains(addBaby)).toBe(true);
+  expect(pageGroup.contains(theme)).toBe(true);
+  expect(pageGroup.contains(settings)).toBe(true);
+  expect(addBaby.getAttribute("href")).toBe("/dashboard/add");
+  expect(settings.getAttribute("href")).toBe("/dashboard/settings");
   expect(view.queryByText("Admin")).toBeNull();
   expect(view.queryByText("Log out")).toBeNull();
   expect(view.queryByLabelText("Restart getting started tour")).toBeNull();

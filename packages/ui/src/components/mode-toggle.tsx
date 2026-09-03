@@ -19,7 +19,7 @@ export function ModeToggle(props: { className?: string }) {
         <TooltipTrigger
           render={
             <DropdownMenuTrigger
-              render={<Button variant="outline" size="icon" className={props.className} />}
+              render={<Button variant="ghost" size="icon" className={props.className} />}
             />
           }
         >

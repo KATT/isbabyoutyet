@@ -93,30 +93,34 @@ export function DashboardHeader() {
           </span>
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
-        <ButtonGroup className="rounded-full bg-background/85 p-1 shadow-sm backdrop-blur-md">
-          <Button
-            className="font-bold"
-            nativeButton={false}
-            render={<Link to="/dashboard/add" />}
-            size="sm"
-          >
-            <Plus data-icon="inline-start" />
-            {t("Add Baby")}
-          </Button>
-          <ModeToggle />
-          <Button
-            aria-label={t("Settings")}
-            nativeButton={false}
-            render={<Link {...settings.openLink} />}
-            size="icon"
-            variant="ghost"
-          >
-            <Avatar className="after:border-0" size="sm">
-              <AvatarFallback>
-                <User />
-              </AvatarFallback>
-            </Avatar>
-          </Button>
+        <ButtonGroup className="shrink-0 rounded-full border-2 border-border bg-background/85 p-1 shadow-sm backdrop-blur-md">
+          <ButtonGroup aria-label={t("Owner actions")}>
+            <Button
+              className="font-bold"
+              nativeButton={false}
+              render={<Link to="/dashboard/add" />}
+              variant="default"
+            >
+              <Plus data-icon="inline-start" />
+              {t("Add Baby")}
+            </Button>
+          </ButtonGroup>
+          <ButtonGroup aria-label={t("Page actions")}>
+            <ModeToggle />
+            <Button
+              aria-label={t("Settings")}
+              nativeButton={false}
+              render={<Link {...settings.openLink} />}
+              size="icon"
+              variant="ghost"
+            >
+              <Avatar className="after:border-0" size="sm">
+                <AvatarFallback>
+                  <User />
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </ButtonGroup>
         </ButtonGroup>
       </div>
     </header>
