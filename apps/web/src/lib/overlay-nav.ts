@@ -65,9 +65,11 @@ export function dismissOverlay(opts: {
   navigate: (closeLink: LinkProps) => void;
 }) {
   if (isOverlayHistoryState(opts.history.location.state) && opts.history.canGoBack()) {
+    console.log("dismissOverlay: history.back");
     opts.history.back();
     return;
   }
+  console.log("dismissOverlay: navigate", opts.closeLink);
   void opts.navigate(opts.closeLink);
 }
 
@@ -118,6 +120,7 @@ export type OverlayControl = Pick<
 
 function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
   const router = useRouter();
+
   const [open, setOpen] = useState(false);
   useEffect(() => {
     // Defer open until after the first paint so Base UI sees closed→open and
@@ -154,6 +157,7 @@ function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
       }
     },
     onOpenChangeComplete: (nextOpen) => {
+      console.log("onOpenChangeComplete", nextOpen);
       if (!nextOpen) {
         dismiss();
       }

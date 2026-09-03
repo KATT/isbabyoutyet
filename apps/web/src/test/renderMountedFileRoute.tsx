@@ -1,6 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { AnyRoute } from "@tanstack/react-router";
 import {
+  createBrowserHistory,
   createMemoryHistory,
   createRootRoute,
   createRouter,
@@ -33,6 +34,17 @@ function reparentRoute<TRoute extends AnyRoute>(
   return update(opts);
 }
 
+type OverlayHistoryOpts = {
+  /**
+   * `"memory"` is the default in-memory history. `"browser"` drives jsdom's
+   * real `window.history`, which — unlike memory history — runs router
+   * blockers on `popstate`, so `history.back()` can be blocked and reverted.
+   */
+  engine: "browser" | "memory";
+  overlayPush: boolean;
+  parentEntry: string;
+};
+
 type MountedFileRouteOpts = {
   harness: ConvexTestHarness;
   initialEntry: string;
@@ -40,7 +52,7 @@ type MountedFileRouteOpts = {
    * Shape overlay history like production: parent baby page, then push or
    * replace onto the overlay route (controls dismiss via back vs navigate).
    */
-  overlayHistory: { overlayPush: boolean; parentEntry: string } | null;
+  overlayHistory: OverlayHistoryOpts | null;
   path: string;
   route: AnyRoute;
   /** Extra providers around the route outlet. */
@@ -81,17 +93,7 @@ async function mountFileRoute(
   const history =
     opts.overlayHistory === null
       ? createMemoryHistory({ initialEntries: [opts.initialEntry] })
-      : (() => {
-          const overlayHistory = createMemoryHistory({
-            initialEntries: [opts.overlayHistory.parentEntry],
-          });
-          if (opts.overlayHistory.overlayPush) {
-            overlayHistory.push(opts.initialEntry, { overlay: true });
-          } else {
-            overlayHistory.replace(opts.initialEntry);
-          }
-          return overlayHistory;
-        })();
+      : await createOverlayHistory(opts.overlayHistory, opts.initialEntry);
 
   const rootRoute = createRootRoute({
     component: function TestRoot() {
@@ -138,7 +140,42 @@ async function mountFileRoute(
     back.mockRestore();
     view.unmount();
     jsdomWindow.restore();
+    if (opts.overlayHistory?.engine === "browser") {
+      history.destroy?.();
+      window.history.replaceState(null, "", "/");
+    }
   });
+}
+
+async function createOverlayHistory(overlay: OverlayHistoryOpts, initialEntry: string) {
+  switch (overlay.engine) {
+    case "memory": {
+      const history = createMemoryHistory({ initialEntries: [overlay.parentEntry] });
+      if (overlay.overlayPush) {
+        history.push(initialEntry, { overlay: true });
+      } else {
+        history.replace(initialEntry);
+      }
+      return history;
+    }
+    case "browser": {
+      window.history.replaceState(null, "", overlay.parentEntry);
+      const history = createBrowserHistory({ window });
+      if (overlay.overlayPush) {
+        history.push(initialEntry, { overlay: true });
+      } else {
+        history.replace(initialEntry);
+      }
+      // Browser history writes to `window.history` in a microtask.
+      history.flush?.();
+      await Promise.resolve();
+      return history;
+    }
+    default: {
+      const _exhaustive: never = overlay.engine;
+      return _exhaustive;
+    }
+  }
 }
 
 /** Stub `Image` so browser OG/lightbox prefetch resolves immediately. */

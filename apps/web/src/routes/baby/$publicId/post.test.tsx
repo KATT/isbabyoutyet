@@ -58,7 +58,7 @@ test("post overlay closes to the baby page after dismiss", async () => {
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/post",
     route: Route,
     wrap: null,
@@ -87,7 +87,7 @@ test("post overlay asks to discard a dirty composer before closing", async () =>
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/post",
     route: Route,
     wrap: null,
@@ -133,7 +133,7 @@ test("discard prompt blocks interaction with the post composer behind it", async
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/post",
     route: Route,
     wrap: null,
@@ -164,7 +164,7 @@ test("post overlay prefers history.back when opened via push", async () => {
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/post",
     route: Route,
     wrap: null,
@@ -213,7 +213,7 @@ test("successful post completes onboarding step", async () => {
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/post`,
-    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/post",
     route: Route,
     wrap: null,

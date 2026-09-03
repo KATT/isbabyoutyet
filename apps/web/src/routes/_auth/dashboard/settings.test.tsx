@@ -15,6 +15,7 @@ import {
 } from "./settings";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { signUpTestUser } from "@/test/convexTestSeed";
+import { renderMountedFileRouteWithRouterContext } from "@/test/renderMountedFileRoute";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
