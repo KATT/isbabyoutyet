@@ -25,6 +25,10 @@ export const emailTailwindConfig = {
   presets: [pixelBasedPreset],
   theme: {
     extend: {
+      borderRadius: {
+        card: emailTheme.radiusCard,
+        pill: emailTheme.radiusPill,
+      },
       colors: {
         accent: emailTheme.accent,
         background: emailTheme.background,
@@ -38,6 +42,9 @@ export const emailTailwindConfig = {
       },
       fontFamily: {
         sans: ["Nunito", "ui-rounded", "system-ui", "sans-serif"],
+      },
+      maxWidth: {
+        email: "420px",
       },
     },
   },

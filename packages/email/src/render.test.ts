@@ -26,6 +26,10 @@ test("password reset template includes the reset link in text and html", async (
   expect(message.html).toContain(`href="${resetUrl}"`);
   expect(message.html).toContain(passwordResetCopy.heading);
   expect(message.html).toContain(passwordResetCopy.wordmark);
+  expect(message.html).toContain("rgb(244,157,37)");
+  expect(message.html).toContain("rgb(253,251,247)");
+  expect(message.html).toContain("6px 6px 0 0 rgba(244, 157, 37, 0.3)");
+  expect(message.html).toContain("Nunito");
   expect(ctaStyle(message.html, resetUrl)).toContain("max-width:none");
   expect(ctaStyle(message.html, resetUrl)).toContain("width:auto");
 });

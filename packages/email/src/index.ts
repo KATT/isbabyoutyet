@@ -7,6 +7,5 @@ export type {
   RenderPasswordResetEmailInput,
   RenderVerifyEmailInput,
 } from "./render";
-export { emailTheme } from "./theme";
 export { VerifyEmail } from "./verify-email";
 export type { VerifyEmailProps } from "./verify-email";

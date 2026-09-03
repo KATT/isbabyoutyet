@@ -16,88 +16,38 @@ export function ActionEmail(props: ActionEmailProps) {
   return (
     <EmailLayout previewText={props.previewText} showPreviewBanner={props.subjectPrefix !== ""}>
       <Section
-        style={{
-          backgroundColor: emailTheme.card,
-          border: `2px solid ${emailTheme.border}`,
-          borderRadius: emailTheme.radiusCard,
-          boxShadow: emailTheme.popShadow,
-          padding: "32px 24px",
-        }}
+        className="rounded-card border-2 border-solid border-border bg-card px-6 py-8"
+        style={{ boxShadow: emailTheme.popShadow }}
       >
-        <Text
-          style={{
-            fontSize: "36px",
-            lineHeight: "40px",
-            margin: "0 0 8px",
-            textAlign: "center",
-          }}
-        >
-          ✉️
-        </Text>
-        <Text
-          style={{
-            color: emailTheme.foreground,
-            fontFamily: emailTheme.fontFamily,
-            fontSize: "24px",
-            fontWeight: 900,
-            lineHeight: "32px",
-            margin: "0 0 12px",
-            textAlign: "center",
-          }}
-        >
+        <Text className="mt-0 mb-2 text-center text-4xl leading-10">✉️</Text>
+        <Text className="mt-0 mb-3 text-center text-2xl leading-8 font-black text-foreground">
           {props.heading}
         </Text>
-        <Text
-          style={{
-            color: emailTheme.mutedForeground,
-            fontFamily: emailTheme.fontFamily,
-            fontSize: "16px",
-            fontWeight: 500,
-            lineHeight: "24px",
-            margin: "0 0 24px",
-            textAlign: "center",
-          }}
-        >
+        <Text className="mt-0 mb-6 text-center text-base leading-6 font-medium text-muted">
           {props.intro}
         </Text>
         {/*
           React Email's Button defaults to max-width: 100%. Email clients treat
           that as content-box, so padding plus the 6px pop-shadow overflows the
           card. Override the max-width and size the CTA to its label.
+
+          Tailwind's `shadow-*` utilities emit `--tw-shadow-color`, which most
+          email clients strip. Keep the pop-shadow as a raw box-shadow value.
         */}
-        <Text style={{ margin: "0", textAlign: "center" }}>
+        <Text className="m-0 text-center">
           <Button
+            className="inline-block w-auto max-w-none rounded-pill bg-primary px-6 py-[14px] text-center text-base leading-6 font-extrabold text-primary-foreground no-underline"
             href={props.url}
             style={{
-              backgroundColor: emailTheme.primary,
-              borderRadius: emailTheme.radiusPill,
               boxShadow: emailTheme.popShadow,
-              color: emailTheme.primaryForeground,
-              display: "inline-block",
-              fontFamily: emailTheme.fontFamily,
-              fontSize: "16px",
-              fontWeight: 800,
-              lineHeight: "24px",
               maxWidth: "none",
-              padding: "14px 24px",
-              textAlign: "center",
-              textDecoration: "none",
               width: "auto",
             }}
           >
             {props.button}
           </Button>
         </Text>
-        <Text
-          style={{
-            color: emailTheme.mutedForeground,
-            fontFamily: emailTheme.fontFamily,
-            fontSize: "14px",
-            lineHeight: "22px",
-            margin: "24px 0 0",
-            textAlign: "center",
-          }}
-        >
+        <Text className="mt-6 mb-0 text-center text-sm leading-[22px] text-muted">
           {props.ignore}
         </Text>
       </Section>
