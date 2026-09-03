@@ -3,9 +3,13 @@ import { QueryClient } from "@tanstack/react-query";
 import { isRedirect } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
+import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
+import { renderMountedFileRouteWithRouterContext } from "@/test/renderMountedFileRoute";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
   ADMIN_DEFAULT_SEARCH,
@@ -494,6 +498,61 @@ test("transfers tab body renders the form without the hide-demo filter", async (
   expect(view.getByLabelText("Current permalink")).toBeTruthy();
   expect(view.getByLabelText("Motivation")).toBeTruthy();
   expect(view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
+});
+
+test("transfers tab loads the form and audit table from Convex", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const staffId = await signUpTestUser(harness, {
+    email: "staff@example.com",
+    name: "Staff",
+    password: "password123",
+  });
+  harness.withIdentity({ subject: staffId });
+  await harness.client.mutation(api.profile.updateLocale, { locale: "en-GB" });
+  await harness.t.run(async (ctx) => {
+    const profiles = await ctx.db.query("userProfiles").collect();
+    for (const profile of profiles) {
+      await ctx.db.patch(profile._id, { isAdmin: true });
+    }
+  });
+
+  const bobId = await signUpTestUser(harness, {
+    email: "bob@example.com",
+    name: "Bob",
+    password: "password123",
+  });
+  harness.withIdentity({ subject: bobId });
+  const claimant = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Real Baby" });
+  await harness.t.run(async (ctx) => {
+    await ctx.db.patch(claimant.babyId, { publicId: "baby-2" });
+  });
+
+  harness.withIdentity({ subject: staffId });
+  harness.queryClient.clear();
+  await harness.client.mutation(api.admin.transferPublicId, {
+    fromPublicId: "baby-2",
+    motivation: "Give the real page the canonical slug",
+    toPublicId: "baby",
+  });
+
+  const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
+  await using ctx = await renderMountedFileRouteWithRouterContext({
+    harness,
+    initialEntry: "/dashboard/admin?tab=transfers",
+    overlayHistory: null,
+    path: "/dashboard/admin",
+    route: AdminRoute,
+    routerContext: { profile },
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByLabelText("Current permalink")).toBeTruthy();
+    expect(ctx.view.getByText("Give the real page the canonical slug")).toBeTruthy();
+  });
+  expect(ctx.view.getByText("baby-2")).toBeTruthy();
+  expect(ctx.view.getByText("baby")).toBeTruthy();
+  expect(ctx.view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
 });
 
 const ADMIN_EMPTY_PAGE = { continueCursor: "", isDone: true, page: [] };

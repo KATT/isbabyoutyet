@@ -500,6 +500,13 @@ test("transferPublicId refuses homepage demo slugs and missing babies", async ()
   ).rejects.toThrow("Homepage demo public IDs cannot be transferred");
   await expect(
     asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "juniper-hale",
+      motivation: "Should not move a demo slug",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow("Homepage demo public IDs cannot be transferred");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
       fromPublicId: "missing-slug",
       motivation: "Should not move a missing slug",
       toPublicId: "baby",
@@ -512,4 +519,40 @@ test("transferPublicId refuses homepage demo slugs and missing babies", async ()
       toPublicId: "baby",
     }),
   ).rejects.toThrow("Motivation is required");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "real-baby",
+      motivation: "noop",
+      toPublicId: "Real Baby",
+    }),
+  ).rejects.toThrow("New public ID must be different from the current one");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "real-baby",
+      motivation: "x".repeat(501),
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow("Motivation must be 500 characters or fewer");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "!!!",
+      motivation: "Invalid slug",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow("Public ID must contain letters or numbers");
+
+  const deleted = await asBob.mutation(
+    api.baby.create,
+    createBabyArgs({ dueDate: "2026-09-01", name: "Gone Baby" }),
+  );
+  await t.run(async (ctx) => {
+    await ctx.db.patch(deleted.babyId, { deletedAt: Date.now() });
+  });
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "gone-baby",
+      motivation: "Soft-deleted claimant",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow('No baby currently uses public ID "gone-baby"');
 });
