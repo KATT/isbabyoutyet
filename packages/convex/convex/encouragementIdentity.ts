@@ -1,7 +1,6 @@
 import type { QueryCtx } from "./_generated/server";
 import { appIdentity } from "./authIdentity";
 import type { EncouragementAuthor } from "./encouragementAuthor";
-import { encouragementAuthorValidator } from "./encouragementAuthor";
 
 export type { EncouragementAuthor, EncouragementOwnership } from "./encouragementAuthor";
 export {

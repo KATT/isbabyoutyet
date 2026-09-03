@@ -615,14 +615,9 @@ export const backfillEncouragementOptionalKeys = migrations.define({
  * Writes the discriminated `author` union from legacy `userId` / `visitorId`.
  * Idempotent: a row that already has `author` is left alone.
  */
-type EncouragementAuthorBackfill = Omit<Doc<"encouragements">, "author" | "userId"> & {
-  author: Doc<"encouragements">["author"] | undefined;
-  userId: Doc<"encouragements">["userId"] | undefined;
-};
-
 export async function backfillEncouragementAuthorDoc(
   ctx: MutationCtx,
-  encouragement: EncouragementAuthorBackfill,
+  encouragement: Doc<"encouragements">,
 ) {
   if (encouragement.author !== undefined) {
     return;

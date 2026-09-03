@@ -23,10 +23,13 @@ export type EncouragementAuthor = Infer<typeof encouragementAuthorValidator>;
 /**
  * Legacy parallel columns plus the new `author` union. Readers prefer `author`
  * when present so sparse pre-backfill rows still resolve.
+ *
+ * Properties stay optional (`?`) so this matches Convex `Doc<"encouragements">`
+ * while `author` / `userId` are still `v.optional()`.
  */
 export type EncouragementOwnership = {
-  author: EncouragementAuthor | undefined;
-  userId: string | null | undefined;
+  author?: EncouragementAuthor;
+  userId?: string | null;
   visitorId: string;
 };
 
