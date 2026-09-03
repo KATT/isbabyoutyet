@@ -5,6 +5,7 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "email": "pnpm --filter @workspace/email dev",
     "dev-convex": "cd packages/convex && pnpm dev",
     "reset-dev": "pnpm --filter @workspace/convex reset-dev",
     "lint": "turbo lint",

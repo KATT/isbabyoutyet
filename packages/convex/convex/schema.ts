@@ -54,9 +54,13 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
+  /**
+   * @deprecated Language-request inbox is retired. Keep the table so existing
+   * rows stay valid on deploy until a later migration deletes them.
+   */
   languageRequests: defineTable({
-    userId: v.string(), // Better Auth user ID
-    requestedLocale: v.string(), // Free-form language name or BCP 47 tag
+    userId: v.string(),
+    requestedLocale: v.string(),
     createdAt: v.number(),
   })
     .index("by_userId", ["userId"])

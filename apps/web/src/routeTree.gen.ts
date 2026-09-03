@@ -16,7 +16,9 @@ import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthDashboardRouteRouteImport } from './routes/_auth/dashboard/route'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as BabyPublicIdRouteRouteImport } from './routes/baby/$publicId/route'
 import { Route as AuthDashboardIndexRouteImport } from './routes/_auth/dashboard/index'
@@ -26,11 +28,11 @@ import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCachePurgeRouteImport } from './routes/api/cache/purge'
 import { Route as BabyPublicIdIndexRouteImport } from './routes/baby/$publicId/index'
+import { Route as BabyPublicIdLoginRouteImport } from './routes/baby/$publicId/login'
 import { Route as BabyPublicIdPhotoRouteImport } from './routes/baby/$publicId/photo'
 import { Route as BabyPublicIdPostRouteImport } from './routes/baby/$publicId/post'
 import { Route as BabyPublicIdSettingsRouteImport } from './routes/baby/$publicId/settings'
 import { Route as BabyPublicIdShareRouteImport } from './routes/baby/$publicId/share'
-import { Route as BabyPublicIdLoginRouteImport } from './routes/baby/$publicId/login'
 import { Route as BabyManifest_idRouteImport } from './routes/baby/manifest/$_id'
 import { Route as OgBabyPublicIdRouteImport } from './routes/og.baby.$publicId'
 import { Route as BabyPublicIdUpdatesUpdateIdPhotoRouteImport } from './routes/baby/$publicId/updates.$updateId.photo'
@@ -69,9 +71,19 @@ const AuthDashboardRouteRoute = AuthDashboardRouteRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -119,6 +131,11 @@ const BabyPublicIdIndexRoute = BabyPublicIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BabyPublicIdRouteRoute,
 } as any)
+const BabyPublicIdLoginRoute = BabyPublicIdLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => BabyPublicIdRouteRoute,
+} as any)
 const BabyPublicIdPhotoRoute = BabyPublicIdPhotoRouteImport.update({
   id: '/photo',
   path: '/photo',
@@ -137,11 +154,6 @@ const BabyPublicIdSettingsRoute = BabyPublicIdSettingsRouteImport.update({
 const BabyPublicIdShareRoute = BabyPublicIdShareRouteImport.update({
   id: '/share',
   path: '/share',
-  getParentRoute: () => BabyPublicIdRouteRoute,
-} as any)
-const BabyPublicIdLoginRoute = BabyPublicIdLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => BabyPublicIdRouteRoute,
 } as any)
 const BabyManifest_idRoute = BabyManifest_idRouteImport.update({
@@ -169,18 +181,20 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthDashboardRouteRouteWithChildren
   '/baby/$publicId': typeof BabyPublicIdRouteRouteWithChildren
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/settings': typeof AuthDashboardSettingsRoute
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cache/purge': typeof ApiCachePurgeRoute
+  '/baby/$publicId/login': typeof BabyPublicIdLoginRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/$publicId/share': typeof BabyPublicIdShareRoute
-  '/baby/$publicId/login': typeof BabyPublicIdLoginRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/dashboard/': typeof AuthDashboardIndexRoute
@@ -193,18 +207,20 @@ export interface FileRoutesByTo {
   '/preview': typeof PreviewRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/settings': typeof AuthDashboardSettingsRoute
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cache/purge': typeof ApiCachePurgeRoute
+  '/baby/$publicId/login': typeof BabyPublicIdLoginRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/$publicId/share': typeof BabyPublicIdShareRoute
-  '/baby/$publicId/login': typeof BabyPublicIdLoginRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/dashboard': typeof AuthDashboardIndexRoute
@@ -221,18 +237,20 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_auth/dashboard': typeof AuthDashboardRouteRouteWithChildren
   '/baby/$publicId': typeof BabyPublicIdRouteRouteWithChildren
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/_auth/dashboard/settings': typeof AuthDashboardSettingsRoute
   '/_auth/dashboard_/add': typeof AuthDashboardAddRoute
   '/_auth/dashboard_/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cache/purge': typeof ApiCachePurgeRoute
+  '/baby/$publicId/login': typeof BabyPublicIdLoginRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/$publicId/share': typeof BabyPublicIdShareRoute
-  '/baby/$publicId/login': typeof BabyPublicIdLoginRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/_auth/dashboard/': typeof AuthDashboardIndexRoute
@@ -249,18 +267,20 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/dashboard'
     | '/baby/$publicId'
+    | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/reset-password'
     | '/auth/signup'
     | '/dashboard/settings'
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
     | '/api/cache/purge'
+    | '/baby/$publicId/login'
     | '/baby/$publicId/photo'
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/$publicId/share'
-    | '/baby/$publicId/login'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
     | '/dashboard/'
@@ -273,18 +293,20 @@ export interface FileRouteTypes {
     | '/preview'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/reset-password'
     | '/auth/signup'
     | '/dashboard/settings'
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
     | '/api/cache/purge'
+    | '/baby/$publicId/login'
     | '/baby/$publicId/photo'
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/$publicId/share'
-    | '/baby/$publicId/login'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
     | '/dashboard'
@@ -300,18 +322,20 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/_auth/dashboard'
     | '/baby/$publicId'
+    | '/auth/forgot-password'
     | '/auth/login'
+    | '/auth/reset-password'
     | '/auth/signup'
     | '/_auth/dashboard/settings'
     | '/_auth/dashboard_/add'
     | '/_auth/dashboard_/admin'
     | '/api/auth/$'
     | '/api/cache/purge'
+    | '/baby/$publicId/login'
     | '/baby/$publicId/photo'
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/$publicId/share'
-    | '/baby/$publicId/login'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
     | '/_auth/dashboard/'
@@ -327,7 +351,9 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   BabyPublicIdRouteRoute: typeof BabyPublicIdRouteRouteWithChildren
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignupRoute: typeof AuthSignupRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCachePurgeRoute: typeof ApiCachePurgeRoute
@@ -385,11 +411,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardRouteRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/signup': {
@@ -455,6 +495,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BabyPublicIdIndexRouteImport
       parentRoute: typeof BabyPublicIdRouteRoute
     }
+    '/baby/$publicId/login': {
+      id: '/baby/$publicId/login'
+      path: '/login'
+      fullPath: '/baby/$publicId/login'
+      preLoaderRoute: typeof BabyPublicIdLoginRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
     '/baby/$publicId/photo': {
       id: '/baby/$publicId/photo'
       path: '/photo'
@@ -481,13 +528,6 @@ declare module '@tanstack/react-router' {
       path: '/share'
       fullPath: '/baby/$publicId/share'
       preLoaderRoute: typeof BabyPublicIdShareRouteImport
-      parentRoute: typeof BabyPublicIdRouteRoute
-    }
-    '/baby/$publicId/login': {
-      id: '/baby/$publicId/login'
-      path: '/login'
-      fullPath: '/baby/$publicId/login'
-      preLoaderRoute: typeof BabyPublicIdLoginRouteImport
       parentRoute: typeof BabyPublicIdRouteRoute
     }
     '/baby/manifest/$_id': {
@@ -554,21 +594,21 @@ const OgRouteChildren: OgRouteChildren = {
 const OgRouteWithChildren = OgRoute._addFileChildren(OgRouteChildren)
 
 interface BabyPublicIdRouteRouteChildren {
+  BabyPublicIdLoginRoute: typeof BabyPublicIdLoginRoute
   BabyPublicIdPhotoRoute: typeof BabyPublicIdPhotoRoute
   BabyPublicIdPostRoute: typeof BabyPublicIdPostRoute
   BabyPublicIdSettingsRoute: typeof BabyPublicIdSettingsRoute
   BabyPublicIdShareRoute: typeof BabyPublicIdShareRoute
-  BabyPublicIdLoginRoute: typeof BabyPublicIdLoginRoute
   BabyPublicIdIndexRoute: typeof BabyPublicIdIndexRoute
   BabyPublicIdUpdatesUpdateIdPhotoRoute: typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
 
 const BabyPublicIdRouteRouteChildren: BabyPublicIdRouteRouteChildren = {
+  BabyPublicIdLoginRoute: BabyPublicIdLoginRoute,
   BabyPublicIdPhotoRoute: BabyPublicIdPhotoRoute,
   BabyPublicIdPostRoute: BabyPublicIdPostRoute,
   BabyPublicIdSettingsRoute: BabyPublicIdSettingsRoute,
   BabyPublicIdShareRoute: BabyPublicIdShareRoute,
-  BabyPublicIdLoginRoute: BabyPublicIdLoginRoute,
   BabyPublicIdIndexRoute: BabyPublicIdIndexRoute,
   BabyPublicIdUpdatesUpdateIdPhotoRoute: BabyPublicIdUpdatesUpdateIdPhotoRoute,
 }
@@ -584,7 +624,9 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   BabyPublicIdRouteRoute: BabyPublicIdRouteRouteWithChildren,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignupRoute: AuthSignupRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCachePurgeRoute: ApiCachePurgeRoute,

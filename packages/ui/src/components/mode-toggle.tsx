@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { cn } from "@workspace/ui/lib/utils";
 
 export function ModeToggle(props: { className?: string }) {
   const { setTheme } = useTheme();
@@ -20,13 +19,7 @@ export function ModeToggle(props: { className?: string }) {
         <TooltipTrigger
           render={
             <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className={cn("rounded-full", props.className)}
-                />
-              }
+              render={<Button variant="ghost" size="icon" className={props.className} />}
             />
           }
         >

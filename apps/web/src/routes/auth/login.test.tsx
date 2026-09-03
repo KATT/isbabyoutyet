@@ -125,6 +125,9 @@ test("hides the test-account picker when demo login is disabled", async () => {
   expect(screen.queryByLabelText("Test account")).toBeNull();
   expect(htmlInput(screen.getByLabelText("Email")).value).toBe("");
   expect(screen.getByRole("link", { name: "Sign up" }).getAttribute("href")).toBe("/auth/signup");
+  expect(screen.getByRole("link", { name: "Forgot your password?" }).getAttribute("href")).toBe(
+    "/auth/forgot-password",
+  );
 });
 
 test("LoginPage wires the real auth client into LoginCard", async () => {

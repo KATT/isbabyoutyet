@@ -53,20 +53,6 @@ test("anonymous callers have no profile", async () => {
   expect(await t.query(api.profile.get, {})).toBeNull();
 });
 
-test("language requests are stored for authenticated users", async () => {
-  const t = await setup();
-  const asAlice = t.withIdentity({ subject: "alice" });
-
-  const requestId = await asAlice.mutation(api.profile.requestLanguage, {
-    requestedLocale: "French (fr-FR)",
-  });
-  const request = await t.run((ctx) => ctx.db.get(requestId));
-  expect(request).toMatchObject({
-    requestedLocale: "French (fr-FR)",
-    userId: "alice",
-  });
-});
-
 test("admin profiles preserve their flag across locale updates", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
@@ -138,18 +124,6 @@ test("time zone updates preserve an existing profile's locale", async () => {
     locale: "sv",
     timeZone: "America/New_York",
   });
-});
-
-test("language requests enforce their length bounds", async () => {
-  const t = await setup();
-  const asAlice = t.withIdentity({ subject: "alice" });
-
-  await expect(
-    asAlice.mutation(api.profile.requestLanguage, { requestedLocale: "x" }),
-  ).rejects.toThrow("Enter a language name or language code");
-  await expect(
-    asAlice.mutation(api.profile.requestLanguage, { requestedLocale: "x".repeat(101) }),
-  ).rejects.toThrow("Enter a language name or language code");
 });
 
 test("profile mutations require authentication", async () => {

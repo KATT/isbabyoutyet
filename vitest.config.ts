@@ -29,6 +29,7 @@ export default defineConfig({
         "packages/query-prefetch/src/**/*.ts",
         "packages/convex-prefetch/src/**/*.ts",
         "packages/form-guard/src/**/*.ts",
+        "packages/email/src/**/*.{ts,tsx}",
       ],
       // CI: json-summary for the local coverage ratchet; lcov for Codecov history uploads.
       // Local: full HTML/JSON reports for browsing.
@@ -47,6 +48,7 @@ export default defineConfig({
       "packages/query-prefetch",
       "packages/convex-prefetch",
       "packages/form-guard",
+      "packages/email",
       webUnitProject,
     ],
   },

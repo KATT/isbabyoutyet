@@ -525,6 +525,13 @@
       }
     },
     {
+      // Automatic JSX runtime — same as apps/web.
+      "files": ["packages/email/**/*.{ts,tsx}"],
+      "rules": {
+        "react/react-in-jsx-scope": "off"
+      }
+    },
+    {
       // Audited React-hook seams under lib (not the whole lib directory).
       // Timers/observers/stores may use effects and local state. Feature
       // components stay banned. React Compiler rules stay on so render-phase

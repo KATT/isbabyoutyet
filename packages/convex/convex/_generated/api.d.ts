@@ -8,9 +8,11 @@
  * @module
  */
 
+import type * as accountEmail from "../accountEmail.js";
 import type * as admin from "../admin.js";
 import type * as adminAccess from "../adminAccess.js";
 import type * as auth from "../auth.js";
+import type * as authEmail from "../authEmail.js";
 import type * as authIdentity from "../authIdentity.js";
 import type * as baby from "../baby.js";
 import type * as babyAccess from "../babyAccess.js";
@@ -23,6 +25,7 @@ import type * as cacheInvalidation from "../cacheInvalidation.js";
 import type * as coParentInviteClaims from "../coParentInviteClaims.js";
 import type * as coParents from "../coParents.js";
 import type * as crons from "../crons.js";
+import type * as emailSender from "../emailSender.js";
 import type * as encouragements from "../encouragements.js";
 import type * as homepageDemo from "../homepageDemo.js";
 import type * as http from "../http.js";
@@ -49,9 +52,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountEmail: typeof accountEmail;
   admin: typeof admin;
   adminAccess: typeof adminAccess;
   auth: typeof auth;
+  authEmail: typeof authEmail;
   authIdentity: typeof authIdentity;
   baby: typeof baby;
   babyAccess: typeof babyAccess;
@@ -64,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   coParentInviteClaims: typeof coParentInviteClaims;
   coParents: typeof coParents;
   crons: typeof crons;
+  emailSender: typeof emailSender;
   encouragements: typeof encouragements;
   homepageDemo: typeof homepageDemo;
   http: typeof http;

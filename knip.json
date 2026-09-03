@@ -64,6 +64,9 @@
     },
     "packages/runtime": {},
     "packages/form-guard": {},
+    "packages/email": {
+      "entry": ["emails/**/*.{ts,tsx}!", "src/index.ts!"]
+    },
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},
     "packages/ui": {},

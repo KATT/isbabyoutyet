@@ -19,7 +19,12 @@ export default defineProject({
       deps: {
         // Bundle component packages so their source can be imported directly
         // in tests via t.registerComponent
-        inline: ["convex-table-history", "@convex-dev/better-auth"],
+        inline: [
+          "convex-table-history",
+          "@convex-dev/better-auth",
+          "@workspace/email",
+          "react-email",
+        ],
       },
     },
   },

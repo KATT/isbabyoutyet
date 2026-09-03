@@ -2,7 +2,9 @@ import { betterAuth } from "better-auth/minimal";
 import { createAuthMiddleware } from "better-auth/api";
 import { createClient } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
+import { requireActionCtx } from "@convex-dev/better-auth/utils";
 import authConfig from "./auth.config";
+import { sendPasswordResetEmail, sendVerificationEmail } from "./authEmail";
 import { components, internal } from "./_generated/api";
 import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
@@ -16,6 +18,39 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 
 export function resolveAuthBaseUrl(siteUrl: string | undefined, convexSiteUrl: string) {
   return siteUrl ?? convexSiteUrl;
+}
+
+/**
+ * Better Auth only invokes this from the HTTP action that serves
+ * `/api/auth/*`. `requireActionCtx` rejects query/mutation contexts.
+ */
+export async function sendAuthResetPassword(
+  ctx: GenericCtx<DataModel>,
+  data: { url: string; user: { email: string } },
+) {
+  requireActionCtx(ctx);
+  await sendPasswordResetEmail({
+    deps: null,
+    recipient: data.user.email,
+    resetUrl: data.url,
+  });
+}
+
+/**
+ * Better Auth `sendVerificationEmail` hook. Same ActionCtx constraint as reset
+ * mail. Used for optional first-time verify. Changing email updates the Better
+ * Auth user row in `accountEmail.change` and does not send mail.
+ */
+export async function sendAuthVerificationEmail(
+  ctx: GenericCtx<DataModel>,
+  data: { url: string; user: { email: string } },
+) {
+  requireActionCtx(ctx);
+  await sendVerificationEmail({
+    deps: null,
+    recipient: data.user.email,
+    verifyUrl: data.url,
+  });
 }
 
 function requireAuthMutationCtx(ctx: GenericCtx<DataModel>) {
@@ -93,7 +128,25 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+      resetPasswordTokenExpiresIn: 60 * 30,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async (data) => {
+        await sendAuthResetPassword(convexCtx, data);
+      },
     },
+    emailVerification: {
+      sendVerificationEmail: async (data) => {
+        await sendAuthVerificationEmail(convexCtx, data);
+      },
+    },
+    user: {
+      changeEmail: {
+        enabled: false,
+      },
+    },
+    // Convex better-auth already exposes a rateLimit table; enable it on
+    // preview too (Better Auth defaults to production-only). Password-reset
+    // endpoints are capped at 3 requests / 60s by Better Auth's built-ins.
     hooks: {
       after: createAuthMiddleware(async (ctx) => {
         if (ctx.path !== "/sign-up/email" && ctx.path !== "/sign-in/email") {
@@ -123,6 +176,10 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),
     ],
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+    },
   });
 };
 

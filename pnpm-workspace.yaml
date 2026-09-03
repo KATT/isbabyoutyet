@@ -17,6 +17,7 @@ catalog:
   "@inlang/paraglide-js": ^2.24.1
   "@oxlint/plugins": ^1.80.0
   "@phosphor-icons/react": ^2.1.10
+  "@react-email/ui": ^6.9.3
   "@resvg/resvg-js": ^2.6.2
   "@rrazvan.dev/oxlint-plugin-i18n-literal": ^1.0.1
   "@shadcn/react": ^0.3.0
@@ -66,6 +67,7 @@ catalog:
   playwright: ^1.62.1
   react: ^19.2.8
   react-day-picker: ^10.0.1
+  react-email: ^6.9.3
   react-dom: ^19.2.8
   react-hook-form: ^7.85.0
   react-resizable-panels: ^4.12.3

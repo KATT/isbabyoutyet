@@ -45,9 +45,6 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
   await asAlice.mutation(api.profile.updateLocale, { locale: "en-GB" });
 
   await expect(
-    asAlice.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
-  ).rejects.toThrow("Not authorized");
-  await expect(
     asAlice.query(api.admin.listBabies, {
       hideDemo: true,
       paginationOpts: FIRST_PAGE,
@@ -68,9 +65,6 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
       toPublicId: "baby",
     }),
   ).rejects.toThrow("Not authorized");
-  await expect(
-    t.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
-  ).rejects.toThrow("Not authenticated");
   await expect(t.query(api.admin.listUsers, { paginationOpts: FIRST_PAGE })).rejects.toThrow(
     "Not authenticated",
   );
@@ -97,41 +91,10 @@ test("seedDemoData marks the demo user as admin", async () => {
     subject: seeded.userId,
   });
   await expect(
-    sameSubjectFromAnotherIssuer.query(api.admin.listLanguageRequests, {
+    sameSubjectFromAnotherIssuer.query(api.admin.listUsers, {
       paginationOpts: FIRST_PAGE,
     }),
   ).rejects.toThrow("Not authorized");
-});
-
-test("admins can list language requests with requester emails", async () => {
-  const t = await setup();
-  const seeded = await t.mutation(internal.seed.seedDemoData, {});
-  const asDemo = t.withIdentity({ subject: seeded.userId });
-
-  const asBob = t.withIdentity({ subject: "bob" });
-  await asBob.mutation(api.profile.updateLocale, { locale: "en-GB" });
-  await asBob.mutation(api.profile.requestLanguage, { requestedLocale: "French" });
-  await asBob.mutation(api.profile.requestLanguage, { requestedLocale: "German" });
-
-  const requests = await asDemo.query(api.admin.listLanguageRequests, {
-    paginationOpts: FIRST_PAGE,
-  });
-  expect(requests.page).toHaveLength(2);
-  expect(requests.page).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({
-        requestedLocale: "French",
-        userEmail: null,
-        userId: "bob",
-      }),
-      expect.objectContaining({
-        requestedLocale: "German",
-        userEmail: null,
-        userId: "bob",
-      }),
-    ]),
-  );
-  expect(requests.isDone).toBe(true);
 });
 
 test("admins can list babies sorted by created or updated with manager emails", async () => {
@@ -302,20 +265,6 @@ test("admins can list babies sorted by created or updated with manager emails", 
       sortOrder: "desc",
     }),
   ).rejects.toThrow(/not valid JSON/i);
-
-  const asDemoRequester = t.withIdentity({ subject: seeded.userId });
-  await asDemoRequester.mutation(api.profile.requestLanguage, { requestedLocale: "Welsh" });
-  await asDemoRequester.mutation(api.profile.requestLanguage, { requestedLocale: "Irish" });
-  const requests = await asDemo.query(api.admin.listLanguageRequests, {
-    paginationOpts: { cursor: null, numItems: 1 },
-  });
-  expect(requests.page).toHaveLength(1);
-  expect(requests.isDone).toBe(false);
-  const requestsPage2 = await asDemo.query(api.admin.listLanguageRequests, {
-    paginationOpts: { cursor: requests.continueCursor, numItems: 1 },
-  });
-  expect(requestsPage2.page).toHaveLength(1);
-  expect(requestsPage2.page[0]!._id).not.toBe(requests.page[0]!._id);
 
   const authUser = await t.query(components.betterAuth.adapter.findOne, {
     model: "user",
