@@ -1,4 +1,6 @@
 import { Button } from "@workspace/ui/components/button";
+import { ButtonGroup } from "@workspace/ui/components/button-group";
+import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -91,31 +93,35 @@ export function DashboardHeader() {
           </span>
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
-        <div className="flex items-center gap-1 rounded-full bg-background/85 p-1 shadow-sm backdrop-blur-md">
-          <Button
-            className="rounded-full font-bold"
-            nativeButton={false}
-            render={<Link to="/dashboard/add" />}
-            size="sm"
-          >
-            <Plus data-icon="inline-start" />
-            {t("Add Baby")}
-          </Button>
-          <Button
-            aria-label={t("Settings")}
-            className="rounded-full"
-            nativeButton={false}
-            render={<Link {...settings.openLink} />}
-            size="icon"
-            variant="ghost"
-          >
-            <Avatar className="after:border-0" size="sm">
-              <AvatarFallback>
-                <User />
-              </AvatarFallback>
-            </Avatar>
-          </Button>
-        </div>
+        <ButtonGroup className="shrink-0 rounded-full border-2 border-border bg-background/85 p-1 shadow-sm backdrop-blur-md">
+          <ButtonGroup aria-label={t("Owner actions")}>
+            <Button
+              className="font-bold"
+              nativeButton={false}
+              render={<Link to="/dashboard/add" />}
+              variant="default"
+            >
+              <Plus data-icon="inline-start" />
+              {t("Add Baby")}
+            </Button>
+          </ButtonGroup>
+          <ButtonGroup aria-label={t("Page actions")}>
+            <ModeToggle />
+            <Button
+              aria-label={t("Settings")}
+              nativeButton={false}
+              render={<Link {...settings.openLink} />}
+              size="icon"
+              variant="ghost"
+            >
+              <Avatar className="after:border-0" size="sm">
+                <AvatarFallback>
+                  <User />
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </ButtonGroup>
+        </ButtonGroup>
       </div>
     </header>
   );

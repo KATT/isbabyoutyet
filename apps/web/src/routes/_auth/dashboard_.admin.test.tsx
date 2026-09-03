@@ -12,7 +12,6 @@ import {
   AdminDashboardPage,
   AdminDashboardView,
   BabiesSection,
-  LanguageRequestsSection,
   Route as AdminRoute,
   UsersSection,
   formatWhen,
@@ -70,45 +69,6 @@ test("nextSortSearch defaults to desc and only toggles to asc on the active desc
   expect(
     nextSortSearch({ clicked: "updated", currentOrder: "desc", currentSort: "created" }),
   ).toEqual({ order: "desc", sort: "updated" });
-});
-
-test("language requests section shows empty and rows", async () => {
-  await using empty = await renderAdmin(
-    <LanguageRequestsSection
-      hasNextPage={false}
-      isFetchingNextPage={false}
-      onLoadMore={() => undefined}
-      requests={[]}
-    />,
-  );
-  expect(empty.getByText("No language requests yet")).toBeTruthy();
-
-  await using filled = await renderAdmin(
-    <LanguageRequestsSection
-      hasNextPage={false}
-      isFetchingNextPage={false}
-      onLoadMore={() => undefined}
-      requests={[
-        {
-          _id: "req-1",
-          createdAt: Date.UTC(2026, 0, 15, 12, 0),
-          requestedLocale: "French",
-          userEmail: "a@example.com",
-          userId: "user-1",
-        },
-        {
-          _id: "req-2",
-          createdAt: Date.UTC(2026, 0, 16, 12, 0),
-          requestedLocale: "German",
-          userEmail: null,
-          userId: "user-2",
-        },
-      ]}
-    />,
-  );
-  expect(filled.getByText("French")).toBeTruthy();
-  expect(filled.getByText("a@example.com")).toBeTruthy();
-  expect(filled.getByText("user-2")).toBeTruthy();
 });
 
 test("users section shows empty and rows", async () => {
@@ -235,27 +195,6 @@ test("babies section shows a spinner while loading more", async () => {
   expect(loadingMore.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
 });
 
-test("language requests section shows loading-more spinner", async () => {
-  await using view = await renderAdmin(
-    <LanguageRequestsSection
-      hasNextPage={true}
-      isFetchingNextPage={true}
-      onLoadMore={() => undefined}
-      requests={[
-        {
-          _id: "req-1",
-          createdAt: Date.UTC(2026, 0, 15, 12, 0),
-          requestedLocale: "French",
-          userEmail: "a@example.com",
-          userId: "user-1",
-        },
-      ]}
-    />,
-  );
-  expect(view.getByText("French")).toBeTruthy();
-  expect(view.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
-});
-
 test("infinite scroll sentinel requests another page when visible", async () => {
   const onLoadMore = vi.fn<() => void>();
   type ObserverCallback = IntersectionObserverCallback;
@@ -306,14 +245,13 @@ test("infinite scroll sentinel requests another page when visible", async () => 
 });
 
 test("admin dashboard page exposes tab links and hide-demo filter", async () => {
-  const onTabChange = vi.fn<(tab: "babies" | "languages" | "users") => void>();
+  const onTabChange = vi.fn<(tab: "babies" | "users") => void>();
   const onHideDemoChange = vi.fn<(hideDemo: boolean) => void>();
 
   await using view = await renderAdmin(
     <AdminDashboardView
       babiesTab={<div>babies body</div>}
       hideDemo={true}
-      languagesTab={<div>languages body</div>}
       onHideDemoChange={onHideDemoChange}
       onTabChange={onTabChange}
       order="desc"
@@ -326,20 +264,18 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
 
   const babiesTab = view.getByRole("tab", { name: "All babies" });
   const usersTab = view.getByRole("tab", { name: "Recent users" });
-  const languagesTab = view.getByRole("tab", { name: "Requested languages" });
   expect(babiesTab.tagName).toBe("A");
   expect(usersTab.tagName).toBe("A");
-  expect(languagesTab.tagName).toBe("A");
   expect(babiesTab.getAttribute("href")).toContain("tab=babies");
   expect(usersTab.getAttribute("href")).toContain("tab=users");
-  expect(languagesTab.getAttribute("href")).toContain("tab=languages");
+  expect(view.queryByRole("tab", { name: "Requested languages" })).toBeNull();
 
   const hideDemo = view.getByRole("switch", { name: "Hide demo babies" });
   expect(hideDemo.getAttribute("aria-checked")).toBe("true");
   fireEvent.click(hideDemo);
   expect(onHideDemoChange).toHaveBeenCalledWith(false);
 
-  fireEvent.click(languagesTab);
+  fireEvent.click(usersTab);
   // Tab Links navigate via href; onValueChange also fires for the Tabs control.
   expect(onTabChange).toHaveBeenCalled();
 });
@@ -352,7 +288,7 @@ test("admin defaults to created-desc babies and recognizes every admin tab", () 
     tab: "babies",
   });
   expect(isAdminTab("babies")).toBe(true);
-  expect(isAdminTab("languages")).toBe(true);
+  expect(isAdminTab("languages")).toBe(false);
   expect(isAdminTab("users")).toBe(true);
   expect(isAdminTab("nope")).toBe(false);
 });
@@ -362,7 +298,6 @@ test("users tab body renders without the hide-demo filter", async () => {
     <AdminDashboardView
       babiesTab={<div>babies body</div>}
       hideDemo={true}
-      languagesTab={<div>languages body</div>}
       onHideDemoChange={() => undefined}
       onTabChange={() => undefined}
       order="desc"
@@ -399,7 +334,6 @@ type AdminQueryHandler = JsonValue | (() => never);
 type AdminQueryHandlers = Record<string, AdminQueryHandler>;
 type AdminLoaderResult = {
   babies: unknown;
-  languages: unknown;
   users: unknown;
 };
 
@@ -454,11 +388,10 @@ async function runAdminLoader(
   });
 }
 
-test("loader prefetches babies, users, and language requests in parallel for admins", async () => {
+test("loader prefetches babies and users in parallel for admins", async () => {
   const result = await runAdminLoader(
     {
       "admin:listBabies": ADMIN_EMPTY_PAGE,
-      "admin:listLanguageRequests": ADMIN_EMPTY_PAGE,
       "admin:listUsers": ADMIN_EMPTY_PAGE,
     },
     { isAdmin: true, locale: "en-GB", timeZone: "Europe/London" },
@@ -468,7 +401,6 @@ test("loader prefetches babies, users, and language requests in parallel for adm
     input: { hideDemo: true, sortBy: "created", sortOrder: "desc" },
     numItems: 20,
   });
-  expect(result.languages).toMatchObject({ input: {}, numItems: 20 });
   expect(result.users).toMatchObject({ input: {}, numItems: 20 });
 });
 
@@ -478,9 +410,6 @@ test("loader redirects non-admins without prefetching admin queries", async () =
       {
         "admin:listBabies": () => {
           throw new Error("admin:listBabies should not run for non-admins");
-        },
-        "admin:listLanguageRequests": () => {
-          throw new Error("admin:listLanguageRequests should not run for non-admins");
         },
         "admin:listUsers": () => {
           throw new Error("admin:listUsers should not run for non-admins");

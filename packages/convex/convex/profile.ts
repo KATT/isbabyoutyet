@@ -118,22 +118,3 @@ export const updateTimeZone = mutation({
   },
   returns: profileResultValidator,
 });
-
-export const requestLanguage = mutation({
-  args: {
-    requestedLocale: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
-    const requestedLocale = args.requestedLocale.trim();
-    if (requestedLocale.length < 2 || requestedLocale.length > 100) {
-      throw new Error("Enter a language name or language code");
-    }
-    return await ctx.db.insert("languageRequests", {
-      createdAt: Date.now(),
-      requestedLocale,
-      userId: appIdentity(identity).authUserId,
-    });
-  },
-  returns: v.id("languageRequests"),
-});

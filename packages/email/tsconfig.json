@@ -1,0 +1,4 @@
+{
+  "extends": "@workspace/tsconfig/react.json",
+  "include": ["src", "emails"]
+}

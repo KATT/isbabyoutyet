@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CaretDown, CaretUp, Shield, Translate, Users } from "@phosphor-icons/react";
+import { ArrowLeft, CaretDown, CaretUp, Shield, Users } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { allKeyed } from "@workspace/query-prefetch";
 import { Badge } from "@workspace/ui/components/badge";
@@ -38,7 +38,10 @@ const adminSearchSchema = z.object({
   hideDemo: z.boolean().default(true),
   order: z.enum(["asc", "desc"]).default("desc"),
   sort: z.enum(["created", "updated"]).default("created"),
-  tab: z.enum(["babies", "languages", "users"]).default("babies"),
+  tab: z
+    .string()
+    .default("babies")
+    .transform((value): "babies" | "users" => (value === "users" ? "users" : "babies")),
 });
 
 type AdminTab = z.infer<typeof adminSearchSchema>["tab"];
@@ -53,14 +56,6 @@ export const ADMIN_DEFAULT_SEARCH = {
   sort: "created",
   tab: "babies",
 } as const satisfies AdminSearch;
-
-type LanguageRequestRow = {
-  _id: string;
-  createdAt: number;
-  requestedLocale: string;
-  userEmail: string | null;
-  userId: string;
-};
 
 type BabyRow = {
   _id: string;
@@ -105,10 +100,6 @@ export const Route = createFileRoute("/_auth/dashboard_/admin")({
           sortBy: search.sort,
           sortOrder: search.order,
         },
-        numItems: ADMIN_PAGE_SIZE,
-      }),
-      languages: preloader.ensureInfiniteQueryData(api.admin.listLanguageRequests, {
-        args: {},
         numItems: ADMIN_PAGE_SIZE,
       }),
       users: preloader.ensureInfiniteQueryData(api.admin.listUsers, {
@@ -233,55 +224,6 @@ function SortableHeaderLink(props: {
         />
       </Link>
     </TableHead>
-  );
-}
-
-export function LanguageRequestsSection(props: {
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  onLoadMore: () => void;
-  requests: Array<LanguageRequestRow>;
-}) {
-  const { locale, t } = useI18n();
-
-  if (props.requests.length === 0) {
-    return (
-      <Empty className="border border-dashed">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Translate />
-          </EmptyMedia>
-          <EmptyTitle>{t("No language requests yet")}</EmptyTitle>
-        </EmptyHeader>
-      </Empty>
-    );
-  }
-
-  return (
-    <AdminTableCard
-      canLoadMore={props.hasNextPage && !props.isFetchingNextPage}
-      isLoadingMore={props.isFetchingNextPage}
-      onLoadMore={props.onLoadMore}
-    >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("Language")}</TableHead>
-            <TableHead>{t("Requester")}</TableHead>
-            <TableHead>{t("Created")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {props.requests.map((request) => (
-            <TableRow key={request._id}>
-              <TableCell className="font-medium">{request.requestedLocale}</TableCell>
-              <TableCell>{request.userEmail ?? request.userId}</TableCell>
-              <TableCell>{formatWhen(request.createdAt, locale)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </AdminTableCard>
   );
 }
 
@@ -458,27 +400,6 @@ function AdminBabiesTab() {
   );
 }
 
-function AdminLanguagesTab() {
-  const loaderData = Route.useLoaderData();
-  const languagesQuery = usePreloadedConvexInfiniteQuery(api.admin.listLanguageRequests, {
-    handle: loaderData.languages,
-    remixArgs: null,
-  });
-
-  const requests = languagesQuery.data.pages.flatMap((page) => page.page);
-
-  return (
-    <LanguageRequestsSection
-      hasNextPage={languagesQuery.hasNextPage}
-      isFetchingNextPage={languagesQuery.isFetchingNextPage}
-      onLoadMore={() => {
-        void languagesQuery.fetchNextPage();
-      }}
-      requests={requests}
-    />
-  );
-}
-
 function AdminUsersTab() {
   const loaderData = Route.useLoaderData();
   const usersQuery = usePreloadedConvexInfiniteQuery(api.admin.listUsers, {
@@ -501,7 +422,7 @@ function AdminUsersTab() {
 }
 
 export function isAdminTab(value: string): value is AdminTab {
-  return value === "babies" || value === "languages" || value === "users";
+  return value === "babies" || value === "users";
 }
 
 export function AdminDashboardPage() {
@@ -512,7 +433,6 @@ export function AdminDashboardPage() {
     <AdminDashboardView
       babiesTab={<AdminBabiesTab />}
       hideDemo={search.hideDemo}
-      languagesTab={<AdminLanguagesTab />}
       onHideDemoChange={(hideDemo) => {
         void navigate({
           replace: true,
@@ -541,7 +461,6 @@ export function AdminDashboardPage() {
 export function AdminDashboardView(props: {
   babiesTab: ReactNode;
   hideDemo: boolean;
-  languagesTab: ReactNode;
   onHideDemoChange: (hideDemo: boolean) => void;
   onTabChange: (tab: AdminTab) => void;
   order: SortOrder;
@@ -583,7 +502,7 @@ export function AdminDashboardView(props: {
                   {t("Admin dashboard")}
                 </CardTitle>
                 <CardDescription>
-                  {t("Review babies, users, and language requests across the platform.")}
+                  {t("Review babies and users across the platform.")}
                 </CardDescription>
               </div>
             </div>
@@ -629,20 +548,6 @@ export function AdminDashboardView(props: {
                   >
                     {t("Recent users")}
                   </TabsTrigger>
-                  <TabsTrigger
-                    nativeButton={false}
-                    render={
-                      <Link
-                        replace
-                        resetScroll={false}
-                        search={tabSearch("languages")}
-                        to="/dashboard/admin"
-                      />
-                    }
-                    value="languages"
-                  >
-                    {t("Requested languages")}
-                  </TabsTrigger>
                 </TabsList>
 
                 {props.tab === "babies" ? (
@@ -667,10 +572,6 @@ export function AdminDashboardView(props: {
 
               <TabsContent className="mt-0" value="users">
                 {props.tab === "users" ? props.usersTab : null}
-              </TabsContent>
-
-              <TabsContent className="mt-0" value="languages">
-                {props.tab === "languages" ? props.languagesTab : null}
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -14,7 +14,7 @@ export async function getUserAdminFlag(ctx: Pick<QueryCtx, "db">, identity: AppI
 
 /**
  * Authenticated caller with `userProfiles.isAdmin`. Used for staff-only
- * dashboards (language requests, global baby list, recent users) — not baby-page roles.
+ * dashboards (global baby list, recent users) — not baby-page roles.
  */
 export async function requireAdmin(ctx: AuthDbCtx) {
   const identity = await ctx.auth.getUserIdentity();

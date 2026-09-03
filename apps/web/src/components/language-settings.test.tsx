@@ -15,7 +15,7 @@ async function renderLanguageSettings(
   const profileHandle = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
   return renderWithConvexTest({
     harness,
-    ui: <LanguageSettings className={undefined} profile={profileHandle} />,
+    ui: <LanguageSettings profile={profileHandle} />,
     wrap: null,
   });
 }
@@ -136,36 +136,6 @@ test("disables the picker and falls back to the UI locale without a profile", as
   expect(picker.getAttribute("aria-disabled") ?? picker.getAttribute("disabled")).not.toBeNull();
 });
 
-test("requesting another language submits the request form", async () => {
-  await using harness = await createConvexTestHarness({ identity: null });
-  const userId = await signUpTestUser(harness, {
-    email: "ada@example.com",
-    name: "Ada",
-    password: "password123",
-  });
-  harness.withIdentity({ subject: userId });
-
-  await using view = await renderLanguageSettings(harness);
-
-  fireEvent.click(view.getByRole("button", { name: "Request another language" }));
-  const input = view.getByLabelText("Language name or code");
-  fireEvent.change(input, {
-    target: { value: "French / fr-FR" },
-  });
-  const form = input.closest("form");
-  if (!form) {
-    throw new Error("request form missing");
-  }
-  fireEvent.submit(form);
-
-  await vi.waitFor(async () => {
-    const requests = await harness.t.run(async (ctx) => {
-      return await ctx.db.query("languageRequests").collect();
-    });
-    expect(requests.some((row) => row.requestedLocale === "French / fr-FR")).toBe(true);
-  });
-});
-
 test("LanguageSettings wires Convex mutations into the view", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
@@ -177,6 +147,8 @@ test("LanguageSettings wires Convex mutations into the view", async () => {
 
   await using view = await renderLanguageSettings(harness);
 
+  expect(view.getByText("Language")).toBeTruthy();
+  expect(view.getByText("Time zone")).toBeTruthy();
   expect(view.getByRole("combobox", { name: "Profile language" })).toBeTruthy();
   expect(view.getByRole("combobox", { name: "Profile time zone" })).toBeTruthy();
 });
