@@ -48,7 +48,7 @@ export type AccountUser = {
   name: string;
 };
 
-export type AccountSessionSnapshot = {
+type AccountSessionSnapshot = {
   data: { user: AccountUser } | null;
 };
 
@@ -71,7 +71,7 @@ export async function completeAccountAuthAction(
 
 /**
  * Maps a Better Auth user (or logged-out `null`) onto the account section's
- * session snapshot. Tests call this when stubbing `accountAuthAdapter.useSession`.
+ * session snapshot.
  *
  * @internal
  */
