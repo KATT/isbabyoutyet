@@ -3,13 +3,8 @@ import { convexQuery } from "@convex-dev/react-query";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { ReactNode } from "react";
-import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
-import {
-  AccountSettingsView,
-  accountAuthAdapter,
-  accountSessionSnapshot,
-} from "@/components/account-settings";
+import { AccountSettingsView } from "@/components/account-settings";
 import { LocaleProvider } from "@/lib/i18n";
 import {
   DashboardSettingsRoute,
@@ -52,11 +47,9 @@ function stubAccountRows() {
     <AccountSettingsView
       onChangeEmail={vi.fn(async () => {})}
       onChangePassword={vi.fn(async () => {})}
-      onSendVerification={vi.fn(async () => {})}
       onUpdateName={vi.fn(async () => {})}
       user={{
         email: "ada@example.com",
-        emailVerified: true,
         name: "Ada",
       }}
     />
@@ -125,9 +118,7 @@ test("DashboardSettingsSheet wires the preloaded profile into the view", async (
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: (
-      <DashboardSettingsSheet notice={null} profile={profile} queryClient={harness.queryClient} />
-    ),
+    ui: <DashboardSettingsSheet profile={profile} queryClient={harness.queryClient} />,
     wrap: null,
   });
 
@@ -182,9 +173,7 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: (
-      <DashboardSettingsSheet notice={null} profile={profile} queryClient={harness.queryClient} />
-    ),
+    ui: <DashboardSettingsSheet profile={profile} queryClient={harness.queryClient} />,
     wrap: null,
   });
 
@@ -197,47 +186,5 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
       harness.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey),
     ).toBeUndefined();
     expect(signOut).toHaveBeenCalled();
-  });
-});
-
-test("verified flash toasts and replaces the search param", async () => {
-  const toastSuccess = vi.spyOn(toast, "success").mockReturnValue("toast-id");
-  await using _toast = makeResource({}, () => {
-    toastSuccess.mockRestore();
-  });
-  const originalUseSession = accountAuthAdapter.useSession;
-  accountAuthAdapter.useSession = () => accountSessionSnapshot(null);
-  await using _adapter = makeResource({}, () => {
-    accountAuthAdapter.useSession = originalUseSession;
-  });
-  await using harness = await createConvexTestHarness({ identity: null });
-  const userId = await signUpTestUser(harness, {
-    email: "ada@example.com",
-    name: "Ada",
-    password: "password123",
-  });
-  harness.withIdentity({ subject: userId });
-  const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
-
-  await using view = await renderWithConvexTest({
-    harness,
-    ui: (
-      <DashboardSettingsSheet
-        notice="verified"
-        profile={profile}
-        queryClient={harness.queryClient}
-      />
-    ),
-    wrap: null,
-  });
-
-  await vi.waitFor(() => {
-    expect(toastSuccess).toHaveBeenCalledWith("Your email is now verified.", {
-      id: "Your email is now verified.",
-    });
-  });
-  await vi.waitFor(() => {
-    expect(view.router.state.location.pathname).toBe("/dashboard/settings");
-    expect(view.router.state.location.search).toEqual({});
   });
 });

@@ -14,12 +14,3 @@ export const passwordResetCopy = {
   subject: "Reset your Is Baby Out Yet? password",
   wordmark: emailBrandCopy.wordmark,
 } as const;
-
-export const verifyEmailCopy = {
-  button: "Verify your email",
-  heading: "Verify your email",
-  ignore: emailBrandCopy.ignore,
-  intro: "Confirm this email address for your Is Baby Out Yet? account.",
-  previewText: "Verify your Is Baby Out Yet? email",
-  subject: "Verify your Is Baby Out Yet? email",
-} as const;

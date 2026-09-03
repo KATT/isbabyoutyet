@@ -4,7 +4,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { htmlButton, htmlInput } from "@/test/htmlElement";
+import { htmlInput } from "@/test/htmlElement";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
@@ -18,22 +18,14 @@ import {
   type AccountUser,
 } from "./account-settings";
 
-const verifiedUser = {
+const sessionUser = {
   email: "ada@example.com",
-  emailVerified: true,
-  name: "Ada",
-} satisfies AccountUser;
-
-const unverifiedUser = {
-  email: "ada@example.com",
-  emailVerified: false,
   name: "Ada",
 } satisfies AccountUser;
 
 function renderAccount(opts: {
   onChangeEmail: AccountSettingsHandlers["onChangeEmail"] | null;
   onChangePassword: AccountSettingsHandlers["onChangePassword"] | null;
-  onSendVerification: AccountSettingsHandlers["onSendVerification"] | null;
   onUpdateName: AccountSettingsHandlers["onUpdateName"] | null;
   user: AccountUser | null;
 }) {
@@ -42,7 +34,6 @@ function renderAccount(opts: {
       <AccountSettingsView
         onChangeEmail={opts.onChangeEmail}
         onChangePassword={opts.onChangePassword}
-        onSendVerification={opts.onSendVerification}
         onUpdateName={opts.onUpdateName}
         user={opts.user}
       />
@@ -54,7 +45,6 @@ function readyHandlers() {
   return {
     onChangeEmail: vi.fn(async () => {}),
     onChangePassword: vi.fn(async () => {}),
-    onSendVerification: vi.fn(async () => {}),
     onUpdateName: vi.fn(async () => {}),
   };
 }
@@ -88,8 +78,8 @@ test("completeAccountAuthAction continues after a successful auth call", async (
 
 test("accountSessionSnapshot maps a user or logged-out null", () => {
   expect(accountSessionSnapshot(null)).toEqual({ data: null });
-  expect(accountSessionSnapshot(verifiedUser)).toEqual({
-    data: { user: verifiedUser },
+  expect(accountSessionSnapshot(sessionUser)).toEqual({
+    data: { user: sessionUser },
   });
 });
 
@@ -134,7 +124,7 @@ test("changing email does not refresh the session when persist fails", async () 
 test("account section previews name, email, and password with edit actions", async () => {
   await using view = await renderAccount({
     ...readyHandlers(),
-    user: verifiedUser,
+    user: sessionUser,
   });
 
   expect(view.getByText("Your name")).toBeTruthy();
@@ -147,49 +137,12 @@ test("account section previews name, email, and password with edit actions", asy
   expect(view.queryByRole("button", { name: "Send verification email" })).toBeNull();
 });
 
-test("unverified email offers verification and still lets you change the address", async () => {
-  let resolveSend: () => void = () => {};
-  const onSendVerification = vi.fn(
-    () =>
-      new Promise<void>((resolve) => {
-        resolveSend = resolve;
-      }),
-  );
-  await using view = await renderAccount({
-    ...readyHandlers(),
-    onSendVerification,
-    user: unverifiedUser,
-  });
-
-  expect(view.getByText(/Email is unverified/)).toBeTruthy();
-  expect(view.getByRole("button", { name: "Edit email" })).toBeTruthy();
-
-  const send = view.getByRole("button", { name: "Send verification email" });
-  expect(send.closest("[data-slot=item-actions]")).toBeNull();
-  expect(send.closest("[data-slot=item-content]")).toBeTruthy();
-  expect(send.querySelector("svg")).toBeTruthy();
-
-  fireEvent.click(send);
-  fireEvent.click(send);
-  await vi.waitFor(() => {
-    expect(onSendVerification).toHaveBeenCalledTimes(1);
-  });
-  expect(htmlButton(send).disabled).toBe(true);
-
-  resolveSend();
-  await vi.waitFor(() => {
-    expect(htmlButton(send).disabled).toBe(true);
-  });
-  fireEvent.click(send);
-  expect(onSendVerification).toHaveBeenCalledTimes(1);
-});
-
 test("name editor mounts fresh on open and submits the trimmed name", async () => {
   const onUpdateName = vi.fn(async () => {});
   await using view = await renderAccount({
     ...readyHandlers(),
     onUpdateName,
-    user: verifiedUser,
+    user: sessionUser,
   });
 
   fireEvent.click(view.getByRole("button", { name: "Edit name" }));
@@ -211,7 +164,7 @@ test("name editor requires at least two characters", async () => {
   await using view = await renderAccount({
     ...readyHandlers(),
     onUpdateName,
-    user: verifiedUser,
+    user: sessionUser,
   });
 
   fireEvent.click(view.getByRole("button", { name: "Edit name" }));
@@ -229,7 +182,7 @@ test("change-email editor rejects the current address", async () => {
   await using view = await renderAccount({
     ...readyHandlers(),
     onChangeEmail,
-    user: verifiedUser,
+    user: sessionUser,
   });
 
   fireEvent.click(view.getByRole("button", { name: "Edit email" }));
@@ -251,7 +204,7 @@ test("change-email editor submits a new address", async () => {
   await using view = await renderAccount({
     ...readyHandlers(),
     onChangeEmail,
-    user: verifiedUser,
+    user: sessionUser,
   });
 
   fireEvent.click(view.getByRole("button", { name: "Edit email" }));
@@ -270,7 +223,7 @@ test("password editor requires a matching confirmation", async () => {
   await using view = await renderAccount({
     ...readyHandlers(),
     onChangePassword,
-    user: verifiedUser,
+    user: sessionUser,
   });
 
   fireEvent.click(view.getByRole("button", { name: "Edit password" }));
@@ -296,7 +249,7 @@ test("password editor submits matching passwords", async () => {
   await using view = await renderAccount({
     ...readyHandlers(),
     onChangePassword,
-    user: verifiedUser,
+    user: sessionUser,
   });
 
   fireEvent.click(view.getByRole("button", { name: "Edit password" }));
@@ -324,9 +277,8 @@ test("account rows hide editors when handlers are null", async () => {
   await using view = await renderAccount({
     onChangeEmail: null,
     onChangePassword: null,
-    onSendVerification: null,
     onUpdateName: null,
-    user: verifiedUser,
+    user: sessionUser,
   });
 
   expect(view.queryByRole("button", { name: "Edit name" })).toBeNull();
@@ -339,7 +291,6 @@ test("account section shows a loading spinner while the session is missing", asy
   await using view = await renderAccount({
     onChangeEmail: null,
     onChangePassword: null,
-    onSendVerification: null,
     onUpdateName: null,
     user: null,
   });
@@ -362,12 +313,6 @@ function stubAccountAuth(overrides: {
         revokeOtherSessions: true;
       }) => Promise<{ error: { message: string | undefined } | null }>)
     | null;
-  sendVerificationEmail:
-    | ((body: {
-        callbackURL: string;
-        email: string;
-      }) => Promise<{ error: { message: string | undefined } | null }>)
-    | null;
   updateUser:
     | ((body: { name: string }) => Promise<{ error: { message: string | undefined } | null }>)
     | null;
@@ -375,7 +320,6 @@ function stubAccountAuth(overrides: {
 }) {
   const originalChangeEmail = accountAuthAdapter.changeEmail;
   const originalChangePassword = accountAuthAdapter.changePassword;
-  const originalSendVerificationEmail = accountAuthAdapter.sendVerificationEmail;
   const originalUpdateUser = accountAuthAdapter.updateUser;
   const originalUseSession = accountAuthAdapter.useSession;
   if (overrides.changeEmail !== null) {
@@ -387,11 +331,6 @@ function stubAccountAuth(overrides: {
     accountAuthAdapter.changePassword =
       overrides.changePassword as typeof accountAuthAdapter.changePassword;
   }
-  if (overrides.sendVerificationEmail !== null) {
-    // SAFETY: Test stub replaces the adapter's network-backed Better Auth method.
-    accountAuthAdapter.sendVerificationEmail =
-      overrides.sendVerificationEmail as typeof accountAuthAdapter.sendVerificationEmail;
-  }
   if (overrides.updateUser !== null) {
     // SAFETY: Test stub replaces the adapter's network-backed Better Auth method.
     accountAuthAdapter.updateUser = overrides.updateUser as typeof accountAuthAdapter.updateUser;
@@ -402,7 +341,6 @@ function stubAccountAuth(overrides: {
   return makeResource({}, () => {
     accountAuthAdapter.changeEmail = originalChangeEmail;
     accountAuthAdapter.changePassword = originalChangePassword;
-    accountAuthAdapter.sendVerificationEmail = originalSendVerificationEmail;
     accountAuthAdapter.updateUser = originalUpdateUser;
     accountAuthAdapter.useSession = originalUseSession;
   });
@@ -432,9 +370,8 @@ test("AccountSettings name path toasts success", async () => {
   await using _adapter = stubAccountAuth({
     changeEmail: null,
     changePassword: null,
-    sendVerificationEmail: null,
     updateUser,
-    useSession: () => accountSessionSnapshot(verifiedUser),
+    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
   await using view = await renderWithConvexTest({
@@ -463,9 +400,8 @@ test("AccountSettings password path toasts success", async () => {
   await using _adapter = stubAccountAuth({
     changeEmail: null,
     changePassword,
-    sendVerificationEmail: null,
     updateUser: null,
-    useSession: () => accountSessionSnapshot(verifiedUser),
+    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
   await using view = await renderWithConvexTest({
@@ -498,48 +434,14 @@ test("AccountSettings password path toasts success", async () => {
   });
 });
 
-test("AccountSettings verify path toasts success", async () => {
-  await using toasts = stubToastSuccess();
-  const sendVerificationEmail = vi.fn(successAuth);
-  await using _adapter = stubAccountAuth({
-    changeEmail: null,
-    changePassword: null,
-    sendVerificationEmail,
-    updateUser: null,
-    useSession: () => accountSessionSnapshot(unverifiedUser),
-  });
-  await using harness = await createConvexTestHarness({ identity: null });
-  await using view = await renderWithConvexTest({
-    harness,
-    ui: <AccountSettings />,
-    wrap: null,
-  });
-
-  fireEvent.click(view.getByRole("button", { name: "Send verification email" }));
-
-  await vi.waitFor(() => {
-    expect(sendVerificationEmail).toHaveBeenCalledWith({
-      callbackURL: "https://example.test/dashboard/settings?notice=verified",
-      email: "ada@example.com",
-    });
-  });
-  await vi.waitFor(() => {
-    expect(toasts.toastSuccess).toHaveBeenCalledWith("Check your inbox to verify this email.");
-  });
-  expect(htmlButton(view.getByRole("button", { name: "Send verification email" })).disabled).toBe(
-    true,
-  );
-});
-
 test("AccountSettings change-email path toasts success", async () => {
   await using toasts = stubToastSuccess();
   const changeEmail = vi.fn(successAuth);
   await using _adapter = stubAccountAuth({
     changeEmail,
     changePassword: null,
-    sendVerificationEmail: null,
     updateUser: null,
-    useSession: () => accountSessionSnapshot(verifiedUser),
+    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
   await using view = await renderWithConvexTest({
@@ -570,9 +472,8 @@ test("AccountSettings name path throws the fallback when Better Auth omits a mes
   await using _adapter = stubAccountAuth({
     changeEmail: null,
     changePassword: null,
-    sendVerificationEmail: null,
     updateUser,
-    useSession: () => accountSessionSnapshot(verifiedUser),
+    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
   await using view = await renderWithConvexTest({
@@ -598,9 +499,8 @@ test("AccountSettings change-email path surfaces the adapter message", async () 
   await using _adapter = stubAccountAuth({
     changeEmail,
     changePassword: null,
-    sendVerificationEmail: null,
     updateUser: null,
-    useSession: () => accountSessionSnapshot(verifiedUser),
+    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
   await using view = await renderWithConvexTest({
