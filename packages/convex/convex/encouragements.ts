@@ -15,7 +15,6 @@ import {
   encouragementIsMine,
   resolveEncouragementAuthor,
   storedEncouragementAuthorFromCaller,
-  storedEncouragementUserId,
 } from "./encouragementIdentity";
 import { isActive } from "./softDelete";
 import { mutationWithTriggers } from "./triggers";
@@ -132,7 +131,6 @@ export const create = mutationWithTriggers({
       timelineItemId,
       timezone: args.timezone,
       userAgent: args.userAgent,
-      userId: storedEncouragementUserId(author),
       visitorId: args.visitorId,
     });
 
@@ -284,7 +282,6 @@ export async function claimEncouragementsForVisitor(
         userId: opts.userId,
         visitorId: row.visitorId,
       },
-      userId: opts.userId,
     });
   }
 }
