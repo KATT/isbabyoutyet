@@ -1,17 +1,11 @@
 import { createElement } from "react";
 import { render } from "react-email";
-import { passwordResetCopy, verifyEmailCopy } from "./copy";
+import { passwordResetCopy } from "./copy";
 import { PasswordResetEmail } from "./password-reset";
-import { VerifyEmail } from "./verify-email";
 
 export type RenderPasswordResetEmailInput = {
   resetUrl: string;
   subjectPrefix: string;
-};
-
-export type RenderVerifyEmailInput = {
-  subjectPrefix: string;
-  verifyUrl: string;
 };
 
 export type RenderedEmail = {
@@ -46,30 +40,6 @@ export async function renderPasswordResetEmail(
       ignore: passwordResetCopy.ignore,
       intro: passwordResetCopy.intro,
       url: input.resetUrl,
-    }),
-  };
-}
-
-/**
- * Render verify-email and change-email confirmation mail. Better Auth sends
- * this to the address being confirmed (current, or the new one on change).
- */
-export async function renderVerifyEmail(input: RenderVerifyEmailInput): Promise<RenderedEmail> {
-  const html = await render(
-    createElement(VerifyEmail, {
-      subjectPrefix: input.subjectPrefix,
-      verifyUrl: input.verifyUrl,
-    }),
-  );
-
-  return {
-    html,
-    subject: `${input.subjectPrefix}${verifyEmailCopy.subject}`,
-    text: emailText({
-      button: verifyEmailCopy.button,
-      ignore: verifyEmailCopy.ignore,
-      intro: verifyEmailCopy.intro,
-      url: input.verifyUrl,
     }),
   };
 }
