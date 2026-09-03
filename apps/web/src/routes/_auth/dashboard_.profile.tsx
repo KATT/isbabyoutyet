@@ -123,6 +123,33 @@ export type ProfilePageHandlers = {
   onUpdateName: (values: { name: string }) => Promise<void>;
 };
 
+export type ProfileSessionSnapshot = {
+  data: { user: ProfileUser } | null;
+};
+
+/**
+ * Maps a Better Auth user (or logged-out `null`) onto the profile page's
+ * session snapshot. Tests call this when stubbing `profileAuthAdapter.useSession`.
+ *
+ * @internal
+ */
+export function profileSessionSnapshot(
+  user: { email: string; emailVerified: boolean; name: string } | null,
+): ProfileSessionSnapshot {
+  if (user === null) {
+    return { data: null };
+  }
+  return {
+    data: {
+      user: {
+        email: user.email,
+        emailVerified: user.emailVerified,
+        name: user.name,
+      },
+    },
+  };
+}
+
 /**
  * Mutable auth adapters so route smoke tests can swap the network-backed
  * better-auth client without `vi.mock`.
@@ -139,6 +166,8 @@ export const profileAuthAdapter = {
   sendVerificationEmail: (body: { callbackURL: string; email: string }) =>
     authClient.sendVerificationEmail(body),
   updateUser: (body: { name: string }) => authClient.updateUser(body),
+  useSession: (): ProfileSessionSnapshot =>
+    profileSessionSnapshot(authClient.useSession().data?.user ?? null),
 };
 
 export const Route = createFileRoute("/_auth/dashboard_/profile")({
@@ -160,8 +189,8 @@ export function ProfilePage() {
   const { t } = useI18n();
   const router = useRouter();
   const search = Route.useSearch();
-  const session = authClient.useSession();
-  const sessionUser = session.data?.user;
+  const session = profileAuthAdapter.useSession();
+  const sessionUser = session.data === null ? null : session.data.user;
   const verifyCallbackUrl = absoluteUrl("/dashboard/profile?notice=verified");
 
   const navigateNotice = (notice: ProfileNotice) =>
