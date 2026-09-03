@@ -94,9 +94,13 @@ test("shows the empty state once the list has loaded with no babies", async () =
   expect(view.getByText("No baby pages yet")).toBeTruthy();
 });
 
-test("dashboard header keeps only add baby and profile settings actions", async () => {
+test("dashboard header groups add baby, theme, and settings in a button group", async () => {
   await using view = await renderWithTestRouter(<DashboardHeader />);
 
+  const actions = view.getByRole("group");
+  expect(actions.contains(view.getByRole("button", { name: "Add Baby" }))).toBe(true);
+  expect(actions.contains(view.getByRole("button", { name: "Toggle theme" }))).toBe(true);
+  expect(actions.contains(view.getByRole("button", { name: "Settings" }))).toBe(true);
   expect(view.getByRole("button", { name: "Add Baby" }).getAttribute("href")).toBe(
     "/dashboard/add",
   );

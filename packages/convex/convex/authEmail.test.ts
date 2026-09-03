@@ -173,7 +173,7 @@ test("defaultEmailLog writes a structured console line", async () => {
     from: { address: LOCAL_FROM_PLACEHOLDER, name: PRODUCTION_FROM_NAME },
     html: "<p>Reset</p>",
     subject: "Reset your Is Baby Out Yet? password",
-    text: "Reset your password",
+    text: "Reset your password: http://localhost:3000/auth/reset-password?token=secret",
     to: "parent@example.com",
   });
 
@@ -184,6 +184,7 @@ test("defaultEmailLog writes a structured console line", async () => {
       to: "parent@example.com",
     }),
   );
+  expect(log).toHaveBeenCalledWith("http://localhost:3000/auth/reset-password?token=secret");
 });
 
 test("omitted deps read Convex env and log on local backends", async () => {
@@ -214,6 +215,7 @@ test("omitted deps read Convex env and log on local backends", async () => {
       to: "parent@example.com",
     }),
   );
+  expect(log).toHaveBeenCalledWith("http://localhost:3000/auth/reset-password?token=secret");
 });
 
 test("sends verification email through Resend", async () => {
@@ -227,7 +229,7 @@ test("sends verification email through Resend", async () => {
       sender: null,
     },
     recipient: "parent@example.com",
-    verifyUrl: "https://isbabyoutyet.com/dashboard/profile?notice=verified",
+    verifyUrl: "https://isbabyoutyet.com/dashboard/settings?notice=verified",
   });
 
   expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({

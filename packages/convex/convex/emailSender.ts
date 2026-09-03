@@ -138,6 +138,20 @@ export function resolveEmailSender(opts: ResolveEmailSenderOptions): EmailSender
   });
 }
 
+const HTTP_URL_IN_TEXT = /https?:\/\/[^\s<>"']+/g;
+
+/**
+ * Pulls http(s) callback URLs out of plaintext so local backends can log
+ * them on their own lines (terminals treat a lone URL as clickable).
+ */
+export function callbackUrlsFromEmailText(text: string) {
+  const found = text.match(HTTP_URL_IN_TEXT);
+  if (found === null) {
+    return [];
+  }
+  return found.map((url) => url.replace(/[),.;]+$/u, ""));
+}
+
 export function defaultEmailLog(message: string, details: EmailMessage) {
   console.log(message, {
     from: details.from,
@@ -145,4 +159,7 @@ export function defaultEmailLog(message: string, details: EmailMessage) {
     text: details.text,
     to: details.to,
   });
+  for (const url of callbackUrlsFromEmailText(details.text)) {
+    console.log(url);
+  }
 }

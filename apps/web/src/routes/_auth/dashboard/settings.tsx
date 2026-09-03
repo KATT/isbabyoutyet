@@ -1,5 +1,5 @@
-import { Palette, Shield, SignOut, User } from "@phosphor-icons/react";
-import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
+import { Shield, SignOut } from "@phosphor-icons/react";
+import { createFileRoute, getRouteApi, Link, useRouter } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
@@ -8,16 +8,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@workspace/ui/components/item";
-import { ModeToggle } from "@workspace/ui/components/mode-toggle";
+import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@workspace/ui/components/item";
 import {
   Sheet,
   SheetContent,
@@ -26,24 +17,39 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet";
+import { AccountSettings } from "@/components/account-settings";
 import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
+import { useFlashToast } from "@/lib/use-flash-toast";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
 
 const authRoute = getRouteApi("/_auth");
 const rootRoute = getRouteApi("__root__");
 
+const settingsSearchSchema = z.object({
+  notice: z.literal("verified").optional(),
+});
+
 export const Route = createFileRoute("/_auth/dashboard/settings")({
   component: DashboardSettingsRoute,
+  validateSearch: settingsSearchSchema,
 });
 
 export function DashboardSettingsRoute() {
   const authContext = authRoute.useRouteContext();
   const { queryClient } = rootRoute.useRouteContext();
-  return <DashboardSettingsSheet profile={authContext.profile} queryClient={queryClient} />;
+  const search = Route.useSearch();
+
+  return (
+    <DashboardSettingsSheet
+      notice={search.notice ?? null}
+      profile={authContext.profile}
+      queryClient={queryClient}
+    />
+  );
 }
 
 function SettingsSection(props: { children: ReactNode; title: string }) {
@@ -82,16 +88,31 @@ export const settingsAuthAdapter = {
  * @internal exported for tests
  */
 export function DashboardSettingsSheet(props: {
+  notice: "verified" | null;
   profile: PreloadedConvexQuery<typeof api.profile.get>;
   queryClient: QueryClient;
 }) {
+  const { t } = useI18n();
+  const router = useRouter();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const settings = useDashboardSettingsOverlayNav();
 
+  useFlashToast({
+    message: props.notice === "verified" ? t("Your email is now verified.") : null,
+    onClear: () => {
+      void router.navigate({
+        replace: true,
+        search: {},
+        to: "/dashboard/settings",
+      });
+    },
+  });
+
   return (
     <DashboardSettingsSheetView
+      accountSettings={<AccountSettings />}
       isAdmin={profileQuery.data?.isAdmin === true}
-      languageSettings={<LanguageSettings className="justify-start" profile={props.profile} />}
+      languageSettings={<LanguageSettings profile={props.profile} />}
       onSignOut={async () => {
         props.queryClient.clear();
         await settingsAuthAdapter.signOut({
@@ -117,6 +138,7 @@ export function DashboardSettingsSheet(props: {
  * @internal exported for tests
  */
 export function DashboardSettingsSheetView(props: {
+  accountSettings: ReactNode;
   isAdmin: boolean;
   languageSettings: ReactNode;
   onSignOut: () => void | Promise<void>;
@@ -146,36 +168,8 @@ export function DashboardSettingsSheetView(props: {
 
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
             <SettingsSection title={t("Account")}>
-              <Item render={<Link preload="viewport" to="/dashboard/profile" />}>
-                <ItemMedia variant="icon">
-                  <User />
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{t("Profile")}</ItemTitle>
-                  <ItemDescription>{t("Manage your name, email, and password.")}</ItemDescription>
-                </ItemContent>
-              </Item>
-            </SettingsSection>
-
-            <SettingsSection title={t("Language and time zone")}>
-              <Item>
-                <ItemContent>{props.languageSettings}</ItemContent>
-              </Item>
-            </SettingsSection>
-
-            <SettingsSection title={t("Appearance")}>
-              <Item>
-                <ItemMedia variant="icon">
-                  <Palette />
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{t("Appearance")}</ItemTitle>
-                  <ItemDescription>{t("Theme")}</ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <ModeToggle />
-                </ItemActions>
-              </Item>
+              {props.accountSettings}
+              {props.languageSettings}
             </SettingsSection>
 
             {props.isAdmin ? (

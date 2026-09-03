@@ -43,7 +43,7 @@ test("sendAuthVerificationEmail rejects query and mutation contexts", async () =
   await expect(
     t.run(async (ctx) => {
       await sendAuthVerificationEmail(ctx, {
-        url: "https://isbabyoutyet.com/dashboard/profile?notice=verified",
+        url: "https://isbabyoutyet.com/dashboard/settings?notice=verified",
         user: { email: "parent@example.com" },
       });
     }),
@@ -83,6 +83,7 @@ test("sendAuthResetPassword delivers through Convex env from an action ctx", asy
       to: "parent@example.com",
     }),
   );
+  expect(log).toHaveBeenCalledWith("https://isbabyoutyet.com/auth/reset-password?token=abc");
 });
 
 test("sendAuthVerificationEmail delivers through Convex env from an action ctx", async () => {
@@ -95,7 +96,7 @@ test("sendAuthVerificationEmail delivers through Convex env from an action ctx",
   const t = await setup();
   await t.action(async (ctx) => {
     await sendAuthVerificationEmail(ctx, {
-      url: "https://isbabyoutyet.com/dashboard/profile?notice=verified",
+      url: "https://isbabyoutyet.com/dashboard/settings?notice=verified",
       user: { email: "new@example.com" },
     });
   });
@@ -106,6 +107,7 @@ test("sendAuthVerificationEmail delivers through Convex env from an action ctx",
       to: "new@example.com",
     }),
   );
+  expect(log).toHaveBeenCalledWith("https://isbabyoutyet.com/dashboard/settings?notice=verified");
 });
 
 test("createAuth sendResetPassword uses the action-only delivery helper", async () => {
@@ -143,6 +145,7 @@ test("createAuth sendResetPassword uses the action-only delivery helper", async 
       to: "parent@example.com",
     }),
   );
+  expect(log).toHaveBeenCalledWith("https://isbabyoutyet.com/auth/reset-password?token=abc");
 });
 
 test("createAuth sendVerificationEmail uses the action-only delivery helper", async () => {
@@ -162,7 +165,7 @@ test("createAuth sendVerificationEmail uses the action-only delivery helper", as
 
     await sendVerification({
       token: "abc",
-      url: "https://isbabyoutyet.com/dashboard/profile?notice=verified",
+      url: "https://isbabyoutyet.com/dashboard/settings?notice=verified",
       user: {
         createdAt: new Date(0),
         email: "parent@example.com",
@@ -180,13 +183,14 @@ test("createAuth sendVerificationEmail uses the action-only delivery helper", as
       to: "parent@example.com",
     }),
   );
+  expect(log).toHaveBeenCalledWith("https://isbabyoutyet.com/dashboard/settings?notice=verified");
 });
 
-test("createAuth enables change-email without instant unverified updates", async () => {
+test("createAuth leaves Better Auth change-email off so profile updates skip mail", async () => {
   const t = await setup();
   await t.action(async (ctx) => {
     const auth = createAuth(ctx);
-    expect(auth.options.user?.changeEmail).toEqual({ enabled: true });
+    expect(auth.options.user?.changeEmail).toEqual({ enabled: false });
     expect(auth.options.emailAndPassword?.requireEmailVerification).toBe(false);
   });
 });

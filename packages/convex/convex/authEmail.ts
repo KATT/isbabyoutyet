@@ -70,10 +70,7 @@ export async function sendPasswordResetEmail(opts: {
   });
 }
 
-/**
- * Verify-email and change-email confirmation (Better Auth sends this to the
- * address being confirmed).
- */
+/** Optional verify-email. Changing email does not send this. */
 export async function sendVerificationEmail(opts: {
   deps: EmailDeliveryDeps | null;
   recipient: string;

@@ -18,14 +18,6 @@ import { loadCurrentStatus } from "./timeline";
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
 const sortOrderValidator = v.union(v.literal("asc"), v.literal("desc"));
 
-const languageRequestRowValidator = v.object({
-  _id: v.id("languageRequests"),
-  createdAt: v.number(),
-  requestedLocale: v.string(),
-  userEmail: v.union(v.string(), v.null()),
-  userId: v.string(),
-});
-
 const babyRowValidator = v.object({
   _id: v.id("baby"),
   createdAt: v.number(),
@@ -151,39 +143,6 @@ async function managerEmailsForBaby(ctx: QueryCtx, baby: Doc<"baby">) {
   }
   return emails;
 }
-
-export const listLanguageRequests = query({
-  args: {
-    paginationOpts: paginationOptsValidator,
-  },
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const result = await ctx.db
-      .query("languageRequests")
-      .withIndex("by_createdAt")
-      .order("desc")
-      .paginate(args.paginationOpts);
-
-    const emailByUserId = new Map<string, string | null>();
-    const mapped = [];
-    for (const row of result.page) {
-      let userEmail = emailByUserId.get(row.userId);
-      if (userEmail === undefined) {
-        userEmail = await findUserEmail(ctx, row.userId);
-        emailByUserId.set(row.userId, userEmail);
-      }
-      mapped.push({
-        _id: row._id,
-        createdAt: row.createdAt,
-        requestedLocale: row.requestedLocale,
-        userEmail,
-        userId: row.userId,
-      });
-    }
-    return { ...result, page: mapped };
-  },
-  returns: paginationResultValidator(languageRequestRowValidator),
-});
 
 export const listBabies = query({
   args: {

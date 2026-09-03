@@ -1,4 +1,6 @@
 import { Button } from "@workspace/ui/components/button";
+import { ButtonGroup } from "@workspace/ui/components/button-group";
+import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -91,9 +93,9 @@ export function DashboardHeader() {
           </span>
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
-        <div className="flex items-center gap-1 rounded-full bg-background/85 p-1 shadow-sm backdrop-blur-md">
+        <ButtonGroup className="rounded-full bg-background/85 p-1 shadow-sm backdrop-blur-md">
           <Button
-            className="rounded-full font-bold"
+            className="font-bold"
             nativeButton={false}
             render={<Link to="/dashboard/add" />}
             size="sm"
@@ -101,9 +103,9 @@ export function DashboardHeader() {
             <Plus data-icon="inline-start" />
             {t("Add Baby")}
           </Button>
+          <ModeToggle />
           <Button
             aria-label={t("Settings")}
-            className="rounded-full"
             nativeButton={false}
             render={<Link {...settings.openLink} />}
             size="icon"
@@ -115,7 +117,7 @@ export function DashboardHeader() {
               </AvatarFallback>
             </Avatar>
           </Button>
-        </div>
+        </ButtonGroup>
       </div>
     </header>
   );

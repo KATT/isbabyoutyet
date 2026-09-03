@@ -38,9 +38,8 @@ export async function sendAuthResetPassword(
 
 /**
  * Better Auth `sendVerificationEmail` hook. Same ActionCtx constraint as reset
- * mail. Used for first-time verify and for change-email confirmation on the new
- * address (Better Auth does not send a separate change-email template unless
- * `sendChangeEmailConfirmation` is set).
+ * mail. Used for optional first-time verify. Changing email updates the Better
+ * Auth user row in `accountEmail.change` and does not send mail.
  */
 export async function sendAuthVerificationEmail(
   ctx: GenericCtx<DataModel>,
@@ -142,7 +141,7 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
     },
     user: {
       changeEmail: {
-        enabled: true,
+        enabled: false,
       },
     },
     // Convex better-auth already exposes a rateLimit table; enable it on

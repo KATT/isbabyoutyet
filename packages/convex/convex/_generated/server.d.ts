@@ -32,9 +32,9 @@ type Env = {
   readonly CONVEX_SITE_URL: string;
   readonly BETTER_AUTH_SECRET: string | undefined;
   readonly EMAIL_FROM: string | undefined;
-  readonly RESEND_API_KEY: string | undefined;
   readonly NODE_ENV: string | undefined;
   readonly PREVIEW_SCHEMA_FINGERPRINT: string | undefined;
+  readonly RESEND_API_KEY: string | undefined;
   readonly SITE_URL: string | undefined;
   readonly VAPID_PRIVATE_KEY: string | undefined;
   readonly VAPID_PUBLIC_KEY: string | undefined;
