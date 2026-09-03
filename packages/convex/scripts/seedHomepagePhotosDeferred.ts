@@ -19,7 +19,7 @@ async function waitForConvexReady(extraConvexArgs: Array<string>) {
       convexRun({
         args: {},
         extraConvexArgs,
-        functionName: "homepageDemo:ensureBaby",
+        functionName: "homepageDemo:hasCompletePhotoSet",
       });
       return;
     } catch {
