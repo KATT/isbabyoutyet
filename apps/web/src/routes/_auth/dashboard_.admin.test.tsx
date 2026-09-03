@@ -3,16 +3,22 @@ import { QueryClient } from "@tanstack/react-query";
 import { isRedirect } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
+import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
+import { renderMountedFileRouteWithRouterContext } from "@/test/renderMountedFileRoute";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
   ADMIN_DEFAULT_SEARCH,
   AdminDashboardPage,
   AdminDashboardView,
   BabiesSection,
+  PermalinkTransfersSection,
   Route as AdminRoute,
+  TransferPublicIdForm,
   UsersSection,
   formatWhen,
   isAdminTab,
@@ -69,6 +75,58 @@ test("nextSortSearch defaults to desc and only toggles to asc on the active desc
   expect(
     nextSortSearch({ clicked: "updated", currentOrder: "desc", currentSort: "created" }),
   ).toEqual({ order: "desc", sort: "updated" });
+});
+
+test("permalink transfers section shows empty and audit rows", async () => {
+  await using empty = await renderAdmin(
+    <PermalinkTransfersSection
+      hasNextPage={false}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+      transfers={[]}
+    />,
+  );
+  expect(empty.getByText("No permalink transfers yet")).toBeTruthy();
+
+  await using filled = await renderAdmin(
+    <PermalinkTransfersSection
+      hasNextPage={false}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+      transfers={[
+        {
+          _id: "xfer-1",
+          actorEmail: "staff@example.com",
+          actorUserId: "user-staff",
+          babyName: "Baby",
+          createdAt: Date.UTC(2026, 8, 3, 12, 0),
+          displacedPublicId: "baby-3",
+          fromPublicId: "baby-2",
+          motivation: "Give the real page the canonical slug",
+          toPublicId: "baby",
+        },
+        {
+          _id: "xfer-2",
+          actorEmail: null,
+          actorUserId: "user-2",
+          babyName: "River",
+          createdAt: Date.UTC(2026, 8, 2, 12, 0),
+          displacedPublicId: null,
+          fromPublicId: "river-1",
+          motivation: "Shorter URL",
+          toPublicId: "river",
+        },
+      ]}
+    />,
+  );
+  expect(filled.getByText("baby-2")).toBeTruthy();
+  expect(filled.getByText("Baby")).toBeTruthy();
+  expect(filled.getByText("baby")).toBeTruthy();
+  expect(filled.getByText("baby-3")).toBeTruthy();
+  expect(filled.getByText("staff@example.com")).toBeTruthy();
+  expect(filled.getByText("Give the real page the canonical slug")).toBeTruthy();
+  expect(filled.getByText("user-2")).toBeTruthy();
+  expect(filled.getByText("Shorter URL")).toBeTruthy();
 });
 
 test("users section shows empty and rows", async () => {
@@ -166,6 +224,8 @@ test("babies section sorts via clickable header links", async () => {
 
   expect(view.getByText("Avery")).toBeTruthy();
   expect(view.getByText("Demo")).toBeTruthy();
+  expect(view.getByText("baby-waiting")).toBeTruthy();
+  expect(view.getByText("baby-born")).toBeTruthy();
   expect(view.getByText("owner@example.com, co@example.com")).toBeTruthy();
   expect(view.getByText("Baby born")).toBeTruthy();
 
@@ -193,6 +253,26 @@ test("babies section shows a spinner while loading more", async () => {
   );
   expect(loadingMore.getByText("Avery")).toBeTruthy();
   expect(loadingMore.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
+});
+
+test("transfer permalink form submits current slug, new slug, and motivation", async () => {
+  const onTransfer = vi.fn().mockResolvedValue(undefined);
+  await using view = await renderAdmin(<TransferPublicIdForm onTransfer={onTransfer} />);
+
+  fireEvent.change(view.getByLabelText("Current permalink"), { target: { value: "baby-2" } });
+  fireEvent.change(view.getByLabelText("New permalink"), { target: { value: "baby" } });
+  fireEvent.change(view.getByLabelText("Motivation"), {
+    target: { value: "Give the real page the canonical slug" },
+  });
+  fireEvent.click(view.getByRole("button", { name: "Transfer" }));
+
+  await vi.waitFor(() => {
+    expect(onTransfer).toHaveBeenCalledWith({
+      fromPublicId: "baby-2",
+      motivation: "Give the real page the canonical slug",
+      toPublicId: "baby",
+    });
+  });
 });
 
 test("infinite scroll sentinel requests another page when visible", async () => {
@@ -245,7 +325,7 @@ test("infinite scroll sentinel requests another page when visible", async () => 
 });
 
 test("admin dashboard page exposes tab links and hide-demo filter", async () => {
-  const onTabChange = vi.fn<(tab: "babies" | "users") => void>();
+  const onTabChange = vi.fn<(tab: "babies" | "transfers" | "users") => void>();
   const onHideDemoChange = vi.fn<(hideDemo: boolean) => void>();
 
   await using view = await renderAdmin(
@@ -257,16 +337,20 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
       order="desc"
       sort="created"
       tab="babies"
+      transfersTab={<div>transfers body</div>}
       usersTab={<div>users body</div>}
     />,
   );
   expect(view.getByText("Admin dashboard")).toBeTruthy();
 
   const babiesTab = view.getByRole("tab", { name: "All babies" });
+  const transfersTab = view.getByRole("tab", { name: "Transfer permalink" });
   const usersTab = view.getByRole("tab", { name: "Recent users" });
   expect(babiesTab.tagName).toBe("A");
+  expect(transfersTab.tagName).toBe("A");
   expect(usersTab.tagName).toBe("A");
   expect(babiesTab.getAttribute("href")).toContain("tab=babies");
+  expect(transfersTab.getAttribute("href")).toContain("tab=transfers");
   expect(usersTab.getAttribute("href")).toContain("tab=users");
   expect(view.queryByRole("tab", { name: "Requested languages" })).toBeNull();
 
@@ -289,6 +373,7 @@ test("admin defaults to created-desc babies and recognizes every admin tab", () 
   });
   expect(isAdminTab("babies")).toBe(true);
   expect(isAdminTab("languages")).toBe(false);
+  expect(isAdminTab("transfers")).toBe(true);
   expect(isAdminTab("users")).toBe(true);
   expect(isAdminTab("nope")).toBe(false);
 });
@@ -303,6 +388,7 @@ test("users tab body renders without the hide-demo filter", async () => {
       order="desc"
       sort="created"
       tab="users"
+      transfersTab={<div>transfers body</div>}
       usersTab={
         <UsersSection
           hasNextPage={false}
@@ -327,6 +413,82 @@ test("users tab body renders without the hide-demo filter", async () => {
   expect(view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
 });
 
+test("transfers tab body renders the form without the hide-demo filter", async () => {
+  const onTransfer = vi.fn().mockResolvedValue(undefined);
+  await using view = await renderAdmin(
+    <AdminDashboardView
+      babiesTab={<div>babies body</div>}
+      hideDemo={true}
+      onHideDemoChange={() => undefined}
+      onTabChange={() => undefined}
+      order="desc"
+      sort="created"
+      tab="transfers"
+      transfersTab={<TransferPublicIdForm onTransfer={onTransfer} />}
+      usersTab={<div>users body</div>}
+    />,
+  );
+  expect(view.getByRole("tab", { name: "Transfer permalink" })).toBeTruthy();
+  expect(view.getByLabelText("Current permalink")).toBeTruthy();
+  expect(view.getByLabelText("Motivation")).toBeTruthy();
+  expect(view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
+});
+
+test("transfers tab loads the form and audit table from Convex", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const staffId = await signUpTestUser(harness, {
+    email: "staff@example.com",
+    name: "Staff",
+    password: "password123",
+  });
+  harness.withIdentity({ subject: staffId });
+  await harness.client.mutation(api.profile.updateLocale, { locale: "en-GB" });
+  await harness.t.run(async (ctx) => {
+    const profiles = await ctx.db.query("userProfiles").collect();
+    for (const profile of profiles) {
+      await ctx.db.patch(profile._id, { isAdmin: true });
+    }
+  });
+
+  const bobId = await signUpTestUser(harness, {
+    email: "bob@example.com",
+    name: "Bob",
+    password: "password123",
+  });
+  harness.withIdentity({ subject: bobId });
+  const claimant = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Real Baby" });
+  await harness.t.run(async (ctx) => {
+    await ctx.db.patch(claimant.babyId, { publicId: "baby-2" });
+  });
+
+  harness.withIdentity({ subject: staffId });
+  harness.queryClient.clear();
+  await harness.client.mutation(api.admin.transferPublicId, {
+    fromPublicId: "baby-2",
+    motivation: "Give the real page the canonical slug",
+    toPublicId: "baby",
+  });
+
+  const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
+  await using ctx = await renderMountedFileRouteWithRouterContext({
+    harness,
+    initialEntry: "/dashboard/admin?tab=transfers",
+    overlayHistory: null,
+    path: "/dashboard/admin",
+    route: AdminRoute,
+    routerContext: { profile },
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByLabelText("Current permalink")).toBeTruthy();
+    expect(ctx.view.getByText("Give the real page the canonical slug")).toBeTruthy();
+  });
+  expect(ctx.view.getByText("baby-2")).toBeTruthy();
+  expect(ctx.view.getByText("baby")).toBeTruthy();
+  expect(ctx.view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
+});
+
 const ADMIN_EMPTY_PAGE = { continueCursor: "", isDone: true, page: [] };
 
 import type { JsonValue } from "@workspace/runtime/json";
@@ -334,6 +496,7 @@ type AdminQueryHandler = JsonValue | (() => never);
 type AdminQueryHandlers = Record<string, AdminQueryHandler>;
 type AdminLoaderResult = {
   babies: unknown;
+  transfers: unknown;
   users: unknown;
 };
 
@@ -388,10 +551,11 @@ async function runAdminLoader(
   });
 }
 
-test("loader prefetches babies and users in parallel for admins", async () => {
+test("loader prefetches babies, users, and permalink transfers in parallel for admins", async () => {
   const result = await runAdminLoader(
     {
       "admin:listBabies": ADMIN_EMPTY_PAGE,
+      "admin:listPublicIdTransfers": ADMIN_EMPTY_PAGE,
       "admin:listUsers": ADMIN_EMPTY_PAGE,
     },
     { isAdmin: true, locale: "en-GB", timeZone: "Europe/London" },
@@ -401,6 +565,7 @@ test("loader prefetches babies and users in parallel for admins", async () => {
     input: { hideDemo: true, sortBy: "created", sortOrder: "desc" },
     numItems: 20,
   });
+  expect(result.transfers).toMatchObject({ input: {}, numItems: 20 });
   expect(result.users).toMatchObject({ input: {}, numItems: 20 });
 });
 
@@ -410,6 +575,9 @@ test("loader redirects non-admins without prefetching admin queries", async () =
       {
         "admin:listBabies": () => {
           throw new Error("admin:listBabies should not run for non-admins");
+        },
+        "admin:listPublicIdTransfers": () => {
+          throw new Error("admin:listPublicIdTransfers should not run for non-admins");
         },
         "admin:listUsers": () => {
           throw new Error("admin:listUsers should not run for non-admins");

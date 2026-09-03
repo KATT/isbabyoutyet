@@ -12,8 +12,10 @@ import {
   type JsonObject,
 } from "@workspace/runtime/json";
 import { requireAdmin } from "./adminAccess";
+import { transferBabyPublicId } from "./babyPublicId";
 import { isActive } from "./softDelete";
 import { loadCurrentStatus } from "./timeline";
+import { mutationWithTriggers } from "./triggers";
 
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
 const sortOrderValidator = v.union(v.literal("asc"), v.literal("desc"));
@@ -102,7 +104,7 @@ async function ownedBabiesForUser(ctx: QueryCtx, userId: string) {
  * (homepage live demos use `homepage-demo`) are not Better Auth rows — looking
  * them up by `_id` throws "Invalid ID length", so skip those.
  */
-async function findUserEmail(ctx: QueryCtx, userId: string) {
+async function findUserEmail(ctx: { runQuery: QueryCtx["runQuery"] }, userId: string) {
   if (userId === HOMEPAGE_DEMO_OWNER_USER_ID) {
     return null;
   }
@@ -219,4 +221,83 @@ export const listUsers = query({
     };
   },
   returns: paginationResultValidator(userRowValidator),
+});
+
+const publicIdTransferRowValidator = v.object({
+  _id: v.id("babyPublicIdTransfers"),
+  actorEmail: v.union(v.string(), v.null()),
+  actorUserId: v.string(),
+  babyId: v.id("baby"),
+  babyName: v.string(),
+  createdAt: v.number(),
+  displacedBabyId: v.union(v.id("baby"), v.null()),
+  displacedBabyName: v.union(v.string(), v.null()),
+  displacedPublicId: v.union(v.string(), v.null()),
+  fromPublicId: v.string(),
+  motivation: v.string(),
+  toPublicId: v.string(),
+});
+
+const transferPublicIdResultValidator = v.object({
+  displacedPublicId: v.union(v.string(), v.null()),
+  fromPublicId: v.string(),
+  toPublicId: v.string(),
+});
+
+export const listPublicIdTransfers = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.db
+      .query("babyPublicIdTransfers")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .paginate(args.paginationOpts);
+    return {
+      ...result,
+      page: result.page.map((row) => ({
+        _id: row._id,
+        actorEmail: row.actorEmail,
+        actorUserId: row.actorUserId,
+        babyId: row.babyId,
+        babyName: row.babyName,
+        createdAt: row.createdAt,
+        displacedBabyId: row.displacedBabyId,
+        displacedBabyName: row.displacedBabyName,
+        displacedPublicId: row.displacedPublicId,
+        fromPublicId: row.fromPublicId,
+        motivation: row.motivation,
+        toPublicId: row.toPublicId,
+      })),
+    };
+  },
+  returns: paginationResultValidator(publicIdTransferRowValidator),
+});
+
+/**
+ * Move a baby page to a new public URL. The old slug stays in history so
+ * visitors hitting `/baby/{from}` redirect to `/baby/{to}`. If `{to}` is
+ * already held, that occupant is moved to the next generated slug. Staff
+ * must record a motivation; the transfer is written to the audit table.
+ */
+export const transferPublicId = mutationWithTriggers({
+  args: {
+    fromPublicId: v.string(),
+    motivation: v.string(),
+    toPublicId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const caller = await requireAdmin(ctx);
+    return await transferBabyPublicId(ctx, {
+      actorEmail: await findUserEmail(ctx, caller.authUserId),
+      actorTokenIdentifier: caller.tokenIdentifier,
+      actorUserId: caller.authUserId,
+      fromPublicId: args.fromPublicId,
+      motivation: args.motivation,
+      toPublicId: args.toPublicId,
+    });
+  },
+  returns: transferPublicIdResultValidator,
 });

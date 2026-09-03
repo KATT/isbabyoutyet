@@ -33,11 +33,7 @@ function reparentRoute<TRoute extends AnyRoute>(
   return update(opts);
 }
 
-/**
- * Mounts a real file-route component end-to-end: beforeLoad + loader + the
- * production wrapper, backed by `convex-test` through the shared harness.
- */
-export async function renderMountedFileRoute(opts: {
+type MountedFileRouteOpts = {
   harness: ConvexTestHarness;
   initialEntry: string;
   /**
@@ -49,8 +45,38 @@ export async function renderMountedFileRoute(opts: {
   route: AnyRoute;
   /** Extra providers around the route outlet. */
   wrap: ((children: ReactNode) => ReactNode) | null;
-}) {
-  const context = routeContextFromHarness(opts.harness);
+};
+
+type AuthProfileRouterContext = {
+  profile: {
+    initialData: { isAdmin: boolean; locale: string; timeZone: string } | null;
+    input: Record<string, never>;
+  };
+};
+
+/**
+ * Mounts a real file-route component end-to-end: beforeLoad + loader + the
+ * production wrapper, backed by `convex-test` through the shared harness.
+ */
+export async function renderMountedFileRoute(opts: MountedFileRouteOpts) {
+  return await mountFileRoute(opts, {});
+}
+
+/**
+ * Same as {@link renderMountedFileRoute}, with extra router context (e.g. the
+ * `_auth` layout's preloaded profile) merged onto the harness defaults.
+ */
+export async function renderMountedFileRouteWithRouterContext(
+  opts: MountedFileRouteOpts & { routerContext: AuthProfileRouterContext },
+) {
+  return await mountFileRoute(opts, opts.routerContext);
+}
+
+async function mountFileRoute(
+  opts: MountedFileRouteOpts,
+  routerContext: AuthProfileRouterContext | Record<string, never>,
+) {
+  const context = { ...routeContextFromHarness(opts.harness), ...routerContext };
 
   const history =
     opts.overlayHistory === null

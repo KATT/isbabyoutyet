@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
 import { DEMO_EMPTY_USER, DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, createBabyArgs } from "./test.setup";
 import { parseAuthUserPage } from "./admin";
 
 const FIRST_PAGE = { cursor: null, numItems: 20 };
@@ -55,9 +55,22 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
   await expect(asAlice.query(api.admin.listUsers, { paginationOpts: FIRST_PAGE })).rejects.toThrow(
     "Not authorized",
   );
+  await expect(
+    asAlice.query(api.admin.listPublicIdTransfers, { paginationOpts: FIRST_PAGE }),
+  ).rejects.toThrow("Not authorized");
+  await expect(
+    asAlice.mutation(api.admin.transferPublicId, {
+      fromPublicId: "baby-2",
+      motivation: "Give the real page the canonical slug",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow("Not authorized");
   await expect(t.query(api.admin.listUsers, { paginationOpts: FIRST_PAGE })).rejects.toThrow(
     "Not authenticated",
   );
+  await expect(
+    t.query(api.admin.listPublicIdTransfers, { paginationOpts: FIRST_PAGE }),
+  ).rejects.toThrow("Not authenticated");
 });
 
 test("seedDemoData marks the demo user as admin", async () => {
@@ -309,4 +322,186 @@ test("admins can list recently signed up users newest first", async () => {
   });
   expect(page2.page).toHaveLength(1);
   expect(page2.page[0]!._id).not.toBe(page1.page[0]!._id);
+});
+
+test("admins can transfer a permalink and keep the old slug as a redirect", async () => {
+  const t = await setup();
+  const seeded = await t.mutation(internal.seed.seedDemoData, {});
+  const asDemo = t.withIdentity({ subject: seeded.userId });
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const asBob = t.withIdentity({ subject: "bob" });
+  const asCarol = t.withIdentity({ subject: "carol" });
+
+  const occupant = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({ dueDate: "2026-09-01", name: "Baby" }),
+  );
+  await asBob.mutation(api.baby.create, createBabyArgs({ dueDate: "2026-09-01", name: "Baby" }));
+  const claimant = await asCarol.mutation(
+    api.baby.create,
+    createBabyArgs({ dueDate: "2026-09-01", name: "Baby" }),
+  );
+  expect(occupant.publicId).toBe("baby");
+  expect(claimant.publicId).toBe("baby-2");
+
+  const result = await asDemo.mutation(api.admin.transferPublicId, {
+    fromPublicId: "baby-2",
+    motivation: "Give the real page the canonical slug",
+    toPublicId: "baby",
+  });
+  expect(result).toEqual({
+    displacedPublicId: "baby-3",
+    fromPublicId: "baby-2",
+    toPublicId: "baby",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: "baby" })).toMatchObject({
+    _id: claimant.babyId,
+    publicId: "baby",
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: "baby-2" })).toMatchObject({
+    _id: claimant.babyId,
+    publicId: "baby",
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: "baby-3" })).toMatchObject({
+    _id: occupant.babyId,
+    publicId: "baby-3",
+  });
+
+  const transfers = await asDemo.query(api.admin.listPublicIdTransfers, {
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(transfers.page).toHaveLength(1);
+  expect(transfers.page[0]).toMatchObject({
+    actorEmail: DEMO_USER.email,
+    actorUserId: seeded.userId,
+    babyId: claimant.babyId,
+    babyName: "Baby",
+    displacedBabyId: occupant.babyId,
+    displacedBabyName: "Baby",
+    displacedPublicId: "baby-3",
+    fromPublicId: "baby-2",
+    motivation: "Give the real page the canonical slug",
+    toPublicId: "baby",
+  });
+  expect(transfers.page[0]!.createdAt).toBeGreaterThan(0);
+});
+
+test("admins can transfer a free permalink without displacing another baby", async () => {
+  const t = await setup();
+  const seeded = await t.mutation(internal.seed.seedDemoData, {});
+  const asDemo = t.withIdentity({ subject: seeded.userId });
+  const asBob = t.withIdentity({ subject: "bob" });
+
+  const claimant = await asBob.mutation(
+    api.baby.create,
+    createBabyArgs({ dueDate: "2026-09-01", name: "Real Baby" }),
+  );
+  await t.run(async (ctx) => {
+    await ctx.db.patch(claimant.babyId, { publicId: "baby-2" });
+  });
+
+  await asDemo.mutation(api.admin.transferPublicId, {
+    fromPublicId: "baby-2",
+    motivation: "Canonical slug is free",
+    toPublicId: "baby",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: "baby" })).toMatchObject({
+    _id: claimant.babyId,
+    publicId: "baby",
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: "baby-2" })).toMatchObject({
+    _id: claimant.babyId,
+    publicId: "baby",
+  });
+
+  const transfers = await asDemo.query(api.admin.listPublicIdTransfers, {
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(transfers.page[0]).toMatchObject({
+    actorEmail: DEMO_USER.email,
+    displacedBabyId: null,
+    displacedBabyName: null,
+    displacedPublicId: null,
+    fromPublicId: "baby-2",
+    motivation: "Canonical slug is free",
+    toPublicId: "baby",
+  });
+});
+
+test("transferPublicId refuses homepage demo slugs and missing babies", async () => {
+  const t = await setup();
+  const seeded = await t.mutation(internal.seed.seedDemoData, {});
+  const asDemo = t.withIdentity({ subject: seeded.userId });
+  const asBob = t.withIdentity({ subject: "bob" });
+  await asBob.mutation(
+    api.baby.create,
+    createBabyArgs({ dueDate: "2026-09-01", name: "Real Baby" }),
+  );
+
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "real-baby",
+      motivation: "Should not move a demo slug",
+      toPublicId: "juniper-hale",
+    }),
+  ).rejects.toThrow("Homepage demo public IDs cannot be transferred");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "juniper-hale",
+      motivation: "Should not move a demo slug",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow("Homepage demo public IDs cannot be transferred");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "missing-slug",
+      motivation: "Should not move a missing slug",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow('No baby currently uses public ID "missing-slug"');
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "real-baby",
+      motivation: "   ",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow("Motivation is required");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "real-baby",
+      motivation: "noop",
+      toPublicId: "Real Baby",
+    }),
+  ).rejects.toThrow("New public ID must be different from the current one");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "real-baby",
+      motivation: "x".repeat(501),
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow("Motivation must be 500 characters or fewer");
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "!!!",
+      motivation: "Invalid slug",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow("Public ID must contain letters or numbers");
+
+  const deleted = await asBob.mutation(
+    api.baby.create,
+    createBabyArgs({ dueDate: "2026-09-01", name: "Gone Baby" }),
+  );
+  await t.run(async (ctx) => {
+    await ctx.db.patch(deleted.babyId, { deletedAt: Date.now() });
+  });
+  await expect(
+    asDemo.mutation(api.admin.transferPublicId, {
+      fromPublicId: "gone-baby",
+      motivation: "Soft-deleted claimant",
+      toPublicId: "baby",
+    }),
+  ).rejects.toThrow('No baby currently uses public ID "gone-baby"');
 });
