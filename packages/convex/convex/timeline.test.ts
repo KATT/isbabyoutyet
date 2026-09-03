@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { makeResource } from "./test.resource";
+import { makeAsyncResource, makeResource } from "./test.resource";
 import {
   modules,
   registerComponents,
@@ -26,7 +26,9 @@ async function setup() {
       name: "Baby Smith",
     }),
   );
-  return { asAlice, babyId: created.babyId, t };
+  return makeAsyncResource({ asAlice, babyId: created.babyId, t }, async () => {
+    await t.finishInProgressScheduledFunctions();
+  });
 }
 
 function useFakeTimersResource() {
@@ -54,8 +56,9 @@ async function storeBlob(t: Awaited<ReturnType<typeof setup>>["t"]) {
 }
 
 test("a text-only update tops the feed without changing the status", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId, t } = await setup();
+  const { asAlice, babyId, t } = ctx;
 
   await t.mutation(
     api.encouragements.create,
@@ -107,7 +110,8 @@ test("a text-only update tops the feed without changing the status", async () =>
 });
 
 test("the public feed never leaks visitor credentials or metadata", async () => {
-  const { babyId, t } = await setup();
+  await using ctx = await setup();
+  const { babyId, t } = ctx;
 
   await t.mutation(
     api.encouragements.create,
@@ -153,8 +157,9 @@ test("the public feed never leaks visitor credentials or metadata", async () => 
 });
 
 test("a photo-only update does not blank the latest message", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId, t } = await setup();
+  const { asAlice, babyId, t } = ctx;
   const photo = await storeBlob(t);
 
   await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, message: "Still waiting!" }));
@@ -176,7 +181,8 @@ test("a photo-only update does not blank the latest message", async () => {
 });
 
 test("posting requires content and ownership", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
 
   await expect(
     asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, message: "   " })),
@@ -208,8 +214,9 @@ test("posting requires content and ownership", async () => {
 });
 
 test("status is inferred from milestone updates, not stored baby fields", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId, t } = await setup();
+  const { asAlice, babyId, t } = ctx;
 
   await asAlice.mutation(
     api.updates.post,
@@ -253,7 +260,8 @@ test("status is inferred from milestone updates, not stored baby fields", async 
 });
 
 test("a legacy milestone without occurredAt infers its date from feed position", async () => {
-  const { babyId, t } = await setup();
+  await using ctx = await setup();
+  const { babyId, t } = ctx;
   const postedAt = Date.parse("2026-08-10T08:00:00.000Z");
 
   await t.run(async (ctx) => {
@@ -269,7 +277,8 @@ test("a legacy milestone without occurredAt infers its date from feed position",
 });
 
 test("a milestone update without an active feed row fails closed", async () => {
-  const { babyId, t } = await setup();
+  await using ctx = await setup();
+  const { babyId, t } = ctx;
 
   await t.run(async (ctx) => {
     const { timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
@@ -286,7 +295,8 @@ test("a milestone update without an active feed row fails closed", async () => {
 });
 
 test("an invalid persisted milestone timestamp fails closed", async () => {
-  const { babyId, t } = await setup();
+  await using ctx = await setup();
+  const { babyId, t } = ctx;
 
   await t.run(async (ctx) => {
     await insertUpdateWithTimelineItem(ctx, {
@@ -303,7 +313,8 @@ test("an invalid persisted milestone timestamp fails closed", async () => {
 });
 
 test("journey selection does not block backend milestone writes", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
   await asAlice.mutation(api.baby.update, {
     id: babyId,
     patch: { birthJourney: "planned_c_section" },
@@ -330,8 +341,9 @@ test("journey selection does not block backend milestone writes", async () => {
 });
 
 test("changing selection leaves existing updates and notifications untouched", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId, t } = await setup();
+  const { asAlice, babyId, t } = ctx;
   const photoId = await storeBlob(t);
 
   await asAlice.mutation(
@@ -369,8 +381,9 @@ test("changing selection leaves existing updates and notifications untouched", a
 });
 
 test("changing selection then unmarking cancels the pending milestone push", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId } = await setup();
+  const { asAlice, babyId } = ctx;
   await asAlice.mutation(
     api.updates.post,
     postUpdateArgs({
@@ -393,7 +406,8 @@ test("changing selection then unmarking cancels the pending milestone push", asy
 });
 
 test("selection changes do not filter empty historical milestone rows", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
   await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
 
   await asAlice.mutation(api.baby.update, {
@@ -410,8 +424,9 @@ test("selection changes do not filter empty historical milestone rows", async ()
 });
 
 test("a milestone with a photo is a single status push that carries the image", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId, t } = await setup();
+  const { asAlice, babyId, t } = ctx;
   const photo = await storeBlob(t);
 
   await asAlice.mutation(
@@ -436,8 +451,9 @@ test("a milestone with a photo is a single status push that carries the image", 
 });
 
 test("a later generic update does not cancel a pending status push", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId } = await setup();
+  const { asAlice, babyId } = ctx;
 
   await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
   await asAlice.mutation(
@@ -457,8 +473,9 @@ test("a later generic update does not cancel a pending status push", async () =>
 });
 
 test("the forward-only guard enforces order at every intermediate stage", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId } = await setup();
+  const { asAlice, babyId } = ctx;
 
   // From labor_started: re-marking it is rejected, later stages are open
   await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
@@ -481,7 +498,8 @@ test("the forward-only guard enforces order at every intermediate stage", async 
 });
 
 test("milestones are posted, redated, and unmarked through explicit update operations", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
 
   const initialOccurredAt = Date.parse("2026-08-10T08:00:00.000Z");
   const beforeMark = Date.now();
@@ -546,7 +564,8 @@ test("milestones are posted, redated, and unmarked through explicit update opera
 });
 
 test("encouragements dual-write timeline rows and cascade on delete", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
 
   const encouragementId = await t.mutation(
     api.encouragements.create,
@@ -587,8 +606,9 @@ test("encouragements dual-write timeline rows and cascade on delete", async () =
 });
 
 test("removing a milestone update unmarks it and cancels the pending push", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId, t } = await setup();
+  const { asAlice, babyId, t } = ctx;
 
   const updateId = await asAlice.mutation(
     api.updates.post,
@@ -616,8 +636,9 @@ test("removing a milestone update unmarks it and cancels the pending push", asyn
 });
 
 test("milestones must be deleted in reverse order", async () => {
+  await using ctx = await setup();
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId, t } = await setup();
+  const { asAlice, babyId, t } = ctx;
 
   const laborUpdateId = await asAlice.mutation(
     api.updates.post,
@@ -663,7 +684,8 @@ test("milestones must be deleted in reverse order", async () => {
 });
 
 test("photo updates keep old photos; removing one falls back to the previous", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
 
   const photoA = await storeBlob(t);
   const photoB = await storeBlob(t);
@@ -703,7 +725,8 @@ test("photo updates keep old photos; removing one falls back to the previous", a
 });
 
 test("text updates never displace the current page photo; pinning brings back an older one", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
   const photoA = await storeBlob(t);
   const photoB = await storeBlob(t);
 
@@ -760,7 +783,8 @@ test("text updates never displace the current page photo; pinning brings back an
 });
 
 test("redating validates the timestamp and requires an existing milestone", async () => {
-  const { asAlice, babyId } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId } = ctx;
 
   await expect(
     asAlice.mutation(api.updates.redateMilestone, {
@@ -790,7 +814,8 @@ test("redating validates the timestamp and requires an existing milestone", asyn
 });
 
 test("posting a milestone rejects non-finite and out-of-range timestamps", async () => {
-  const { asAlice, babyId } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId } = ctx;
 
   for (const occurredAt of [Number.NaN, Infinity, -Infinity, Number.MAX_VALUE]) {
     await expect(
@@ -807,7 +832,8 @@ test("posting a milestone rejects non-finite and out-of-range timestamps", async
 });
 
 test("posting a milestone sets occurredAt to the announce time", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
   const before = Date.now();
   await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
   const after = Date.now();
@@ -828,7 +854,8 @@ test("posting a milestone sets occurredAt to the announce time", async () => {
 });
 
 test("posting a milestone can backdate the event clock without moving the feed", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
   const occurredAt = Date.now() - 6 * 60 * 60 * 1000;
 
   const before = Date.now();
@@ -866,7 +893,8 @@ test("posting a milestone can backdate the event clock without moving the feed",
 });
 
 test("a backdated event time is rejected when in the future or without a milestone", async () => {
-  const { asAlice, babyId } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId } = ctx;
 
   await expect(
     asAlice.mutation(
@@ -892,7 +920,8 @@ test("a backdated event time is rejected when in the future or without a milesto
 });
 
 test("getUpdatePhoto returns the public photo payload for a timeline update", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
   const photoId = await storeBlob(t);
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   if (!publicBaby) {
@@ -930,7 +959,8 @@ test("getUpdatePhoto returns the public photo payload for a timeline update", as
 });
 
 test("getUpdatePhoto returns null for text-only updates", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   if (!publicBaby) {
     throw new Error("expected baby");
@@ -962,7 +992,8 @@ test("getUpdatePhoto returns null for text-only updates", async () => {
 });
 
 test("getUpdatePhoto returns null when the update belongs to another baby", async () => {
-  const { asAlice, babyId, t } = await setup();
+  await using ctx = await setup();
+  const { asAlice, babyId, t } = ctx;
   const other = await asAlice.mutation(
     api.baby.create,
     createBabyArgs({
