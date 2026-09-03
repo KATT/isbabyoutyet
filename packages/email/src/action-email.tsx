@@ -60,26 +60,32 @@ export function ActionEmail(props: ActionEmailProps) {
         >
           {props.intro}
         </Text>
-        <Button
-          href={props.url}
-          style={{
-            backgroundColor: emailTheme.primary,
-            borderRadius: emailTheme.radiusPill,
-            boxShadow: emailTheme.popShadow,
-            color: emailTheme.primaryForeground,
-            display: "block",
-            fontFamily: emailTheme.fontFamily,
-            fontSize: "16px",
-            fontWeight: 800,
-            lineHeight: "24px",
-            padding: "14px 24px",
-            textAlign: "center",
-            textDecoration: "none",
-            width: "100%",
-          }}
-        >
-          {props.button}
-        </Button>
+        {/*
+          Email clients treat width as content-box and ignore box-sizing, so a
+          100% button plus padding and the 6px pop-shadow overflows the card.
+          Size the CTA to its label instead.
+        */}
+        <Section style={{ textAlign: "center" }}>
+          <Button
+            href={props.url}
+            style={{
+              backgroundColor: emailTheme.primary,
+              borderRadius: emailTheme.radiusPill,
+              boxShadow: emailTheme.popShadow,
+              color: emailTheme.primaryForeground,
+              display: "inline-block",
+              fontFamily: emailTheme.fontFamily,
+              fontSize: "16px",
+              fontWeight: 800,
+              lineHeight: "24px",
+              padding: "14px 24px",
+              textAlign: "center",
+              textDecoration: "none",
+            }}
+          >
+            {props.button}
+          </Button>
+        </Section>
         <Text
           style={{
             color: emailTheme.mutedForeground,

@@ -4,6 +4,17 @@ import { renderPasswordResetEmail, renderVerifyEmail } from "./render";
 
 const resetUrl = "https://isbabyoutyet.com/auth/reset-password?token=secret";
 
+function ctaStyle(html: string, href: string) {
+  const hrefAttr = `href="${href}"`;
+  const hrefIndex = html.indexOf(hrefAttr);
+  expect(hrefIndex).toBeGreaterThan(-1);
+  const start = html.lastIndexOf("<a", hrefIndex);
+  const end = html.indexOf(">", hrefIndex);
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(start);
+  return html.slice(start, end + 1);
+}
+
 test("password reset template includes the reset link in text and html", async () => {
   const message = await renderPasswordResetEmail({
     resetUrl,
@@ -15,6 +26,7 @@ test("password reset template includes the reset link in text and html", async (
   expect(message.html).toContain(`href="${resetUrl}"`);
   expect(message.html).toContain(passwordResetCopy.heading);
   expect(message.html).toContain(passwordResetCopy.wordmark);
+  expect(ctaStyle(message.html, resetUrl)).not.toMatch(/(?<!max-)width:\s*100%/);
 });
 
 test("preview prefix appears on the subject and in a banner", async () => {
@@ -60,4 +72,5 @@ test("verify-email template includes the confirmation link", async () => {
   expect(message.text).toContain(`${verifyEmailCopy.button}: ${verifyUrl}`);
   expect(message.html).toContain(`href="${verifyUrl}"`);
   expect(message.html).toContain(verifyEmailCopy.heading);
+  expect(ctaStyle(message.html, verifyUrl)).not.toMatch(/(?<!max-)width:\s*100%/);
 });
