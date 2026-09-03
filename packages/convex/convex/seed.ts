@@ -349,6 +349,7 @@ async function seedEncouragements(options: {
       postedAt: createdAt,
     });
     await options.ctx.db.insert("encouragements", {
+      author: { type: "visitor", visitorId },
       authorName: encouragement.authorName,
       babyId: options.babyId,
       createdAt,

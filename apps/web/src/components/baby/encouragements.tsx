@@ -27,6 +27,7 @@ import { getVisitorId } from "@/lib/use-visitor-id";
 import { useWatch } from "react-hook-form";
 
 type EncouragementFormProps = {
+  accountName: string | null;
   babyId: Id<"baby">;
   babyName: string;
 };
@@ -69,12 +70,15 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
 export function EncouragementForm(props: EncouragementFormProps) {
   const hydrated = useClientHydration();
   const sessionDraft = hydrated ? readEncouragementFormDraft(props.babyId) : null;
+  const storedAuthorName = hydrated ? getStoredAuthorName() : "";
   return (
     <EncouragementFormFields
       babyId={props.babyId}
       babyName={props.babyName}
       initialAuthorName={
-        sessionDraft?.hasDraft ? sessionDraft.authorName : hydrated ? getStoredAuthorName() : ""
+        sessionDraft?.hasDraft
+          ? sessionDraft.authorName
+          : storedAuthorName || props.accountName || ""
       }
       initialMessage={sessionDraft?.message ?? ""}
       key={hydrated ? "hydrated" : "server"}
@@ -83,7 +87,10 @@ export function EncouragementForm(props: EncouragementFormProps) {
 }
 
 function EncouragementFormFields(
-  props: EncouragementFormProps & { initialAuthorName: string; initialMessage: string },
+  props: { babyId: Id<"baby">; babyName: string } & {
+    initialAuthorName: string;
+    initialMessage: string;
+  },
 ) {
   const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
