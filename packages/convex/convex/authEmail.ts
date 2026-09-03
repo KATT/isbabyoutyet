@@ -1,6 +1,7 @@
 import { renderPasswordResetEmail, renderVerifyEmail } from "@workspace/email";
 import type { RenderedEmail } from "@workspace/email";
 import {
+  LOCAL_FROM_PLACEHOLDER,
   defaultEmailLog,
   resolveEmailIdentity,
   resolveEmailSender,
@@ -13,7 +14,7 @@ export type EmailDeliveryDeps = {
   readonly env: EmailSenderEnv;
   readonly fetchImpl: typeof fetch;
   readonly log: typeof defaultEmailLog;
-  /** When null, resolve from env (log locally, Cloudflare on Vercel). */
+  /** When null, resolve from env (log locally, Resend on Vercel). */
   readonly sender: EmailSender | null;
 };
 
@@ -93,10 +94,8 @@ export async function sendVerificationEmail(opts: {
 function defaultEmailDeliveryDeps(): EmailDeliveryDeps {
   return {
     env: {
-      CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID,
-      CLOUDFLARE_EMAIL_API_TOKEN: env.CLOUDFLARE_EMAIL_API_TOKEN,
-      EMAIL_FROM: env.EMAIL_FROM,
-      EMAIL_FROM_PREVIEW: env.EMAIL_FROM_PREVIEW,
+      EMAIL_FROM: env.EMAIL_FROM ?? LOCAL_FROM_PLACEHOLDER,
+      RESEND_API_KEY: env.RESEND_API_KEY,
       VERCEL_ENV: env.VERCEL_ENV,
     },
     fetchImpl: fetch,

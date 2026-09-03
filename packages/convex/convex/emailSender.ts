@@ -2,14 +2,15 @@
  * Email delivery port + adapters.
  *
  * Better Auth (and future transactional mail) depend on {@link EmailSender}
- * rather than Cloudflare or `console` directly. Local backends always log;
- * Vercel production/preview use Cloudflare Email Service when configured.
+ * rather than Resend or `console` directly. Local backends always log;
+ * Vercel production/preview send through Resend when configured.
  */
 
-const EMAIL_API_ORIGIN = "https://api.cloudflare.com/client/v4";
+const RESEND_EMAILS_URL = "https://api.resend.com/emails";
 
-export const DEFAULT_PRODUCTION_FROM_EMAIL = "noreply@isbabyoutyet.com";
-export const DEFAULT_PREVIEW_FROM_EMAIL = "preview@isbabyoutyet.com";
+/** Local Convex / tests when `EMAIL_FROM` is unset. Vercel always sets it. */
+export const LOCAL_FROM_PLACEHOLDER = "noreply@localhost";
+
 export const PRODUCTION_FROM_NAME = "Is Baby Out Yet?";
 export const PREVIEW_FROM_NAME = "Is Baby Out Yet? (Preview)";
 export const PREVIEW_SUBJECT_PREFIX = "[Preview] ";
@@ -28,21 +29,18 @@ export type EmailMessage = {
 };
 
 export type EmailSender = {
-  readonly kind: "cloudflare" | "log";
+  readonly kind: "log" | "resend";
   send(message: EmailMessage): Promise<void>;
 };
 
 export type EmailSenderEnv = {
-  readonly CLOUDFLARE_ACCOUNT_ID: string | undefined;
-  readonly CLOUDFLARE_EMAIL_API_TOKEN: string | undefined;
-  readonly EMAIL_FROM: string | undefined;
-  readonly EMAIL_FROM_PREVIEW: string | undefined;
+  readonly EMAIL_FROM: string;
+  readonly RESEND_API_KEY: string | undefined;
   readonly VERCEL_ENV: "production" | "preview" | undefined;
 };
 
-export type CloudflareEmailSenderOptions = {
-  readonly accountId: string;
-  readonly apiToken: string;
+export type ResendEmailSenderOptions = {
+  readonly apiKey: string;
   readonly fetchImpl: typeof fetch;
 };
 
@@ -63,33 +61,31 @@ export function createLogEmailSender(
   };
 }
 
-export function createCloudflareEmailSender(opts: CloudflareEmailSenderOptions): EmailSender {
+function formatResendFrom(from: EmailAddress) {
+  return `${from.name} <${from.address}>`;
+}
+
+export function createResendEmailSender(opts: ResendEmailSenderOptions): EmailSender {
   return {
-    kind: "cloudflare",
+    kind: "resend",
     async send(message) {
-      const response = await opts.fetchImpl(
-        `${EMAIL_API_ORIGIN}/accounts/${encodeURIComponent(opts.accountId)}/email/sending/send`,
-        {
-          body: JSON.stringify({
-            from: {
-              address: message.from.address,
-              name: message.from.name,
-            },
-            html: message.html,
-            subject: message.subject,
-            text: message.text,
-            to: message.to,
-          }),
-          headers: {
-            Authorization: `Bearer ${opts.apiToken}`,
-            "Content-Type": "application/json",
-          },
-          method: "POST",
+      const response = await opts.fetchImpl(RESEND_EMAILS_URL, {
+        body: JSON.stringify({
+          from: formatResendFrom(message.from),
+          html: message.html,
+          subject: message.subject,
+          text: message.text,
+          to: [message.to],
+        }),
+        headers: {
+          Authorization: `Bearer ${opts.apiKey}`,
+          "Content-Type": "application/json",
         },
-      );
+        method: "POST",
+      });
 
       if (!response.ok) {
-        throw new Error(`Cloudflare Email Service rejected the message (${response.status})`);
+        throw new Error(`Resend rejected the message (${response.status})`);
       }
     },
   };
@@ -100,14 +96,14 @@ export function resolveEmailIdentity(env: EmailSenderEnv): EmailAddress & {
 } {
   if (env.VERCEL_ENV === "preview") {
     return {
-      address: env.EMAIL_FROM_PREVIEW ?? DEFAULT_PREVIEW_FROM_EMAIL,
+      address: env.EMAIL_FROM,
       name: PREVIEW_FROM_NAME,
       subjectPrefix: PREVIEW_SUBJECT_PREFIX,
     };
   }
 
   return {
-    address: env.EMAIL_FROM ?? DEFAULT_PRODUCTION_FROM_EMAIL,
+    address: env.EMAIL_FROM,
     name: PRODUCTION_FROM_NAME,
     subjectPrefix: "",
   };
@@ -115,8 +111,8 @@ export function resolveEmailIdentity(env: EmailSenderEnv): EmailAddress & {
 
 /**
  * Local Convex backends always log. Production and preview send through
- * Cloudflare when the Email Service credentials are present; otherwise the
- * sender throws a clear setup error when `send` is called.
+ * Resend when `RESEND_API_KEY` is present; otherwise the sender throws a
+ * clear setup error when `send` is called.
  */
 export function resolveEmailSender(opts: ResolveEmailSenderOptions): EmailSender {
   const vercelEnv = opts.env.VERCEL_ENV;
@@ -124,22 +120,20 @@ export function resolveEmailSender(opts: ResolveEmailSenderOptions): EmailSender
     return createLogEmailSender(opts.log);
   }
 
-  const accountId = opts.env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = opts.env.CLOUDFLARE_EMAIL_API_TOKEN;
-  if (!accountId || !apiToken) {
+  const apiKey = opts.env.RESEND_API_KEY;
+  if (!apiKey) {
     return {
-      kind: "cloudflare",
+      kind: "resend",
       async send() {
         throw new Error(
-          "Cloudflare Email Service is not configured (set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_EMAIL_API_TOKEN on Vercel Preview/Production).",
+          "Resend is not configured (set RESEND_API_KEY on Vercel Preview/Production).",
         );
       },
     };
   }
 
-  return createCloudflareEmailSender({
-    accountId,
-    apiToken,
+  return createResendEmailSender({
+    apiKey,
     fetchImpl: opts.fetchImpl,
   });
 }

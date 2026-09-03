@@ -4,7 +4,7 @@ import { createClient } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { requireActionCtx } from "@convex-dev/better-auth/utils";
 import authConfig from "./auth.config";
-import { sendPasswordResetEmail, sendVerificationEmail } from "./cloudflareEmail";
+import { sendPasswordResetEmail, sendVerificationEmail } from "./authEmail";
 import { components, internal } from "./_generated/api";
 import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
