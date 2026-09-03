@@ -214,6 +214,80 @@ test("sanitizeOnboardingSteps strips unknown retired step ids", async () => {
   expect(onboarding?.completedSteps).toEqual(["add_baby", "share_link", "learn_encouragements"]);
 });
 
+test("backfillEncouragementAuthor writes the union from leftover userId and visitorId", async () => {
+  const t = convexTest(schema, modules);
+  await registerMigrationsComponent(t);
+
+  const ids = await t.run(async (ctx) => {
+    const babyId = await ctx.db.insert("baby", {
+      birthJourney: "labor",
+      dueDate: "2026-09-01",
+      dueDateDisplayMode: "exact",
+      lastActivityAt: 1,
+      name: "Legacy Author Baby",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      publicDueDateText: null,
+      publicId: "legacy-author-baby",
+      subscriptionCount: 0,
+      userId: "alice",
+    });
+    const guestItemId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "encouragement",
+      postedAt: 100,
+    });
+    const guestId = await ctx.db.insert("encouragements", {
+      author: { type: "visitor", visitorId: "guest-browser" },
+      authorName: "Grandma",
+      babyId,
+      createdAt: 100,
+      message: "Soon!",
+      timelineItemId: guestItemId,
+      visitorId: "guest-browser",
+    });
+    const claimedItemId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "encouragement",
+      postedAt: 200,
+    });
+    const claimedId = await ctx.db.insert("encouragements", {
+      author: { type: "visitor", visitorId: "bob-browser" },
+      authorName: "Bob",
+      babyId,
+      createdAt: 200,
+      message: "Hi",
+      timelineItemId: claimedItemId,
+      visitorId: "bob-browser",
+    });
+    return { claimedId, guestId };
+  });
+
+  await t.run(async (ctx) => {
+    const guest = await ctx.db.get(ids.guestId);
+    const claimed = await ctx.db.get(ids.claimedId);
+    if (!guest || !claimed) {
+      throw new Error("Fixture missing");
+    }
+    const { author: _guestAuthor, ...guestRest } = guest;
+    const { author: _claimedAuthor, ...claimedRest } = claimed;
+    await backfillEncouragementAuthorDoc(ctx, { ...guestRest, userId: null });
+    await backfillEncouragementAuthorDoc(ctx, { ...claimedRest, userId: "bob" });
+  });
+
+  const result = await t.run(async (ctx) => {
+    return {
+      claimed: await ctx.db.get(ids.claimedId),
+      guest: await ctx.db.get(ids.guestId),
+    };
+  });
+  expect(result.guest?.author).toEqual({ type: "visitor", visitorId: "guest-browser" });
+  expect(result.claimed?.author).toEqual({
+    type: "user",
+    userId: "bob",
+    visitorId: "bob-browser",
+  });
+});
+
 test("backfillEncouragementAuthor is a no-op when author is already set", async () => {
   const t = convexTest(schema, modules);
   await registerMigrationsComponent(t);
@@ -243,7 +317,6 @@ test("backfillEncouragementAuthor is a no-op when author is already set", async 
       createdAt: 100,
       message: "Soon!",
       timelineItemId,
-      userId: "ignored",
       visitorId: "guest-browser",
     });
   });
@@ -294,7 +367,6 @@ test("removeEncouragementUserId strips the retired userId key", async () => {
       createdAt: 100,
       message: "Hi",
       timelineItemId,
-      userId: "bob",
       visitorId: "bob-browser",
     });
   });
@@ -304,7 +376,8 @@ test("removeEncouragementUserId strips the retired userId key", async () => {
     if (!encouragement) {
       throw new Error("Fixture missing");
     }
-    await removeEncouragementUserIdDoc(ctx, encouragement);
+    const legacy = { ...encouragement, userId: "bob" };
+    await removeEncouragementUserIdDoc(ctx, legacy);
     const updated = await ctx.db.get(encouragementId);
     if (!updated) {
       throw new Error("Fixture missing");

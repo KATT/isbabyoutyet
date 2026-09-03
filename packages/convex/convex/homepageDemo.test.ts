@@ -217,6 +217,39 @@ test("refresh attaches photos to the matching updates and pins the newborn as th
   );
 });
 
+test("ensureBaby and insertFeed write fixture encouragements that claim will not steal", async () => {
+  const t = await setup();
+  const photos = await storeCompletePhotoSet(t);
+  const babyId = await t.mutation(internal.homepageDemo.ensureBaby, { locale: "en-GB" });
+  await t.mutation(internal.homepageDemo.insertFeed, {
+    babyId,
+    locale: "en-GB",
+    photos,
+  });
+  await t.finishInProgressScheduledFunctions();
+
+  const fixture = await t.run(async (ctx) => {
+    const rows = await ctx.db
+      .query("encouragements")
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+      .collect();
+    return rows.find((row) => row.demoFixture === true);
+  });
+  expect(fixture).toBeTruthy();
+  if (!fixture) {
+    throw new Error("expected a demo fixture encouragement");
+  }
+
+  const asAlice = t.withIdentity({ subject: "alice" });
+  await asAlice.mutation(api.encouragements.claimVisitorEncouragements, {
+    visitorId: fixture.visitorId,
+  });
+
+  const stored = await t.run(async (ctx) => ctx.db.get(fixture._id));
+  expect(stored?.author).toEqual({ type: "visitor", visitorId: fixture.visitorId });
+  expect(stored?.demoFixture).toBe(true);
+});
+
 test("daily reset reuses stored photos and ignores recent fixture encouragements", async () => {
   await using _timers = useFakeTimersResource();
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));

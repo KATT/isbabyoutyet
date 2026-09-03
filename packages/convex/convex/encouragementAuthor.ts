@@ -20,31 +20,13 @@ export const encouragementAuthorValidator = v.union(
 
 export type EncouragementAuthor = Infer<typeof encouragementAuthorValidator>;
 
-/**
- * Legacy parallel columns plus the new `author` union. Readers prefer `author`
- * when present so sparse pre-backfill rows still resolve.
- *
- * Properties stay optional (`?`) so this matches Convex `Doc<"encouragements">`
- * while `author` / `userId` are still `v.optional()`.
- */
 export type EncouragementOwnership = {
-  author?: EncouragementAuthor;
-  userId?: string | null;
+  author: EncouragementAuthor;
   visitorId: string;
 };
 
 export function storedEncouragementAuthor(row: EncouragementOwnership): EncouragementAuthor {
-  if (row.author) {
-    return row.author;
-  }
-  if (row.userId) {
-    return {
-      type: "user",
-      userId: row.userId,
-      visitorId: row.visitorId,
-    };
-  }
-  return { type: "visitor", visitorId: row.visitorId };
+  return row.author;
 }
 
 export function storedEncouragementAuthorFromCaller(
@@ -61,15 +43,8 @@ export function storedEncouragementAuthorFromCaller(
   return { type: "visitor", visitorId };
 }
 
-export function storedEncouragementUserId(author: EncouragementAuthor | null) {
-  return author?.type === "user" ? author.userId : null;
-}
-
 export function encouragementHasUserId(row: EncouragementOwnership) {
-  if (row.author?.type === "user" || row.userId != null) {
-    return true;
-  }
-  return false;
+  return row.author.type === "user";
 }
 
 export function encouragementIsMine(
