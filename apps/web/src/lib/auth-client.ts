@@ -14,24 +14,19 @@ function browserTimeZone() {
 }
 
 export function getBrowserAuthHeaders() {
+  const headers: Record<string, string> = {};
   if (globalThis.window === undefined) {
-    return {};
+    return headers;
   }
   const timeZone = browserTimeZone();
   const visitorId = parseVisitorIdHint(peekVisitorId());
-  if (timeZone && visitorId) {
-    return {
-      [TIME_ZONE_HINT_HEADER]: timeZone,
-      [VISITOR_ID_HINT_HEADER]: visitorId,
-    };
-  }
   if (timeZone) {
-    return { [TIME_ZONE_HINT_HEADER]: timeZone };
+    headers[TIME_ZONE_HINT_HEADER] = timeZone;
   }
   if (visitorId) {
-    return { [VISITOR_ID_HINT_HEADER]: visitorId };
+    headers[VISITOR_ID_HINT_HEADER] = visitorId;
   }
-  return {};
+  return headers;
 }
 
 export type BrowserAuthHeaders = ReturnType<typeof getBrowserAuthHeaders>;
