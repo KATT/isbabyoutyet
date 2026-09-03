@@ -4,7 +4,7 @@ import { createClient } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { requireActionCtx } from "@convex-dev/better-auth/utils";
 import authConfig from "./auth.config";
-import { sendPasswordResetEmail, sendVerificationEmail } from "./authEmail";
+import { sendPasswordResetEmail } from "./authEmail";
 import { components, internal } from "./_generated/api";
 import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
@@ -38,19 +38,23 @@ export async function sendAuthResetPassword(
 }
 
 /**
- * Better Auth `sendVerificationEmail` hook. Same ActionCtx constraint as reset
- * mail. Used for optional first-time verify. Changing email updates the Better
- * Auth user row in `accountEmail.change` and does not send mail.
+ * Better Auth `onPasswordReset` hook. Completing forgot-password proves
+ * inbox access, so mark the address verified. Logged-in change-password
+ * does not call this.
  */
-export async function sendAuthVerificationEmail(
+export async function markEmailVerifiedAfterPasswordReset(
   ctx: GenericCtx<DataModel>,
-  data: { url: string; user: { email: string } },
+  userId: string,
 ) {
-  requireActionCtx(ctx);
-  await sendVerificationEmail({
-    deps: null,
-    recipient: data.user.email,
-    verifyUrl: data.url,
+  await requireAuthMutationCtx(ctx).runMutation(components.betterAuth.adapter.updateOne, {
+    input: {
+      model: "user",
+      update: {
+        emailVerified: true,
+        updatedAt: Date.now(),
+      },
+      where: [{ field: "_id", value: userId }],
+    },
   });
 }
 
@@ -128,16 +132,14 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
     },
     emailAndPassword: {
       enabled: true,
+      onPasswordReset: async (data) => {
+        await markEmailVerifiedAfterPasswordReset(convexCtx, data.user.id);
+      },
       requireEmailVerification: false,
       resetPasswordTokenExpiresIn: 60 * 30,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async (data) => {
         await sendAuthResetPassword(convexCtx, data);
-      },
-    },
-    emailVerification: {
-      sendVerificationEmail: async (data) => {
-        await sendAuthVerificationEmail(convexCtx, data);
       },
     },
     user: {

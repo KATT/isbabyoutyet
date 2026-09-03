@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
-import { passwordResetCopy, verifyEmailCopy } from "./copy";
-import { renderPasswordResetEmail, renderVerifyEmail } from "./render";
+import { passwordResetCopy } from "./copy";
+import { renderPasswordResetEmail } from "./render";
 
 const resetUrl = "https://isbabyoutyet.com/auth/reset-password?token=secret";
 
@@ -63,20 +63,4 @@ test("password reset html escapes special characters in the reset url", async ()
   expect(message.html).toContain("https://isbabyoutyet.com/auth/reset-password?token=a&amp;next=");
   expect(message.html).not.toContain(`href="${hostileUrl}"`);
   expect(message.text).toContain(hostileUrl);
-});
-
-const verifyUrl = "https://isbabyoutyet.com/api/auth/verify-email?token=secret";
-
-test("verify-email template includes the confirmation link", async () => {
-  const message = await renderVerifyEmail({
-    subjectPrefix: "",
-    verifyUrl,
-  });
-
-  expect(message.subject).toBe(verifyEmailCopy.subject);
-  expect(message.text).toContain(`${verifyEmailCopy.button}: ${verifyUrl}`);
-  expect(message.html).toContain(`href="${verifyUrl}"`);
-  expect(message.html).toContain(verifyEmailCopy.heading);
-  expect(ctaStyle(message.html, verifyUrl)).toContain("max-width:none");
-  expect(ctaStyle(message.html, verifyUrl)).toContain("width:auto");
 });

@@ -1,4 +1,4 @@
-import { renderPasswordResetEmail, renderVerifyEmail } from "@workspace/email";
+import { renderPasswordResetEmail } from "@workspace/email";
 import type { RenderedEmail } from "@workspace/email";
 import {
   LOCAL_FROM_PLACEHOLDER,
@@ -66,24 +66,6 @@ export async function sendPasswordResetEmail(opts: {
     rendered: await renderPasswordResetEmail({
       resetUrl: opts.resetUrl,
       subjectPrefix: identity.subjectPrefix,
-    }),
-  });
-}
-
-/** Optional verify-email. Changing email does not send this. */
-export async function sendVerificationEmail(opts: {
-  deps: EmailDeliveryDeps | null;
-  recipient: string;
-  verifyUrl: string;
-}) {
-  const deps = opts.deps ?? defaultEmailDeliveryDeps();
-  const identity = resolveEmailIdentity(deps.env);
-  await sendRenderedEmail({
-    deps,
-    recipient: opts.recipient,
-    rendered: await renderVerifyEmail({
-      subjectPrefix: identity.subjectPrefix,
-      verifyUrl: opts.verifyUrl,
     }),
   });
 }

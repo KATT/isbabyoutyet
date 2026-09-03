@@ -42,11 +42,9 @@ import {
 import { authClient } from "@/lib/auth-client";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { absoluteUrl } from "@/lib/site-url";
 
 export type AccountUser = {
   email: string;
-  emailVerified: boolean;
   name: string;
 };
 
@@ -74,9 +72,11 @@ export async function completeAccountAuthAction(
 /**
  * Maps a Better Auth user (or logged-out `null`) onto the account section's
  * session snapshot. Tests call this when stubbing `accountAuthAdapter.useSession`.
+ *
+ * @internal
  */
 export function accountSessionSnapshot(
-  user: { email: string; emailVerified: boolean; name: string } | null,
+  user: { email: string; name: string } | null,
 ): AccountSessionSnapshot {
   if (user === null) {
     return { data: null };
@@ -85,7 +85,6 @@ export function accountSessionSnapshot(
     data: {
       user: {
         email: user.email,
-        emailVerified: user.emailVerified,
         name: user.name,
       },
     },
@@ -107,6 +106,8 @@ async function defaultChangeEmail(body: {
 /**
  * Mutable auth adapters so sheet tests can swap the network-backed
  * better-auth client without `vi.mock`.
+ *
+ * @internal
  */
 export const accountAuthAdapter = {
   changeEmail: defaultChangeEmail,
@@ -115,8 +116,6 @@ export const accountAuthAdapter = {
     newPassword: string;
     revokeOtherSessions: true;
   }) => authClient.changePassword(body),
-  sendVerificationEmail: (body: { callbackURL: string; email: string }) =>
-    authClient.sendVerificationEmail(body),
   updateUser: (body: { name: string }) => authClient.updateUser(body),
 };
 
@@ -185,10 +184,8 @@ export function AccountSettings(props: { profile: PreloadedConvexQuery<typeof ap
       ? null
       : {
           email: profile.email,
-          emailVerified: profile.emailVerified,
           name: profile.name,
         };
-  const verifyCallbackUrl = absoluteUrl("/dashboard/settings?notice=verified");
 
   return (
     <AccountSettingsView
@@ -234,25 +231,6 @@ export function AccountSettings(props: { profile: PreloadedConvexQuery<typeof ap
             }
           : null
       }
-      onSendVerification={
-        sessionUser
-          ? async () => {
-              const result = await accountAuthAdapter.sendVerificationEmail({
-                callbackURL: verifyCallbackUrl,
-                email: sessionUser.email,
-              });
-              await completeAccountAuthAction(
-                { errorMessage: result.error ? (result.error.message ?? "") : null },
-                {
-                  failedMessage: t("Unable to send a verification email"),
-                  onSuccess: async () => {
-                    toast.success(t("Check your inbox to verify this email."));
-                  },
-                },
-              );
-            }
-          : null
-      }
       onUpdateName={
         sessionUser
           ? async (values) => {
@@ -283,7 +261,6 @@ export type AccountSettingsHandlers = {
     currentPassword: string;
     newPassword: string;
   }) => Promise<void>;
-  onSendVerification: () => Promise<void>;
   onUpdateName: (values: { name: string }) => Promise<void>;
 };
 
@@ -294,7 +271,6 @@ export type AccountSettingsHandlers = {
 export function AccountSettingsView(props: {
   onChangeEmail: AccountSettingsHandlers["onChangeEmail"] | null;
   onChangePassword: AccountSettingsHandlers["onChangePassword"] | null;
-  onSendVerification: AccountSettingsHandlers["onSendVerification"] | null;
   onUpdateName: AccountSettingsHandlers["onUpdateName"] | null;
   user: AccountUser | null;
 }) {
@@ -336,13 +312,7 @@ export function AccountSettingsView(props: {
         </ItemMedia>
         <ItemContent>
           <ItemTitle>{t("Email")}</ItemTitle>
-          <ItemDescription>
-            {props.user.email}
-            {props.user.emailVerified ? null : ` · ${t("Email is unverified")}`}
-          </ItemDescription>
-          {props.user.emailVerified || props.onSendVerification === null ? null : (
-            <SendVerificationForm onSendVerification={props.onSendVerification} />
-          )}
+          <ItemDescription>{props.user.email}</ItemDescription>
         </ItemContent>
         <ItemActions>
           {props.onChangeEmail === null ? null : (
@@ -587,38 +557,5 @@ function PasswordForm(props: {
       </div>
       <EditorActions />
     </Form>
-  );
-}
-
-function SendVerificationForm(props: {
-  onSendVerification: AccountSettingsHandlers["onSendVerification"];
-}) {
-  const form = useZodForm({
-    defaultValues: {},
-    schema: z.object({}),
-  });
-
-  return (
-    <Form form={form} handleSubmit={props.onSendVerification}>
-      <SendVerificationSubmit />
-    </Form>
-  );
-}
-
-function SendVerificationSubmit() {
-  const { t } = useI18n();
-  const { isSubmitSuccessful } = useFormState();
-  return (
-    <SubmitButton
-      aria-label={t("Send verification email")}
-      disabled={isSubmitSuccessful}
-      form="context"
-      IconComponent={isSubmitSuccessful ? Check : EnvelopeSimple}
-      iconPosition="start"
-      size="sm"
-      variant="outline"
-    >
-      {t("Send verification email")}
-    </SubmitButton>
   );
 }

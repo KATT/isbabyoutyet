@@ -63,7 +63,8 @@ async function changeAccountEmail(ctx: MutationCtx, newEmail: string) {
 
 /**
  * Updates the signed-in Better Auth user's email without sending mail.
- * Marks the address unverified so they can confirm it later if they want.
+ * Marks the address unverified until they complete a password reset from
+ * that inbox.
  */
 export const change = mutation({
   args: {

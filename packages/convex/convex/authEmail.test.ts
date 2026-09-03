@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { makeResource } from "./test.resource";
-import { sendPasswordResetEmail, sendVerificationEmail } from "./authEmail";
+import { sendPasswordResetEmail } from "./authEmail";
 import {
   LOCAL_FROM_PLACEHOLDER,
   PREVIEW_SUBJECT_PREFIX,
@@ -216,25 +216,4 @@ test("omitted deps read Convex env and log on local backends", async () => {
     }),
   );
   expect(log).toHaveBeenCalledWith("http://localhost:3000/auth/reset-password?token=secret");
-});
-
-test("sends verification email through Resend", async () => {
-  const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 200 }));
-
-  await sendVerificationEmail({
-    deps: {
-      env: configuredEnv(),
-      fetchImpl: fetchMock,
-      log: vi.fn(),
-      sender: null,
-    },
-    recipient: "parent@example.com",
-    verifyUrl: "https://isbabyoutyet.com/dashboard/settings?notice=verified",
-  });
-
-  expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
-    from: "Is Baby Out Yet? <noreply@isbabyoutyet.com>",
-    subject: "Verify your Is Baby Out Yet? email",
-    to: ["parent@example.com"],
-  });
 });

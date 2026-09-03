@@ -23,33 +23,20 @@ import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
-import { useFlashToast } from "@/lib/use-flash-toast";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
 
 const authRoute = getRouteApi("/_auth");
 const rootRoute = getRouteApi("__root__");
 
-const settingsSearchSchema = z.object({
-  notice: z.literal("verified").optional(),
-});
-
 export const Route = createFileRoute("/_auth/dashboard/settings")({
   component: DashboardSettingsRoute,
-  validateSearch: settingsSearchSchema,
 });
 
 export function DashboardSettingsRoute() {
   const authContext = authRoute.useRouteContext();
   const { queryClient } = rootRoute.useRouteContext();
-  const search = Route.useSearch();
 
-  return (
-    <DashboardSettingsSheet
-      notice={search.notice ?? null}
-      profile={authContext.profile}
-      queryClient={queryClient}
-    />
-  );
+  return <DashboardSettingsSheet profile={authContext.profile} queryClient={queryClient} />;
 }
 
 function SettingsSection(props: { children: ReactNode; title: string }) {
@@ -88,25 +75,12 @@ export const settingsAuthAdapter = {
  * @internal exported for tests
  */
 export function DashboardSettingsSheet(props: {
-  notice: "verified" | null;
   profile: PreloadedConvexQuery<typeof api.profile.get>;
   queryClient: QueryClient;
 }) {
-  const { t } = useI18n();
-  const router = useRouter();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
+  const router = useRouter();
   const settings = useDashboardSettingsOverlayNav();
-
-  useFlashToast({
-    message: props.notice === "verified" ? t("Your email is now verified.") : null,
-    onClear: () => {
-      void router.navigate({
-        replace: true,
-        search: {},
-        to: "/dashboard/settings",
-      });
-    },
-  });
 
   return (
     <DashboardSettingsSheetView
@@ -114,6 +88,7 @@ export function DashboardSettingsSheet(props: {
       isAdmin={profileQuery.data?.isAdmin === true}
       languageSettings={<LanguageSettings profile={props.profile} />}
       onSignOut={async () => {
+        props.queryClient.clear();
         await settingsAuthAdapter.signOut({
           fetchOptions: {
             onError: (error) => {
