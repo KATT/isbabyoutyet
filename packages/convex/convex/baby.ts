@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import type { DatabaseReader, MutationCtx } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/types";
@@ -12,10 +12,10 @@ import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
 import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
-import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto, toManagerBabyDto } from "./babyDto";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
+import { generateUniquePublicId, slugifyPublicId } from "./babyPublicId";
 import { resolveBabyPreferences } from "./babyPreferences";
 
 const birthJourneyValidator = v.union(
@@ -223,76 +223,6 @@ export const updatePhoto = mutationWithTriggers({
     });
   },
 });
-
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replaceAll(/[^\w\s-]/g, "")
-    .replaceAll(/[\s_-]+/g, "-")
-    .replaceAll(/^-+|-+$/g, "");
-}
-
-async function isPublicIdTaken(opts: {
-  db: DatabaseReader;
-  excludeTokenIdentifier: string;
-  publicId: string;
-}): Promise<boolean> {
-  // Reserved for the seeded homepage live demos — never let a real user claim them.
-  if (isHomepageDemoPublicId(opts.publicId)) {
-    return true;
-  }
-
-  // Check current baby publicIds
-  const existingBaby = await opts.db
-    .query("baby")
-    .withIndex("by_publicId", (q) => q.eq("publicId", opts.publicId))
-    .first();
-
-  if (existingBaby) {
-    return true;
-  }
-
-  // Check historical publicIds (but allow the same owner to reclaim their own)
-  const historicEntry = await opts.db
-    .query("babyPublicIdHistory")
-    .withIndex("by_publicId", (q) => q.eq("publicId", opts.publicId))
-    .first();
-
-  if (!historicEntry) {
-    return false;
-  }
-
-  const historicBaby = await opts.db.get(historicEntry.babyId);
-  if (historicBaby && historicBaby.ownerTokenIdentifier !== opts.excludeTokenIdentifier) {
-    return true;
-  }
-
-  return false;
-}
-
-async function generateUniquePublicId(opts: {
-  baseName: string;
-  db: DatabaseReader;
-  excludeTokenIdentifier: string;
-}): Promise<string> {
-  const slug = slugify(opts.baseName);
-  let tries = 0;
-  let publicId = slug;
-
-  while (
-    await isPublicIdTaken({
-      db: opts.db,
-      excludeTokenIdentifier: opts.excludeTokenIdentifier,
-      publicId,
-    })
-  ) {
-    tries++;
-    publicId = `${slug}-${tries}`;
-  }
-
-  return publicId;
-}
 
 export const create = mutationWithTriggers({
   args: {
@@ -613,7 +543,7 @@ export const update = mutationWithTriggers({
     let publicId: string | undefined;
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {
-      const newSlugifiedName = slugify(patch.name);
+      const newSlugifiedName = slugifyPublicId(patch.name);
       // Only update publicId if the slugified name is different from current publicId
       if (newSlugifiedName !== baby.publicId) {
         const oldPublicId = baby.publicId;

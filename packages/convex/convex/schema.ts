@@ -74,6 +74,23 @@ export default defineSchema({
   })
     .index("by_publicId", ["publicId"])
     .index("by_babyId", ["babyId"]),
+  // Staff permalink moves: who changed which slug, when, and why.
+  babyPublicIdTransfers: defineTable({
+    actorEmail: v.union(v.string(), v.null()),
+    actorTokenIdentifier: v.string(),
+    actorUserId: v.string(),
+    babyId: v.id("baby"),
+    babyName: v.string(),
+    createdAt: v.number(),
+    displacedBabyId: v.union(v.id("baby"), v.null()),
+    displacedBabyName: v.union(v.string(), v.null()),
+    displacedPublicId: v.union(v.string(), v.null()),
+    fromPublicId: v.string(),
+    motivation: v.string(),
+    toPublicId: v.string(),
+  })
+    .index("by_babyId", ["babyId"])
+    .index("by_createdAt", ["createdAt"]),
   pushSubscriptions: defineTable({
     babyId: v.id("baby"), // Reference to the baby
     endpoint: v.string(), // Web Push endpoint URL

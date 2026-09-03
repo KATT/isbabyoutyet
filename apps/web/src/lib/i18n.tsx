@@ -139,6 +139,8 @@ const enGB = {
   "Create your page": "Create your page",
   "Create your page 🎈": "Create your page 🎈",
   "Creating...": "Creating...",
+  "Current permalink": "Current permalink",
+  "Current permalink is required": "Current permalink is required",
   Custom: "Custom",
   "Customize your page (optional)": "Customize your page (optional)",
   "Danger zone": "Danger zone",
@@ -161,6 +163,7 @@ const enGB = {
   "Discard unsaved changes?": "Discard unsaved changes?",
   "Dismiss guide": "Dismiss guide",
   "Dismiss tour": "Dismiss tour",
+  "Displaced to": "Displaced to",
   "Don't have an account?": "Don't have an account?",
   "Due {{date}}": "Due {{date}}",
   "Due Date": "Due date",
@@ -229,6 +232,8 @@ const enGB = {
   "Getting started: {{completed}} of {{total}} done. Expand.":
     "Getting started: {{completed}} of {{total}} done. Expand.",
   "Getting started checklist": "Getting started checklist",
+  "Give a baby page a different public URL. Old links keep working.":
+    "Give a baby page a different public URL. Old links keep working.",
   "Give them a name and due date — that creates a public page friends can open.":
     "Give them a name and due date. That creates a public page friends can open.",
   "Go Home": "Go Home",
@@ -296,10 +301,14 @@ const enGB = {
   "Milestones visitors see": "Milestones visitors see",
   Minimize: "Minimize",
   "Mocha Mousse": "Mocha Mousse",
+  Motivation: "Motivation",
+  "Motivation is required": "Motivation is required",
   Name: "Name",
   "Name is required": "Name is required",
   "Name must be {{count}} characters or less": "Name must be {{count}} characters or less",
   "Name must be at least 2 characters": "Name must be at least 2 characters",
+  "New permalink": "New permalink",
+  "New permalink is required": "New permalink is required",
   "New photo": "New photo",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Nice work. Share your page and enjoy fewer 'any news?' texts.",
@@ -310,6 +319,7 @@ const enGB = {
     "No co-parents yet. Add a partner so they can post updates too.",
   "No language requests yet": "No language requests yet",
   "No one is subscribed yet": "No one is subscribed yet",
+  "No permalink transfers yet": "No permalink transfers yet",
   "No status change": "No status change",
   "No subscription endpoint found": "Couldn't set up notifications. Try again.",
   "Not arrived yet!": "Not arrived yet!",
@@ -354,6 +364,8 @@ const enGB = {
   "Peek at settings": "Peek at settings",
   "People who can post updates and change settings":
     "People who can post updates and change settings",
+  "Permalink transferred": "Permalink transferred",
+  "Permalink transfers": "Permalink transfers",
   "Photo added": "Photo added",
   "Photo must be 10 MB or smaller": "Photo must be 10 MB or smaller",
   "Photo of {{name}}": "Photo of {{name}}",
@@ -505,6 +517,9 @@ const enGB = {
   "Track the progress of labour and birth": "Follow labour and birth",
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labour and birth. Know when baby arrives!",
+  Transfer: "Transfer",
+  "Transfer permalink": "Transfer permalink",
+  "Transferred by": "Transferred by",
   Unsubscribe: "Unsubscribe",
   "Unsubscribed from notifications!": "Notifications off",
   "Unsubscribing from notifications...": "Unsubscribing from notifications...",
@@ -546,10 +561,12 @@ const enGB = {
   "We save this choice for your settings, but we don't show it to anyone.":
     "We save this choice for your settings, but we don't show it to anyone.",
   "What everyone you share with gets": "What everyone you share with gets",
+  When: "When",
   "When did it happen?": "When did it happen?",
   "When did it happen? (optional)": "When did it happen? (optional)",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Post a status update and everyone subscribed gets the news.",
+  "Why this permalink is being moved.": "Recorded with the transfer. Shown in the audit trail.",
   "Write a message (optional)…": "Write a message (optional)…",
   "Write your message of encouragement...": "Write your message...",
   "Yes! Baby is out": "Yes! Baby is out",
@@ -714,6 +731,8 @@ const sv: TranslationCatalog = {
   "Create your page": "Skapa din sida",
   "Create your page 🎈": "Skapa din sida 🎈",
   "Creating...": "Skapar...",
+  "Current permalink": "Nuvarande permalink",
+  "Current permalink is required": "Nuvarande permalink krävs",
   Custom: "Anpassad",
   "Customize your page (optional)": "Anpassa sidan (valfritt)",
   "Danger zone": "Farozon",
@@ -736,6 +755,7 @@ const sv: TranslationCatalog = {
   "Discard unsaved changes?": "Vill du slänga osparade ändringar?",
   "Dismiss guide": "Stäng guiden",
   "Dismiss tour": "Stäng guiden",
+  "Displaced to": "Flyttades till",
   "Don't have an account?": "Har du inget konto?",
   "Due {{date}}": "Beräknad {{date}}",
   "Due Date": "Beräknat datum",
@@ -804,6 +824,8 @@ const sv: TranslationCatalog = {
   "Getting started: {{completed}} of {{total}} done. Expand.":
     "Kom igång: {{completed}} av {{total}} klara. Visa checklistan.",
   "Getting started checklist": "Checklista för att komma igång",
+  "Give a baby page a different public URL. Old links keep working.":
+    "Ge en bäbissida en ny publik URL. Gamla länkar fortsätter att fungera.",
   "Give them a name and due date — that creates a public page friends can open.":
     "Lägg till ett namn och beräknat datum, så skapas en publik sida som vänner kan öppna.",
   "Go Home": "Gå hem",
@@ -872,10 +894,14 @@ const sv: TranslationCatalog = {
   "Milestones visitors see": "Milstolpar som besökare ser",
   Minimize: "Fäll ihop",
   "Mocha Mousse": "Mocha Mousse",
+  Motivation: "Motivering",
+  "Motivation is required": "Motivering krävs",
   Name: "Namn",
   "Name is required": "Fyll i ett namn",
   "Name must be {{count}} characters or less": "Namnet får vara högst {{count}} tecken",
   "Name must be at least 2 characters": "Namnet måste vara minst 2 tecken",
+  "New permalink": "Ny permalink",
+  "New permalink is required": "Ny permalink krävs",
   "New photo": "Nytt foto",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Snyggt! Dela sidan och njut av att slippa alla frågor om det hänt något.",
@@ -886,6 +912,7 @@ const sv: TranslationCatalog = {
     "Inga medföräldrar än. Lägg till en partner så att de också kan lägga upp uppdateringar.",
   "No language requests yet": "Inga språkförfrågningar ännu",
   "No one is subscribed yet": "Ingen prenumererar än",
+  "No permalink transfers yet": "Inga permalinkflyttar ännu",
   "No status change": "Ingen statusändring",
   "No subscription endpoint found": "Vi hittade inga aktiva notiser",
   "Not arrived yet!": "Har inte kommit än!",
@@ -930,6 +957,8 @@ const sv: TranslationCatalog = {
   "Peek at settings": "Titta i inställningarna",
   "People who can post updates and change settings":
     "Personer som kan lägga upp uppdateringar och ändra inställningar",
+  "Permalink transferred": "Permalinken har flyttats",
+  "Permalink transfers": "Permalinkflyttar",
   "Photo added": "Foto tillagt",
   "Photo must be 10 MB or smaller": "Fotot får vara högst 10 MB",
   "Photo of {{name}}": "Foto på {{name}}",
@@ -1080,6 +1109,9 @@ const sv: TranslationCatalog = {
   "Track the progress of labour and birth": "Följ förlossningen",
   "Track the progress of labour and birth – know when baby arrives!":
     "Följ förlossningen och få veta direkt när bäbisen är här!",
+  Transfer: "Flytta",
+  "Transfer permalink": "Flytta permalink",
+  "Transferred by": "Utförd av",
   Unsubscribe: "Stäng av notiser",
   "Unsubscribed from notifications!": "Notiserna är avstängda!",
   "Unsubscribing from notifications...": "Stänger av notiser...",
@@ -1123,10 +1155,12 @@ const sv: TranslationCatalog = {
   "We save this choice for your settings, but we don't show it to anyone.":
     "Vi sparar valet i dina inställningar, men visar det inte för någon.",
   "What everyone you share with gets": "Det här får familj och vänner",
+  When: "När",
   "When did it happen?": "När hände det?",
   "When did it happen? (optional)": "När hände det? (valfritt)",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "När det börjar hända saker uppdaterar du statusen. Alla får en notis automatiskt.",
+  "Why this permalink is being moved.": "Skrivs in vid flytten och sparas i historiken.",
   "Write a message (optional)…": "Skriv ett meddelande (valfritt)…",
   "Write your message of encouragement...": "Skriv din hälsning...",
   "Yes! Baby is out": "Ja! Bäbisen har kommit",
@@ -1268,6 +1302,8 @@ const es: TranslationCatalog = {
   "Create your page": "Crea tu página",
   "Create your page 🎈": "Crea tu página 🎈",
   "Creating...": "Creando...",
+  "Current permalink": "Permalink actual",
+  "Current permalink is required": "El permalink actual es obligatorio",
   Custom: "Personalizado",
   "Customize your page (optional)": "Personalizar la página (opcional)",
   "Danger zone": "Zona de peligro",
@@ -1290,6 +1326,7 @@ const es: TranslationCatalog = {
   "Discard unsaved changes?": "¿Descartar los cambios sin guardar?",
   "Dismiss guide": "Cerrar guía",
   "Dismiss tour": "Cerrar el recorrido",
+  "Displaced to": "Desplazado a",
   "Don't have an account?": "¿No tienes una cuenta?",
   "Due {{date}}": "Fecha prevista: {{date}}",
   "Due Date": "Fecha prevista",
@@ -1360,6 +1397,8 @@ const es: TranslationCatalog = {
   "Getting started: {{completed}} of {{total}} done. Expand.":
     "Primeros pasos: {{completed}} de {{total}} completados. Abrir.",
   "Getting started checklist": "Lista de primeros pasos",
+  "Give a baby page a different public URL. Old links keep working.":
+    "Asigna a una página de bebé una URL pública distinta. Los enlaces antiguos siguen funcionando.",
   "Give them a name and due date — that creates a public page friends can open.":
     "Ponle un nombre y una fecha prevista. Así crearás una página pública que podrán abrir tus amigos.",
   "Go Home": "Ir al inicio",
@@ -1429,10 +1468,14 @@ const es: TranslationCatalog = {
   "Milestones visitors see": "Hitos que ven los visitantes",
   Minimize: "Minimizar",
   "Mocha Mousse": "Mocha Mousse",
+  Motivation: "Motivación",
+  "Motivation is required": "La motivación es obligatoria",
   Name: "Nombre",
   "Name is required": "El nombre es obligatorio",
   "Name must be {{count}} characters or less": "El nombre debe tener {{count}} caracteres o menos",
   "Name must be at least 2 characters": "El nombre debe tener al menos 2 caracteres",
+  "New permalink": "Permalink nuevo",
+  "New permalink is required": "El permalink nuevo es obligatorio",
   "New photo": "Foto nueva",
   "Nice work — share your page and enjoy the quiet inbox.":
     "¡Bien hecho! Comparte tu página y despídete del bombardeo de mensajes.",
@@ -1443,6 +1486,7 @@ const es: TranslationCatalog = {
     "Aún no hay nadie más con acceso. Invita a tu pareja para que también pueda publicar novedades.",
   "No language requests yet": "Todavía no hay solicitudes de idioma",
   "No one is subscribed yet": "Nadie está suscrito todavía",
+  "No permalink transfers yet": "Aún no hay transferencias de permalink",
   "No status change": "Sin cambio de estado",
   "No subscription endpoint found": "No encontramos la suscripción",
   "Not arrived yet!": "¡Aún no ha llegado!",
@@ -1488,6 +1532,8 @@ const es: TranslationCatalog = {
   "Peek at settings": "Echa un vistazo a Configuración",
   "People who can post updates and change settings":
     "Personas que pueden publicar novedades y cambiar la configuración",
+  "Permalink transferred": "Permalink transferido",
+  "Permalink transfers": "Transferencias de permalink",
   "Photo added": "Foto añadida",
   "Photo must be 10 MB or smaller": "La foto debe pesar 10 MB o menos",
   "Photo of {{name}}": "Foto de {{name}}",
@@ -1639,6 +1685,9 @@ const es: TranslationCatalog = {
   "Track the progress of labour and birth": "Sigue el progreso del parto",
   "Track the progress of labour and birth – know when baby arrives!":
     "Sigue el progreso del parto y entérate cuando nazca el bebé.",
+  Transfer: "Transferir",
+  "Transfer permalink": "Transferir permalink",
+  "Transferred by": "Transferido por",
   Unsubscribe: "Cancelar suscripción",
   "Unsubscribed from notifications!": "¡Notificaciones desactivadas!",
   "Unsubscribing from notifications...": "Desactivando las notificaciones...",
@@ -1681,10 +1730,12 @@ const es: TranslationCatalog = {
   "We save this choice for your settings, but we don't show it to anyone.":
     "Guardamos esta elección en tu configuración, pero no se la mostramos a nadie.",
   "What everyone you share with gets": "Lo que verán tus familiares y amigos",
+  When: "Cuándo",
   "When did it happen?": "¿Cuándo ocurrió?",
   "When did it happen? (optional)": "¿Cuándo ocurrió? (opcional)",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Cuando empiece todo, actualiza el estado. Todos recibirán un aviso automáticamente.",
+  "Why this permalink is being moved.": "Se guarda con la transferencia y queda en el registro.",
   "Write a message (optional)…": "Escribe un mensaje (opcional)…",
   "Write your message of encouragement...": "Escribe tu mensaje de ánimo...",
   "Yes! Baby is out": "¡Sí! El bebé ya nació",
@@ -1826,6 +1877,8 @@ const ptBR: TranslationCatalog = {
   "Create your page": "Crie sua página",
   "Create your page 🎈": "Crie sua página 🎈",
   "Creating...": "Criando...",
+  "Current permalink": "Permalink atual",
+  "Current permalink is required": "O permalink atual é obrigatório",
   Custom: "Personalizado",
   "Customize your page (optional)": "Personalizar a página (opcional)",
   "Danger zone": "Zona de perigo",
@@ -1848,6 +1901,7 @@ const ptBR: TranslationCatalog = {
   "Discard unsaved changes?": "Descartar alterações não salvas?",
   "Dismiss guide": "Fechar guia",
   "Dismiss tour": "Fechar o tour",
+  "Displaced to": "Deslocado para",
   "Don't have an account?": "Ainda não tem uma conta?",
   "Due {{date}}": "Previsto {{date}}",
   "Due Date": "Data prevista",
@@ -1919,6 +1973,8 @@ const ptBR: TranslationCatalog = {
   "Getting started: {{completed}} of {{total}} done. Expand.":
     "Primeiros passos: {{completed}} de {{total}} concluídos. Abrir lista.",
   "Getting started checklist": "Lista de primeiros passos",
+  "Give a baby page a different public URL. Old links keep working.":
+    "Dê à página do bebê um URL público diferente. Os links antigos continuam funcionando.",
   "Give them a name and due date — that creates a public page friends can open.":
     "Dê um nome e uma data prevista. Isso cria uma página pública que os amigos podem abrir.",
   "Go Home": "Ir para o início",
@@ -1990,10 +2046,14 @@ const ptBR: TranslationCatalog = {
   "Milestones visitors see": "Marcos que os visitantes veem",
   Minimize: "Minimizar",
   "Mocha Mousse": "Mocha Mousse",
+  Motivation: "Motivação",
+  "Motivation is required": "A motivação é obrigatória",
   Name: "Nome",
   "Name is required": "O nome é obrigatório",
   "Name must be {{count}} characters or less": "O nome deve ter no máximo {{count}} caracteres",
   "Name must be at least 2 characters": "O nome deve ter pelo menos 2 caracteres",
+  "New permalink": "Novo permalink",
+  "New permalink is required": "O novo permalink é obrigatório",
   "New photo": "Foto nova",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Mandou bem! Agora compartilhe sua página e aproveite o sossego nas mensagens.",
@@ -2004,6 +2064,7 @@ const ptBR: TranslationCatalog = {
     "Ainda não há outros responsáveis. Adicione alguém para ajudar e também publicar novidades.",
   "No language requests yet": "Ainda não há pedidos de idioma",
   "No one is subscribed yet": "Ninguém está inscrito ainda",
+  "No permalink transfers yet": "Ainda não há transferências de permalink",
   "No status change": "Sem alteração de status",
   "No subscription endpoint found": "Não foi possível encontrar os dados das notificações",
   "Not arrived yet!": "Ainda não chegou!",
@@ -2048,6 +2109,8 @@ const ptBR: TranslationCatalog = {
   "Peek at settings": "Dê uma olhada nas configurações",
   "People who can post updates and change settings":
     "Pessoas que podem publicar novidades e alterar as configurações",
+  "Permalink transferred": "Permalink transferido",
+  "Permalink transfers": "Transferências de permalink",
   "Photo added": "Foto adicionada",
   "Photo must be 10 MB or smaller": "A foto deve ter no máximo 10 MB",
   "Photo of {{name}}": "Foto de {{name}}",
@@ -2202,6 +2265,9 @@ const ptBR: TranslationCatalog = {
   "Track the progress of labour and birth": "Acompanhe o trabalho de parto e o nascimento",
   "Track the progress of labour and birth – know when baby arrives!":
     "Acompanhe o trabalho de parto e saiba quando o bebê nascer!",
+  Transfer: "Transferir",
+  "Transfer permalink": "Transferir permalink",
+  "Transferred by": "Transferido por",
   Unsubscribe: "Desativar notificações",
   "Unsubscribed from notifications!": "Notificações desativadas!",
   "Unsubscribing from notifications...": "Desativando notificações...",
@@ -2246,10 +2312,12 @@ const ptBR: TranslationCatalog = {
   "We save this choice for your settings, but we don't show it to anyone.":
     "Salvamos esta escolha nas suas configurações, mas não a mostramos para ninguém.",
   "What everyone you share with gets": "O que ganha quem recebe o link",
+  When: "Quando",
   "When did it happen?": "Quando aconteceu?",
   "When did it happen? (optional)": "Quando aconteceu? (opcional)",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Quando as coisas começarem a acontecer, atualize o status. Todo mundo é avisado automaticamente.",
+  "Why this permalink is being moved.": "Registrado na transferência e guardado no histórico.",
   "Write a message (optional)…": "Escreva uma mensagem (opcional)…",
   "Write your message of encouragement...": "Escreva sua mensagem de carinho...",
   "Yes! Baby is out": "Sim! O bebê nasceu",

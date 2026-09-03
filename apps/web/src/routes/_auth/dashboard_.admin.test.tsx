@@ -13,7 +13,9 @@ import {
   AdminDashboardView,
   BabiesSection,
   LanguageRequestsSection,
+  PermalinkTransfersSection,
   Route as AdminRoute,
+  TransferPublicIdForm,
   UsersSection,
   formatWhen,
   isAdminTab,
@@ -111,6 +113,58 @@ test("language requests section shows empty and rows", async () => {
   expect(filled.getByText("user-2")).toBeTruthy();
 });
 
+test("permalink transfers section shows empty and audit rows", async () => {
+  await using empty = await renderAdmin(
+    <PermalinkTransfersSection
+      hasNextPage={false}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+      transfers={[]}
+    />,
+  );
+  expect(empty.getByText("No permalink transfers yet")).toBeTruthy();
+
+  await using filled = await renderAdmin(
+    <PermalinkTransfersSection
+      hasNextPage={false}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+      transfers={[
+        {
+          _id: "xfer-1",
+          actorEmail: "staff@example.com",
+          actorUserId: "user-staff",
+          babyName: "Baby",
+          createdAt: Date.UTC(2026, 8, 3, 12, 0),
+          displacedPublicId: "baby-3",
+          fromPublicId: "baby-2",
+          motivation: "Give the real page the canonical slug",
+          toPublicId: "baby",
+        },
+        {
+          _id: "xfer-2",
+          actorEmail: null,
+          actorUserId: "user-2",
+          babyName: "River",
+          createdAt: Date.UTC(2026, 8, 2, 12, 0),
+          displacedPublicId: null,
+          fromPublicId: "river-1",
+          motivation: "Shorter URL",
+          toPublicId: "river",
+        },
+      ]}
+    />,
+  );
+  expect(filled.getByText("baby-2")).toBeTruthy();
+  expect(filled.getByText("Baby")).toBeTruthy();
+  expect(filled.getByText("baby")).toBeTruthy();
+  expect(filled.getByText("baby-3")).toBeTruthy();
+  expect(filled.getByText("staff@example.com")).toBeTruthy();
+  expect(filled.getByText("Give the real page the canonical slug")).toBeTruthy();
+  expect(filled.getByText("user-2")).toBeTruthy();
+  expect(filled.getByText("Shorter URL")).toBeTruthy();
+});
+
 test("users section shows empty and rows", async () => {
   await using empty = await renderAdmin(
     <UsersSection
@@ -206,6 +260,8 @@ test("babies section sorts via clickable header links", async () => {
 
   expect(view.getByText("Avery")).toBeTruthy();
   expect(view.getByText("Demo")).toBeTruthy();
+  expect(view.getByText("baby-waiting")).toBeTruthy();
+  expect(view.getByText("baby-born")).toBeTruthy();
   expect(view.getByText("owner@example.com, co@example.com")).toBeTruthy();
   expect(view.getByText("Baby born")).toBeTruthy();
 
@@ -233,6 +289,26 @@ test("babies section shows a spinner while loading more", async () => {
   );
   expect(loadingMore.getByText("Avery")).toBeTruthy();
   expect(loadingMore.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
+});
+
+test("transfer permalink form submits current slug, new slug, and motivation", async () => {
+  const onTransfer = vi.fn().mockResolvedValue(undefined);
+  await using view = await renderAdmin(<TransferPublicIdForm onTransfer={onTransfer} />);
+
+  fireEvent.change(view.getByLabelText("Current permalink"), { target: { value: "baby-2" } });
+  fireEvent.change(view.getByLabelText("New permalink"), { target: { value: "baby" } });
+  fireEvent.change(view.getByLabelText("Motivation"), {
+    target: { value: "Give the real page the canonical slug" },
+  });
+  fireEvent.click(view.getByRole("button", { name: "Transfer" }));
+
+  await vi.waitFor(() => {
+    expect(onTransfer).toHaveBeenCalledWith({
+      fromPublicId: "baby-2",
+      motivation: "Give the real page the canonical slug",
+      toPublicId: "baby",
+    });
+  });
 });
 
 test("language requests section shows loading-more spinner", async () => {
@@ -400,6 +476,7 @@ type AdminQueryHandlers = Record<string, AdminQueryHandler>;
 type AdminLoaderResult = {
   babies: unknown;
   languages: unknown;
+  transfers: unknown;
   users: unknown;
 };
 
@@ -454,11 +531,12 @@ async function runAdminLoader(
   });
 }
 
-test("loader prefetches babies, users, and language requests in parallel for admins", async () => {
+test("loader prefetches babies, users, language requests, and permalink transfers in parallel for admins", async () => {
   const result = await runAdminLoader(
     {
       "admin:listBabies": ADMIN_EMPTY_PAGE,
       "admin:listLanguageRequests": ADMIN_EMPTY_PAGE,
+      "admin:listPublicIdTransfers": ADMIN_EMPTY_PAGE,
       "admin:listUsers": ADMIN_EMPTY_PAGE,
     },
     { isAdmin: true, locale: "en-GB", timeZone: "Europe/London" },
@@ -469,6 +547,7 @@ test("loader prefetches babies, users, and language requests in parallel for adm
     numItems: 20,
   });
   expect(result.languages).toMatchObject({ input: {}, numItems: 20 });
+  expect(result.transfers).toMatchObject({ input: {}, numItems: 20 });
   expect(result.users).toMatchObject({ input: {}, numItems: 20 });
 });
 
@@ -481,6 +560,9 @@ test("loader redirects non-admins without prefetching admin queries", async () =
         },
         "admin:listLanguageRequests": () => {
           throw new Error("admin:listLanguageRequests should not run for non-admins");
+        },
+        "admin:listPublicIdTransfers": () => {
+          throw new Error("admin:listPublicIdTransfers should not run for non-admins");
         },
         "admin:listUsers": () => {
           throw new Error("admin:listUsers should not run for non-admins");

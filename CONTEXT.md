@@ -45,3 +45,9 @@ Marking a record deleted while keeping it recoverable, instead of removing it
 from the database.
 _Avoid_: Archive (unless we later add a distinct archive concept), hard delete
 (for the product default)
+
+**Public ID**:
+The shareable URL slug for a baby page (`/baby/{publicId}`). When it changes,
+the previous slug is kept in history so old links redirect to the current one.
+Staff transfers record who moved the slug, when, and why.
+_Avoid_: permalink (except in staff UI copy), handle, vanity URL

@@ -1,6 +1,16 @@
 import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CaretDown, CaretUp, Shield, Translate, Users } from "@phosphor-icons/react";
+import {
+  ArrowLeft,
+  ArrowsLeftRight,
+  CaretDown,
+  CaretUp,
+  Shield,
+  Translate,
+  Users,
+} from "@phosphor-icons/react";
+import { useMutation } from "convex/react";
+import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { allKeyed } from "@workspace/query-prefetch";
 import { Badge } from "@workspace/ui/components/badge";
@@ -14,6 +24,7 @@ import {
 } from "@workspace/ui/components/card";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@workspace/ui/components/empty";
 import { Field, FieldLabel } from "@workspace/ui/components/field";
+import { Input } from "@workspace/ui/components/input";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Switch } from "@workspace/ui/components/switch";
 import {
@@ -28,6 +39,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/componen
 import { cn } from "@workspace/ui/lib/utils";
 import { z } from "zod";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
+import { Textarea } from "@workspace/ui/components/textarea";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@workspace/ui/components/form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { useIntersectionAction } from "@/lib/use-intersection-action";
@@ -73,6 +94,18 @@ type BabyRow = {
   updatedAt: number;
 };
 
+type PublicIdTransferRow = {
+  _id: string;
+  actorEmail: string | null;
+  actorUserId: string;
+  babyName: string;
+  createdAt: number;
+  displacedPublicId: string | null;
+  fromPublicId: string;
+  motivation: string;
+  toPublicId: string;
+};
+
 type UserRow = {
   _id: string;
   babies: Array<{
@@ -108,6 +141,10 @@ export const Route = createFileRoute("/_auth/dashboard_/admin")({
         numItems: ADMIN_PAGE_SIZE,
       }),
       languages: preloader.ensureInfiniteQueryData(api.admin.listLanguageRequests, {
+        args: {},
+        numItems: ADMIN_PAGE_SIZE,
+      }),
+      transfers: preloader.ensureInfiniteQueryData(api.admin.listPublicIdTransfers, {
         args: {},
         numItems: ADMIN_PAGE_SIZE,
       }),
@@ -162,6 +199,170 @@ export function nextSortSearch(opts: {
     return { order: "asc", sort: opts.clicked };
   }
   return { order: "desc", sort: opts.clicked };
+}
+
+export type TransferPublicIdValues = {
+  fromPublicId: string;
+  motivation: string;
+  toPublicId: string;
+};
+
+function transferPublicIdSchema(t: TranslationFunction) {
+  return z.object({
+    fromPublicId: z.string().trim().min(1, t("Current permalink is required")),
+    motivation: z.string().trim().min(1, t("Motivation is required")),
+    toPublicId: z.string().trim().min(1, t("New permalink is required")),
+  });
+}
+
+/**
+ * Staff form to move a baby page to a different public URL, recording history
+ * so the old slug redirects. @internal Exported for tests.
+ */
+export function TransferPublicIdForm(props: {
+  onTransfer: (values: TransferPublicIdValues) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    defaultValues: {
+      fromPublicId: "",
+      motivation: "",
+      toPublicId: "",
+    },
+    schema: transferPublicIdSchema(t),
+  });
+
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="mb-3 flex flex-col gap-1">
+        <h3 className="font-medium">{t("Transfer permalink")}</h3>
+        <p className="text-sm text-muted-foreground">
+          {t("Give a baby page a different public URL. Old links keep working.")}
+        </p>
+      </div>
+      <Form
+        form={form}
+        handleSubmit={async (values) => {
+          await props.onTransfer(values);
+          form.reset();
+        }}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="fromPublicId"
+            render={(renderProps) => (
+              <FormItem>
+                <FormLabel>{t("Current permalink")}</FormLabel>
+                <FormControl>
+                  <Input placeholder="baby-2" {...renderProps.field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="toPublicId"
+            render={(renderProps) => (
+              <FormItem>
+                <FormLabel>{t("New permalink")}</FormLabel>
+                <FormControl>
+                  <Input placeholder="baby" {...renderProps.field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="motivation"
+          render={(renderProps) => (
+            <FormItem className="mt-3">
+              <FormLabel>{t("Motivation")}</FormLabel>
+              <FormControl>
+                <Textarea className="min-h-20" {...renderProps.field} />
+              </FormControl>
+              <FormDescription>{t("Why this permalink is being moved.")}</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="mt-3">
+          <SubmitButton form="context" IconComponent={null} iconPosition="start">
+            {t("Transfer")}
+          </SubmitButton>
+        </div>
+      </Form>
+    </div>
+  );
+}
+
+/**
+ * Newest permalink transfers first. @internal Exported for tests.
+ */
+export function PermalinkTransfersSection(props: {
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
+  transfers: Array<PublicIdTransferRow>;
+}) {
+  const { locale, t } = useI18n();
+
+  if (props.transfers.length === 0) {
+    return (
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <ArrowsLeftRight />
+          </EmptyMedia>
+          <EmptyTitle>{t("No permalink transfers yet")}</EmptyTitle>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <h3 className="font-medium">{t("Permalink transfers")}</h3>
+      <AdminTableCard
+        canLoadMore={props.hasNextPage && !props.isFetchingNextPage}
+        isLoadingMore={props.isFetchingNextPage}
+        onLoadMore={props.onLoadMore}
+      >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("When")}</TableHead>
+              <TableHead>{t("Current permalink")}</TableHead>
+              <TableHead>{t("New permalink")}</TableHead>
+              <TableHead>{t("Displaced to")}</TableHead>
+              <TableHead>{t("Transferred by")}</TableHead>
+              <TableHead>{t("Motivation")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {props.transfers.map((row) => (
+              <TableRow key={row._id}>
+                <TableCell>{formatWhen(row.createdAt, locale)}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="inline-flex flex-col gap-0.5">
+                    <span>{row.fromPublicId}</span>
+                    <span className="font-normal text-muted-foreground">{row.babyName}</span>
+                  </span>
+                </TableCell>
+                <TableCell className="font-medium">{row.toPublicId}</TableCell>
+                <TableCell>{row.displacedPublicId ?? "—"}</TableCell>
+                <TableCell>{row.actorEmail ?? row.actorUserId}</TableCell>
+                <TableCell className="max-w-xs whitespace-normal">{row.motivation}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </AdminTableCard>
+    </div>
+  );
 }
 
 function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {
@@ -403,9 +604,12 @@ export function BabiesSection(props: {
           {props.babies.map((baby) => (
             <TableRow key={baby._id}>
               <TableCell className="font-medium">
-                <span className="inline-flex items-center gap-2">
-                  {baby.name}
-                  {baby.demo ? <Badge variant="outline">{t("Demo")}</Badge> : null}
+                <span className="inline-flex flex-col gap-0.5">
+                  <span className="inline-flex items-center gap-2">
+                    {baby.name}
+                    {baby.demo ? <Badge variant="outline">{t("Demo")}</Badge> : null}
+                  </span>
+                  <span className="font-normal text-muted-foreground">{baby.publicId}</span>
                 </span>
               </TableCell>
               <TableCell>{statusLabel(baby.status, t)}</TableCell>
@@ -433,28 +637,51 @@ export function BabiesSection(props: {
 }
 
 function AdminBabiesTab() {
+  const { t } = useI18n();
   const search = Route.useSearch();
   const loaderData = Route.useLoaderData();
+  const transferPublicId = useMutation(api.admin.transferPublicId);
   const babiesQuery = usePreloadedConvexInfiniteQuery(api.admin.listBabies, {
     handle: loaderData.babies,
     remixArgs: null,
   });
+  const transfersQuery = usePreloadedConvexInfiniteQuery(api.admin.listPublicIdTransfers, {
+    handle: loaderData.transfers,
+    remixArgs: null,
+  });
 
   const babies = babiesQuery.data.pages.flatMap((page) => page.page);
+  const transfers = transfersQuery.data.pages.flatMap((page) => page.page);
 
   return (
-    <BabiesSection
-      babies={babies}
-      hasNextPage={babiesQuery.hasNextPage}
-      hideDemo={search.hideDemo}
-      isFetchingNextPage={babiesQuery.isFetchingNextPage}
-      onLoadMore={() => {
-        void babiesQuery.fetchNextPage();
-      }}
-      order={search.order}
-      sort={search.sort}
-      tab={search.tab}
-    />
+    <div className="flex flex-col gap-4">
+      <TransferPublicIdForm
+        onTransfer={async (values) => {
+          await transferPublicId(values);
+          toast.success(t("Permalink transferred"));
+        }}
+      />
+      <PermalinkTransfersSection
+        hasNextPage={transfersQuery.hasNextPage}
+        isFetchingNextPage={transfersQuery.isFetchingNextPage}
+        onLoadMore={() => {
+          void transfersQuery.fetchNextPage();
+        }}
+        transfers={transfers}
+      />
+      <BabiesSection
+        babies={babies}
+        hasNextPage={babiesQuery.hasNextPage}
+        hideDemo={search.hideDemo}
+        isFetchingNextPage={babiesQuery.isFetchingNextPage}
+        onLoadMore={() => {
+          void babiesQuery.fetchNextPage();
+        }}
+        order={search.order}
+        sort={search.sort}
+        tab={search.tab}
+      />
+    </div>
   );
 }
 
