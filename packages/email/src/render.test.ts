@@ -26,7 +26,8 @@ test("password reset template includes the reset link in text and html", async (
   expect(message.html).toContain(`href="${resetUrl}"`);
   expect(message.html).toContain(passwordResetCopy.heading);
   expect(message.html).toContain(passwordResetCopy.wordmark);
-  expect(ctaStyle(message.html, resetUrl)).not.toMatch(/(?<!max-)width:\s*100%/);
+  expect(ctaStyle(message.html, resetUrl)).toContain("max-width:none");
+  expect(ctaStyle(message.html, resetUrl)).toContain("width:auto");
 });
 
 test("preview prefix appears on the subject and in a banner", async () => {
@@ -72,5 +73,6 @@ test("verify-email template includes the confirmation link", async () => {
   expect(message.text).toContain(`${verifyEmailCopy.button}: ${verifyUrl}`);
   expect(message.html).toContain(`href="${verifyUrl}"`);
   expect(message.html).toContain(verifyEmailCopy.heading);
-  expect(ctaStyle(message.html, verifyUrl)).not.toMatch(/(?<!max-)width:\s*100%/);
+  expect(ctaStyle(message.html, verifyUrl)).toContain("max-width:none");
+  expect(ctaStyle(message.html, verifyUrl)).toContain("width:auto");
 });

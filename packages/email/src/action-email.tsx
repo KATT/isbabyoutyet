@@ -61,11 +61,11 @@ export function ActionEmail(props: ActionEmailProps) {
           {props.intro}
         </Text>
         {/*
-          Email clients treat width as content-box and ignore box-sizing, so a
-          100% button plus padding and the 6px pop-shadow overflows the card.
-          Size the CTA to its label instead.
+          React Email's Button defaults to max-width: 100%. Email clients treat
+          that as content-box, so padding plus the 6px pop-shadow overflows the
+          card. Override the max-width and size the CTA to its label.
         */}
-        <Section style={{ textAlign: "center" }}>
+        <Text style={{ margin: "0", textAlign: "center" }}>
           <Button
             href={props.url}
             style={{
@@ -78,14 +78,16 @@ export function ActionEmail(props: ActionEmailProps) {
               fontSize: "16px",
               fontWeight: 800,
               lineHeight: "24px",
+              maxWidth: "none",
               padding: "14px 24px",
               textAlign: "center",
               textDecoration: "none",
+              width: "auto",
             }}
           >
             {props.button}
           </Button>
-        </Section>
+        </Text>
         <Text
           style={{
             color: emailTheme.mutedForeground,
