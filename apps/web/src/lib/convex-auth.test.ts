@@ -195,5 +195,11 @@ test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
 test("compatibleConvexAuthClient bridges token and session", () => {
   const bridged = compatibleConvexAuthClient(realAuthClient);
   expect(bridged.convex.token).toBeTypeOf("function");
-  expect("session" in bridged.$store.atoms).toBe(true);
+  // `'session' in authClient.$store.atoms` is false: the client is a Proxy
+  // over `function() {}` with no `has` trap. The bridge must still return
+  // the nanostores atom so the cache-clear listener actually attaches.
+  expect(bridged.$store.atoms.session).toBeDefined();
+  const unsub = bridged.$store.atoms.session?.subscribe(() => {});
+  expect(unsub).toBeTypeOf("function");
+  unsub?.();
 });

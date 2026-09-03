@@ -52,7 +52,7 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     const publicId = opts.params.publicId;
     const imageUrl = babyOgImageUrl(publicId, undefined);
     const data = await allKeyed({
-      baby: opts.context.convexPreloader.fetchQueryData(api.baby.getByPublicId, {
+      baby: opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
         id: publicId,
       }),
       myAccess: opts.context.convexPreloader.ensureQueryData(api.coParents.myAccess, {

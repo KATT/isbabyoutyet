@@ -194,6 +194,10 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    return await authComponent.getAuthUser(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+    return await authComponent.getAnyUserById(ctx, identity.subject);
   },
 });

@@ -73,6 +73,7 @@ export function getRouter() {
       token: null,
     },
     defaultErrorComponent: RootErrorComponent,
+    scrollRestoration: true,
     Wrap: (props) => (
       <ConvexProvider client={convexQueryClient.convexClient}>{props.children}</ConvexProvider>
     ),

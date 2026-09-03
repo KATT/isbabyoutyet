@@ -78,7 +78,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
   expect(data.shareLink).toBe(`https://isbabyoutyet.com/baby/${baby.publicId}`);
 });
 
-test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
+test("loader reuses a cached baby snapshot instead of refetching", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await patchOwnedBaby(harness, {
@@ -87,13 +87,13 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
       theme: "orange",
     },
   });
-  const staleBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-  if (!staleBaby) {
+  const cachedBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+  if (!cachedBaby) {
     throw new Error("expected baby");
   }
   harness.queryClient.setQueryData(
     convexQuery(api.baby.getByPublicId, { id: baby.publicId }).queryKey,
-    staleBaby,
+    cachedBaby,
   );
 
   await patchOwnedBaby(harness, {
@@ -114,7 +114,7 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
   if (!freshBaby) {
     throw new Error("expected baby");
   }
-  expect(data.imagePrefetch.input).toBe(getBabySeo(freshBaby, baby.publicId).imageUrl);
+  expect(data.imagePrefetch.input).toBe(getBabySeo(cachedBaby, baby.publicId).imageUrl);
   expect(freshBaby.theme).toBe("baby-blue");
 });
 

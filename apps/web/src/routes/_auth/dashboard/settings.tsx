@@ -110,18 +110,19 @@ export function DashboardSettingsSheet(props: {
 
   return (
     <DashboardSettingsSheetView
-      accountSettings={<AccountSettings />}
+      accountSettings={<AccountSettings profile={props.profile} />}
       isAdmin={profileQuery.data?.isAdmin === true}
       languageSettings={<LanguageSettings profile={props.profile} />}
       onSignOut={async () => {
-        props.queryClient.clear();
         await settingsAuthAdapter.signOut({
           fetchOptions: {
             onError: (error) => {
               toast.error(error.error.message);
             },
-            onSuccess: () => {
-              window.location.href = "/";
+            onSuccess: async () => {
+              await router.navigate({
+                to: "/",
+              });
             },
           },
         });
