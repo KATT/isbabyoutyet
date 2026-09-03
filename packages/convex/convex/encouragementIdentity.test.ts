@@ -65,6 +65,18 @@ test("a signed-in author matches by user id even on a new visitor id", () => {
   ).toBe(true);
 });
 
+test("a signed-in author does not match another user's comment", () => {
+  expect(
+    encouragementIsMine(
+      {
+        author: { type: "user", userId: "bob", visitorId: "bob-browser" },
+        visitorId: "bob-browser",
+      },
+      { type: "user", userId: "alice", visitorId: "alice-browser" },
+    ),
+  ).toBe(false);
+});
+
 test("a signed-in author still matches unclaimed guest posts from this browser", () => {
   expect(
     encouragementIsMine(

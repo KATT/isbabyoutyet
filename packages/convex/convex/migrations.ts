@@ -611,12 +611,18 @@ export const backfillEncouragementOptionalKeys = migrations.define({
 });
 
 /**
- * Writes the discriminated `author` union from legacy `userId` / `visitorId`.
+ * Writes the discriminated `author` union from leftover `userId` / `visitorId`.
  * Idempotent: a row that already has `author` is left alone.
+ * `author` stays omitted-optional so leftover pre-require rows still typecheck.
  */
+type EncouragementAuthorBackfill = Omit<Doc<"encouragements">, "author"> & {
+  author?: Doc<"encouragements">["author"];
+  userId?: string | null;
+};
+
 export async function backfillEncouragementAuthorDoc(
   ctx: MutationCtx,
-  encouragement: Doc<"encouragements"> & { userId?: string | null },
+  encouragement: EncouragementAuthorBackfill,
 ) {
   if (encouragement.author !== undefined) {
     return;
