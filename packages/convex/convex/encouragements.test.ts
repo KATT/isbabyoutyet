@@ -475,6 +475,39 @@ test("claiming a visitor id does not steal comments already linked to another us
   });
 });
 
+test("claiming a visitor id does not steal homepage-demo fixture comments", async () => {
+  const { babyId, t } = await setupWithBaby();
+  const encouragementId = await t.run(async (ctx) => {
+    const timelineItemId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "encouragement",
+      postedAt: 100,
+    });
+    return await ctx.db.insert("encouragements", {
+      author: { type: "visitor", visitorId: "demo-browser" },
+      authorName: "Demo Aunt",
+      babyId,
+      createdAt: 100,
+      demoFixture: true,
+      message: "Seeded fixture",
+      timelineItemId,
+      visitorId: "demo-browser",
+    });
+  });
+
+  const asAlice = t.withIdentity({ subject: "alice" });
+  await asAlice.mutation(api.encouragements.claimVisitorEncouragements, {
+    visitorId: "demo-browser",
+  });
+
+  const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
+  expect(stored).toMatchObject({
+    author: { type: "visitor", visitorId: "demo-browser" },
+    authorName: "Demo Aunt",
+    demoFixture: true,
+  });
+});
+
 test("claiming visitor encouragements requires authentication", async () => {
   const { t } = await setupWithBaby();
   await expect(
