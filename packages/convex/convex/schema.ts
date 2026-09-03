@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { encouragementAuthorValidator } from "./encouragementAuthor";
 import { supportedLocaleValidator } from "./i18n";
 import { onboardingStepIdValidator } from "./onboardingValidators";
 import { notifiableStatusValidator } from "./pushValidators";
@@ -150,6 +151,11 @@ export default defineSchema({
     timelineItemId: v.id("timelineItems"), // Binding to the timeline feed
     // Metadata
     visitorId: v.string(), // Unique visitor ID (stored in localStorage)
+    /**
+     * Discriminated author: signed-in user or visitor id.
+     * Required after `backfillEncouragementAuthor` populates every row.
+     */
+    author: encouragementAuthorValidator,
     /** Server-controlled marker for seeded homepage-demo encouragements. @todo Optional until every row sets this key. */
     demoFixture: v.optional(v.boolean()),
     /** @todo Optional until every row sets this key. */
@@ -163,7 +169,8 @@ export default defineSchema({
   })
     .index("by_babyId", ["babyId"])
     .index("by_babyId_and_createdAt", ["babyId", "createdAt"])
-    .index("by_timelineItemId", ["timelineItemId"]),
+    .index("by_timelineItemId", ["timelineItemId"])
+    .index("by_visitorId", ["visitorId"]),
   // Binding table for the per-baby feed: owns ordering (postedAt) and the kind
   // discriminator; children (updates/encouragements) point at it via timelineItemId.
   // postedAt is when the item entered the feed (announce/post time) — never the

@@ -610,6 +610,57 @@ export const backfillEncouragementOptionalKeys = migrations.define({
   table: "encouragements",
 });
 
+/**
+ * Writes the discriminated `author` union from leftover `userId` / `visitorId`.
+ * Idempotent: a row that already has `author` is left alone.
+ * `author` stays omitted-optional so leftover pre-require rows still typecheck.
+ */
+type EncouragementAuthorBackfill = Omit<Doc<"encouragements">, "author"> & {
+  author?: Doc<"encouragements">["author"];
+  userId?: string | null;
+};
+
+export async function backfillEncouragementAuthorDoc(
+  ctx: MutationCtx,
+  encouragement: EncouragementAuthorBackfill,
+) {
+  if (encouragement.author !== undefined) {
+    return;
+  }
+  const author = encouragement.userId
+    ? {
+        type: "user" as const,
+        userId: encouragement.userId,
+        visitorId: encouragement.visitorId,
+      }
+    : { type: "visitor" as const, visitorId: encouragement.visitorId };
+  await ctx.db.patch(encouragement._id, { author });
+}
+
+export const backfillEncouragementAuthor = migrations.define({
+  migrateOne: backfillEncouragementAuthorDoc,
+  table: "encouragements",
+});
+
+/**
+ * Removes the retired top-level `userId` after identity lives on `author`.
+ */
+export async function removeEncouragementUserIdDoc(
+  ctx: MutationCtx,
+  encouragement: Doc<"encouragements"> & Partial<{ userId: string | null }>,
+) {
+  if (encouragement.userId === undefined) {
+    return;
+  }
+  const { userId: _removed, ...rest } = encouragement;
+  await ctx.db.replace("encouragements", encouragement._id, rest);
+}
+
+export const removeEncouragementUserId = migrations.define({
+  migrateOne: removeEncouragementUserIdDoc,
+  table: "encouragements",
+});
+
 export async function backfillTimelineItemOptionalKeysDoc(
   ctx: MutationCtx,
   item: Doc<"timelineItems">,
@@ -734,6 +785,8 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillPushSubscriptionOptionalKeys,
   internal.migrations.backfillScheduledNotificationOptionalKeys,
   internal.migrations.backfillEncouragementOptionalKeys,
+  internal.migrations.backfillEncouragementAuthor,
+  internal.migrations.removeEncouragementUserId,
   internal.migrations.backfillTimelineItemOptionalKeys,
   internal.migrations.backfillUpdateOptionalKeys,
   internal.migrations.backfillUserOnboardingOptionalKeys,
@@ -768,6 +821,8 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillPushSubscriptionOptionalKeys",
   "migrations:backfillScheduledNotificationOptionalKeys",
   "migrations:backfillEncouragementOptionalKeys",
+  "migrations:backfillEncouragementAuthor",
+  "migrations:removeEncouragementUserId",
   "migrations:backfillTimelineItemOptionalKeys",
   "migrations:backfillUpdateOptionalKeys",
   "migrations:backfillUserOnboardingOptionalKeys",

@@ -10,6 +10,7 @@ import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
 import { TIME_ZONE_HINT_HEADER } from "../src/timeZone";
+import { parseVisitorIdHint, VISITOR_ID_HINT_HEADER } from "../src/visitorId";
 import { isJsonObjectValue, parseOptionalString } from "@workspace/runtime/json";
 
 // The component client has methods needed for integrating Convex with Better Auth,
@@ -158,20 +159,25 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
         if (!authUser) {
           return;
         }
+        const headers = ctx.headers ?? ctx.request?.headers ?? null;
         await requireAuthMutationCtx(convexCtx).runMutation(
           internal.profileBootstrap.ensureUserProfileForAuthUserMutation,
           {
-            localeHint:
-              ctx.headers?.get("accept-language") ??
-              ctx.request?.headers.get("accept-language") ??
-              null,
-            timeZoneHint:
-              ctx.headers?.get(TIME_ZONE_HINT_HEADER) ??
-              ctx.request?.headers.get(TIME_ZONE_HINT_HEADER) ??
-              null,
+            localeHint: headers?.get("accept-language") ?? null,
+            timeZoneHint: headers?.get(TIME_ZONE_HINT_HEADER) ?? null,
             userId: authUser.userId,
           },
         );
+        const visitorId = parseVisitorIdHint(headers?.get(VISITOR_ID_HINT_HEADER) ?? null);
+        if (visitorId) {
+          await requireAuthMutationCtx(convexCtx).runMutation(
+            internal.encouragements.claimVisitorEncouragementsForAuthUserMutation,
+            {
+              userId: authUser.userId,
+              visitorId,
+            },
+          );
+        }
       }),
     },
     plugins: [

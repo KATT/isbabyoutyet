@@ -61,7 +61,9 @@ test("visitors can create encouragements and list them", async () => {
     { authorName: "Uncle Bob", isMine: true, message: "Good luck!" },
     { authorName: "Grandma", isMine: false, message: "We can't wait to meet you!" },
   ]);
+  expect(result.page[0]).not.toHaveProperty("author");
   expect(result.page[0]).not.toHaveProperty("visitorId");
+  expect(result.page[0]).not.toHaveProperty("userId");
   expect(result.page[0]).not.toHaveProperty("userAgent");
 
   const stored = await t.run(async (ctx) => {
@@ -70,10 +72,22 @@ test("visitors can create encouragements and list them", async () => {
       .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
       .collect();
   });
-  expect(stored).toMatchObject([
-    { locale: null, timezone: null, userAgent: null },
-    { locale: null, timezone: null, userAgent: null },
-  ]);
+  expect(stored).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        author: { type: "visitor", visitorId: "visitor-1" },
+        locale: null,
+        timezone: null,
+        userAgent: null,
+      }),
+      expect.objectContaining({
+        author: { type: "visitor", visitorId: "visitor-2" },
+        locale: null,
+        timezone: null,
+        userAgent: null,
+      }),
+    ]),
+  );
 });
 
 test("create persists visitor metadata when provided", async () => {
@@ -92,6 +106,7 @@ test("create persists visitor metadata when provided", async () => {
   );
   const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
   expect(stored).toMatchObject({
+    author: { type: "visitor", visitorId: "visitor-1" },
     locale: "en-US",
     timezone: "Europe/Stockholm",
     userAgent: "Mozilla/5.0",
@@ -341,6 +356,163 @@ test("visitor messages notify opted-in owners; deletes retract the push instead 
     visitorId: "visitor-1",
   });
   expect(afterDelete.page).toEqual([]);
+});
+
+test("a signed-in author stores their user id without changing the typed name", async () => {
+  const { babyId, t } = await setupWithBaby();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const encouragementId = await asAlice.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      authorName: "Grandma Alice",
+      babyId,
+      message: "From my account",
+      visitorId: "alice-browser",
+    }),
+  );
+
+  const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
+  expect(stored).toMatchObject({
+    author: { type: "user", userId: "alice", visitorId: "alice-browser" },
+    authorName: "Grandma Alice",
+    visitorId: "alice-browser",
+  });
+  expect(stored).not.toHaveProperty("userId");
+
+  const listed = await asAlice.query(api.encouragements.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: "different-browser",
+  });
+  expect(listed.page).toMatchObject([{ authorName: "Grandma Alice", isMine: true }]);
+  expect(listed.page[0]).not.toHaveProperty("author");
+  expect(listed.page[0]).not.toHaveProperty("userId");
+});
+
+test("a signed-in author can edit and delete on a new visitor id after claiming", async () => {
+  const { babyId, t } = await setupWithBaby();
+
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      authorName: "Guest Name",
+      babyId,
+      message: "Posted before I signed in",
+      visitorId: "guest-browser",
+    }),
+  );
+
+  const asAlice = t.withIdentity({ subject: "alice" });
+  await asAlice.mutation(api.encouragements.claimVisitorEncouragements, {
+    visitorId: "guest-browser",
+  });
+
+  const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
+  expect(stored).toMatchObject({
+    author: { type: "user", userId: "alice", visitorId: "guest-browser" },
+    authorName: "Guest Name",
+    visitorId: "guest-browser",
+  });
+  expect(stored).not.toHaveProperty("userId");
+
+  await asAlice.mutation(api.encouragements.update, {
+    encouragementId,
+    message: "Edited after sign-in",
+    visitorId: "new-browser",
+  });
+  const listed = await asAlice.query(api.encouragements.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: "new-browser",
+  });
+  expect(listed.page).toMatchObject([
+    { authorName: "Guest Name", isMine: true, message: "Edited after sign-in" },
+  ]);
+
+  await asAlice.mutation(api.encouragements.remove, {
+    encouragementId,
+    visitorId: "new-browser",
+  });
+  expect(
+    (
+      await asAlice.query(api.encouragements.listByBaby, {
+        babyId,
+        paginationOpts: FIRST_PAGE,
+        visitorId: "new-browser",
+      })
+    ).page,
+  ).toEqual([]);
+});
+
+test("claiming a visitor id does not steal comments already linked to another user", async () => {
+  const { babyId, t } = await setupWithBaby();
+
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      authorName: "Bob",
+      babyId,
+      message: "Already claimed",
+      visitorId: "shared-browser",
+    }),
+  );
+  await t.run(async (ctx) => {
+    await ctx.db.patch(encouragementId, {
+      author: { type: "user", userId: "bob", visitorId: "shared-browser" },
+    });
+  });
+
+  const asAlice = t.withIdentity({ subject: "alice" });
+  await asAlice.mutation(api.encouragements.claimVisitorEncouragements, {
+    visitorId: "shared-browser",
+  });
+
+  const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
+  expect(stored).toMatchObject({
+    author: { type: "user", userId: "bob", visitorId: "shared-browser" },
+    authorName: "Bob",
+  });
+});
+
+test("claiming a visitor id does not steal homepage-demo fixture comments", async () => {
+  const { babyId, t } = await setupWithBaby();
+  const encouragementId = await t.run(async (ctx) => {
+    const timelineItemId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "encouragement",
+      postedAt: 100,
+    });
+    return await ctx.db.insert("encouragements", {
+      author: { type: "visitor", visitorId: "demo-browser" },
+      authorName: "Demo Aunt",
+      babyId,
+      createdAt: 100,
+      demoFixture: true,
+      message: "Seeded fixture",
+      timelineItemId,
+      visitorId: "demo-browser",
+    });
+  });
+
+  const asAlice = t.withIdentity({ subject: "alice" });
+  await asAlice.mutation(api.encouragements.claimVisitorEncouragements, {
+    visitorId: "demo-browser",
+  });
+
+  const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
+  expect(stored).toMatchObject({
+    author: { type: "visitor", visitorId: "demo-browser" },
+    authorName: "Demo Aunt",
+    demoFixture: true,
+  });
+});
+
+test("claiming visitor encouragements requires authentication", async () => {
+  const { t } = await setupWithBaby();
+  await expect(
+    t.mutation(api.encouragements.claimVisitorEncouragements, { visitorId: "guest-browser" }),
+  ).rejects.toThrow("Not authenticated");
 });
 
 test("a manager posting or deleting a message does not notify owners", async () => {
