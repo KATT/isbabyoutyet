@@ -26,6 +26,8 @@ import type * as coParentInviteClaims from "../coParentInviteClaims.js";
 import type * as coParents from "../coParents.js";
 import type * as crons from "../crons.js";
 import type * as emailSender from "../emailSender.js";
+import type * as encouragementAuthor from "../encouragementAuthor.js";
+import type * as encouragementIdentity from "../encouragementIdentity.js";
 import type * as encouragements from "../encouragements.js";
 import type * as homepageDemo from "../homepageDemo.js";
 import type * as http from "../http.js";
@@ -70,6 +72,8 @@ declare const fullApi: ApiFromModules<{
   coParents: typeof coParents;
   crons: typeof crons;
   emailSender: typeof emailSender;
+  encouragementAuthor: typeof encouragementAuthor;
+  encouragementIdentity: typeof encouragementIdentity;
   encouragements: typeof encouragements;
   homepageDemo: typeof homepageDemo;
   http: typeof http;

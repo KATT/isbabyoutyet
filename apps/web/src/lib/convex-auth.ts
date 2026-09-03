@@ -60,6 +60,7 @@ export function setupClientConvexAuthWithClient(opts: {
   });
 
   let lastHasSession: boolean | null = null;
+
   opts.authClient.$store.atoms.session?.subscribe((session) => {
     if (!session || session.isPending) {
       return;
@@ -78,12 +79,13 @@ export function setupClientConvexAuthWithClient(opts: {
  * `Record<string, WritableAtom>`. Tests pass invalid shapes under
  * `@ts-expect-error`.
  *
+ * Do not use `'session' in atoms`: the better-auth client is a Proxy
+ * over `function() {}` with no `has` trap, so that check is always
+ * false even when property access returns the nanostores atom.
+ *
  * @internal Exported for tests.
  */
 export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | undefined {
-  if (!("session" in atoms)) {
-    return undefined;
-  }
   const session = atoms.session;
   if (!isPlainObject(session)) {
     return undefined;

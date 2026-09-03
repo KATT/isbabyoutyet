@@ -17,7 +17,7 @@ import {
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
-import { getBabySeo } from "@/lib/baby-seo";
+import { getBabySeo } from "@/lib/seo";
 import { renderResource } from "@/test/renderResource";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { seedOwnedBaby } from "@/test/convexTestSeed";
@@ -442,9 +442,8 @@ test("beforeLoad 404s unknown babies", async () => {
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
       queryClient: QueryClient;
     };
-    location: { search: Record<string, string | boolean> };
+    location: { href: string };
     params: { publicId: string };
-    search: { settings: boolean | undefined };
   }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
 
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": null });
@@ -453,24 +452,22 @@ test("beforeLoad 404s unknown babies", async () => {
       convexPreloader: getConvexQueryPreloader(queryClient),
       queryClient,
     },
-    location: { search: {} },
+    location: { href: "/baby/baby-smith" },
     params: { publicId: "baby-smith" },
-    search: { settings: undefined },
   });
 
   await expect(pending).rejects.toMatchObject({ isNotFound: true });
 });
 
-test("beforeLoad redirects legacy settings links", async () => {
+test("beforeLoad rewrites a stale public id and keeps the subpath", async () => {
   // @ts-expect-error — stub opts are the fields beforeLoad reads
   const beforeLoad: (opts: {
     context: {
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
       queryClient: QueryClient;
     };
-    location: { search: Record<string, string | boolean> };
+    location: { href: string };
     params: { publicId: string };
-    search: { settings: boolean | undefined };
   }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": BABY_DOC });
 
@@ -480,15 +477,13 @@ test("beforeLoad redirects legacy settings links", async () => {
         convexPreloader: getConvexQueryPreloader(queryClient),
         queryClient,
       },
-      location: { search: { settings: true } },
-      params: { publicId: "baby-smith" },
-      search: { settings: true },
+      location: { href: "/baby/old-slug/settings" },
+      params: { publicId: "old-slug" },
     }),
   ).rejects.toMatchObject({
     options: {
-      params: { publicId: "baby-smith" },
+      href: "/baby/baby-smith/settings",
       replace: true,
-      to: "/baby/$publicId/settings",
     },
   });
 });
@@ -545,6 +540,7 @@ test("docToBabyData coalesces missing public due date text to null", () => {
       locale: "en-GB",
       milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
       name: "Nova",
+      ogImageHash: "testhash",
       photoUrl: null,
       publicDueDateText: undefined,
       publicId: "nova",
@@ -560,7 +556,8 @@ test("docToBabyData coalesces missing public due date text to null", () => {
   });
 });
 
-test("share preview uses the canonical route slug while reactive baby data changes", () => {
+test("share preview uses the canonical route slug while reactive baby data changes", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const seo = getBabySeo(
     {
       _creationTime: 1,
@@ -573,6 +570,7 @@ test("share preview uses the canonical route slug while reactive baby data chang
       locale: "en-GB",
       milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
       name: "Juniper Hale",
+      ogImageHash: "testhash",
       photoUrl: null,
       publicDueDateText: undefined,
       publicId: "juniper-hale-1",
@@ -585,7 +583,7 @@ test("share preview uses the canonical route slug while reactive baby data chang
     "juniper-hale",
   );
 
-  expect(new URL(seo.imageUrl).pathname).toBe("/og/baby/juniper-hale");
+  expect(new URL(seo.imageUrl).pathname).toBe("/og/baby/juniper-hale-testhash-20260811");
   expect(seo.canonical).toBe("https://isbabyoutyet.com/baby/juniper-hale");
 });
 

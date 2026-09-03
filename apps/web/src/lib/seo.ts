@@ -1,11 +1,14 @@
-import type { BabyStatus, MilestoneVisibility } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import type { FunctionReturnType } from "convex/server";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import type { BabyStatus, MilestoneVisibility } from "@workspace/convex/src/types";
+import { babyOgImageFileName, calendarDayKey } from "@workspace/convex/src/babyOgImage";
+import { api } from "@workspace/convex/convex/_generated/api";
+import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
+import { getCurrentStatus } from "@workspace/convex/src/types";
 import { getDaysUntilDueDate, getOverdueDays, getThemePrimaryColor } from "@/components/baby/utils";
 import { translate } from "@/lib/i18n";
 import { isIndexableBabyPublicId, searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
-import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
@@ -15,13 +18,13 @@ type BabySeoBase = {
   laborStarted: string | null | undefined;
   locale: SupportedLocale;
   name: string;
+  ogImageHash: string;
   publicId: string;
   theme: string | null | undefined;
+  timeZone: string;
   wentToHospital: string | null | undefined;
 } & Partial<{
   milestoneVisibility: MilestoneVisibility | null;
-  photoId: string | null;
-  timeZone: string;
 }>;
 
 export type BabyDueDateDisplay =
@@ -61,7 +64,10 @@ function babyPageTitle(baby: BabySeoInput) {
   return translate(locale, "{{title}} – Track Your Baby's Journey", { title });
 }
 
-export function babyPageDescription(baby: BabySeoInput) {
+export function babyPageDescription(
+  baby: Pick<BabySeoBase, "babyBorn" | "laborStarted" | "locale" | "name" | "wentToHospital"> &
+    Partial<{ milestoneVisibility: MilestoneVisibility | null }>,
+) {
   const status = getCurrentStatus(baby);
   const locale = baby.locale;
   switch (status.type) {
@@ -110,7 +116,8 @@ export function babyStatusLabel(opts: { locale: SupportedLocale; status: BabySta
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<BabySeoBase, "babyBorn" | "locale" | "timeZone"> & BabyDueDateDisplay;
+  baby: Pick<BabySeoBase, "babyBorn" | "locale"> &
+    BabyDueDateDisplay & { timeZone: string | undefined };
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -144,44 +151,14 @@ export function babyStatusDetail(opts: {
   );
 }
 
-function babyOgImagePath(publicId: string) {
-  return `/og/baby/${publicId}`;
-}
-
-function babyOgImageVersion(opts: { baby: BabySeoInput; description: string; title: string }) {
-  const source = JSON.stringify([
-    "baby-og-v2",
-    opts.title,
-    opts.description,
-    opts.baby.name,
-    opts.baby.dueDateDisplayMode ?? null,
-    opts.baby.dueDateDisplayMode === "exact" ? opts.baby.dueDate : null,
-    opts.baby.dueDateDisplayMode === "message" ? (opts.baby.publicDueDateText ?? null) : null,
-    opts.baby.theme ?? null,
-    opts.baby.locale,
-    opts.baby.babyBorn ?? null,
-    opts.baby.wentToHospital ?? null,
-    opts.baby.laborStarted ?? null,
-    opts.baby.milestoneVisibility?.showLabor ?? null,
-    opts.baby.milestoneVisibility?.showHospital ?? null,
-    opts.baby.photoId ?? null,
-  ]);
-  let first = 0x81_1c_9d_c5;
-  let second = 0x9e_37_79_b9;
-  for (let index = 0; index < source.length; index++) {
-    const code = source.charCodeAt(index);
-    first = Math.imul(first ^ code, 0x01_00_01_93);
-    second = Math.imul(second ^ code, 0x85_eb_ca_6b);
-  }
-  return `${(first >>> 0).toString(36)}${(second >>> 0).toString(36)}`;
-}
-
-export function babyOgImageUrl(publicId: string, version: string | undefined) {
-  const url = new URL(absoluteUrl(babyOgImagePath(publicId)));
-  if (version) {
-    url.searchParams.set("v", version);
-  }
-  return url.toString();
+function babyOgImageUrl(opts: { ogImageHash: string; publicId: string; timeZone: string }) {
+  return absoluteUrl(
+    `/og/baby/${babyOgImageFileName({
+      asOfDay: calendarDayKey({ now: Date.now(), timeZone: opts.timeZone }),
+      ogImageHash: opts.ogImageHash,
+      publicId: opts.publicId,
+    })}`,
+  );
 }
 
 export function homepageOgImagePath() {
@@ -200,12 +177,18 @@ export function openGraphImageMeta(opts: { alt: string; imageUrl: string }) {
   ];
 }
 
+type PublicBabyDoc = NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>;
+
+/** @internal Exported for tests; production uses {@link getBabySeo}. */
 export function babySeoHead(baby: BabySeoInput) {
   const title = babyPageTitle(baby);
   const description = babyPageDescription(baby);
   const pagePath = `/baby/${baby.publicId}`;
-  const imageVersion = babyOgImageVersion({ baby, description, title });
-  const imageUrl = babyOgImageUrl(baby.publicId, imageVersion);
+  const imageUrl = babyOgImageUrl({
+    ogImageHash: baby.ogImageHash,
+    publicId: baby.publicId,
+    timeZone: baby.timeZone,
+  });
   const themeColor = getThemePrimaryColor(baby.theme);
 
   return {
@@ -219,6 +202,29 @@ export function babySeoHead(baby: BabySeoInput) {
     themeColor,
     title,
   };
+}
+
+export function getBabySeo(doc: PublicBabyDoc, routePublicId: string) {
+  return babySeoHead({
+    name: doc.name,
+    ...(doc.dueDateDisplayMode === "exact"
+      ? { dueDate: doc.dueDate, dueDateDisplayMode: "exact" as const }
+      : {
+          dueDateDisplayMode: "message" as const,
+          publicDueDateText: doc.publicDueDateText ?? "",
+        }),
+    // beforeLoad canonicalizes this route parameter. During same-route
+    // navigation, reactive query data can briefly belong to the prior slug.
+    babyBorn: doc.babyBorn,
+    laborStarted: doc.laborStarted,
+    locale: doc.resolvedLocale,
+    milestoneVisibility: doc.milestoneVisibility,
+    ogImageHash: doc.ogImageHash,
+    publicId: routePublicId,
+    theme: doc.theme,
+    timeZone: doc.timeZone,
+    wentToHospital: doc.wentToHospital,
+  });
 }
 
 export function robotsNoIndexMeta() {

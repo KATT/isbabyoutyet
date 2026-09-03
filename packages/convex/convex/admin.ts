@@ -2,7 +2,7 @@ import { paginationOptsValidator, paginationResultValidator } from "convex/serve
 import { v } from "convex/values";
 import { components } from "./_generated/api";
 import { query } from "./_generated/server";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import {
@@ -12,6 +12,7 @@ import {
   type JsonObject,
 } from "@workspace/runtime/json";
 import { requireAdmin } from "./adminAccess";
+import { authComponent } from "./auth";
 import { transferBabyPublicId } from "./babyPublicId";
 import { isActive } from "./softDelete";
 import { loadCurrentStatus } from "./timeline";
@@ -104,19 +105,13 @@ async function ownedBabiesForUser(ctx: QueryCtx, userId: string) {
  * (homepage live demos use `homepage-demo`) are not Better Auth rows — looking
  * them up by `_id` throws "Invalid ID length", so skip those.
  */
-async function findUserEmail(ctx: { runQuery: QueryCtx["runQuery"] }, userId: string) {
+async function findUserEmail(ctx: QueryCtx | MutationCtx, userId: string) {
   if (userId === HOMEPAGE_DEMO_OWNER_USER_ID) {
     return null;
   }
   try {
-    const user = await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: "user",
-      where: [{ field: "_id", value: userId }],
-    });
-    if (!user?.email) {
-      return null;
-    }
-    return String(user.email);
+    const user = await authComponent.getAnyUserById(ctx, userId);
+    return user?.email ?? null;
   } catch {
     // Orphan / non-document userIds must not fail the whole admin list.
     return null;

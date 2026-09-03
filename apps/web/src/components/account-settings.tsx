@@ -3,6 +3,8 @@ import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Button } from "@workspace/ui/components/button";
 import {
   FormControl,
@@ -46,7 +48,7 @@ export type AccountUser = {
   name: string;
 };
 
-export type AccountSessionSnapshot = {
+type AccountSessionSnapshot = {
   data: { user: AccountUser } | null;
 };
 
@@ -69,7 +71,7 @@ export async function completeAccountAuthAction(
 
 /**
  * Maps a Better Auth user (or logged-out `null`) onto the account section's
- * session snapshot. Tests call this when stubbing `accountAuthAdapter.useSession`.
+ * session snapshot.
  *
  * @internal
  */
@@ -95,7 +97,6 @@ async function defaultChangeEmail(body: {
 }) {
   try {
     await body.persist({ newEmail: body.newEmail });
-    await accountAuthAdapter.refreshSession();
     return { error: null };
   } catch (error) {
     return { error: { message: error instanceof Error ? error.message : "" } };
@@ -115,16 +116,7 @@ export const accountAuthAdapter = {
     newPassword: string;
     revokeOtherSessions: true;
   }) => authClient.changePassword(body),
-  refreshSession: async () => {
-    await authClient.getSession({
-      query: {
-        disableCookieCache: true,
-      },
-    });
-  },
   updateUser: (body: { name: string }) => authClient.updateUser(body),
-  useSession: (): AccountSessionSnapshot =>
-    accountSessionSnapshot(authClient.useSession().data?.user ?? null),
 };
 
 function nameSchema(t: TranslationFunction) {
@@ -181,11 +173,19 @@ function EditorActions() {
 /**
  * Convex-wired account rows for the dashboard settings sheet.
  */
-export function AccountSettings() {
+export function AccountSettings(props: { profile: PreloadedConvexQuery<typeof api.profile.get> }) {
   const { t } = useI18n();
   const changeAccountEmail = useMutation(api.accountEmail.change);
-  const session = accountAuthAdapter.useSession();
-  const sessionUser = session.data === null ? null : session.data.user;
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
+  const profile = profileQuery.data;
+
+  const sessionUser =
+    profile === null || profile === undefined
+      ? null
+      : {
+          email: profile.email,
+          name: profile.name,
+        };
 
   return (
     <AccountSettingsView

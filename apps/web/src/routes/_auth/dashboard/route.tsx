@@ -19,8 +19,8 @@ export const Route = createFileRoute("/_auth/dashboard")({
   loader: async (opts) => {
     const preloader = opts.context.convexPreloader;
     return await allKeyed({
-      babies: preloader.fetchQueryData(api.baby.listByUser, {}),
-      onboarding: preloader.fetchQueryData(api.onboarding.getMine, {}),
+      babies: preloader.ensureQueryData(api.baby.listByUser, {}),
+      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
     });
   },
 });

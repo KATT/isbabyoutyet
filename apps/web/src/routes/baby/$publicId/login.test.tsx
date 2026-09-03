@@ -1,49 +1,12 @@
 import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { loginAuthAdapter } from "@/routes/auth/login";
 import { Route } from "@/routes/baby/$publicId/login";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { seedOwnedBaby, patchOwnedBaby } from "@/test/convexTestSeed";
+import { seedOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
-import { runRouteBeforeLoad } from "@/test/routeTestContext";
-
-test("beforeLoad validates and canonicalizes the baby slug", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: "missing-baby" },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({ isNotFound: true });
-
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Nova" });
-  await patchOwnedBaby(harness, {
-    id: baby.babyId,
-    patch: {
-      name: "Renamed Nova",
-    },
-  });
-  const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: baby.publicId },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
-    options: {
-      params: { publicId: renamed?.publicId },
-      replace: true,
-      to: "/baby/$publicId/login",
-    },
-  });
-});
 
 test("sign-in in the overlay dismisses back to the baby page", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });

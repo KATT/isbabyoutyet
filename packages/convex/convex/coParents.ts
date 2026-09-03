@@ -19,13 +19,6 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-async function findUserById(ctx: QueryCtx | MutationCtx, userId: string) {
-  return await ctx.runQuery(components.betterAuth.adapter.findOne, {
-    model: "user",
-    where: [{ field: "_id", value: userId }],
-  });
-}
-
 async function findUserByEmail(ctx: QueryCtx | MutationCtx, email: string) {
   return await ctx.runQuery(components.betterAuth.adapter.findOne, {
     model: "user",
@@ -34,20 +27,13 @@ async function findUserByEmail(ctx: QueryCtx | MutationCtx, email: string) {
 }
 
 async function resolveCallerProfile(ctx: QueryCtx | MutationCtx, userId: string) {
-  const authUser = await authComponent.safeGetAuthUser(ctx).catch(() => null);
-  if (authUser?.email) {
-    return {
-      email: normalizeEmail(String(authUser.email)),
-      name: parseOptionalString(authUser.name),
-    };
-  }
-  const byId = await findUserById(ctx, userId);
-  if (!byId?.email) {
+  const user = await authComponent.getAnyUserById(ctx, userId);
+  if (!user) {
     return null;
   }
   return {
-    email: normalizeEmail(String(byId.email)),
-    name: parseOptionalString(byId.name),
+    email: normalizeEmail(user.email),
+    name: user.name || null,
   };
 }
 

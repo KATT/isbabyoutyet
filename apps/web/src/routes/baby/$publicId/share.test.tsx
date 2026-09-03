@@ -3,47 +3,12 @@ import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { expect, test, vi } from "vitest";
-import { getBabySeo } from "@/lib/baby-seo";
+import { getBabySeo } from "@/lib/seo";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { seedOwnedBaby, patchOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
-import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
+import { runRouteLoader } from "@/test/routeTestContext";
 import { Route } from "@/routes/baby/$publicId/share";
-
-test("beforeLoad validates and canonicalizes the baby slug", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: "missing-baby" },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({ isNotFound: true });
-
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Nova" });
-  await patchOwnedBaby(harness, {
-    id: baby.babyId,
-    patch: {
-      name: "Renamed Nova",
-    },
-  });
-  const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-
-  await expect(
-    runRouteBeforeLoad({
-      harness,
-      params: { publicId: baby.publicId },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
-    options: {
-      params: { publicId: renamed?.publicId },
-      replace: true,
-      to: "/baby/$publicId/share",
-    },
-  });
-});
 
 test("loader prefetches the canonical OG image in the browser", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
@@ -71,14 +36,16 @@ test("loader prefetches the canonical OG image in the browser", async () => {
     throw new Error("expected baby");
   }
   const prefetchedImageUrl = new URL(data.imagePrefetch.input ?? "");
-  expect(prefetchedImageUrl.pathname).toBe(`/og/baby/${baby.publicId}`);
-  expect(prefetchedImageUrl.searchParams.get("v")).toBeTruthy();
+  expect(prefetchedImageUrl.pathname).toMatch(
+    new RegExp(`^/og/baby/${baby.publicId}-${babyDoc.ogImageHash}-\\d{8}$`),
+  );
+  expect(prefetchedImageUrl.search).toBe("");
   expect(data.imagePrefetch.input).toBe(getBabySeo(babyDoc, baby.publicId).imageUrl);
   expect(data.myAccess.initialData.canManage).toBe(true);
   expect(data.shareLink).toBe(`https://isbabyoutyet.com/baby/${baby.publicId}`);
 });
 
-test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
+test("loader reuses a cached baby snapshot instead of refetching", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
   await patchOwnedBaby(harness, {
@@ -87,13 +54,13 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
       theme: "orange",
     },
   });
-  const staleBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
-  if (!staleBaby) {
+  const cachedBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+  if (!cachedBaby) {
     throw new Error("expected baby");
   }
   harness.queryClient.setQueryData(
     convexQuery(api.baby.getByPublicId, { id: baby.publicId }).queryKey,
-    staleBaby,
+    cachedBaby,
   );
 
   await patchOwnedBaby(harness, {
@@ -114,7 +81,7 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
   if (!freshBaby) {
     throw new Error("expected baby");
   }
-  expect(data.imagePrefetch.input).toBe(getBabySeo(freshBaby, baby.publicId).imageUrl);
+  expect(data.imagePrefetch.input).toBe(getBabySeo(cachedBaby, baby.publicId).imageUrl);
   expect(freshBaby.theme).toBe("baby-blue");
 });
 

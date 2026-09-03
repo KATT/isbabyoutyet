@@ -1,29 +1,21 @@
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { components } from "./_generated/api";
+import { authComponent } from "./auth";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { findActiveCoParent } from "./babyAccess";
 import { isActive, softDeletePatch } from "./softDelete";
-import { parseOptionalString } from "@workspace/runtime/json";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-async function findUserById(ctx: QueryCtx | MutationCtx, userId: string) {
-  return await ctx.runQuery(components.betterAuth.adapter.findOne, {
-    model: "user",
-    where: [{ field: "_id", value: userId }],
-  });
-}
-
 async function resolveAuthUserProfile(ctx: QueryCtx | MutationCtx, userId: string) {
-  const byId = await findUserById(ctx, userId);
-  if (!byId?.email) {
+  const user = await authComponent.getAnyUserById(ctx, userId);
+  if (!user) {
     return null;
   }
   return {
-    email: normalizeEmail(String(byId.email)),
-    name: parseOptionalString(byId.name),
+    email: normalizeEmail(user.email),
+    name: user.name || null,
   };
 }
 

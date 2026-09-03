@@ -68,14 +68,14 @@ function reparentRoute<TRoute extends AnyRoute>(
   return update(opts);
 }
 
-type FetchQueryData = (
+type EnsureQueryData = (
   query: Parameters<typeof getFunctionName>[0],
   input: Record<string, never>,
 ) => Promise<{ initialData: unknown; input: Record<string, never> }>;
 
 function stubPreloader(babies: Array<typeof babySmith>) {
   const calls: Array<string> = [];
-  const fetchQueryData = vi.fn<FetchQueryData>((query, input) => {
+  const ensureQueryData = vi.fn<EnsureQueryData>((query, input) => {
     const name = getFunctionName(query);
     calls.push(name);
     return Promise.resolve({
@@ -83,7 +83,7 @@ function stubPreloader(babies: Array<typeof babySmith>) {
       input,
     });
   });
-  return { calls, context: { convexPreloader: { fetchQueryData } } };
+  return { calls, context: { convexPreloader: { ensureQueryData } } };
 }
 
 test("shows the empty state once the list has loaded with no babies", async () => {
@@ -159,7 +159,7 @@ test("parent dashboard stays mounted while child routes render through its outle
   expect(view.getByTestId("dashboard-outlet")).toBeTruthy();
 });
 
-test("parent dashboard loader refetches auth-scoped reads without a waterfall", async () => {
+test("parent dashboard loader ensures auth-scoped reads without a waterfall", async () => {
   const preloader = stubPreloader([]);
   // @ts-expect-error — stub context is the subset the loader reads
   const loader: (opts: {

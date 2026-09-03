@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { DEFAULT_TIME_ZONE, isValidTimeZone, resolveTimeZone } from "../src/timeZone";
+import { authComponent } from "./auth";
 import { supportedLocaleValidator } from "./i18n";
 import { appIdentity } from "./authIdentity";
 import { mutationWithTriggers } from "./triggers";
@@ -28,16 +29,6 @@ async function getProfileHandler(ctx: Pick<QueryCtx, "db">, tokenIdentifier: str
     .unique();
 }
 
-function toProfileResult(
-  profile: { isAdmin: boolean; locale: string } & Partial<{ timeZone: string }>,
-) {
-  return {
-    isAdmin: profile.isAdmin,
-    locale: resolveSupportedLocale(profile.locale),
-    timeZone: resolveTimeZone(profile.timeZone),
-  };
-}
-
 export const get = query({
   args: {},
   handler: async (ctx) => {
@@ -47,11 +38,27 @@ export const get = query({
     }
     const caller = appIdentity(identity);
     const profile = await getProfileHandler(ctx, caller.tokenIdentifier);
-    return profile
-      ? toProfileResult(profile)
-      : { isAdmin: false, locale: DEFAULT_LOCALE, timeZone: DEFAULT_TIME_ZONE };
+    const user = await authComponent.getAnyUserById(ctx, caller.authUserId);
+    return {
+      email: user?.email ?? "",
+      emailVerified: user?.emailVerified ?? false,
+      isAdmin: profile?.isAdmin ?? false,
+      locale: resolveSupportedLocale(profile?.locale ?? DEFAULT_LOCALE),
+      name: user?.name ?? "",
+      timeZone: resolveTimeZone(profile?.timeZone),
+    };
   },
-  returns: v.union(profileResultValidator, v.null()),
+  returns: v.union(
+    v.object({
+      email: v.string(),
+      emailVerified: v.boolean(),
+      isAdmin: v.boolean(),
+      locale: supportedLocaleValidator,
+      name: v.string(),
+      timeZone: v.string(),
+    }),
+    v.null(),
+  ),
 });
 
 export const updateLocale = mutationWithTriggers({

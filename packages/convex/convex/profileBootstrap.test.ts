@@ -38,8 +38,11 @@ test("sign-up creates a profile from Accept-Language", async () => {
 
   const asUser = t.withIdentity({ subject: userId });
   expect(await asUser.query(api.profile.get, {})).toEqual({
+    email: "locale@example.com",
+    emailVerified: false,
     isAdmin: false,
     locale: "sv",
+    name: "Locale User",
     timeZone: "Asia/Tokyo",
   });
 });
@@ -86,8 +89,11 @@ test("sign-in ensures a profile exists for legacy users", async () => {
 
   const asUser = t.withIdentity({ subject: userId });
   expect(await asUser.query(api.profile.get, {})).toEqual({
+    email: "legacy@example.com",
+    emailVerified: false,
     isAdmin: false,
     locale: "es",
+    name: "Legacy",
     timeZone: "America/New_York",
   });
 });
@@ -141,8 +147,11 @@ test("sign-in fills a missing time zone without replacing the saved language", a
   });
 
   expect(await t.withIdentity({ subject: userId }).query(api.profile.get, {})).toEqual({
+    email: "missing-time-zone@example.com",
+    emailVerified: false,
     isAdmin: false,
     locale: "sv",
+    name: "Missing Time Zone",
     timeZone: "Asia/Tokyo",
   });
 });
@@ -180,8 +189,11 @@ test("sign-in does not replace saved browser preferences", async () => {
   });
 
   expect(await t.withIdentity({ subject: userId }).query(api.profile.get, {})).toEqual({
+    email: "saved-preferences@example.com",
+    emailVerified: false,
     isAdmin: false,
     locale: "sv",
+    name: "Saved Preferences",
     timeZone: "Asia/Tokyo",
   });
 });

@@ -2,18 +2,11 @@ import { v } from "convex/values";
 import { components } from "./_generated/api";
 import { mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
+import { authComponent } from "./auth";
 import { claimPendingInvitesForAuthUser } from "./coParentInviteClaims";
-import { parseOptionalString } from "@workspace/runtime/json";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
-}
-
-async function findUserById(ctx: MutationCtx, userId: string) {
-  return await ctx.runQuery(components.betterAuth.adapter.findOne, {
-    model: "user",
-    where: [{ field: "_id", value: userId }],
-  });
 }
 
 async function findUserByEmail(ctx: MutationCtx, email: string) {
@@ -34,18 +27,18 @@ async function changeAccountEmail(ctx: MutationCtx, newEmail: string) {
     throw new Error("Invalid email address");
   }
 
-  const user = await findUserById(ctx, identity.subject);
+  const user = await authComponent.getAnyUserById(ctx, identity.subject);
   if (!user) {
     throw new Error("Not authenticated");
   }
 
-  const currentEmail = normalizeEmail(String(user.email));
+  const currentEmail = normalizeEmail(user.email);
   if (nextEmail === currentEmail) {
     throw new Error("Choose a different email address.");
   }
 
   const existing = await findUserByEmail(ctx, nextEmail);
-  if (existing && String(existing._id) !== String(user._id)) {
+  if (existing && String(existing._id) !== identity.subject) {
     throw new Error("Email already in use");
   }
 
@@ -63,7 +56,7 @@ async function changeAccountEmail(ctx: MutationCtx, newEmail: string) {
 
   await claimPendingInvitesForAuthUser(ctx, {
     email: nextEmail,
-    name: parseOptionalString(user.name),
+    name: user.name,
     userId: identity.subject,
   });
 }

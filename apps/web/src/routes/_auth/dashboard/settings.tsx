@@ -1,5 +1,5 @@
 import { Shield, SignOut } from "@phosphor-icons/react";
-import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, Link, useRouter } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
@@ -79,11 +79,12 @@ export function DashboardSettingsSheet(props: {
   queryClient: QueryClient;
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
+  const router = useRouter();
   const settings = useDashboardSettingsOverlayNav();
 
   return (
     <DashboardSettingsSheetView
-      accountSettings={<AccountSettings />}
+      accountSettings={<AccountSettings profile={props.profile} />}
       isAdmin={profileQuery.data?.isAdmin === true}
       languageSettings={<LanguageSettings profile={props.profile} />}
       onSignOut={async () => {
@@ -93,8 +94,10 @@ export function DashboardSettingsSheet(props: {
             onError: (error) => {
               toast.error(error.error.message);
             },
-            onSuccess: () => {
-              window.location.href = "/";
+            onSuccess: async () => {
+              await router.navigate({
+                to: "/",
+              });
             },
           },
         });

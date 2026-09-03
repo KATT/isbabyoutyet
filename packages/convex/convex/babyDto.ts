@@ -1,5 +1,6 @@
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
+import { babyOgImageHash } from "../src/babyOgImage";
 import { milestoneVisibilityForPreset } from "../src/types";
 import { loadMilestoneDates } from "./timeline";
 import { resolveBabyPreferences } from "./babyPreferences";
@@ -28,6 +29,29 @@ async function toBabyBaseDto(ctx: QueryCtx, baby: Doc<"baby">) {
   };
 }
 
+function ogImageHashForPublicBaby(
+  baby: Awaited<ReturnType<typeof toBabyBaseDto>> &
+    (
+      | { dueDate: string; dueDateDisplayMode: "exact" }
+      | { dueDateDisplayMode: "message"; publicDueDateText: string | undefined }
+    ),
+) {
+  return babyOgImageHash({
+    babyBorn: baby.babyBorn,
+    dueDate: baby.dueDateDisplayMode === "exact" ? baby.dueDate : null,
+    dueDateDisplayMode: baby.dueDateDisplayMode,
+    laborStarted: baby.laborStarted,
+    locale: baby.resolvedLocale,
+    milestoneVisibility: baby.milestoneVisibility,
+    name: baby.name,
+    photoId: baby.photoId ?? null,
+    publicDueDateText:
+      baby.dueDateDisplayMode === "message" ? (baby.publicDueDateText ?? null) : null,
+    theme: baby.theme ?? null,
+    wentToHospital: baby.wentToHospital,
+  });
+}
+
 /** Public projection physically omits whichever due-date field is inactive. */
 export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
   const publicBaby = await toBabyBaseDto(ctx, baby);
@@ -36,18 +60,20 @@ export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
       if (!baby.dueDate) {
         throw new Error("Exact due date display requires a due date");
       }
-      return {
+      const dto = {
         ...publicBaby,
         dueDate: baby.dueDate,
         dueDateDisplayMode: "exact" as const,
       };
+      return { ...dto, ogImageHash: ogImageHashForPublicBaby(dto) };
     }
     case "message": {
-      return {
+      const dto = {
         ...publicBaby,
         dueDateDisplayMode: "message" as const,
         publicDueDateText: baby.publicDueDateText?.trim(),
       };
+      return { ...dto, ogImageHash: ogImageHashForPublicBaby(dto) };
     }
     default: {
       const _exhaustive: never = baby.dueDateDisplayMode;

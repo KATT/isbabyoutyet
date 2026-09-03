@@ -2,8 +2,10 @@ import { fireEvent } from "@testing-library/react";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { api } from "@workspace/convex/convex/_generated/api";
 import { LocaleProvider } from "@/lib/i18n";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { signUpTestUser } from "@/test/convexTestSeed";
 import { htmlInput } from "@/test/htmlElement";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
@@ -14,7 +16,6 @@ import {
   accountSessionSnapshot,
   completeAccountAuthAction,
   type AccountSettingsHandlers,
-  type AccountSessionSnapshot,
   type AccountUser,
 } from "./account-settings";
 
@@ -83,33 +84,18 @@ test("accountSessionSnapshot maps a user or logged-out null", () => {
   });
 });
 
-test("changing email refreshes the session after persist so the preview can update", async () => {
+test("changing email persists the new address", async () => {
   const persist = vi.fn(async () => null);
-  const refreshSession = vi.fn(async () => {});
-  const originalRefreshSession = accountAuthAdapter.refreshSession;
-  accountAuthAdapter.refreshSession = refreshSession;
-  await using _refresh = makeResource({}, () => {
-    accountAuthAdapter.refreshSession = originalRefreshSession;
-  });
-
   const result = await accountAuthAdapter.changeEmail({
     newEmail: "new@example.com",
     persist,
   });
 
   expect(persist).toHaveBeenCalledWith({ newEmail: "new@example.com" });
-  expect(refreshSession).toHaveBeenCalledTimes(1);
   expect(result).toEqual({ error: null });
 });
 
-test("changing email does not refresh the session when persist fails", async () => {
-  const refreshSession = vi.fn(async () => {});
-  const originalRefreshSession = accountAuthAdapter.refreshSession;
-  accountAuthAdapter.refreshSession = refreshSession;
-  await using _refresh = makeResource({}, () => {
-    accountAuthAdapter.refreshSession = originalRefreshSession;
-  });
-
+test("changing email returns the persist error", async () => {
   const result = await accountAuthAdapter.changeEmail({
     newEmail: "new@example.com",
     persist: async () => {
@@ -117,7 +103,6 @@ test("changing email does not refresh the session when persist fails", async () 
     },
   });
 
-  expect(refreshSession).not.toHaveBeenCalled();
   expect(result).toEqual({ error: { message: "Email already in use" } });
 });
 
@@ -316,12 +301,10 @@ function stubAccountAuth(overrides: {
   updateUser:
     | ((body: { name: string }) => Promise<{ error: { message: string | undefined } | null }>)
     | null;
-  useSession: (() => AccountSessionSnapshot) | null;
 }) {
   const originalChangeEmail = accountAuthAdapter.changeEmail;
   const originalChangePassword = accountAuthAdapter.changePassword;
   const originalUpdateUser = accountAuthAdapter.updateUser;
-  const originalUseSession = accountAuthAdapter.useSession;
   if (overrides.changeEmail !== null) {
     // SAFETY: Test stub replaces the adapter's network-backed Better Auth method.
     accountAuthAdapter.changeEmail = overrides.changeEmail as typeof accountAuthAdapter.changeEmail;
@@ -335,14 +318,10 @@ function stubAccountAuth(overrides: {
     // SAFETY: Test stub replaces the adapter's network-backed Better Auth method.
     accountAuthAdapter.updateUser = overrides.updateUser as typeof accountAuthAdapter.updateUser;
   }
-  if (overrides.useSession !== null) {
-    accountAuthAdapter.useSession = overrides.useSession;
-  }
   return makeResource({}, () => {
     accountAuthAdapter.changeEmail = originalChangeEmail;
     accountAuthAdapter.changePassword = originalChangePassword;
     accountAuthAdapter.updateUser = originalUpdateUser;
-    accountAuthAdapter.useSession = originalUseSession;
   });
 }
 
@@ -364,6 +343,23 @@ function stubToastError() {
   });
 }
 
+async function renderSignedInAccountSettings(
+  harness: Awaited<ReturnType<typeof createConvexTestHarness>>,
+) {
+  const userId = await signUpTestUser(harness, {
+    email: "ada@example.com",
+    name: "Ada",
+    password: "password123",
+  });
+  harness.withIdentity({ subject: userId });
+  const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
+  return renderWithConvexTest({
+    harness,
+    ui: <AccountSettings profile={profile} />,
+    wrap: null,
+  });
+}
+
 test("AccountSettings name path toasts success", async () => {
   await using toasts = stubToastSuccess();
   const updateUser = vi.fn(successAuth);
@@ -371,14 +367,9 @@ test("AccountSettings name path toasts success", async () => {
     changeEmail: null,
     changePassword: null,
     updateUser,
-    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
-  await using view = await renderWithConvexTest({
-    harness,
-    ui: <AccountSettings />,
-    wrap: null,
-  });
+  await using view = await renderSignedInAccountSettings(harness);
 
   fireEvent.click(view.getByRole("button", { name: "Edit name" }));
   fireEvent.change(htmlInput(view.getByLabelText("Your name")), {
@@ -401,14 +392,9 @@ test("AccountSettings password path toasts success", async () => {
     changeEmail: null,
     changePassword,
     updateUser: null,
-    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
-  await using view = await renderWithConvexTest({
-    harness,
-    ui: <AccountSettings />,
-    wrap: null,
-  });
+  await using view = await renderSignedInAccountSettings(harness);
 
   fireEvent.click(view.getByRole("button", { name: "Edit password" }));
   fireEvent.change(htmlInput(view.getByLabelText("Current password")), {
@@ -441,14 +427,9 @@ test("AccountSettings change-email path toasts success", async () => {
     changeEmail,
     changePassword: null,
     updateUser: null,
-    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
-  await using view = await renderWithConvexTest({
-    harness,
-    ui: <AccountSettings />,
-    wrap: null,
-  });
+  await using view = await renderSignedInAccountSettings(harness);
 
   fireEvent.click(view.getByRole("button", { name: "Edit email" }));
   fireEvent.change(htmlInput(view.getByLabelText("New email")), {
@@ -473,14 +454,9 @@ test("AccountSettings name path throws the fallback when Better Auth omits a mes
     changeEmail: null,
     changePassword: null,
     updateUser,
-    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
-  await using view = await renderWithConvexTest({
-    harness,
-    ui: <AccountSettings />,
-    wrap: null,
-  });
+  await using view = await renderSignedInAccountSettings(harness);
 
   fireEvent.click(view.getByRole("button", { name: "Edit name" }));
   fireEvent.change(htmlInput(view.getByLabelText("Your name")), {
@@ -500,14 +476,9 @@ test("AccountSettings change-email path surfaces the adapter message", async () 
     changeEmail,
     changePassword: null,
     updateUser: null,
-    useSession: () => accountSessionSnapshot(sessionUser),
   });
   await using harness = await createConvexTestHarness({ identity: null });
-  await using view = await renderWithConvexTest({
-    harness,
-    ui: <AccountSettings />,
-    wrap: null,
-  });
+  await using view = await renderSignedInAccountSettings(harness);
 
   fireEvent.click(view.getByRole("button", { name: "Edit email" }));
   fireEvent.change(htmlInput(view.getByLabelText("New email")), {
@@ -520,11 +491,12 @@ test("AccountSettings change-email path surfaces the adapter message", async () 
   });
 });
 
-test("AccountSettings shows loading when the real session hook is logged out", async () => {
+test("AccountSettings shows loading when the profile query is logged out", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
+  const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
   await using view = await renderWithConvexTest({
     harness,
-    ui: <AccountSettings />,
+    ui: <AccountSettings profile={profile} />,
     wrap: null,
   });
 

@@ -3,13 +3,7 @@ import { prefetchBrowserPushCapability } from "@/components/baby/notification-su
 import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
-import {
-  createFileRoute,
-  notFound,
-  redirect,
-  useNavigate,
-  useRouter,
-} from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
@@ -19,28 +13,6 @@ import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
     const token = await authenticateManagerOverlaySsr(opts.context);
-    if (globalThis.window === undefined && !token) {
-      throw redirect({
-        params: { publicId: opts.params.publicId },
-        resetScroll: false,
-        to: "/baby/$publicId",
-      });
-    }
-
-    const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
-    });
-    const babyDoc = baby.initialData;
-    if (!babyDoc) {
-      throw notFound();
-    }
-    if (babyDoc.publicId !== opts.params.publicId) {
-      throw redirect({
-        params: { publicId: babyDoc.publicId },
-        replace: true,
-        to: "/baby/$publicId/settings",
-      });
-    }
     return token ? { isAuthenticated: true, token } : undefined;
   },
   loader: async (opts) => {
@@ -63,11 +35,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
       ),
     });
     if (!data.myAccess.initialData.canManage || data.managerBaby.initialData === FORBIDDEN) {
-      throw redirect({
-        params: { publicId: babyRef },
-        resetScroll: false,
-        to: "/baby/$publicId",
-      });
+      throw notFound();
     }
     // oxlint-disable-next-line workspace/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
     return { ...data, browserPush };
