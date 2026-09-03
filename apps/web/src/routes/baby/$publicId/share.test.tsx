@@ -3,7 +3,7 @@ import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { expect, test, vi } from "vitest";
-import { getBabySeo } from "@/lib/baby-seo";
+import { getBabySeo } from "@/lib/seo";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { seedOwnedBaby, patchOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
@@ -36,8 +36,10 @@ test("loader prefetches the canonical OG image in the browser", async () => {
     throw new Error("expected baby");
   }
   const prefetchedImageUrl = new URL(data.imagePrefetch.input ?? "");
-  expect(prefetchedImageUrl.pathname).toBe(`/og/baby/${baby.publicId}`);
-  expect(prefetchedImageUrl.searchParams.get("v")).toBeTruthy();
+  expect(prefetchedImageUrl.pathname).toMatch(
+    new RegExp(`^/og/baby/${baby.publicId}-${babyDoc.ogImageHash}-\\d{8}$`),
+  );
+  expect(prefetchedImageUrl.search).toBe("");
   expect(data.imagePrefetch.input).toBe(getBabySeo(babyDoc, baby.publicId).imageUrl);
   expect(data.myAccess.initialData.canManage).toBe(true);
   expect(data.shareLink).toBe(`https://isbabyoutyet.com/baby/${baby.publicId}`);

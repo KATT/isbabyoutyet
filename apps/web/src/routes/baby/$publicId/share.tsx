@@ -22,19 +22,17 @@ import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { allKeyed, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { toast } from "sonner";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
-import { getBabySeo } from "@/lib/baby-seo";
 import { copyTextToClipboard } from "@/lib/copy-text";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useBabyShareOverlayNav } from "@/lib/overlay-nav";
-import { babyOgImageUrl } from "@/lib/seo";
+import { getBabySeo } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
 import { useTransientFlag } from "@/lib/use-transient-flag";
 
 export const Route = createFileRoute("/baby/$publicId/share")({
   loader: async (opts) => {
     const publicId = opts.params.publicId;
-    const imageUrl = babyOgImageUrl(publicId, undefined);
     const data = await allKeyed({
       baby: opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
         id: publicId,
@@ -47,7 +45,7 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     const sharePreview = babyDoc ? getBabySeo(babyDoc, publicId) : null;
     const imagePrefetch = prefetchBrowserImage(
       opts.context.queryClient,
-      sharePreview?.imageUrl ?? imageUrl,
+      sharePreview?.imageUrl ?? "",
     );
 
     return {
@@ -73,11 +71,7 @@ export function BabyShareOverlay() {
   const sharePreview = babyDoc ? getBabySeo(babyDoc, params.publicId) : null;
   useQuery(
     preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch, () => {
-      return (
-        sharePreview?.imageUrl ??
-        loaderData.imagePrefetch.input ??
-        babyOgImageUrl(params.publicId, undefined)
-      );
+      return sharePreview?.imageUrl ?? "";
     }),
   );
   if (!sharePreview) {
@@ -114,7 +108,7 @@ export function BabyShareOverlay() {
         <Card>
           <img
             alt={sharePreview.title}
-            className="aspect-[1200/630] w-full object-cover"
+            className="aspect-1200/630 w-full object-cover"
             height={630}
             src={sharePreview.imageUrl}
             width={1200}

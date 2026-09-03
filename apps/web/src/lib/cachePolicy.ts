@@ -1,3 +1,4 @@
+import { babyOgImagePublicIdFromFileName } from "@workspace/convex/src/babyOgImage";
 import {
   ALL_BABY_PAGES_CACHE_TAG,
   babyIdCacheTag,
@@ -109,9 +110,10 @@ function publicPagePolicy(pathname: string): PublicCachePolicy | null {
 
   const babyOgMatch = /^\/og\/baby\/([^/]+)$/.exec(pathname);
   if (babyOgMatch?.[1]) {
+    const publicId = babyOgImagePublicIdFromFileName(babyOgMatch[1]);
     return {
       maxAgeSeconds: 86_400,
-      tags: [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(babyOgMatch[1])],
+      tags: [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(publicId)],
     };
   }
 

@@ -68,6 +68,7 @@ test("baby OG image includes status-aware card as PNG", async () => {
     name: "Juniper",
     photoUrl: null,
     theme: "sunny-days",
+    timeZone: undefined,
     wentToHospital: null,
   });
   expect(response.status).toBe(200);
@@ -89,6 +90,7 @@ test("baby OG image renders message-mode due date copy as PNG", async () => {
     photoUrl: null,
     publicDueDateText: "Any day now",
     theme: "sunny-days",
+    timeZone: undefined,
     wentToHospital: null,
   });
   expect(response.status).toBe(200);
@@ -109,6 +111,7 @@ test("baby OG image still renders when the photo cannot be fetched", async () =>
     name: "Juniper",
     photoUrl: MISSING_PHOTO_URL,
     theme: "sunny-days",
+    timeZone: undefined,
     wentToHospital: null,
   });
   expect(missing.status).toBe(200);
@@ -125,6 +128,7 @@ test("baby OG image still renders when the photo cannot be fetched", async () =>
     name: "Juniper",
     photoUrl: THROW_PHOTO_URL,
     theme: "sunny-days",
+    timeZone: undefined,
     wentToHospital: null,
   });
   expect(thrown.status).toBe(200);

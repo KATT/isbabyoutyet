@@ -82,8 +82,9 @@ type BabyOgImageBase = {
   name: string;
   photoUrl: string | null;
   theme: string | null | undefined;
+  timeZone: string | undefined;
   wentToHospital: string | null | undefined;
-} & Partial<{ milestoneVisibility: MilestoneVisibility | null; timeZone: string }>;
+} & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
 
 export type BabyOgImageInput = BabyOgImageBase & BabyDueDateDisplay;
 
@@ -113,25 +114,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
   const headline = translate(baby.locale, "Is {{name}} out yet?", { name: baby.name });
   const statusText = babyStatusLabel({ locale: baby.locale, status });
   const detail =
-    status.type === "not_yet"
-      ? babyStatusDetail({ baby, status })
-      : babyPageDescription({
-          name: baby.name,
-          ...(baby.dueDateDisplayMode === "exact"
-            ? { dueDate: baby.dueDate, dueDateDisplayMode: "exact" as const }
-            : {
-                dueDateDisplayMode: "message" as const,
-                publicDueDateText: baby.publicDueDateText,
-              }),
-          babyBorn: baby.babyBorn,
-          laborStarted: baby.laborStarted,
-          locale: baby.locale,
-          milestoneVisibility: baby.milestoneVisibility,
-          publicId: "",
-          theme: baby.theme,
-          timeZone: baby.timeZone,
-          wentToHospital: baby.wentToHospital,
-        });
+    status.type === "not_yet" ? babyStatusDetail({ baby, status }) : babyPageDescription(baby);
   const brand = translate(baby.locale, "Is Baby Out Yet?");
   const fontText = `${headline}${statusText}${detail}${brand}${SITE_HOST}`;
   const photoDataUrl = await resolvePhotoDataUrl(baby.photoUrl);

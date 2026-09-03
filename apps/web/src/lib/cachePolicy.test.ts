@@ -39,6 +39,7 @@ describe("applyCachePolicy", () => {
       "/baby/juniper-hale/updates/update-123/photo",
     ];
     const image = responseFor("/og/baby/juniper-hale", "GET");
+    const hashedImage = responseFor("/og/baby/juniper-hale-abc123-20260904", "GET");
     const manifest = responseFor("/baby/manifest/j57abc", "GET");
 
     for (const path of publicPages) {
@@ -47,6 +48,9 @@ describe("applyCachePolicy", () => {
       );
     }
     expect(image.headers.get("Vercel-Cache-Tag")).toBe("baby-pages,baby-public-id:juniper-hale");
+    expect(hashedImage.headers.get("Vercel-Cache-Tag")).toBe(
+      "baby-pages,baby-public-id:juniper-hale",
+    );
     expect(manifest.headers.get("Vercel-Cache-Tag")).toBe("baby-pages,baby-id:j57abc");
   });
 
@@ -72,7 +76,7 @@ describe("applyCachePolicy", () => {
       new Response(null, {
         headers: {
           "Cache-Control": "no-store",
-          Location: "https://example.com/og/baby/juniper-hale?v=current",
+          Location: "https://example.com/og/baby/juniper-hale-abc123-20260904",
         },
         status: 307,
       }),
@@ -153,7 +157,7 @@ describe("applyCachePolicy", () => {
       ["baby-pages", "baby-public-id:juniper-hale"],
     );
     const response = applyCachePolicy(
-      new Request("https://example.com/og/baby/juniper-hale?v=current"),
+      new Request("https://example.com/og/baby/juniper-hale-abc123-20260904"),
       imageResponse,
     );
 

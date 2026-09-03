@@ -27,7 +27,7 @@ import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { openGraphImageMeta } from "@/lib/seo";
-import { getBabySeo } from "@/lib/baby-seo";
+import { getBabySeo } from "@/lib/seo";
 import { babyRouteCacheHeaders } from "@/lib/cachePolicy";
 import { replaceBabyPublicId } from "@/lib/baby-public-id-href";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";

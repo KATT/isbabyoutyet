@@ -486,6 +486,35 @@ test("renaming a baby without changing the slug keeps the publicId", async () =>
   });
 });
 
+test("getByPublicId ogImageHash changes when the public page would look different", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      dueDate: "2026-09-01",
+      name: "Baby Smith",
+    }),
+  );
+
+  const before = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(before?.ogImageHash).toEqual(expect.any(String));
+
+  await asAlice.mutation(api.baby.update, {
+    id: created.babyId,
+    patch: { theme: "baby-blue" },
+  });
+  const afterTheme = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(afterTheme?.ogImageHash).not.toBe(before?.ogImageHash);
+
+  await asAlice.mutation(api.baby.update, {
+    id: created.babyId,
+    patch: { name: "Nova Rae" },
+  });
+  const afterName = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(afterName?.ogImageHash).not.toBe(afterTheme?.ogImageHash);
+});
+
 test("sparse baby.update patch leaves omitted keys and same-slug names unchanged", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

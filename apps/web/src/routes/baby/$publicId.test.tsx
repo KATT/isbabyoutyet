@@ -17,7 +17,7 @@ import {
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
-import { getBabySeo } from "@/lib/baby-seo";
+import { getBabySeo } from "@/lib/seo";
 import { renderResource } from "@/test/renderResource";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { seedOwnedBaby } from "@/test/convexTestSeed";
@@ -540,6 +540,7 @@ test("docToBabyData coalesces missing public due date text to null", () => {
       locale: "en-GB",
       milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
       name: "Nova",
+      ogImageHash: "testhash",
       photoUrl: null,
       publicDueDateText: undefined,
       publicId: "nova",
@@ -555,7 +556,8 @@ test("docToBabyData coalesces missing public due date text to null", () => {
   });
 });
 
-test("share preview uses the canonical route slug while reactive baby data changes", () => {
+test("share preview uses the canonical route slug while reactive baby data changes", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const seo = getBabySeo(
     {
       _creationTime: 1,
@@ -568,6 +570,7 @@ test("share preview uses the canonical route slug while reactive baby data chang
       locale: "en-GB",
       milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
       name: "Juniper Hale",
+      ogImageHash: "testhash",
       photoUrl: null,
       publicDueDateText: undefined,
       publicId: "juniper-hale-1",
@@ -580,7 +583,7 @@ test("share preview uses the canonical route slug while reactive baby data chang
     "juniper-hale",
   );
 
-  expect(new URL(seo.imageUrl).pathname).toBe("/og/baby/juniper-hale");
+  expect(new URL(seo.imageUrl).pathname).toBe("/og/baby/juniper-hale-testhash-20260811");
   expect(seo.canonical).toBe("https://isbabyoutyet.com/baby/juniper-hale");
 });
 
