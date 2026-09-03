@@ -24,6 +24,12 @@ function getStoredVisitorId(): string {
   return localStorage.getItem(STORAGE_KEY_VISITOR_ID) ?? "";
 }
 
+/** Existing localStorage visitor id, or null when none has been created yet. */
+export function peekVisitorId() {
+  const visitorId = getStoredVisitorId();
+  return visitorId === "" ? null : visitorId;
+}
+
 function subscribeToStoredVisitorId(notify: () => void) {
   window.addEventListener(VISITOR_ID_CHANGE_EVENT, notify);
   window.addEventListener("storage", notify);

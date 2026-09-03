@@ -412,7 +412,11 @@ function BabyPageLayout() {
               className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8"
               data-tour-id="learn_encouragements"
             >
-              <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
+              <EncouragementForm
+                accountName={session.data?.user.name ?? null}
+                babyId={babyDoc._id}
+                babyName={baby.name}
+              />
             </section>
 
             <section

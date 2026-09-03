@@ -6,6 +6,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { Milestone, MilestoneDates } from "../src/types";
 import { getCurrentStatus, MILESTONE_FIELDS, MILESTONES } from "../src/types";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
+import type { EncouragementAuthor } from "./encouragementIdentity";
+import { encouragementIsMine, resolveEncouragementAuthor } from "./encouragementIdentity";
 import { isActive, softDeletePatch } from "./softDelete";
 
 /**
@@ -63,16 +65,19 @@ async function hydrateUpdate(
 
 /**
  * Public shape of an encouragement in the feed. Deliberately excludes
- * `visitorId` (it is the edit/delete credential) and the `userAgent` /
- * `locale` / `timezone` metadata. `isMine` is computed from the
- * caller-supplied visitorId so the client can offer edit/delete.
+ * `author`, `visitorId` (the edit/delete credential), `userId`, and the
+ * `userAgent` / `locale` / `timezone` metadata. `isMine` is computed from
+ * the server-resolved author (signed-in user and/or visitor id).
  */
-function toPublicEncouragement(encouragement: Doc<"encouragements">, visitorId: string | null) {
+function toPublicEncouragement(
+  encouragement: Doc<"encouragements">,
+  author: EncouragementAuthor | null,
+) {
   return {
     _id: encouragement._id,
     authorName: encouragement.authorName,
     createdAt: encouragement.createdAt,
-    isMine: visitorId != null && encouragement.visitorId === visitorId,
+    isMine: encouragementIsMine(encouragement, author),
     message: encouragement.message,
   };
 }
@@ -80,9 +85,9 @@ function toPublicEncouragement(encouragement: Doc<"encouragements">, visitorId: 
 async function hydrateTimelineItem(
   ctx: QueryCtx,
   opts: {
+    author: EncouragementAuthor | null;
     currentPhotoId: Id<"_storage"> | null;
     item: Doc<"timelineItems">;
-    visitorId: string | null;
   },
 ) {
   if (!isActive(opts.item)) {
@@ -108,7 +113,7 @@ async function hydrateTimelineItem(
       }
       return {
         _id: opts.item._id,
-        encouragement: toPublicEncouragement(encouragement, opts.visitorId),
+        encouragement: toPublicEncouragement(encouragement, opts.author),
         kind: "encouragement" as const,
         postedAt: opts.item.postedAt,
       };
@@ -132,6 +137,7 @@ export const listByBaby = query({
     }
     const babyId = baby._id;
     const currentPhotoId = baby.photoId ?? null;
+    const author = await resolveEncouragementAuthor(ctx, args.visitorId);
 
     const result = await ctx.db
       .query("timelineItems")
@@ -142,9 +148,9 @@ export const listByBaby = query({
     const page: Array<TimelineItem> = [];
     for (const item of result.page) {
       const hydrated = await hydrateTimelineItem(ctx, {
+        author,
         currentPhotoId,
         item,
-        visitorId: args.visitorId,
       });
       if (hydrated) {
         page.push(hydrated);

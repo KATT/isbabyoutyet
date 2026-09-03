@@ -773,7 +773,7 @@ test("EncouragementForm mounts through the Convex provider", async () => {
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    ui: <EncouragementForm accountName={null} babyId={baby.babyId} babyName={notYetBaby.name} />,
     wrap: null,
   });
 
@@ -796,7 +796,7 @@ test("EncouragementForm restores a session draft silently", async () => {
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    ui: <EncouragementForm accountName={null} babyId={baby.babyId} babyName={notYetBaby.name} />,
     wrap: null,
   });
 
@@ -819,11 +819,32 @@ test("EncouragementForm prefers a session name draft over committed localStorage
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    ui: <EncouragementForm accountName={null} babyId={baby.babyId} babyName={notYetBaby.name} />,
     wrap: null,
   });
 
   expect(htmlInput(view.getByLabelText("Your name")).value).toBe("Draft Name");
+});
+
+test("EncouragementForm prefills the account name when localStorage is empty", async () => {
+  localStorage.removeItem("encouragement-author-name");
+  sessionStorage.clear();
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+
+  await using view = await renderWithConvexTest({
+    harness,
+    ui: (
+      <EncouragementForm
+        accountName="Ada Lovelace"
+        babyId={baby.babyId}
+        babyName={notYetBaby.name}
+      />
+    ),
+    wrap: null,
+  });
+
+  expect(htmlInput(view.getByLabelText("Your name")).value).toBe("Ada Lovelace");
 });
 
 test("EncouragementForm submit reaches the Convex mutation", async () => {
@@ -832,7 +853,7 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    ui: <EncouragementForm accountName={null} babyId={baby.babyId} babyName={notYetBaby.name} />,
     wrap: null,
   });
 
