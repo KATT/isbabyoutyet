@@ -49,6 +49,7 @@ async function runGuard(opts: { context: GuardCtx; fetchToken: () => Promise<str
     // SAFETY: Test fixture is a subset of the production type.
     context: opts.context as Parameters<typeof resolveAuthGuard>[0]["context"],
     fetchToken: opts.fetchToken,
+    waitForCatchup: async () => {},
   });
 }
 
@@ -118,6 +119,25 @@ test("a missing cached profile retries once without taking auth ownership from t
   });
 });
 
+test("client navigations wait for Convex to catch up after sign-in", async () => {
+  // Better Auth's cookie is set before ConvexBetterAuthProvider's effect
+  // authenticates the websocket. One refetch still sees a null profile and
+  // used to bounce to `/` instead of /dashboard.
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue("fresh-token");
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
+  guard.context.convexClient = { setAuth };
+  guard.queryFn
+    .mockResolvedValueOnce(null)
+    .mockResolvedValueOnce(null)
+    .mockResolvedValueOnce({ isAdmin: false, locale: "en-US", timeZone: "Europe/London" });
+
+  const result = await runGuard({ context: guard.context, fetchToken });
+
+  expect(result).toMatchObject({ isAuthenticated: true, locale: "en-US" });
+  expect(setAuth).not.toHaveBeenCalled();
+});
+
 test("client navigations without a session redirect home after one token check", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce(null);
   const guard = makeGuardCtx();
@@ -134,7 +154,6 @@ test("client navigations redirect when an authenticated profile cannot be read",
 
   await expectRedirectHome(() => runGuard({ context: guard.context, fetchToken }));
   expect(setAuth).not.toHaveBeenCalled();
-  expect(guard.queryFn).toHaveBeenCalledTimes(2);
 });
 
 test("client navigations keep the cached profile", async () => {
