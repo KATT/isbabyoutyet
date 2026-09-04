@@ -42,6 +42,7 @@ import {
   useBabyPostOverlayLinks,
   useBabySettingsOverlayLinks,
   useBabyShareOverlayLinks,
+  useBabySignupOverlayLinks,
 } from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
@@ -260,6 +261,7 @@ function BabyPageLayout() {
   const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
   const postUpdateOpen = !!matchRoute({ to: "/baby/$publicId/post" });
   const loginOpen = !!matchRoute({ to: "/baby/$publicId/login" });
+  const signupOpen = !!matchRoute({ to: "/baby/$publicId/signup" });
   const photoOpen =
     !!matchRoute({ to: "/baby/$publicId/photo" }) ||
     !!matchRoute({ to: "/baby/$publicId/updates/$updateId/photo" });
@@ -287,6 +289,7 @@ function BabyPageLayout() {
   const post = useBabyPostOverlayLinks(params.publicId);
   const settings = useBabySettingsOverlayLinks(params.publicId);
   const login = useBabyLoginOverlayLinks(params.publicId);
+  const signup = useBabySignupOverlayLinks(params.publicId);
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;
@@ -316,7 +319,14 @@ function BabyPageLayout() {
         <OnboardingHost
           enabled={undefined}
           onboarding={loaderData.onboarding}
-          spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen && !loginOpen}
+          spotlight={
+            !shareOpen &&
+            !postUpdateOpen &&
+            !settingsOpen &&
+            !photoOpen &&
+            !loginOpen &&
+            !signupOpen
+          }
           surface="baby"
         />
       ) : null}
@@ -338,7 +348,7 @@ function BabyPageLayout() {
             onDismissPostUpdate={canManage && postUpdateOpen ? post.dismiss : null}
             onDismissSettings={canManage && settingsOpen ? settings.dismiss : null}
             onDismissShare={shareOpen ? share.dismiss : null}
-            onDismissSignIn={loginOpen ? login.dismiss : null}
+            onDismissSignIn={loginOpen ? login.dismiss : signupOpen ? signup.dismiss : null}
             onSettingsOpened={
               canManage
                 ? () => {
@@ -353,7 +363,7 @@ function BabyPageLayout() {
             shareButton={share.openLink}
             shareOpen={shareOpen}
             signInButton={signInButton}
-            signInOpen={loginOpen}
+            signInOpen={loginOpen || signupOpen}
           />
         </div>
       </header>

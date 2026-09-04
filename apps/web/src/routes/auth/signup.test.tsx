@@ -16,7 +16,7 @@ const NEW_ACCOUNT: NewAccount = {
 function renderSignup(onSignUp: (values: NewAccount) => Promise<void>) {
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <SignupCard onSignUp={onSignUp} />
+      <SignupCard onSignUp={onSignUp} signInLink={{ to: "/auth/login" }} />
     </LocaleProvider>,
     { path: "/auth/signup" },
   );
