@@ -1,5 +1,5 @@
 import { Shield, SignOut } from "@phosphor-icons/react";
-import { createFileRoute, getRouteApi, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
@@ -18,25 +18,23 @@ import {
   SheetTitle,
 } from "@workspace/ui/components/sheet";
 import { AccountSettings } from "@/components/account-settings";
-import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
+import { Form, FormGuardProvider, SubmitButton, useZodForm } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
-import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
+import { useDashboardSettingsOverlay } from "@/lib/overlay-nav";
+import type { OverlayControl } from "@/lib/overlay-nav";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
-
-const authRoute = getRouteApi("/_auth");
-const rootRoute = getRouteApi("__root__");
 
 export const Route = createFileRoute("/_auth/dashboard/settings")({
   component: DashboardSettingsRoute,
 });
 
 export function DashboardSettingsRoute() {
-  const authContext = authRoute.useRouteContext();
-  const { queryClient } = rootRoute.useRouteContext();
+  // Accumulated context: `profile` from the `_auth` layout, `queryClient` from root.
+  const context = Route.useRouteContext();
 
-  return <DashboardSettingsSheet profile={authContext.profile} queryClient={queryClient} />;
+  return <DashboardSettingsSheet profile={context.profile} queryClient={context.queryClient} />;
 }
 
 function SettingsSection(props: { children: ReactNode; title: string }) {
@@ -51,12 +49,6 @@ function SettingsSection(props: { children: ReactNode; title: string }) {
     </section>
   );
 }
-
-type OverlayControl = {
-  onOpenChange: (open: boolean) => void;
-  onOpenChangeComplete: (open: boolean) => void;
-  open: boolean;
-};
 
 /**
  * Mutable sign-out adapter so sheet tests can avoid the Proxy-backed
@@ -80,7 +72,7 @@ export function DashboardSettingsSheet(props: {
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const router = useRouter();
-  const settings = useDashboardSettingsOverlayNav();
+  const settings = useDashboardSettingsOverlay();
 
   return (
     <DashboardSettingsSheetView
@@ -122,21 +114,16 @@ export function DashboardSettingsSheetView(props: {
 }) {
   const { t } = useI18n();
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const formOverlay = useFormGuard({ onOpenChange: props.overlay.onOpenChange });
 
   return (
-    <Sheet
-      open={props.overlay.open}
-      {...formOverlay.rootProps}
-      onOpenChangeComplete={props.overlay.onOpenChangeComplete}
-    >
+    <Sheet {...props.overlay.rootProps}>
       <SheetContent
         className="w-full sm:max-w-sm"
         initialFocus={contentRef}
         ref={contentRef}
         side="right"
       >
-        <FormGuardProvider guard={formOverlay}>
+        <FormGuardProvider guard={props.overlay.guard}>
           <SheetHeader>
             <SheetTitle>{t("Settings")}</SheetTitle>
             <SheetDescription>{t("Manage your profile and app preferences.")}</SheetDescription>

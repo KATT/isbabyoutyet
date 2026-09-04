@@ -76,6 +76,7 @@ import {
   useZodForm,
 } from "@/components/Form";
 import { getLanguageName, useI18n } from "@/lib/i18n";
+import type { OverlayControl } from "@/lib/overlay-nav";
 import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
 import type { ReactNode } from "react";
 import { useWatch } from "react-hook-form";
@@ -102,11 +103,9 @@ type SettingsPanelProps = {
   onDelete: (() => void | Promise<void>) | null;
   onMilestoneRedate: MilestoneRedateHandler;
   onMilestoneRemove: MilestoneRemoveHandler;
-  onOpenChange: (open: boolean) => void;
-  /** Called after open/close animations finish (used for route-driven close). */
-  onOpenChangeComplete: ((open: boolean) => void) | null;
   onUpdate: BabyUpdateHandler;
-  open: boolean;
+  /** Open state, guarded dismissal, and close-complete navigation for the dialog. */
+  overlay: OverlayControl;
   profileLocale: SupportedLocale;
 };
 
@@ -194,7 +193,7 @@ function BabyLanguageSelect(props: {
 
 function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Promise<void> }) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
   const form = useZodForm({
     defaultValues: {},
     schema: emptyActionSchema,
@@ -260,18 +259,9 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const coParents = props.coParents;
   const messagePush = props.messagePush;
   const journeyOption = JOURNEY_OPTION_BY_VALUE[props.birthJourney];
-  const overlay = useFormGuard({
-    onOpenChange: (open) => {
-      props.onOpenChange(open);
-    },
-  });
   return (
-    <Dialog
-      open={props.open}
-      {...overlay.rootProps}
-      onOpenChangeComplete={props.onOpenChangeComplete ?? undefined}
-    >
-      <FormGuardProvider guard={overlay}>
+    <Dialog {...props.overlay.rootProps}>
+      <FormGuardProvider guard={props.overlay.guard}>
         <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("Settings")}</DialogTitle>

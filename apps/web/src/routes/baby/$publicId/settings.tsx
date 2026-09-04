@@ -7,7 +7,7 @@ import { createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/rea
 import { useMutation } from "convex/react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
-import { useBabySettingsOverlayNav } from "@/lib/overlay-nav";
+import { useBabySettingsOverlay } from "@/lib/overlay-nav";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
@@ -49,7 +49,7 @@ export function BabySettingsOverlay() {
   const navigate = useNavigate({ from: Route.fullPath });
   const router = useRouter();
   const loaderData = Route.useLoaderData();
-  const settings = useBabySettingsOverlayNav(params.publicId);
+  const settings = useBabySettingsOverlay(params.publicId);
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const redateMilestone = useMutation(api.updates.redateMilestone);
@@ -96,13 +96,11 @@ export function BabySettingsOverlay() {
         await unmarkMilestone({ babyId: managerBabyDoc._id, milestone });
         await router.invalidate();
       }}
-      onOpenChange={settings.onOpenChange}
-      onOpenChangeComplete={settings.onOpenChangeComplete}
       onUpdate={async (update) => {
         await updateBaby({ id: managerBabyDoc._id, patch: update });
         await router.invalidate();
       }}
-      open={settings.open}
+      overlay={settings}
       profileLocale={loaderData.profile.initialData?.locale ?? locale}
     />
   );

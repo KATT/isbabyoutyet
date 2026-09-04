@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { createFormGuardStore } from "./guard-store.js";
+import { createFormGuardStore, REQUEST_CLOSE_REASON } from "./guard-store.js";
 import type { FormGuardStore, FormStateFlags, OverlayDismissEventDetails } from "./guard-store.js";
 
 function dismissEvent(reason: string) {
@@ -8,9 +8,9 @@ function dismissEvent(reason: string) {
   return { cancel, eventDetails };
 }
 
-function attachActions(store: FormGuardStore) {
+function attachCloser(store: FormGuardStore) {
   const close = vi.fn();
-  store.actionsRef.current = { close, unmount: () => undefined };
+  store.setCloser(close);
   return close;
 }
 
@@ -38,6 +38,25 @@ test("a submitting form blocks user dismissal but not the imperative success-clo
   const imperative = dismissEvent("imperative-action");
   expect(store.handleOpenChange(false, imperative.eventDetails)).toBe("allow");
   expect(imperative.cancel).not.toHaveBeenCalled();
+});
+
+test("a requested close is guarded like a user dismissal", () => {
+  const store = createFormGuardStore();
+
+  store.setFormState("note", flags({ isDirty: true, isSubmitting: true }));
+  const locked = dismissEvent(REQUEST_CLOSE_REASON);
+  expect(store.handleOpenChange(false, locked.eventDetails)).toBe("block");
+
+  store.setFormState("note", flags({ isDirty: true }));
+  const dirty = dismissEvent(REQUEST_CLOSE_REASON);
+  expect(store.handleOpenChange(false, dirty.eventDetails)).toBe("confirm");
+  expect(store.isPromptOpen()).toBe(true);
+
+  store.keepEditing();
+  store.setFormState("note", flags({}));
+  expect(store.handleOpenChange(false, dismissEvent(REQUEST_CLOSE_REASON).eventDetails)).toBe(
+    "allow",
+  );
 });
 
 test("submit outcome drives the unsaved-edits guard without imperative locks", () => {
@@ -81,7 +100,7 @@ test("dirty store confirms dismissal and opens its own prompt", () => {
 
 test("keep editing closes the prompt without closing the overlay", () => {
   const store = createFormGuardStore();
-  const close = attachActions(store);
+  const close = attachCloser(store);
   store.setFormState("note", flags({ isDirty: true }));
   store.handleOpenChange(false, dismissEvent("escape-key").eventDetails);
 
@@ -93,7 +112,7 @@ test("keep editing closes the prompt without closing the overlay", () => {
 
 test("discard allows leaving and closes every queued target", () => {
   const store = createFormGuardStore();
-  const close = attachActions(store);
+  const close = attachCloser(store);
   store.setFormState("note", flags({ isDirty: true }));
   store.handleOpenChange(false, dismissEvent("escape-key").eventDetails);
 
@@ -103,15 +122,34 @@ test("discard allows leaving and closes every queued target", () => {
   expect(store.isDirty()).toBe(false);
 });
 
-test("fresh edits after a discard re-arm the guard", () => {
+test("a discarded form that keeps re-registering its edits stays discarded", () => {
+  const store = createFormGuardStore();
+  store.setFormState("note", flags({ isDirty: true }));
+  store.handleOpenChange(false, dismissEvent("escape-key").eventDetails);
+  store.discard();
+
+  // The overlay animates out while the dirty form is still mounted and
+  // re-renders (identical flags), then unmounts and — same tree position,
+  // same id — mounts again still reporting the stale dirty flags.
+  store.setFormState("note", flags({ isDirty: true }));
+  expect(store.isDirty()).toBe(false);
+  store.setFormState("note", null);
+  store.setFormState("note", flags({ isDirty: true }));
+  expect(store.isDirty()).toBe(false);
+  expect(store.handleOpenChange(false, dismissEvent("escape-key").eventDetails)).toBe("allow");
+});
+
+test("a fresh edit session after a discard re-arms the guard", () => {
   const store = createFormGuardStore();
   store.setFormState("note", flags({ isDirty: true }));
   store.handleOpenChange(false, dismissEvent("escape-key").eventDetails);
   store.discard();
   expect(store.isDirty()).toBe(false);
 
-  // The discarded form unmounts, then a new edit session starts.
+  // The discarded form unmounts; a new form instance mounts clean and the
+  // user starts editing again.
   store.setFormState("note", null);
+  store.setFormState("note", flags({}));
   store.setFormState("note", flags({ isDirty: true }));
   expect(store.isDirty()).toBe(true);
 });
@@ -119,8 +157,8 @@ test("fresh edits after a discard re-arm the guard", () => {
 test("a nested dirty store routes its prompt to the stack root", () => {
   const root = createFormGuardStore();
   const child = createFormGuardStore();
-  const rootClose = attachActions(root);
-  const childClose = attachActions(child);
+  const rootClose = attachCloser(root);
+  const childClose = attachCloser(child);
   child.setAncestors([root]);
   child.setFormState("note", flags({ isDirty: true }));
   root.setFormState("note", flags({ isDirty: true }));
@@ -135,13 +173,16 @@ test("a nested dirty store routes its prompt to the stack root", () => {
   root.discard();
   expect(childClose).toHaveBeenCalled();
   expect(rootClose).toHaveBeenCalled();
+  // Both stores stop guarding the discarded edits while the overlays close.
+  expect(child.isDirty()).toBe(false);
+  expect(root.isDirty()).toBe(false);
 });
 
 test("keep editing on the root clears queued nested targets", () => {
   const root = createFormGuardStore();
   const child = createFormGuardStore();
-  const rootClose = attachActions(root);
-  const childClose = attachActions(child);
+  const rootClose = attachCloser(root);
+  const childClose = attachCloser(child);
   child.setAncestors([root]);
   child.setFormState("note", flags({ isDirty: true }));
 
@@ -174,7 +215,7 @@ test("prompt subscribers are notified on open and close, and can unsubscribe", (
   expect(listener).toHaveBeenCalledTimes(2);
 });
 
-test("close without an attached overlay is a no-op", () => {
+test("close without a wired overlay is a no-op", () => {
   const store = createFormGuardStore();
   expect(() => {
     store.close();

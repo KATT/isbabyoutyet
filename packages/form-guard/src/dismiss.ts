@@ -23,6 +23,8 @@ export function overlayDismissDecision(opts: {
   if (opts.open) {
     return "allow";
   }
+  // Base UI's imperative close (`actionsRef.close()` / success-close paths).
+  // Programmatic closes that should still ask use `REQUEST_CLOSE_REASON`.
   if (opts.reason === "imperative-action") {
     return "allow";
   }

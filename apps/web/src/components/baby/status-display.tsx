@@ -9,7 +9,7 @@ import {
   formatDueDate,
 } from "./utils";
 import { useI18n } from "@/lib/i18n";
-import { useBabyPhotoOverlayNav } from "@/lib/overlay-nav";
+import { useBabyPhotoOverlayLinks } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 
 type PhotoAvatarProps = {
@@ -24,7 +24,7 @@ type PhotoAvatarProps = {
 
 function PhotoAvatar(props: PhotoAvatarProps) {
   const { t } = useI18n();
-  const photo = useBabyPhotoOverlayNav(props.publicId ?? "");
+  const photo = useBabyPhotoOverlayLinks(props.publicId ?? "");
 
   const baseClasses =
     "inline-flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 mb-6";

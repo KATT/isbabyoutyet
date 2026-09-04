@@ -1,6 +1,32 @@
+/**
+ * Route-backed overlays (settings sheet, post composer, share preview, photo
+ * lightboxes): open with a pushed history entry, close by going back.
+ *
+ * Two hooks per overlay share one spec (`open` / `close` link options):
+ *
+ * - `use…Overlay` — mounted by the overlay's route component. Owns the open
+ *   state (deferred one frame so Base UI plays its enter transition), the
+ *   form guard, and the close navigation that runs once the exit transition
+ *   ends. Spread `rootProps` onto the Base UI Root and wrap forms in
+ *   `FormGuardProvider guard={overlay.guard}`.
+ * - `use…OverlayLinks` — for layouts and nav docks. `openLink` pushes the
+ *   overlay route; `dismiss()` asks the mounted overlay to close through its
+ *   guard (exit animation, discard prompt) and only falls back to a raw
+ *   history navigation when nothing is mounted (cold load).
+ *
+ * Closing navigates with `ignoreBlocker`: the guard already vetted the
+ * dismissal (or the caller closed imperatively after a save), and a blocked
+ * replace / reverted `history.back()` would strand the URL on the overlay
+ * route with nothing visible.
+ *
+ * The mounted-overlay registry is a module store (allowed in this audited lib
+ * seam) so a layout can reach the overlay rendered in its `<Outlet />`.
+ */
 import { useRouter } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useFormGuard } from "@workspace/form-guard";
+import type { FormGuardHandle } from "@workspace/form-guard";
 
 /** History state marker for push-opened overlays. */
 const overlayHistoryState = { overlay: true as const };
@@ -9,8 +35,11 @@ function isOverlayHistoryState(state: { overlay: true | undefined }) {
   return state.overlay === true;
 }
 
-type OverlayOpenInput = Omit<LinkProps, "resetScroll" | "state" | "replace" | "preload">;
-type OverlayCloseInput = Omit<LinkProps, "resetScroll" | "replace">;
+type OverlayOpenInput = Omit<
+  LinkProps,
+  "resetScroll" | "state" | "replace" | "preload" | "ignoreBlocker"
+>;
+type OverlayCloseInput = Omit<LinkProps, "resetScroll" | "replace" | "ignoreBlocker">;
 
 /**
  * Link/navigate options to *open* an overlay: push a history entry, preload
@@ -34,8 +63,8 @@ export function openOverlayLink(options: OverlayOpenInput): LinkProps {
  * Link/navigate options to *close* an overlay via replace (the fallback when
  * there is no push-opened history entry to go back to).
  *
- * Pass to `<Link {...opts} />` or `navigate(opts)`. Prefer
- * {@link useOverlayNav}'s `dismiss` when the overlay may have been push-opened.
+ * Pass to `<Link {...opts} />` or `navigate(opts)`. Prefer the overlay's
+ * `close()` / the links' `dismiss()` when the overlay may have been push-opened.
  *
  * @public
  */
@@ -47,76 +76,100 @@ export function closeOverlayLink(options: OverlayCloseInput): LinkProps {
   };
 }
 
+type OverlayHistory = {
+  back: (options: { ignoreBlocker: boolean }) => void;
+  canGoBack: () => boolean;
+  location: { state: { overlay: true | undefined } };
+};
+
 /**
  * Close an overlay the best-in-class way:
  * - If this entry was push-opened (`overlay` state) and TanStack can go back,
  *   use `history.back()` so Back/swipe matches dialog dismiss.
  * - Otherwise navigate with the provided close link (replace fallback).
  *
+ * `ignoreBlocker: true` is for the overlay's own close-after-exit path, where
+ * the form guard already answered; `false` lets router blockers ask.
+ *
  * @public
  */
 export function dismissOverlay(opts: {
   closeLink: LinkProps;
-  history: {
-    back: () => void;
-    canGoBack: () => boolean;
-    location: { state: { overlay: true | undefined } };
-  };
+  history: OverlayHistory;
+  ignoreBlocker: boolean;
   navigate: (closeLink: LinkProps) => void;
 }) {
   if (isOverlayHistoryState(opts.history.location.state) && opts.history.canGoBack()) {
-    opts.history.back();
+    // oxlint-disable-next-line no-console -- dismiss-flow debugging aid (see PR)
+    console.log("dismissOverlay: history.back", { ignoreBlocker: opts.ignoreBlocker });
+    opts.history.back({ ignoreBlocker: opts.ignoreBlocker });
     return;
   }
-  void opts.navigate(opts.closeLink);
+  // oxlint-disable-next-line no-console -- dismiss-flow debugging aid (see PR)
+  console.log("dismissOverlay: navigate", opts.closeLink, { ignoreBlocker: opts.ignoreBlocker });
+  void opts.navigate({ ...opts.closeLink, ignoreBlocker: opts.ignoreBlocker });
 }
 
-type UseOverlayNavOptions = {
+type OverlaySpec = {
   close: OverlayCloseInput;
   open: OverlayOpenInput;
 };
 
-type OverlayNav = {
-  /** Start the overlay's exit animation. */
+/** Props for the Base UI Root of a route-backed overlay. */
+type OverlayRootProps = FormGuardHandle["rootProps"] & {
+  onOpenChangeComplete: (open: boolean) => void;
+};
+
+type RouteOverlay = {
+  /**
+   * Close unconditionally (after a successful save, "Cancel"): starts the
+   * exit transition; navigation follows once it completes.
+   */
   close: () => void;
-  /** Spread onto `<Link>` / pass to `navigate` for replace-close fallback. */
+  /** Spread onto `<Link>` / pass to `navigate` for the replace-close fallback. */
+  closeLink: LinkProps;
+  /** Wrap the overlay's forms: `<FormGuardProvider guard={overlay.guard}>`. */
+  guard: FormGuardHandle;
+  /** Whether the overlay should currently be visible. */
+  open: boolean;
+  /** Spread onto `<Link>` / pass to `navigate` to open the overlay (push). */
+  openLink: LinkProps;
+  /**
+   * Close like a user dismissal: blocked mid-submit, confirmed while dirty,
+   * otherwise starts the exit transition.
+   */
+  requestClose: () => void;
+  /** Spread onto the Base UI Root (`open`, guarded `onOpenChange`, `onOpenChangeComplete`). */
+  rootProps: OverlayRootProps;
+};
+
+/** What a presentational overlay component needs from its route overlay. */
+export type OverlayControl = Pick<RouteOverlay, "close" | "guard" | "rootProps">;
+
+type OverlayLinks = {
+  /** Spread onto `<Link>` / pass to `navigate` for the replace-close fallback. */
   closeLink: LinkProps;
   /**
-   * Close the overlay: `history.back()` when this entry was push-opened and the
-   * router can go back; otherwise navigate with {@link closeLink}.
+   * Close the overlay from outside it (nav toggle): asks the mounted overlay
+   * to close through its guard; falls back to `history.back()` / replace when
+   * no overlay component is mounted.
    */
   dismiss: () => void;
-  /** Pass to the overlay primitive's `onOpenChange`. */
-  onOpenChange: (open: boolean) => void;
-  /** Pass to `onOpenChangeComplete` so navigation waits for the exit animation. */
-  onOpenChangeComplete: (open: boolean) => void;
-  /** Whether the route-backed overlay should currently be visible. */
-  open: boolean;
   /** Spread onto `<Link>` / pass to `navigate` to open the overlay (push). */
   openLink: LinkProps;
 };
 
 /**
- * Open/close helpers for a route-backed overlay (settings, post update, …).
- *
- * @example
- * ```tsx
- * const post = useOverlayNav({
- *   open: { to: "/baby/$publicId/post", params: { publicId } },
- *   close: { to: "/baby/$publicId", params: { publicId } },
- * });
- *
- * <Link {...post.openLink} />
- * <Button onClick={post.dismiss} />
- * // or declarative close: <Link {...post.closeLink} />
- * ```
+ * Overlays currently mounted by their route component, keyed by spec, so a
+ * layout's `dismiss()` can hand off to the overlay's guarded close.
  */
-export type OverlayControl = Pick<
-  OverlayNav,
-  "open" | "close" | "onOpenChange" | "onOpenChangeComplete"
->;
+const mountedOverlays = new Map<string, Pick<RouteOverlay, "requestClose">>();
 
-function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
+function overlayKey(spec: OverlaySpec) {
+  return JSON.stringify({ params: spec.open.params ?? null, to: spec.open.to });
+}
+
+function useRouteOverlay(spec: OverlaySpec): RouteOverlay {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -130,87 +183,176 @@ function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
       cancelAnimationFrame(frame);
     };
   }, []);
-  const openLink = openOverlayLink(opts.open);
-  const closeLink = closeOverlayLink(opts.close);
-  const dismiss = () => {
-    dismissOverlay({
-      closeLink,
-      history: router.history,
-      navigate: (link) => {
-        void router.navigate(link);
-      },
-    });
-  };
+  const guard = useFormGuard({ onOpenChange: setOpen, open });
+  const key = overlayKey(spec);
+  const requestClose = guard.requestClose;
+  useEffect(() => {
+    mountedOverlays.set(key, { requestClose });
+    return () => {
+      mountedOverlays.delete(key);
+    };
+  }, [key, requestClose]);
+  const openLink = openOverlayLink(spec.open);
+  const closeLink = closeOverlayLink(spec.close);
 
   return {
-    close: () => {
-      setOpen(false);
-    },
+    close: guard.close,
     closeLink,
-    dismiss,
-    onOpenChange: (nextOpen) => {
-      if (!nextOpen) {
-        setOpen(false);
-      }
-    },
-    onOpenChangeComplete: (nextOpen) => {
-      if (!nextOpen) {
-        dismiss();
-      }
-    },
+    guard,
     open,
+    openLink,
+    requestClose,
+    rootProps: {
+      ...guard.rootProps,
+      onOpenChangeComplete: (nextOpen) => {
+        // oxlint-disable-next-line no-console -- dismiss-flow debugging aid (see PR)
+        console.log("onOpenChangeComplete", nextOpen);
+        if (nextOpen) {
+          return;
+        }
+        dismissOverlay({
+          closeLink,
+          history: router.history,
+          ignoreBlocker: true,
+          navigate: (link) => {
+            void router.navigate(link);
+          },
+        });
+      },
+    },
+  };
+}
+
+function useRouteOverlayLinks(spec: OverlaySpec): OverlayLinks {
+  const router = useRouter();
+  const openLink = openOverlayLink(spec.open);
+  const closeLink = closeOverlayLink(spec.close);
+  const key = overlayKey(spec);
+  return {
+    closeLink,
+    dismiss: () => {
+      const mounted = mountedOverlays.get(key);
+      if (mounted) {
+        mounted.requestClose();
+        return;
+      }
+      dismissOverlay({
+        closeLink,
+        history: router.history,
+        ignoreBlocker: false,
+        navigate: (link) => {
+          void router.navigate(link);
+        },
+      });
+    },
     openLink,
   };
 }
 
-export function useDashboardSettingsOverlayNav() {
-  return useOverlayNav({
+function dashboardSettingsOverlay(): OverlaySpec {
+  return {
     close: { to: "/dashboard" },
     open: { to: "/dashboard/settings" },
-  });
+  };
 }
 
-export function useBabySettingsOverlayNav(publicId: string) {
-  return useOverlayNav({
+export function useDashboardSettingsOverlay() {
+  return useRouteOverlay(dashboardSettingsOverlay());
+}
+
+export function useDashboardSettingsOverlayLinks() {
+  return useRouteOverlayLinks(dashboardSettingsOverlay());
+}
+
+function babySettingsOverlay(publicId: string): OverlaySpec {
+  return {
     close: { params: { publicId }, to: "/baby/$publicId" },
     open: { params: { publicId }, to: "/baby/$publicId/settings" },
-  });
+  };
 }
 
-export function useBabyPostOverlayNav(publicId: string) {
-  return useOverlayNav({
+export function useBabySettingsOverlay(publicId: string) {
+  return useRouteOverlay(babySettingsOverlay(publicId));
+}
+
+export function useBabySettingsOverlayLinks(publicId: string) {
+  return useRouteOverlayLinks(babySettingsOverlay(publicId));
+}
+
+function babyPostOverlay(publicId: string): OverlaySpec {
+  return {
     close: { params: { publicId }, to: "/baby/$publicId" },
     open: { params: { publicId }, to: "/baby/$publicId/post" },
-  });
+  };
 }
 
-export function useBabyShareOverlayNav(publicId: string) {
-  return useOverlayNav({
+export function useBabyPostOverlay(publicId: string) {
+  return useRouteOverlay(babyPostOverlay(publicId));
+}
+
+export function useBabyPostOverlayLinks(publicId: string) {
+  return useRouteOverlayLinks(babyPostOverlay(publicId));
+}
+
+function babyShareOverlay(publicId: string): OverlaySpec {
+  return {
     close: { params: { publicId }, to: "/baby/$publicId" },
     open: { params: { publicId }, to: "/baby/$publicId/share" },
-  });
+  };
 }
 
-export function useBabyLoginOverlayNav(publicId: string) {
-  return useOverlayNav({
+export function useBabyShareOverlay(publicId: string) {
+  return useRouteOverlay(babyShareOverlay(publicId));
+}
+
+export function useBabyShareOverlayLinks(publicId: string) {
+  return useRouteOverlayLinks(babyShareOverlay(publicId));
+}
+
+function babyLoginOverlay(publicId: string): OverlaySpec {
+  return {
     close: { params: { publicId }, to: "/baby/$publicId" },
     open: { params: { publicId }, to: "/baby/$publicId/login" },
-  });
+  };
 }
 
-export function useBabyPhotoOverlayNav(publicId: string) {
-  return useOverlayNav({
+export function useBabyLoginOverlay(publicId: string) {
+  return useRouteOverlay(babyLoginOverlay(publicId));
+}
+
+export function useBabyLoginOverlayLinks(publicId: string) {
+  return useRouteOverlayLinks(babyLoginOverlay(publicId));
+}
+
+function babyPhotoOverlay(publicId: string): OverlaySpec {
+  return {
     close: { params: { publicId }, to: "/baby/$publicId" },
     open: { params: { publicId }, to: "/baby/$publicId/photo" },
-  });
+  };
 }
 
-export function useBabyUpdatePhotoOverlayNav(opts: { publicId: string; updateId: string }) {
-  return useOverlayNav({
+export function useBabyPhotoOverlay(publicId: string) {
+  return useRouteOverlay(babyPhotoOverlay(publicId));
+}
+
+export function useBabyPhotoOverlayLinks(publicId: string) {
+  return useRouteOverlayLinks(babyPhotoOverlay(publicId));
+}
+
+function babyUpdatePhotoOverlay(opts: { publicId: string; updateId: string }): OverlaySpec {
+  return {
     close: { params: { publicId: opts.publicId }, to: "/baby/$publicId" },
     open: {
       params: { publicId: opts.publicId, updateId: opts.updateId },
       to: "/baby/$publicId/updates/$updateId/photo",
     },
-  });
+  };
+}
+
+export function useBabyUpdatePhotoOverlay(opts: { publicId: string; updateId: string }) {
+  return useRouteOverlay(babyUpdatePhotoOverlay(opts));
+}
+
+export function useBabyUpdatePhotoOverlayLinks(opts: { publicId: string; updateId: string }) {
+  return useRouteOverlayLinks(babyUpdatePhotoOverlay(opts));
 }

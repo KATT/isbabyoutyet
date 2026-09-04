@@ -38,10 +38,10 @@ import { useHashScroll } from "@/lib/use-hash-scroll";
 import { useDemoToast } from "@/lib/use-demo-toast";
 import { isHomepageDemoPublicId } from "@workspace/convex/src/seedCredentials";
 import {
-  useBabyLoginOverlayNav,
-  useBabyPostOverlayNav,
-  useBabySettingsOverlayNav,
-  useBabyShareOverlayNav,
+  useBabyLoginOverlayLinks,
+  useBabyPostOverlayLinks,
+  useBabySettingsOverlayLinks,
+  useBabyShareOverlayLinks,
 } from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
@@ -283,10 +283,10 @@ function BabyPageLayout() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const share = useBabyShareOverlayNav(params.publicId);
-  const post = useBabyPostOverlayNav(params.publicId);
-  const settings = useBabySettingsOverlayNav(params.publicId);
-  const login = useBabyLoginOverlayNav(params.publicId);
+  const share = useBabyShareOverlayLinks(params.publicId);
+  const post = useBabyPostOverlayLinks(params.publicId);
+  const settings = useBabySettingsOverlayLinks(params.publicId);
+  const login = useBabyLoginOverlayLinks(params.publicId);
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;

@@ -22,14 +22,17 @@ through `useSyncExternalStore`.
 
 ## Usage
 
+The guard owns the overlay's open state (no `actionsRef`), so `rootProps`
+carries `open` plus a guarded `onOpenChange`:
+
 ```tsx
 function Editor() {
-  const guard = useFormGuard({ onOpenChange: undefined });
+  const guard = useFormGuard({ defaultOpen: false });
   return (
     <Popover {...guard.rootProps}>
       <PopoverTrigger … />
       <PopoverContent>
-        <FormGuardProvider guard={guard} DiscardPrompt={MyDiscardDialog}>
+        <FormGuardProvider guard={guard} renderDiscardPrompt={renderMyDiscardDialog}>
           <MyForm onClose={guard.close} />
         </FormGuardProvider>
       </PopoverContent>
@@ -38,13 +41,28 @@ function Editor() {
 }
 ```
 
+Three overlay modes:
+
+- `useFormGuard({ defaultOpen })` — **uncontrolled**: editors that open from a
+  trigger; the guard owns `open`.
+- `useFormGuard({ open, onOpenChange })` — **controlled**: open state lives
+  elsewhere (a route-backed overlay, a URL search param). Every allowed close
+  — user dismissal, Discard, `close()` — arrives as `onOpenChange(false)`.
+- `useFormGuard(null)` — no overlay; a full-page form that only needs the
+  navigation guard.
+
+Two ways to close from code: `guard.close()` is unconditional (success paths,
+Cancel buttons), while `guard.requestClose()` behaves like a user dismissal —
+blocked while a form submits, confirmed while one is dirty — for close
+controls rendered outside the overlay (nav toggles).
+
 `FormGuardProvider` figures out stacking by itself: the outermost provider is
 the stack root, which mounts the navigation blocker and renders the single
 `DiscardPrompt` for the whole stack. The app supplies only the localized
 prompt UI:
 
 ```tsx
-<FormGuardProvider guard={guard} DiscardPrompt={MyDiscardDialog}>
+<FormGuardProvider guard={guard} renderDiscardPrompt={(props) => <MyDiscardDialog {...props} />}>
   …
 </FormGuardProvider>;
 
@@ -61,6 +79,22 @@ and `isDirty && !isSubmitting && !isSubmitSuccessful` is the "unsaved edits"
 signal — leaving is allowed mid-submit (success paths navigate before
 resolving) and after a successful save, while a failed submit re-arms the
 guard on its own.
+
+Discard is tracked **per form**: confirming the prompt marks every form that
+currently blocks as discarded, and it stays discarded while it keeps reporting
+the same unsaved edits — re-registering on a re-render, or unmounting while the
+overlay animates out, never re-arms the guard. Only a fresh edit session (the
+form reporting clean, then dirty again) guards again. This is what lets the
+overlay's own close navigation run after Discard without the router blocker
+asking a second time.
+
+## Router blocker and overlay closes
+
+The stack root mounts a TanStack `useBlocker` for in-app navigation and
+`beforeunload`. An overlay's _own_ close navigation (after its exit
+transition) must pass `ignoreBlocker: true` — the guard already answered, and a
+blocked replace / reverted `history.back()` would leave the URL on the overlay
+route with nothing visible. `apps/web/src/lib/overlay-nav.ts` does this.
 
 ## Stacked overlays
 

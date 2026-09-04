@@ -2,6 +2,7 @@ import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
+import { useFormGuard } from "@/components/Form";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { PreviewBabyData } from "@workspace/convex/src/types";
 import {
@@ -93,6 +94,8 @@ export const Route = createFileRoute("/preview")({
   },
 });
 
+function noop() {}
+
 export function PreviewPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
@@ -106,6 +109,21 @@ export function PreviewPage() {
   };
   const currentStatus = getCurrentStatus(baby);
   const themeCss = getThemeCss(baby.theme);
+  // The preview settings dialog is URL-controlled (`?settings=1`), so the
+  // guard mirrors the search param instead of owning open state.
+  const settingsGuard = useFormGuard({
+    onOpenChange: (open) => {
+      void navigate({
+        replace: true,
+        resetScroll: false,
+        search: {
+          ...search,
+          settings: open || undefined,
+        },
+      });
+    },
+    open: !!search.settings,
+  });
 
   const stageMessage =
     currentStatus.type === "born"
@@ -149,17 +167,6 @@ export function PreviewPage() {
             },
           });
         }}
-        onOpenChange={(open) => {
-          void navigate({
-            replace: true,
-            resetScroll: false,
-            search: {
-              ...search,
-              settings: open || undefined,
-            },
-          });
-        }}
-        onOpenChangeComplete={null}
         onUpdate={(update) => {
           void navigate({
             replace: true,
@@ -170,7 +177,11 @@ export function PreviewPage() {
             },
           });
         }}
-        open={!!search.settings}
+        overlay={{
+          close: settingsGuard.close,
+          guard: settingsGuard,
+          rootProps: { ...settingsGuard.rootProps, onOpenChangeComplete: noop },
+        }}
         profileLocale={locale}
       />
 

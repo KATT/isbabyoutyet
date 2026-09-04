@@ -1,7 +1,7 @@
 import { PhotoLightbox } from "@/components/baby/photo-lightbox";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
-import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
+import { useBabyUpdatePhotoOverlay } from "@/lib/overlay-nav";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
@@ -36,7 +36,7 @@ export function BabyUpdatePhotoOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
-  const photo = useBabyUpdatePhotoOverlayNav({
+  const photo = useBabyUpdatePhotoOverlay({
     publicId: params.publicId,
     updateId: params.updateId,
   });

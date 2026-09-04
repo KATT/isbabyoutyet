@@ -15,11 +15,7 @@ export function PhotoLightbox(props: PhotoLightboxProps) {
   const { t } = useI18n();
 
   return (
-    <Dialog
-      onOpenChange={props.overlay.onOpenChange}
-      onOpenChangeComplete={props.overlay.onOpenChangeComplete}
-      open={props.overlay.open}
-    >
+    <Dialog {...props.overlay.rootProps}>
       <DialogContent
         className="max-w-3xl border-0 bg-transparent p-0 shadow-none"
         showCloseButton={false}

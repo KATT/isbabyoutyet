@@ -374,15 +374,10 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
       releaseSubmit = resolve;
     });
   });
-  const forwarded = vi.fn();
-  const actionsClose = vi.fn();
+  const forwarded = vi.fn<(open: boolean) => void>();
 
   function OverlayLockForm() {
-    const overlay = useFormGuard({
-      onOpenChange: (open, eventDetails) => {
-        forwarded({ open, reason: eventDetails.reason });
-      },
-    });
+    const overlay = useFormGuard({ onOpenChange: forwarded, open: true });
     const form = useZodForm({
       defaultValues: { note: "hi" },
       schema: z.object({ note: z.string() }),
@@ -422,10 +417,6 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
         </button>
         <button
           onClick={() => {
-            overlay.rootProps.actionsRef.current = {
-              close: actionsClose,
-              unmount: () => undefined,
-            };
             overlay.close();
           }}
           type="button"
@@ -452,7 +443,7 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
 
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
   expect(htmlInput(document.getElementById("dismiss-result")).value).toBe("0");
-  expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "escape-key" });
+  expect(forwarded).toHaveBeenCalledWith(false);
   forwarded.mockClear();
 
   fireEvent.click(view.getByRole("button", { name: "Send" }));
@@ -467,10 +458,12 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
 
   fireEvent.click(view.getByRole("button", { name: "TryImperative" }));
   expect(htmlInput(document.getElementById("imperative-result")).value).toBe("0");
-  expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "imperative-action" });
+  expect(forwarded).toHaveBeenCalledWith(false);
+  forwarded.mockClear();
 
+  // The imperative close never asks, even mid-submit.
   fireEvent.click(view.getByRole("button", { name: "Close" }));
-  expect(actionsClose).toHaveBeenCalled();
+  expect(forwarded).toHaveBeenCalledWith(false);
 
   releaseSubmit?.();
   await vi.advanceTimersByTimeAsync(0);
@@ -479,9 +472,9 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
   });
 });
 
-test("useFormGuard close is a no-op without an actions handle", async () => {
+test("useFormGuard close is a no-op on a full page without an overlay", async () => {
   function IdleOverlay() {
-    const overlay = useFormGuard({ onOpenChange: undefined });
+    const overlay = useFormGuard(null);
     return (
       <>
         <button onClick={() => overlay.close()} type="button">
@@ -517,15 +510,10 @@ test("useFormGuard close is a no-op without an actions handle", async () => {
 });
 
 test("dirty overlay dismiss prompts to discard and keep editing stays put", async () => {
-  const forwarded = vi.fn();
-  const actionsClose = vi.fn();
+  const forwarded = vi.fn<(open: boolean) => void>();
 
   function DirtyOverlayForm() {
-    const overlay = useFormGuard({
-      onOpenChange: (open, eventDetails) => {
-        forwarded({ open, reason: eventDetails.reason });
-      },
-    });
+    const overlay = useFormGuard({ onOpenChange: forwarded, open: true });
     const form = useZodForm({
       defaultValues: { note: "hi" },
       schema: z.object({ note: z.string() }),
@@ -535,10 +523,6 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
       <FormGuardProvider guard={overlay}>
         <button
           onClick={() => {
-            overlay.rootProps.actionsRef.current = {
-              close: actionsClose,
-              unmount: () => undefined,
-            };
             const cancel = vi.fn();
             overlay.rootProps.onOpenChange(false, {
               cancel,
@@ -568,7 +552,7 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
 
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
   expect(view.queryByRole("alertdialog")).toBeNull();
-  expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "escape-key" });
+  expect(forwarded).toHaveBeenCalledWith(false);
   forwarded.mockClear();
 
   fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
@@ -582,23 +566,19 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
   await vi.waitFor(() => {
     expect(view.queryByRole("alertdialog")).toBeNull();
   });
-  expect(actionsClose).not.toHaveBeenCalled();
+  expect(forwarded).not.toHaveBeenCalled();
   expect(htmlInput(view.getByLabelText("Note")).value).toBe("hello");
 
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
   fireEvent.click(view.getByRole("button", { name: "Discard" }));
-  expect(actionsClose).toHaveBeenCalled();
+  expect(forwarded).toHaveBeenCalledWith(false);
 });
 
 test("dirty overlay still allows imperative close and date-picker dismiss", async () => {
-  const forwarded = vi.fn();
+  const forwarded = vi.fn<(open: boolean) => void>();
 
   function DirtyOverlayForm() {
-    const overlay = useFormGuard({
-      onOpenChange: (open, eventDetails) => {
-        forwarded({ open, reason: eventDetails.reason });
-      },
-    });
+    const overlay = useFormGuard({ onOpenChange: forwarded, open: true });
     const form = useZodForm({
       defaultValues: { note: "hi" },
       schema: z.object({ note: z.string() }),
@@ -655,7 +635,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
 
   fireEvent.click(view.getByRole("button", { name: "TryImperative" }));
   expect(htmlInput(document.getElementById("imperative-result")).value).toBe("0");
-  expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "imperative-action" });
+  expect(forwarded).toHaveBeenCalledWith(false);
   expect(view.queryByRole("alertdialog")).toBeNull();
   forwarded.mockClear();
 
@@ -671,16 +651,11 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
 });
 
 test("parent overlay prompts when a nested dirty form is dismissed from the parent", async () => {
-  const parentForwarded = vi.fn();
-  const parentClose = vi.fn();
+  const parentForwarded = vi.fn<(open: boolean) => void>();
 
   function NestedDirtyOverlays() {
-    const parent = useFormGuard({
-      onOpenChange: (open, eventDetails) => {
-        parentForwarded({ open, reason: eventDetails.reason });
-      },
-    });
-    const child = useFormGuard({ onOpenChange: undefined });
+    const parent = useFormGuard({ onOpenChange: parentForwarded, open: true });
+    const child = useFormGuard({ defaultOpen: true });
     const form = useZodForm({
       defaultValues: { note: "hi" },
       schema: z.object({ note: z.string() }),
@@ -689,10 +664,6 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
       <FormGuardProvider guard={parent}>
         <button
           onClick={() => {
-            parent.rootProps.actionsRef.current = {
-              close: parentClose,
-              unmount: () => undefined,
-            };
             const cancel = vi.fn();
             parent.rootProps.onOpenChange(false, {
               cancel,
@@ -723,7 +694,7 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
   );
 
   fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
-  expect(parentForwarded).toHaveBeenCalledWith({ open: false, reason: "outside-press" });
+  expect(parentForwarded).toHaveBeenCalledWith(false);
   parentForwarded.mockClear();
 
   fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
@@ -736,30 +707,26 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
   await vi.waitFor(() => {
     expect(view.queryByRole("alertdialog")).toBeNull();
   });
-  expect(parentClose).not.toHaveBeenCalled();
+  expect(parentForwarded).not.toHaveBeenCalled();
   expect(htmlInput(view.getByLabelText("Note")).value).toBe("hello");
 
   fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
   fireEvent.click(view.getByRole("button", { name: "Discard" }));
-  expect(parentClose).toHaveBeenCalled();
+  expect(parentForwarded).toHaveBeenCalledWith(false);
 });
 
 test("discard prompt blocks clicks on the dialog behind it", async () => {
-  const onDialogOpenChange = vi.fn();
+  const onDialogOpenChange = vi.fn<(open: boolean) => void>();
 
   function DirtyDialogForm() {
-    const overlay = useFormGuard({
-      onOpenChange: (open) => {
-        onDialogOpenChange(open);
-      },
-    });
+    const overlay = useFormGuard({ onOpenChange: onDialogOpenChange, open: true });
     const form = useZodForm({
       defaultValues: { note: "hi" },
       schema: z.object({ note: z.string() }),
     });
 
     return (
-      <Dialog open {...overlay.rootProps}>
+      <Dialog {...overlay.rootProps}>
         <DialogContent>
           <FormGuardProvider guard={overlay}>
             <Form form={form} handleSubmit={async () => undefined}>
@@ -795,7 +762,7 @@ test("discard prompt blocks clicks on the dialog behind it", async () => {
 test("dirty form overlay blocks in-app navigation until discarded", async () => {
   function DirtyFormPage() {
     const router = useRouter();
-    const overlay = useFormGuard({ onOpenChange: undefined });
+    const overlay = useFormGuard(null);
     const form = useZodForm({
       defaultValues: { note: "hi" },
       schema: z.object({ note: z.string() }),

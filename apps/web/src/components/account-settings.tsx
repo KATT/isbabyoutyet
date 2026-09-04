@@ -348,7 +348,7 @@ function NameEditor(props: {
   onUpdateName: AccountSettingsHandlers["onUpdateName"];
 }) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -409,7 +409,7 @@ function EmailEditor(props: {
   onChangeEmail: AccountSettingsHandlers["onChangeEmail"];
 }) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -472,7 +472,7 @@ function EmailForm(props: {
 
 function PasswordEditor(props: { onChangePassword: AccountSettingsHandlers["onChangePassword"] }) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   return (
     <Popover {...overlay.rootProps}>

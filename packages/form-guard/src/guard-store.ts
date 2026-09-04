@@ -12,6 +12,13 @@
  *   paths navigate mid-submit) and not after a successful one; a failed
  *   submit re-arms the guard by itself
  *
+ * Discard is tracked *per form*: confirming the prompt marks every form that
+ * currently blocks as discarded, and a discarded form stays discarded while
+ * it keeps reporting the same unsaved edits — re-registering after a
+ * re-render, or unmounting while the overlay animates out, must not re-arm
+ * the guard. Only a fresh edit session (the form reporting clean, then dirty
+ * again) re-arms it.
+ *
  * Stores stack: forms register with every ancestor, and discard requests
  * route to the stack root so one gesture that dismisses several dirty
  * overlays (dialog backdrop + nested popover outside-press) yields a single
@@ -35,11 +42,12 @@ export type OverlayOpenChangeHandler = (
   eventDetails: OverlayDismissEventDetails,
 ) => void;
 
-/** Identical shape across Popover / Dialog / AlertDialog Root.Actions. */
-export type OverlayActions = {
-  close: () => void;
-  unmount: () => void;
-};
+/**
+ * Close reason for a programmatic close that should still be guarded like a
+ * user dismissal (nav toggles, "close overlay" buttons rendered outside it).
+ * Unlike Base UI's `imperative-action`, dirty forms confirm and submits block.
+ */
+export const REQUEST_CLOSE_REASON = "request-close";
 
 /** Structural subset of React Hook Form's `formState` (any form library fits). */
 export type FormStateFlags = {
@@ -49,15 +57,15 @@ export type FormStateFlags = {
 };
 
 export interface FormGuardStore {
-  /** Base UI Root actions handle; pass as `actionsRef` so `close()` works. */
-  actionsRef: { current: OverlayActions | null };
-  /** @internal Permit leaving despite unsaved edits (Discard on this target). */
-  allowLeave: () => void;
-
   /** Close the overlay imperatively (allowed even mid-submit / dirty). */
   close: () => void;
-  /** Confirm leaving: allow-leave and close every queued target. */
+  /** Confirm leaving: discard the current edits and close every queued target. */
   discard: () => void;
+  /**
+   * @internal Mark every form that currently blocks leaving as discarded on
+   * this store. Called on each queued target by the stack root's `discard`.
+   */
+  discardCurrentEdits: () => void;
 
   /**
    * Run the dismiss decision for a Base UI `onOpenChange` event, applying
@@ -70,8 +78,8 @@ export interface FormGuardStore {
     eventDetails: OverlayDismissEventDetails,
   ) => OverlayDismissDecision;
   /**
-   * Any form with unsaved edits worth guarding, unless leaving was permitted
-   * by a Discard. Edits mid-submit or after a successful submit don't count:
+   * Any form with unsaved edits worth guarding, unless those edits were
+   * discarded. Edits mid-submit or after a successful submit don't count:
    * success paths close overlays and navigate while the form is still dirty.
    */
   isDirty: () => boolean;
@@ -88,9 +96,14 @@ export interface FormGuardStore {
   /** Wired by the context provider; the last ancestor is the stack root. */
   setAncestors: (ancestors: Array<FormGuardStore>) => void;
   /**
+   * Wired by the React hook: how this store closes its overlay. The hook
+   * re-wires it whenever the overlay's open-state setter changes.
+   */
+  setCloser: (close: (() => void) | null) => void;
+  /**
    * Register a form's reactive state, or clear it with `null` on unmount.
-   * When unsaved edits (re)appear — including after a failed submit — the
-   * guard re-arms and a previous Discard's leave permission is revoked.
+   * Registering identical flags is a no-op. A form re-arms the guard (and
+   * forgets that it was discarded) only when it reports clean, then dirty.
    */
   setFormState: (id: string, flags: FormStateFlags | null) => void;
 
@@ -98,11 +111,27 @@ export interface FormGuardStore {
   subscribe: (listener: () => void) => () => void;
 }
 
+function isBlocking(flags: FormStateFlags) {
+  return flags.isDirty && !flags.isSubmitting && !flags.isSubmitSuccessful;
+}
+
+function sameFlags(left: FormStateFlags, right: FormStateFlags) {
+  return (
+    left.isDirty === right.isDirty &&
+    left.isSubmitting === right.isSubmitting &&
+    left.isSubmitSuccessful === right.isSubmitSuccessful
+  );
+}
+
 export function createFormGuardStore(): FormGuardStore {
   const forms = new Map<string, FormStateFlags>();
+  // Form ids whose current unsaved edits were discarded. Kept across
+  // unregister so a dirty form re-registering (re-render, or unmounting while
+  // its overlay animates out) does not re-arm the guard; cleared once the
+  // form reports clean again.
+  const discarded = new Set<string>();
   const listeners = new Set<() => void>();
-  let leaveAllowed = false;
-  let discardIntent: "idle" | "discard" = "idle";
+  let closer: (() => void) | null = null;
   let ancestors: Array<FormGuardStore> = [];
   let pendingDiscards: Array<FormGuardStore> = [];
   let promptOpen = false;
@@ -118,8 +147,8 @@ export function createFormGuardStore(): FormGuardStore {
   }
 
   function hasBlockingEdits() {
-    for (const flags of forms.values()) {
-      if (flags.isDirty && !flags.isSubmitting && !flags.isSubmitSuccessful) {
+    for (const [id, flags] of forms) {
+      if (isBlocking(flags) && !discarded.has(id)) {
         return true;
       }
     }
@@ -136,22 +165,24 @@ export function createFormGuardStore(): FormGuardStore {
   }
 
   const store: FormGuardStore = {
-    actionsRef: { current: null },
-    allowLeave: () => {
-      leaveAllowed = true;
-    },
     close: () => {
-      store.actionsRef.current?.close();
+      closer?.();
     },
     discard: () => {
-      discardIntent = "discard";
-      leaveAllowed = true;
       setPromptOpen(false);
       const targets = pendingDiscards;
       pendingDiscards = [];
+      store.discardCurrentEdits();
       for (const target of targets) {
-        target.allowLeave();
+        target.discardCurrentEdits();
         target.close();
+      }
+    },
+    discardCurrentEdits: () => {
+      for (const [id, flags] of forms) {
+        if (isBlocking(flags)) {
+          discarded.add(id);
+        }
       }
     },
     handleOpenChange: (open, eventDetails) => {
@@ -184,12 +215,9 @@ export function createFormGuardStore(): FormGuardStore {
       }
       return decision;
     },
-    isDirty: () => hasBlockingEdits() && !leaveAllowed,
+    isDirty: hasBlockingEdits,
     isPromptOpen: () => promptOpen,
     keepEditing: () => {
-      if (discardIntent === "discard") {
-        return;
-      }
       pendingDiscards = [];
       setPromptOpen(false);
     },
@@ -200,18 +228,23 @@ export function createFormGuardStore(): FormGuardStore {
     setAncestors: (next) => {
       ancestors = next;
     },
+    setCloser: (close) => {
+      closer = close;
+    },
     setFormState: (id, flags) => {
-      const wasBlocking = hasBlockingEdits();
-      if (flags) {
-        forms.set(id, flags);
-      } else {
+      if (flags === null) {
         forms.delete(id);
+        return;
       }
-      // Unsaved edits (re)appearing — a fresh edit or a failed submit —
-      // re-arm the guard and revoke any earlier Discard's leave permission.
-      if (!wasBlocking && hasBlockingEdits()) {
-        leaveAllowed = false;
-        discardIntent = "idle";
+      const previous = forms.get(id);
+      if (previous && sameFlags(previous, flags)) {
+        return;
+      }
+      forms.set(id, flags);
+      // A clean report ends the discarded edit session: the next unsaved
+      // edits are new and guard again.
+      if (!flags.isDirty) {
+        discarded.delete(id);
       }
     },
     subscribe: (listener) => {

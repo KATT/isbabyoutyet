@@ -76,7 +76,7 @@ import { useI18n } from "@/lib/i18n";
 import { useIntersectionAction } from "@/lib/use-intersection-action";
 import { useLiveInsertIds } from "@/lib/use-live-insert-ids";
 import { useObjectUrl } from "@/lib/use-object-url";
-import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
+import { useBabyUpdatePhotoOverlayLinks } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
@@ -555,7 +555,7 @@ function DeleteUpdateForm(props: {
   updateId: Id<"updates">;
 }) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
   const form = useZodForm({
     defaultValues: {},
     schema: emptyActionSchema,
@@ -603,7 +603,7 @@ function DeleteEncouragementForm(props: {
   visitorId: string | undefined;
 }) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
   const form = useZodForm({
     defaultValues: {},
     schema: emptyActionSchema,
@@ -839,7 +839,7 @@ type TimelinePhotoProps = {
 function TimelinePhoto(props: TimelinePhotoProps) {
   const { t } = useI18n();
   const inlineUrl = props.thumbnailUrl ?? props.photoUrl;
-  const photo = useBabyUpdatePhotoOverlayNav({
+  const photo = useBabyUpdatePhotoOverlayLinks({
     publicId: props.publicId,
     updateId: props.updateId,
   });
@@ -940,7 +940,7 @@ function EncouragementEditForm(props: {
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const { locale, t } = useI18n();
   const encouragement = props.item.encouragement;
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);

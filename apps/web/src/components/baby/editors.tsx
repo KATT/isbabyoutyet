@@ -123,7 +123,7 @@ function dueDateSchema(t: TranslationFunction) {
 
 export function DueDateEditor(props: DueDateEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -190,7 +190,7 @@ function statusDateSchema(t: TranslationFunction, timeZone: string) {
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -365,7 +365,7 @@ function nameSchema(t: TranslationFunction) {
 
 export function NameEditor(props: NameEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -437,7 +437,7 @@ function journeySchema() {
 
 export function JourneyEditor(props: JourneyEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -555,7 +555,7 @@ function ThemeOptionList(props: {
 
 export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
   const selectedTheme = getThemeOption(props.baby.theme);
   const form = useZodForm({
     defaultValues: { theme: props.baby.theme ?? null },

@@ -43,20 +43,32 @@ the baby layout `<Outlet />` so the page stays mounted underneath. Share and
 photo route loaders prefetch their full image in the browser via
 `prefetchBrowserImage` (same initiator pattern as notification push capability).
 
-Use `@/lib/overlay-nav` for open/close (TanStack has `history.back` /
-`canGoBack` and `linkOptions`, but no overlay-history helper):
+Overlays open with a pushed history entry and close by going back. Use
+`@/lib/overlay-nav` (TanStack has `history.back` / `canGoBack` and
+`linkOptions`, but no overlay-history helper). Each overlay has two hooks over
+one spec:
 
-- **Open link:** `openOverlayLink({ to, params, ... })` — push (no `replace`),
- viewport preload, `resetScroll: false`, and `state: { overlay: true }`. Prefer
- passing it to a real `<Link>` so the child route loader runs before click;
- `navigate()` is reserved for imperative flows.
-- **Close link:** `closeOverlayLink({ to, params, ... })` — replace close
-  target with `resetScroll: false` (declarative fallback / cold-load close).
-- **Hook:** `useOverlayNav({ open, close })` returns `{ openLink, closeLink,
-  dismiss }`. `dismiss()` calls `history.back()` when the entry was push-opened
-  and `canGoBack()`; otherwise navigates with `closeLink`.
-- Close overlay dialogs via `onOpenChange` → `onOpenChangeComplete` so the exit
-  animation finishes before dismissing.
+- **Route component:** `use…Overlay(params)` (e.g. `useBabyPostOverlay`)
+  owns the open state (deferred one frame for the enter transition) and the
+  form guard. Spread `overlay.rootProps` onto the Base UI Root — it carries
+  `open`, the guarded `onOpenChange`, and `onOpenChangeComplete` — and wrap
+  forms in `<FormGuardProvider guard={overlay.guard}>`. `overlay.close()` is
+  the unconditional close (after a save); `overlay.requestClose()` asks like a
+  user dismissal. Presentational components take `OverlayControl`
+  (`{ close, guard, rootProps }`); tests build one with
+  `WithOverlayControl` from `@/test/overlayControl`.
+- **Layouts / nav docks:** `use…OverlayLinks(params)` returns `{ openLink,
+  closeLink, dismiss }`. `openLink` pushes (`state: { overlay: true }`,
+  viewport preload, `resetScroll: false`) — pass it to a real `<Link>` so the
+  child loader runs before click. `dismiss()` asks the *mounted* overlay to
+  close through its guard (exit animation, discard prompt) and only falls back
+  to `history.back()` / the replace `closeLink` when nothing is mounted.
+- **Close navigation** runs from `onOpenChangeComplete(false)` with
+  `ignoreBlocker: true`: the guard already vetted the dismissal, and a blocked
+  replace or a reverted `back()` would strand the URL on the overlay route
+  with nothing visible (the bug behind the settings "Discard" no-op).
+- `openOverlayLink` / `closeOverlayLink` / `dismissOverlay` stay exported for
+  imperative flows and tests.
 
 Keep `replace: true` for slug canonicalize and auth redirects. Admin tab switches
 still use `resetScroll: false` (not overlay history).
@@ -65,10 +77,21 @@ still use `resetScroll: false` (not overlay history).
 
 Dialog, popover, sheet, and route-overlay forms must use `useFormGuard` +
 `FormGuardProvider` + `useZodForm` + `Form` from `@/components/Form`. `Form`
-registers dirty/submitting with the guard. Close after a successful save with
-`guard.close()` (imperative-action). Do not save from `DialogClose` /
-`PopoverClose` — that unmounts the overlay before the mutation finishes and
-skips the leave-guard.
+registers dirty/submitting with the guard. The guard owns the overlay's open
+state — no `actionsRef`:
+
+- Popover / dialog editors opened from a trigger:
+  `useFormGuard({ defaultOpen: false })`, then `<Popover {...guard.rootProps}>`.
+- Open state owned elsewhere (route overlays, URL search params):
+  `useFormGuard({ open, onOpenChange })`. Route overlays get this for free from
+  `use…Overlay`.
+- Full-page forms that only need the navigation guard: `useFormGuard(null)`.
+
+Close after a successful save with `guard.close()` (unconditional). Do not
+save from `DialogClose` / `PopoverClose` — that unmounts the overlay before the
+mutation finishes and skips the leave-guard. Discard is tracked per form: a
+discarded form re-rendering or unmounting while its overlay animates out does
+not re-arm the guard; only a fresh edit session (clean, then dirty) does.
 
 Live controls that persist immediately (language select, the settings message-
 notifications switch) are not overlay forms and do not need a Save button.

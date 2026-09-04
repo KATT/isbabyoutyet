@@ -3,6 +3,8 @@ import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
+import type { ComponentProps } from "react";
+import { WithOverlayControl } from "@/test/overlayControl";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type {
   BabyData,
@@ -40,9 +42,27 @@ const absentSettingsProps = {
   onDelete: null,
   onMilestoneRedate: () => undefined,
   onMilestoneRemove: () => undefined,
-  onOpenChangeComplete: null,
   profileLocale: "en-GB" as const,
 };
+
+type GuardedSettingsPanelProps = Omit<ComponentProps<typeof SettingsPanel>, "overlay"> & {
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+};
+
+/** `SettingsPanel` under a controlled form guard, the way its route mounts it. */
+function GuardedSettingsPanel(props: GuardedSettingsPanelProps) {
+  const { onOpenChange, open, ...panelProps } = props;
+  return (
+    <WithOverlayControl
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={() => undefined}
+      open={open}
+    >
+      {(overlay) => <SettingsPanel {...panelProps} overlay={overlay} />}
+    </WithOverlayControl>
+  );
+}
 
 function openJourneyEditor(view: RenderResult) {
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
@@ -72,7 +92,7 @@ test("settings dialog shows page fields when open and stays closed when not", as
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
   await using closed = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={baby}
       onOpenChange={onOpenChange}
       onUpdate={onUpdate}
@@ -84,7 +104,7 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(closed.queryByText("Settings")).toBeNull();
 
   await using open = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={baby}
       onOpenChange={onOpenChange}
       onUpdate={onUpdate}
@@ -125,7 +145,7 @@ test("closing settings with a dirty nested editor prompts before discarding", as
 
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <SettingsPanel
+      <GuardedSettingsPanel
         baby={baby}
         onOpenChange={onOpenChange}
         onUpdate={onUpdate}
@@ -160,7 +180,7 @@ test("clicking the backdrop with a dirty nested editor shows one prompt for the 
 
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <SettingsPanel
+      <GuardedSettingsPanel
         baby={baby}
         onOpenChange={onOpenChange}
         onUpdate={onUpdate}
@@ -200,7 +220,7 @@ test("clicking the backdrop with a dirty nested editor shows one prompt for the 
 
 test("due date row previews optional public text", async () => {
   await using view = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={{
         ...baby,
         dueDate: null,
@@ -223,7 +243,7 @@ test("delete page control appears when onDelete is provided", async () => {
   const onDelete = vi.fn<() => void | Promise<void>>().mockResolvedValue(undefined);
 
   await using view = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={baby}
       birthJourney="labor"
       coParents={null}
@@ -232,7 +252,6 @@ test("delete page control appears when onDelete is provided", async () => {
       onMilestoneRedate={() => undefined}
       onMilestoneRemove={() => undefined}
       onOpenChange={onOpenChange}
-      onOpenChangeComplete={null}
       onUpdate={onUpdate}
       open={true}
       profileLocale="en-GB"
@@ -250,7 +269,7 @@ test("delete page control appears when onDelete is provided", async () => {
 });
 test("falls back to the default label for an unknown legacy theme", async () => {
   await using view = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={{ ...baby, theme: "legacy-theme" }}
       onOpenChange={vi.fn<(open: boolean) => void>()}
       onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
@@ -267,7 +286,7 @@ test("page language selection saves the locale override", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
   await using view = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={baby}
       onOpenChange={onOpenChange}
       onUpdate={onUpdate}
@@ -305,7 +324,7 @@ test("journey selection saves the chosen preset after Save", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
   await using view = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={baby}
       onOpenChange={onOpenChange}
       onUpdate={onUpdate}
@@ -334,7 +353,7 @@ test("journey editor reports a failed save and remains open", async () => {
     .fn<BabyUpdateHandler>()
     .mockRejectedValue(new Error("Could not save journey"));
   await using view = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={baby}
       onOpenChange={vi.fn<(open: boolean) => void>()}
       onUpdate={onUpdate}
@@ -358,7 +377,7 @@ test("turning off visitor visibility does not remove a marked milestone", async 
   const onMilestoneRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
 
   await using view = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={baby}
       onOpenChange={vi.fn<(open: boolean) => void>()}
       onUpdate={onUpdate}
@@ -385,7 +404,7 @@ test("journey selection stays changeable after milestone updates", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
   await using view = await renderWithTestRouter(
-    <SettingsPanel
+    <GuardedSettingsPanel
       baby={{ ...baby, laborStarted: null, wentToHospital: "2026-08-10T12:00:00.000Z" }}
       onOpenChange={onOpenChange}
       onUpdate={onUpdate}
@@ -411,7 +430,7 @@ test("theme constants render through the active translation catalog", async () =
 
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="sv">
-      <SettingsPanel
+      <GuardedSettingsPanel
         baby={baby}
         birthJourney="labor"
         coParents={null}
@@ -420,7 +439,6 @@ test("theme constants render through the active translation catalog", async () =
         onMilestoneRedate={() => undefined}
         onMilestoneRemove={() => undefined}
         onOpenChange={onOpenChange}
-        onOpenChangeComplete={null}
         onUpdate={onUpdate}
         open
         profileLocale="sv"

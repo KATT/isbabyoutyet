@@ -418,7 +418,7 @@ export function ManagerNotificationChooserView(props: {
   onSubmit: (selection: NotificationSelection) => Promise<void>;
 }) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const overlay = useFormGuard({ defaultOpen: false });
 
   return (
     <Dialog {...overlay.rootProps}>
