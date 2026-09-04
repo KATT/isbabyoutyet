@@ -56,13 +56,10 @@ export async function resolveAuthGuard(opts: {
   }
 
   // Client navigations: the cached profile IS the auth signal — no token
-  // round-trip (sign-out does a full page reload, so the cache can't say
-  // "signed in" after logging out). If the session expires mid-browse the
-  // cache self-heals: the live profile.get subscription flips to null (all
-  // dashboard queries return empty for anonymous callers rather than
-  // throwing), so the next navigation lands in the fallback below and
-  // redirects home. A null profile means logged out or the websocket has not
-  // re-authenticated after sign-in, so confirm with the server once.
+  // round-trip. If the session expires mid-browse the cache self-heals:
+  // profile.get flips to null and the next navigation confirms with the
+  // server once, then redirects home. A null profile right after sign-in
+  // also lands here (cookie is set, websocket may still be catching up).
   let profileHandle = await preloader.ensureQueryData(api.profile.get, {});
   let profile = profileHandle.initialData;
   if (!profile) {

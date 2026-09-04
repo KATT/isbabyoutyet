@@ -37,7 +37,6 @@ import { TanStackAppDevtools } from "@/components/tanstack-devtools";
 import { m } from "@/paraglide/messages";
 import "@/lib/register-service-worker";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
-import { ConvexAuthObserver } from "@/lib/convexAuthHandoff";
 import { useDelayedBoolean } from "@/lib/use-delayed-action";
 
 /**
@@ -229,7 +228,6 @@ function RootComponent() {
         client={context.convexQueryClient.convexClient}
         initialToken={token}
       >
-        <ConvexAuthObserver />
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
           <TooltipProvider>

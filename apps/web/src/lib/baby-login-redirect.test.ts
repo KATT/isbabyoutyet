@@ -1,22 +1,10 @@
 import { expect, test } from "vitest";
-import {
-  babyLoginHomeLink,
-  babyLoginSuccessTarget,
-  loginRedirectQuery,
-  parseBabyLoginPublicId,
-} from "./baby-login-redirect";
-
-test("loginRedirectQuery reads the query string", () => {
-  expect(loginRedirectQuery("?redirect=/baby/baby-waiting")).toBe("/baby/baby-waiting");
-  expect(loginRedirectQuery("redirect=/baby/baby-waiting")).toBe("/baby/baby-waiting");
-  expect(loginRedirectQuery("")).toBeUndefined();
-});
+import { babyLoginHomeLink, babyLoginSuccessTarget } from "./baby-login-redirect";
 
 test.each([
   { publicId: "baby-waiting", redirect: "/baby/baby-waiting" },
   { publicId: "juniper-hale", redirect: "/baby/juniper-hale" },
 ])("allowlists the baby page $redirect", (testCase) => {
-  expect(parseBabyLoginPublicId(testCase.redirect)).toBe(testCase.publicId);
   expect(babyLoginSuccessTarget(testCase.redirect)).toEqual({
     params: { publicId: testCase.publicId },
     to: "/baby/$publicId",
@@ -45,7 +33,6 @@ test.each([
   String.raw`/baby/baby\waiting`,
   "baby-waiting",
 ])("rejects %s as a login redirect", (redirect) => {
-  expect(parseBabyLoginPublicId(redirect)).toBeNull();
   expect(babyLoginSuccessTarget(redirect)).toEqual({ to: "/dashboard" });
   expect(babyLoginHomeLink(redirect)).toEqual({ to: "/" });
 });

@@ -93,10 +93,9 @@ test("client navigations reuse a cached profile without an auth round-trip", asy
   expect(guard.queryFn).not.toHaveBeenCalled();
 });
 
-test("a fresh login retries the profile without taking auth ownership from the provider", async () => {
-  // The login handoff waits for provider-confirmed auth before navigating. If
-  // an anonymous profile result is still cached, the guard may safely refetch
-  // it without replacing the provider's token callback.
+test("a missing cached profile retries once without taking auth ownership from the provider", async () => {
+  // An anonymous profile may still be cached from public pages. The guard
+  // refetches after a token check without replacing the provider's callback.
   const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce("fresh-token");
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const guard = makeGuardCtx();
