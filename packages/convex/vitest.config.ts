@@ -7,7 +7,9 @@ export default defineProject({
     env: {
       BETTER_AUTH_SECRET: "test-secret-for-vitest-at-least-32-chars",
       CONVEX_SITE_URL: "https://convex.test",
+      EMAIL_FROM: "noreply@example.com",
       NODE_ENV: "test",
+      RESEND_API_KEY: "test-resend-key",
       SITE_URL: "http://localhost:3000",
       VAPID_PRIVATE_KEY: "test-vapid-private-key",
       VAPID_PUBLIC_KEY: "test-vapid-public-key",

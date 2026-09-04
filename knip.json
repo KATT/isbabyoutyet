@@ -32,7 +32,11 @@
       ]
     },
     "packages/convex": {
-      "entry": ["scripts/seedHomepageDemo.ts!", "scripts/seedHomepagePhotosDeferred.ts!"]
+      "entry": [
+        "scripts/ensureLocalEnv.ts!",
+        "scripts/seedHomepageDemo.ts!",
+        "scripts/seedHomepagePhotosDeferred.ts!"
+      ]
     },
     "packages/oxlint-plugins": {
       "entry": [
