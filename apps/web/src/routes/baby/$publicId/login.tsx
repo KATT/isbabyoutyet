@@ -9,7 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { hasDemoLogin } from "@/lib/has-demo-login";
 import { useI18n } from "@/lib/i18n";
 import { useBabyLoginOverlay } from "@/lib/overlay-nav";
-import { LoginCard, loginAuthAdapter, signInAndHandoff } from "@/routes/auth/login";
+import { LoginCard, signInThenGo } from "@/routes/auth/login";
 
 export const Route = createFileRoute("/baby/$publicId/login")({
   component: BabyLoginOverlay,
@@ -29,22 +29,12 @@ export function BabyLoginOverlay() {
         </DialogHeader>
         <LoginCard
           demoLoginEnabled={hasDemoLogin}
-          homeLink={{ params: { publicId: params.publicId }, to: "/baby/$publicId" }}
           onSignIn={(values) =>
-            signInAndHandoff(values, {
+            signInThenGo(values, {
               failedMessage: t("Failed to sign in"),
-              headers: () => loginAuthAdapter.headers(),
-              navigate: async () => {
-                login.close();
-              },
-              signIn: async (body, fetchOptions) => {
-                const result = await loginAuthAdapter.signInEmail(body, fetchOptions);
-                return { errorMessage: result.error ? (result.error.message ?? "") : null };
-              },
-              waitForAuth: () => loginAuthAdapter.waitForAuth(),
+              navigate: () => login.close(),
             })
           }
-          variant="dialog"
         />
       </DialogContent>
     </Dialog>

@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
-import type { BrowserAuthHeaders } from "@/lib/auth-client";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -23,7 +22,6 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { authPageCacheHeaders } from "@/lib/cachePolicy";
-import { waitForConvexAuth } from "@/lib/convexAuthHandoff";
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
@@ -36,41 +34,22 @@ function signupSchema(t: TranslationFunction) {
 type NewAccount = { email: string; name: string; password: string };
 
 /**
- * `signUp` reports failure as a message rather than the auth client's own
- * result shape, so the flow below stays independent of better-auth types.
- *
- * @internal Exported for tests.
+ * Create the account, then SPA-navigate to the dashboard.
  */
-export type SignUpHandoff = {
-  failedMessage: string;
-  headers: () => BrowserAuthHeaders;
-  navigate: () => Promise<void>;
-  signUp: (
-    body: NewAccount,
-    fetchOptions: { headers: BrowserAuthHeaders },
-  ) => Promise<{ errorMessage: string | null }>;
-  waitForAuth: () => Promise<void>;
-};
-
-/**
- * Create the account, then wait for the Convex provider to confirm the new
- * identity before navigating — /dashboard would otherwise load against a
- * still anonymous client and bounce back to login.
- *
- * @internal Exported for tests; production wires it up in `SignupPage`.
- */
-export async function signUpAndHandoff(values: NewAccount, deps: SignUpHandoff) {
-  const result = await deps.signUp(
+async function signUpThenGo(
+  values: NewAccount,
+  opts: { failedMessage: string; navigate: () => Promise<void> },
+) {
+  const result = await authClient.signUp.email(
     { email: values.email, name: values.name, password: values.password },
-    { headers: deps.headers() },
+    { headers: getBrowserAuthHeaders() },
   );
 
-  if (result.errorMessage !== null) {
-    throw new Error(result.errorMessage || deps.failedMessage);
+  if (result.error) {
+    throw new Error(result.error.message || opts.failedMessage);
   }
 
-  await deps.waitForAuth();
-  await deps.navigate();
+  await opts.navigate();
 }
 
 export const Route = createFileRoute("/auth/signup")({
@@ -87,19 +66,6 @@ export const Route = createFileRoute("/auth/signup")({
 });
 
 /**
- * Mutable auth adapters so route smoke tests can swap the network-backed
- * better-auth client without `vi.mock`.
- *
- * @internal
- */
-export const signupAuthAdapter = {
-  headers: () => getBrowserAuthHeaders(),
-  signUpEmail: (body: NewAccount, fetchOptions: { headers: BrowserAuthHeaders }) =>
-    authClient.signUp.email(body, fetchOptions),
-  waitForAuth: () => waitForConvexAuth(),
-};
-
-/**
  * @internal Exported for smoke tests; production mounts it via `Route`.
  */
 export function SignupPage() {
@@ -109,15 +75,9 @@ export function SignupPage() {
   return (
     <SignupCard
       onSignUp={(values) =>
-        signUpAndHandoff(values, {
+        signUpThenGo(values, {
           failedMessage: t("Failed to sign up"),
-          headers: () => signupAuthAdapter.headers(),
           navigate: () => router.navigate({ to: "/dashboard" }),
-          signUp: async (body, fetchOptions) => {
-            const result = await signupAuthAdapter.signUpEmail(body, fetchOptions);
-            return { errorMessage: result.error ? (result.error.message ?? "") : null };
-          },
-          waitForAuth: () => signupAuthAdapter.waitForAuth(),
         })
       }
     />

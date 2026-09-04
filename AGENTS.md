@@ -17,7 +17,7 @@ Prefer:
 Lib may use effects, local state, and `useSyncExternalStore` when the hook is a
 **reusable seam** that owns cleanup for an external system (timers, observers,
 blob URLs, module stores). Oxlint exemptions apply only to `use-*` hooks plus
-`overlay-nav.ts` and `convexAuthHandoff.ts` — not the whole `lib/` tree.
+`overlay-nav.ts` — not the whole `lib/` tree.
 
 Checklist before adding a lib hook with `useEffect` / `useState` /
 `useSyncExternalStore`:

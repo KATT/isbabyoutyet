@@ -22,16 +22,33 @@ type AuthGuardContext = {
 };
 
 /**
+ * Backoff while Convex's websocket catches up to a just-set Better Auth
+ * cookie. The first attempt is immediate so a ready client does not wait.
+ */
+const CLIENT_AUTH_CATCHUP_DELAYS_MS = [0, 50, 100, 200, 400, 800];
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/**
  * The `/_auth` guard, with the auth-token round-trip taken as a dependency
  * (defaulted to the real `createServerFn` one by the route) so tests can drive
  * both the SSR and client branches — the real server function throws outside
  * an actual TanStack Start request.
+ *
+ * `waitForCatchup` is the pause between client-side profile refetches after a
+ * fresh session. Pass `null` to use `setTimeout`; tests pass a no-op so
+ * retries stay synchronous.
  *
  * @internal exported for tests
  */
 export async function resolveAuthGuard(opts: {
   context: AuthGuardContext;
   fetchToken: () => Promise<string | null>;
+  waitForCatchup: ((delayMs: number) => Promise<void>) | null;
 }) {
   const preloader = opts.context.convexPreloader;
 
@@ -56,13 +73,11 @@ export async function resolveAuthGuard(opts: {
   }
 
   // Client navigations: the cached profile IS the auth signal — no token
-  // round-trip (sign-out does a full page reload, so the cache can't say
-  // "signed in" after logging out). If the session expires mid-browse the
-  // cache self-heals: the live profile.get subscription flips to null (all
-  // dashboard queries return empty for anonymous callers rather than
-  // throwing), so the next navigation lands in the fallback below and
-  // redirects home. A null profile means logged out or the websocket has not
-  // re-authenticated after sign-in, so confirm with the server once.
+  // round-trip. If the session expires mid-browse the cache self-heals:
+  // profile.get flips to null and the next navigation confirms with the
+  // server, then redirects home. A null profile right after sign-in also
+  // lands here: the cookie is set, but ConvexBetterAuthProvider only calls
+  // setAuth in an effect, so the websocket may still be anonymous.
   let profileHandle = await preloader.ensureQueryData(api.profile.get, {});
   let profile = profileHandle.initialData;
   if (!profile) {
@@ -71,11 +86,20 @@ export async function resolveAuthGuard(opts: {
       throw redirect({ to: "/" });
     }
     // The mounted provider exclusively owns browser Convex authentication.
-    // A fresh session can invalidate a cached anonymous profile, so retry
-    // once without replacing the provider's token callback.
+    // Clear anonymous cache, then refetch until Convex confirms the session
+    // (or the backoff is exhausted). Do not replace the provider's callback.
     opts.context.queryClient.clear();
-    profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    profile = profileHandle.initialData;
+    const waitForCatchup = opts.waitForCatchup ?? delay;
+    for (const delayMs of CLIENT_AUTH_CATCHUP_DELAYS_MS) {
+      if (delayMs > 0) {
+        await waitForCatchup(delayMs);
+      }
+      profileHandle = await preloader.fetchQueryData(api.profile.get, {});
+      profile = profileHandle.initialData;
+      if (profile) {
+        break;
+      }
+    }
     if (!profile) {
       throw redirect({ to: "/" });
     }
@@ -103,6 +127,7 @@ export const Route = createFileRoute("/_auth")({
     return await resolveAuthGuard({
       context: opts.context,
       fetchToken: async () => (await getAuthToken()) ?? null,
+      waitForCatchup: null,
     });
   },
   component: AuthLayout,

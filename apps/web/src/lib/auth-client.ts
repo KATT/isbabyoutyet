@@ -29,8 +29,6 @@ export function getBrowserAuthHeaders() {
   return headers;
 }
 
-export type BrowserAuthHeaders = ReturnType<typeof getBrowserAuthHeaders>;
-
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_SITE_URL,
   plugins: [convexClient()],
