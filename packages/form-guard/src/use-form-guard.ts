@@ -1,8 +1,9 @@
 /**
  * React layer over the framework-free guard store: creates one store per
- * guard, bridges its prompt-open state via `useSyncExternalStore`, stacks
- * stores through context (wired in effects, never during render), and
- * registers reactive form state with every store in the stack.
+ * guard, owns (or mirrors) the overlay's open state, bridges the prompt-open
+ * state via `useSyncExternalStore`, stacks stores through context (wired in
+ * effects, never during render), and registers reactive form state with
+ * every store in the stack.
  *
  * The provider figures out stacking by itself: the outermost provider is the
  * stack root, which mounts the navigation blocker and renders the app's
@@ -18,20 +19,30 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { createFormGuardStore } from "./guard-store.js";
-import type {
-  FormGuardStore,
-  FormStateFlags,
-  OverlayActions,
-  OverlayOpenChangeHandler,
-} from "./guard-store.js";
+import { createFormGuardStore, REQUEST_CLOSE_REASON } from "./guard-store.js";
+import type { FormGuardStore, FormStateFlags, OverlayOpenChangeHandler } from "./guard-store.js";
 import { useFormNavigationGuard } from "./router.js";
+
+/**
+ * How the guard relates to an overlay's open state:
+ *
+ * - **controlled** — the caller owns `open` (route-backed overlays, URL
+ *   search state) and receives every allowed change via `onOpenChange`.
+ * - **uncontrolled** — the guard owns `open` (popover / dialog editors that
+ *   open from a trigger); pass `defaultOpen`.
+ * - **`null`** — no overlay at all (full-page forms that only need the
+ *   navigation guard).
+ */
+export type FormGuardOverlay =
+  | { onOpenChange: (open: boolean) => void; open: boolean }
+  | { defaultOpen: boolean }
+  | null;
 
 export type FormGuardHandle = {
   /**
-   * Close the overlay when {@link FormGuardHandle.rootProps} is spread onto a
-   * Base UI Root. No-op on full pages that only use the navigation guard.
-   * Safe mid-submit: reports `imperative-action`, which the guard allows.
+   * Close the overlay unconditionally (success paths, "Cancel" buttons).
+   * Safe mid-submit and while dirty — the guard does not ask. No-op on full
+   * pages.
    */
   close: () => void;
   /** @internal consumed by the app's discard dialog. */
@@ -40,13 +51,22 @@ export type FormGuardHandle = {
     onOpenChange: (open: boolean) => void;
     open: boolean;
   };
+  /** Whether the overlay is currently open. */
+  open: boolean;
+  /**
+   * Close the overlay the way a user dismissal would: blocked while a form
+   * submits, confirmed with the discard prompt while one is dirty, otherwise
+   * closes. For close controls rendered *outside* the overlay (nav toggles).
+   */
+  requestClose: () => void;
   /**
    * Overlay adapter — spread onto the Base UI Root (`Popover` / `Dialog` /
-   * `AlertDialog` / `Sheet`). Omit on full-page forms.
+   * `AlertDialog` / `Sheet`). Controls `open` and runs every open-change
+   * through the guard.
    */
   rootProps: {
-    actionsRef: { current: OverlayActions | null };
     onOpenChange: OverlayOpenChangeHandler;
+    open: boolean;
   };
   /** @internal consumed by the context provider and the router adapter. */
   store: FormGuardStore;
@@ -59,15 +79,20 @@ type FormGuardContextValue = {
 
 const FormGuardContext = createContext<FormGuardContextValue | null>(null);
 
+const NO_ANCESTORS: Array<FormGuardStore> = [];
+
 /**
  * Every store from the nearest provider up to the stack root. Submit locks
  * and leave permission apply to the whole stack: a successful save inside a
  * nested editor must also unblock the parent overlay's dismiss and
  * navigation guard. Empty outside any provider.
+ *
+ * Identity is not load-bearing: the store treats re-registration of the same
+ * flags as a no-op, so effects keyed on this array may re-run freely.
  */
 function useFormGuardStack(): Array<FormGuardStore> {
   const ctx = useContext(FormGuardContext);
-  return ctx ? [ctx.store, ...ctx.ancestors] : [];
+  return ctx ? [ctx.store, ...ctx.ancestors] : NO_ANCESTORS;
 }
 
 /**
@@ -154,44 +179,66 @@ function promptClosedOnServer() {
   return false;
 }
 
+function noop() {}
+
 /**
  * Form that may be left via overlay dismiss or in-app navigation: owns the
- * actions handle, a submit lock, and unsaved-edit confirmation for both
- * adapters.
+ * overlay's open state (or mirrors the caller's), a submit lock, and
+ * unsaved-edit confirmation for both adapters.
  *
  * While any child form submits, user dismissal is cancelled; the imperative
  * success-close is not. While any child form is dirty, user dismissal opens a
  * discard confirmation instead of closing.
  */
-export function useFormGuard(opts: {
-  /** Extra open-change logic (e.g. forwarded overlay-nav close); pass `undefined` otherwise. */
-  onOpenChange: OverlayOpenChangeHandler | undefined;
-}): FormGuardHandle {
+export function useFormGuard(overlay: FormGuardOverlay): FormGuardHandle {
   const [store] = useState(createFormGuardStore);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(
+    overlay !== null && "defaultOpen" in overlay ? overlay.defaultOpen : false,
+  );
+  const controlled = overlay !== null && "open" in overlay;
+  const open = controlled ? overlay.open : overlay === null ? false : uncontrolledOpen;
+  const setOpen = controlled ? overlay.onOpenChange : overlay === null ? noop : setUncontrolledOpen;
+  // The store closes queued targets on Discard; re-wire the closer whenever a
+  // controlled caller hands over a new `onOpenChange`.
+  useEffect(() => {
+    store.setCloser(() => {
+      setOpen(false);
+    });
+    return () => {
+      store.setCloser(null);
+    };
+  }, [store, setOpen]);
   const promptOpen = useSyncExternalStore(
     store.subscribe,
     store.isPromptOpen,
     promptClosedOnServer,
   );
+  const onOpenChange: OverlayOpenChangeHandler = (nextOpen, eventDetails) => {
+    if (store.handleOpenChange(nextOpen, eventDetails) === "allow") {
+      setOpen(nextOpen);
+    }
+  };
 
   return {
-    close: store.close,
+    close: () => {
+      setOpen(false);
+    },
     discardPrompt: {
       onDiscard: store.discard,
-      onOpenChange: (open) => {
-        if (!open) {
+      onOpenChange: (promptIsOpen) => {
+        if (!promptIsOpen) {
           store.keepEditing();
         }
       },
       open: promptOpen,
     },
+    open,
+    requestClose: () => {
+      onOpenChange(false, { cancel: noop, reason: REQUEST_CLOSE_REASON });
+    },
     rootProps: {
-      actionsRef: store.actionsRef,
-      onOpenChange: (open, eventDetails) => {
-        if (store.handleOpenChange(open, eventDetails) === "allow") {
-          opts.onOpenChange?.(open, eventDetails);
-        }
-      },
+      onOpenChange,
+      open,
     },
     store,
   };
@@ -206,8 +253,10 @@ export function useFormGuard(opts: {
  * `formState`), so any form library can feed it and the guard needs no
  * imperative submit lock: `isSubmitting` blocks user dismissal while it
  * holds, and `isDirty && !isSubmitting && !isSubmitSuccessful` is the
- * "unsaved edits" signal that blocks leaving. Effect cleanup clears the
- * slot on unmount.
+ * "unsaved edits" signal that blocks leaving.
+ *
+ * Flag updates patch the registration in place; only unmount (or a change
+ * of stack) clears the slot, so a re-render never looks like a fresh form.
  */
 export function useRegisterFormState(flags: FormStateFlags) {
   const stores = useFormGuardStack();
@@ -219,10 +268,12 @@ export function useRegisterFormState(flags: FormStateFlags) {
     for (const store of stores) {
       store.setFormState(id, { isDirty, isSubmitSuccessful, isSubmitting });
     }
+  }, [id, stores, isDirty, isSubmitting, isSubmitSuccessful]);
+  useEffect(() => {
     return () => {
       for (const store of stores) {
         store.setFormState(id, null);
       }
     };
-  }, [id, stores, isDirty, isSubmitting, isSubmitSuccessful]);
+  }, [id, stores]);
 }
