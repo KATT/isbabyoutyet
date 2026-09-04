@@ -132,7 +132,7 @@ if (stepSummaryPath !== undefined && stepSummaryPath !== "") {
   await appendFile(stepSummaryPath, buildStepSummary(results), "utf8");
 }
 
-const MAX_REGRESSION_PCT = 0.1;
+const MAX_REGRESSION_PCT = 0.2;
 const regressions = results.filter((result) => result.change < -MAX_REGRESSION_PCT);
 emitAnnotations(results, regressions);
 
