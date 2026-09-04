@@ -33,6 +33,7 @@ import { Route as BabyPublicIdPhotoRouteImport } from './routes/baby/$publicId/p
 import { Route as BabyPublicIdPostRouteImport } from './routes/baby/$publicId/post'
 import { Route as BabyPublicIdSettingsRouteImport } from './routes/baby/$publicId/settings'
 import { Route as BabyPublicIdShareRouteImport } from './routes/baby/$publicId/share'
+import { Route as BabyPublicIdSignupRouteImport } from './routes/baby/$publicId/signup'
 import { Route as BabyManifest_idRouteImport } from './routes/baby/manifest/$_id'
 import { Route as OgBabyPublicIdRouteImport } from './routes/og.baby.$publicId'
 import { Route as BabyPublicIdUpdatesUpdateIdPhotoRouteImport } from './routes/baby/$publicId/updates.$updateId.photo'
@@ -156,6 +157,11 @@ const BabyPublicIdShareRoute = BabyPublicIdShareRouteImport.update({
   path: '/share',
   getParentRoute: () => BabyPublicIdRouteRoute,
 } as any)
+const BabyPublicIdSignupRoute = BabyPublicIdSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => BabyPublicIdRouteRoute,
+} as any)
 const BabyManifest_idRoute = BabyManifest_idRouteImport.update({
   id: '/baby/manifest/$_id',
   path: '/baby/manifest/$_id',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/$publicId/share': typeof BabyPublicIdShareRoute
+  '/baby/$publicId/signup': typeof BabyPublicIdSignupRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/dashboard/': typeof AuthDashboardIndexRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/$publicId/share': typeof BabyPublicIdShareRoute
+  '/baby/$publicId/signup': typeof BabyPublicIdSignupRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/dashboard': typeof AuthDashboardIndexRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/$publicId/share': typeof BabyPublicIdShareRoute
+  '/baby/$publicId/signup': typeof BabyPublicIdSignupRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/_auth/dashboard/': typeof AuthDashboardIndexRoute
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/$publicId/share'
+    | '/baby/$publicId/signup'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
     | '/dashboard/'
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/$publicId/share'
+    | '/baby/$publicId/signup'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
     | '/dashboard'
@@ -336,6 +347,7 @@ export interface FileRouteTypes {
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/$publicId/share'
+    | '/baby/$publicId/signup'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
     | '/_auth/dashboard/'
@@ -530,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BabyPublicIdShareRouteImport
       parentRoute: typeof BabyPublicIdRouteRoute
     }
+    '/baby/$publicId/signup': {
+      id: '/baby/$publicId/signup'
+      path: '/signup'
+      fullPath: '/baby/$publicId/signup'
+      preLoaderRoute: typeof BabyPublicIdSignupRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
     '/baby/manifest/$_id': {
       id: '/baby/manifest/$_id'
       path: '/baby/manifest/$_id'
@@ -599,6 +618,7 @@ interface BabyPublicIdRouteRouteChildren {
   BabyPublicIdPostRoute: typeof BabyPublicIdPostRoute
   BabyPublicIdSettingsRoute: typeof BabyPublicIdSettingsRoute
   BabyPublicIdShareRoute: typeof BabyPublicIdShareRoute
+  BabyPublicIdSignupRoute: typeof BabyPublicIdSignupRoute
   BabyPublicIdIndexRoute: typeof BabyPublicIdIndexRoute
   BabyPublicIdUpdatesUpdateIdPhotoRoute: typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
@@ -609,6 +629,7 @@ const BabyPublicIdRouteRouteChildren: BabyPublicIdRouteRouteChildren = {
   BabyPublicIdPostRoute: BabyPublicIdPostRoute,
   BabyPublicIdSettingsRoute: BabyPublicIdSettingsRoute,
   BabyPublicIdShareRoute: BabyPublicIdShareRoute,
+  BabyPublicIdSignupRoute: BabyPublicIdSignupRoute,
   BabyPublicIdIndexRoute: BabyPublicIdIndexRoute,
   BabyPublicIdUpdatesUpdateIdPhotoRoute: BabyPublicIdUpdatesUpdateIdPhotoRoute,
 }

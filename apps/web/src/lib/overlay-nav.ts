@@ -324,6 +324,21 @@ export function useBabyLoginOverlayLinks(publicId: string) {
   return useRouteOverlayLinks(babyLoginOverlay(publicId));
 }
 
+function babySignupOverlay(publicId: string): OverlaySpec {
+  return {
+    close: { params: { publicId }, to: "/baby/$publicId" },
+    open: { params: { publicId }, to: "/baby/$publicId/signup" },
+  };
+}
+
+export function useBabySignupOverlay(publicId: string) {
+  return useRouteOverlay(babySignupOverlay(publicId));
+}
+
+export function useBabySignupOverlayLinks(publicId: string) {
+  return useRouteOverlayLinks(babySignupOverlay(publicId));
+}
+
 function babyPhotoOverlay(publicId: string): OverlaySpec {
   return {
     close: { params: { publicId }, to: "/baby/$publicId" },

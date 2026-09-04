@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
 import { Input } from "@workspace/ui/components/input";
@@ -34,11 +35,14 @@ function signupSchema(t: TranslationFunction) {
 type NewAccount = { email: string; name: string; password: string };
 
 /**
- * Create the account, then SPA-navigate to the dashboard.
+ * Create the account, then SPA-navigate. Callers own the destination
+ * (dashboard, or overlay close).
+ *
+ * @internal Shared by the signup page and the baby-page overlay.
  */
-async function signUpThenGo(
+export async function signUpThenGo(
   values: NewAccount,
-  opts: { failedMessage: string; navigate: () => Promise<void> },
+  opts: { failedMessage: string; navigate: () => Promise<void> | void },
 ) {
   const result = await authClient.signUp.email(
     { email: values.email, name: values.name, password: values.password },
@@ -73,36 +77,6 @@ export function SignupPage() {
   const router = useRouter();
 
   return (
-    <SignupCard
-      onSignUp={(values) =>
-        signUpThenGo(values, {
-          failedMessage: t("Failed to sign up"),
-          navigate: () => router.navigate({ to: "/dashboard" }),
-        })
-      }
-    />
-  );
-}
-
-/**
- * Signup form. Takes the account-creation flow as a prop so tests can render
- * it without an auth client.
- *
- * @internal Exported for tests; production uses `SignupPage`.
- */
-export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<void> }) {
-  const { t } = useI18n();
-
-  const form = useZodForm({
-    defaultValues: {
-      email: "",
-      name: "",
-      password: "",
-    },
-    schema: signupSchema(t),
-  });
-
-  return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <Link
@@ -115,84 +89,120 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
         <Card className="rounded-[2rem] border-2 pop-shadow-strong">
-          <CardHeader className="text-center">
-            <p aria-hidden="true" className="text-4xl">
-              🎈
-            </p>
-            <CardTitle className="text-2xl font-black">{t("Join the fun!")}</CardTitle>
-            <CardDescription className="font-medium">
-              {t("Create an account to share your baby's arrival")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form form={form} handleSubmit={(values) => props.onSignUp(values)}>
-              <div className="space-y-5">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("Name")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t("Your name")} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("Email")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="you@example.com" type="email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("Password")}</FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <SubmitButton
-                  className="w-full rounded-full font-extrabold pop-shadow"
-                  form="context"
-                  IconComponent={UserPlus}
-                  iconPosition="start"
-                  size="lg"
-                >
-                  {t("Sign Up")}
-                </SubmitButton>
-              </div>
-            </Form>
-
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              {t("Already have an account?")}{" "}
-              <Link
-                className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
-                to="/auth/login"
-              >
-                {t("Sign in")}
-              </Link>
-            </div>
-          </CardContent>
+          <SignupCard
+            onSignUp={(values) =>
+              signUpThenGo(values, {
+                failedMessage: t("Failed to sign up"),
+                navigate: () => router.navigate({ to: "/dashboard" }),
+              })
+            }
+            signInLink={{ to: "/auth/login" }}
+          />
         </Card>
       </div>
     </div>
+  );
+}
+
+/**
+ * Signup form. Takes the account-creation flow as a prop so tests can render
+ * it without an auth client.
+ *
+ * @internal Exported for tests; production uses `SignupPage`.
+ */
+export function SignupCard(props: {
+  onSignUp: (values: NewAccount) => Promise<void>;
+  signInLink: LinkProps;
+}) {
+  const { t } = useI18n();
+
+  const form = useZodForm({
+    defaultValues: {
+      email: "",
+      name: "",
+      password: "",
+    },
+    schema: signupSchema(t),
+  });
+
+  return (
+    <>
+      <CardHeader className="text-center">
+        <p aria-hidden="true" className="text-4xl">
+          🎈
+        </p>
+        <CardTitle className="text-2xl font-black">{t("Join the fun!")}</CardTitle>
+        <CardDescription className="font-medium">
+          {t("Create an account to share your baby's arrival")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form form={form} handleSubmit={(values) => props.onSignUp(values)}>
+          <div className="space-y-5">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("Name")}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t("Your name")} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("Email")}</FormLabel>
+                  <FormControl>
+                    <Input placeholder="you@example.com" type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("Password")}</FormLabel>
+                  <FormControl>
+                    <Input type="password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <SubmitButton
+              className="w-full rounded-full font-extrabold pop-shadow"
+              form="context"
+              IconComponent={UserPlus}
+              iconPosition="start"
+              size="lg"
+            >
+              {t("Sign Up")}
+            </SubmitButton>
+          </div>
+        </Form>
+
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          {t("Already have an account?")}{" "}
+          <Link
+            {...props.signInLink}
+            className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
+          >
+            {t("Sign in")}
+          </Link>
+        </div>
+      </CardContent>
+    </>
   );
 }

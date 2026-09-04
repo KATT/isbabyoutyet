@@ -8,7 +8,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { hasDemoLogin } from "@/lib/has-demo-login";
 import { useI18n } from "@/lib/i18n";
-import { useBabyLoginOverlay } from "@/lib/overlay-nav";
+import { openOverlayLink, useBabyLoginOverlay } from "@/lib/overlay-nav";
 import { LoginCard, signInThenGo } from "@/routes/auth/login";
 
 export const Route = createFileRoute("/baby/$publicId/login")({
@@ -35,6 +35,13 @@ export function BabyLoginOverlay() {
               navigate: () => login.close(),
             })
           }
+          signUpLink={{
+            ...openOverlayLink({
+              params: { publicId: params.publicId },
+              to: "/baby/$publicId/signup",
+            }),
+            replace: true,
+          }}
         />
       </DialogContent>
     </Dialog>

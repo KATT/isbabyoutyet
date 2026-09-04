@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
 import { Input } from "@workspace/ui/components/input";
@@ -106,6 +107,7 @@ export function LoginPage() {
                 navigate: () => router.navigate(successTarget),
               })
             }
+            signUpLink={{ to: "/auth/signup" }}
           />
         </Card>
       </div>
@@ -122,6 +124,7 @@ export function LoginPage() {
 export function LoginCard(props: {
   demoLoginEnabled: boolean;
   onSignIn: (values: Credentials) => Promise<void>;
+  signUpLink: LinkProps;
 }) {
   const { t } = useI18n();
 
@@ -211,8 +214,8 @@ export function LoginCard(props: {
         <div className="mt-6 text-center text-sm text-muted-foreground">
           {t("Don't have an account?")}{" "}
           <Link
+            {...props.signUpLink}
             className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
-            to="/auth/signup"
           >
             {t("Sign up")}
           </Link>
