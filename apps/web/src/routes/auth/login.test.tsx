@@ -12,7 +12,11 @@ function renderLogin(props: {
 }) {
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <LoginCard demoLoginEnabled={props.demoLoginEnabled} onSignIn={props.onSignIn} />
+      <LoginCard
+        demoLoginEnabled={props.demoLoginEnabled}
+        onSignIn={props.onSignIn}
+        signUpLink={{ to: "/auth/signup" }}
+      />
     </LocaleProvider>,
     { path: "/auth/login" },
   );
