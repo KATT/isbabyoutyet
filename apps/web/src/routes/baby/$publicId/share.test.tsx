@@ -117,7 +117,7 @@ test("copies from the route overlay and dismisses through overlay history", asyn
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/share`,
-    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/share",
     route: Route,
     wrap: null,
@@ -216,7 +216,7 @@ test("share overlay falls back to execCommand when clipboard.writeText fails", a
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/share`,
-    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/share",
     route: Route,
     wrap: null,

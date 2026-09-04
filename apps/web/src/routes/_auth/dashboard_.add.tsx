@@ -113,7 +113,7 @@ export function AddBabyPageView(props: {
   subscribeOwnerMessages: ((babyId: Id<"baby">) => Promise<void>) | null;
 }) {
   const { t } = useI18n();
-  const overlay = useFormGuard({ onOpenChange: undefined });
+  const guard = useFormGuard(null);
 
   const form = useZodForm({
     defaultValues: {
@@ -129,7 +129,7 @@ export function AddBabyPageView(props: {
   });
 
   return (
-    <FormGuardProvider guard={overlay}>
+    <FormGuardProvider guard={guard}>
       <div className="min-h-screen bg-background bg-dots">
         <div className="mx-auto max-w-xl px-6 py-10">
           <Button

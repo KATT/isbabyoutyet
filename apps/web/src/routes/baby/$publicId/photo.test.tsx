@@ -56,7 +56,7 @@ test("dismisses the lightbox overlay after the dialog closes", async () => {
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/photo`,
-    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/photo",
     route: Route,
     wrap: null,

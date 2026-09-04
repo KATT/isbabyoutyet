@@ -8,7 +8,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { hasDemoLogin } from "@/lib/has-demo-login";
 import { useI18n } from "@/lib/i18n";
-import { useBabyLoginOverlayNav } from "@/lib/overlay-nav";
+import { useBabyLoginOverlay } from "@/lib/overlay-nav";
 import { LoginCard, loginAuthAdapter, signInAndHandoff } from "@/routes/auth/login";
 
 export const Route = createFileRoute("/baby/$publicId/login")({
@@ -18,14 +18,10 @@ export const Route = createFileRoute("/baby/$publicId/login")({
 export function BabyLoginOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
-  const login = useBabyLoginOverlayNav(params.publicId);
+  const login = useBabyLoginOverlay(params.publicId);
 
   return (
-    <Dialog
-      onOpenChange={login.onOpenChange}
-      onOpenChangeComplete={login.onOpenChangeComplete}
-      open={login.open}
-    >
+    <Dialog {...login.rootProps}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="sr-only">
           <DialogTitle>{t("Welcome back!")}</DialogTitle>
@@ -39,7 +35,7 @@ export function BabyLoginOverlay() {
               failedMessage: t("Failed to sign in"),
               headers: () => loginAuthAdapter.headers(),
               navigate: async () => {
-                login.dismiss();
+                login.close();
               },
               signIn: async (body, fetchOptions) => {
                 const result = await loginAuthAdapter.signInEmail(body, fetchOptions);

@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
-import { FormGuardProvider, useFormGuard } from "@/components/Form";
+import { FormGuardProvider } from "@/components/Form";
 import { UpdateComposer } from "@/components/baby/timeline";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { allKeyed } from "@workspace/query-prefetch";
@@ -9,7 +9,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
-import { useBabyPostOverlayNav } from "@/lib/overlay-nav";
+import { useBabyPostOverlay } from "@/lib/overlay-nav";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/post")({
@@ -41,8 +41,7 @@ export function BabyPostUpdateOverlay() {
   const loaderData = Route.useLoaderData();
   const completeOnboardingStep = useCompleteOnboardingStep();
   const { t } = useI18n();
-  const post = useBabyPostOverlayNav(params.publicId);
-  const formOverlay = useFormGuard({ onOpenChange: post.onOpenChange });
+  const post = useBabyPostOverlay(params.publicId);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const managerBabyDoc =
     loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
@@ -52,14 +51,10 @@ export function BabyPostUpdateOverlay() {
   const baby = managerDocToBabyData(managerBabyDoc);
 
   return (
-    <Dialog
-      open={post.open}
-      {...formOverlay.rootProps}
-      onOpenChangeComplete={post.onOpenChangeComplete}
-    >
+    <Dialog {...post.rootProps}>
       <DialogContent className="sm:max-w-lg" initialFocus={contentRef} ref={contentRef}>
         <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
-        <FormGuardProvider guard={formOverlay}>
+        <FormGuardProvider guard={post.guard}>
           <UpdateComposer
             baby={baby}
             babyId={managerBabyDoc._id}

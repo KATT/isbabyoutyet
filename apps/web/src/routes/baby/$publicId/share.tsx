@@ -25,7 +25,7 @@ import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-ho
 import { copyTextToClipboard } from "@/lib/copy-text";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
-import { useBabyShareOverlayNav } from "@/lib/overlay-nav";
+import { useBabyShareOverlay } from "@/lib/overlay-nav";
 import { getBabySeo } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
 import { useTransientFlag } from "@/lib/use-transient-flag";
@@ -64,7 +64,7 @@ export function BabyShareOverlay() {
   const completeOnboardingStep = useCompleteOnboardingStep();
   const { t } = useI18n();
   const [copied, showCopied] = useTransientFlag(2000);
-  const share = useBabyShareOverlayNav(params.publicId);
+  const share = useBabyShareOverlay(params.publicId);
   const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const babyDoc = babyQuery.data;
@@ -95,11 +95,7 @@ export function BabyShareOverlay() {
   }
 
   return (
-    <Dialog
-      onOpenChange={share.onOpenChange}
-      onOpenChangeComplete={share.onOpenChangeComplete}
-      open={share.open}
-    >
+    <Dialog {...share.rootProps}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t("Share the Link")}</DialogTitle>

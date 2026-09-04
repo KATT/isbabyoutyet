@@ -22,13 +22,13 @@ function PostUpdateLabel(props: { label: string }) {
 type BabyNavProps = {
   /** Dashboard link for signed-in visitors. Null when logged out. */
   dashboardButton: LinkProps | null;
-  /** When post-update is open, dismiss via history.back / replace fallback. */
+  /** When post-update is open, close it through its guard (prompts when dirty). */
   onDismissPostUpdate: (() => void) | null;
-  /** When settings is open, dismiss via history.back / replace fallback. */
+  /** When settings is open, close it through its guard (prompts when dirty). */
   onDismissSettings: (() => void) | null;
-  /** When share is open, dismiss via history.back / replace fallback. */
+  /** When share is open, close it (exit animation, then history.back). */
   onDismissShare: (() => void) | null;
-  /** When login is open, dismiss via history.back / replace fallback. */
+  /** When login is open, close it (exit animation, then history.back). */
   onDismissSignIn: (() => void) | null;
   /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
   onSettingsOpened: (() => void) | null;

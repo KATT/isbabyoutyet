@@ -89,7 +89,7 @@ test("settings overlay closes to the baby page after the dialog exit animation",
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/settings`,
-    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/settings",
     route: Route,
     wrap: null,
@@ -105,11 +105,15 @@ test("settings overlay closes to the baby page after the dialog exit animation",
   expect(ctx.back).not.toHaveBeenCalled();
   await vi.waitFor(() => {
     expect(ctx.navigate).toHaveBeenCalledWith({
+      ignoreBlocker: true,
       params: { publicId: baby.publicId },
       replace: true,
       resetScroll: false,
       to: "/baby/$publicId",
     });
+  });
+  await vi.waitFor(() => {
+    expect(ctx.router.state.location.pathname).toBe(`/baby/${baby.publicId}`);
   });
 });
 
@@ -120,7 +124,7 @@ test("settings overlay prefers history.back when opened via push", async () => {
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/settings`,
-    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/settings",
     route: Route,
     wrap: null,
@@ -150,7 +154,7 @@ test("settings overlay persists baby name edits through Convex", async () => {
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/settings`,
-    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/settings",
     route: Route,
     wrap: null,
@@ -200,7 +204,7 @@ test("settings overlay hides delete for co-parents", async () => {
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/settings`,
-    overlayHistory: { overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/settings",
     route: Route,
     wrap: null,

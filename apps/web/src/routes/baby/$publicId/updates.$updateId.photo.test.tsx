@@ -71,7 +71,7 @@ test("dismisses the update photo overlay after the dialog closes", async () => {
   await using ctx = await renderMountedFileRoute({
     harness,
     initialEntry: `/baby/${baby.publicId}/updates/${update.updateId}/photo`,
-    overlayHistory: { overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
+    overlayHistory: { engine: "memory", overlayPush: true, parentEntry: `/baby/${baby.publicId}` },
     path: "/baby/$publicId/updates/$updateId/photo",
     route: Route,
     wrap: null,
