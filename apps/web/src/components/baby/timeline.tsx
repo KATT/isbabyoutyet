@@ -92,8 +92,10 @@ type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
 type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }>;
 
-const MAX_UPDATE_MESSAGE_LENGTH = 1000;
-const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+/** @internal shared with the composer prototypes under `routes/baby/$publicId/_auth/post-*` */
+export const MAX_UPDATE_MESSAGE_LENGTH = 1000;
+/** @internal shared with the composer prototypes under `routes/baby/$publicId/_auth/post-*` */
+export const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 /**
  * A post's three fields are mutually inclusive: any combination works, as
@@ -103,7 +105,8 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  */
 type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
 
-function composerSchema(opts: {
+/** @internal shared with the composer prototypes under `routes/baby/$publicId/_auth/post-*` */
+export function composerSchema(opts: {
   allowedMilestones: ReadonlyArray<Milestone>;
   babyId: Id<"baby">;
   t: TranslationFunction;
@@ -145,13 +148,15 @@ function composerSchema(opts: {
     });
 }
 
-const MILESTONE_META = {
+/** @internal shared with the composer prototypes under `routes/baby/$publicId/_auth/post-*` */
+export const MILESTONE_META = {
   born: { icon: ConfettiIcon, labelKey: MILESTONE_LABEL_KEYS.born },
   gone_to_hospital: { icon: HospitalIcon, labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital },
   labor_started: { icon: HeartbeatIcon, labelKey: MILESTONE_LABEL_KEYS.labor_started },
 } as const satisfies Record<Milestone, { icon: typeof HeartbeatIcon; labelKey: TranslationKey }>;
 
-const uploadResponseSchema = z.object({
+/** @internal shared with the composer prototypes under `routes/baby/$publicId/_auth/post-*` */
+export const uploadResponseSchema = z.object({
   storageId: z.string().refine((value): value is Id<"_storage"> => value.length > 0),
 });
 
@@ -508,7 +513,8 @@ type UpdateTimelineItemProps = {
   publicId: string;
 };
 
-const MILESTONE_EMOJI = {
+/** @internal shared with the composer prototypes under `routes/baby/$publicId/_auth/post-*` */
+export const MILESTONE_EMOJI = {
   born: "🎉",
   gone_to_hospital: "🏥",
   labor_started: "💫",
