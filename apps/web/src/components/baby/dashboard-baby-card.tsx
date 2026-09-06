@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarHeart } from "@phosphor-icons/react";
+import { ArrowRightIcon, CalendarHeartIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@workspace/ui/components/badge";
 import type { FunctionReturnType } from "convex/server";
@@ -123,11 +123,11 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
           <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary/25 bg-primary/10 text-xl">
             {STATUS_EMOJI[currentStatus.type]}
           </span>
-          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          <ArrowRightIcon className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
         </div>
         <h2 className="mt-4 text-2xl font-black tracking-tight text-foreground">{baby.name}</h2>
         <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-          <CalendarHeart className="h-3.5 w-3.5" />
+          <CalendarHeartIcon className="h-3.5 w-3.5" />
           {dateLine}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">

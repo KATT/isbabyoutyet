@@ -1,7 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Baby } from "@phosphor-icons/react";
+import { BabyIcon } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -298,7 +298,7 @@ export function HomePage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
           <span className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-              <Baby className="h-4 w-4 text-primary" />
+              <BabyIcon className="h-4 w-4 text-primary" />
             </span>
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </span>

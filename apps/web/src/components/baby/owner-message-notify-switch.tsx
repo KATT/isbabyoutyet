@@ -4,7 +4,7 @@ import { ensureWebPushSubscription, readWebPushSubscription } from "@/lib/web-pu
 import { useConvexMutation } from "@convex-dev/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
-import { Bell } from "@phosphor-icons/react";
+import { BellIcon } from "@phosphor-icons/react";
 import { preloadedConvexQueryOptions } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -113,7 +113,7 @@ function SettingsMessageNotifyRow(props: SwitchViewProps) {
   return (
     <Item>
       <ItemMedia variant="icon">
-        <Bell />
+        <BellIcon />
       </ItemMedia>
       <ItemContent>
         <ItemTitle id={titleId}>{t(copy.title)}</ItemTitle>

@@ -3,6 +3,9 @@
   // Closely matches `oxlint --init`, plus the stricter `suspicious` category.
   // Pedantic/style/restriction stay off as categories — nkzw rules below are
   // enabled individually (https://github.com/nkzw-tech/oxlint-config).
+  "options": {
+    "typeAware": true
+  },
   "plugins": ["typescript", "unicorn", "oxc", "vitest", "react", "import"],
   "categories": {
     "correctness": "error",
@@ -62,6 +65,44 @@
     "eslint/max-params": ["error", 2],
     // Type assertions can hide mismatches. Narrow values or use `satisfies` instead.
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
+    // JSDoc `@deprecated` is not a TypeScript error; fail the lint instead.
+    // `typeAware` is required. Other tsgolint rules in correctness/suspicious
+    // stay off so this stays an opt-in rule, not a full type-aware rollout.
+    "typescript/no-deprecated": [
+      "error",
+      {
+        "allow": [
+          // Convex HTTP SSR snapshot API — still what @convex-dev/react-query uses.
+          { "from": "package", "name": "consistentQuery", "package": "convex" },
+          // Clipboard fallback when `navigator.clipboard.writeText` throws.
+          { "from": "lib", "name": "execCommand" }
+        ]
+      }
+    ],
+    "typescript/await-thenable": "off",
+    "typescript/consistent-return": "off",
+    "typescript/no-array-delete": "off",
+    "typescript/no-base-to-string": "off",
+    "typescript/no-duplicate-type-constituents": "off",
+    "typescript/no-floating-promises": "off",
+    "typescript/no-for-in-array": "off",
+    "typescript/no-implied-eval": "off",
+    "typescript/no-meaningless-void-operator": "off",
+    "typescript/no-misused-spread": "off",
+    "typescript/no-redundant-type-constituents": "off",
+    "typescript/no-unnecessary-boolean-literal-compare": "off",
+    "typescript/no-unnecessary-template-expression": "off",
+    "typescript/no-unnecessary-type-arguments": "off",
+    "typescript/no-unnecessary-type-assertion": "off",
+    "typescript/no-unnecessary-type-conversion": "off",
+    "typescript/no-unnecessary-type-parameters": "off",
+    "typescript/no-unsafe-enum-comparison": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "typescript/no-unsafe-unary-minus": "off",
+    "typescript/no-useless-default-assignment": "off",
+    "typescript/require-array-sort-compare": "off",
+    "typescript/restrict-template-expressions": "off",
+    "typescript/unbound-method": "off",
     // Unused `@ts-expect-error` is TS2578 (typecheck). This rule requires a description
     // and bans `@ts-ignore` / `@ts-nocheck`.
     "typescript/ban-ts-comment": [
@@ -462,6 +503,7 @@
       "files": ["packages/ui/src/**"],
       "rules": {
         "typescript/consistent-type-assertions": "off",
+        "typescript/no-deprecated": "off",
         "anti-slop/no-chained-type-assertions": "off",
         "anti-slop/no-conditional-empty-object-spread": "off",
         "anti-slop/no-known-value-widening": "off",

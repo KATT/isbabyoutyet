@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import { Check, Code, House, SignIn } from "@phosphor-icons/react";
+import { CheckIcon, CodeIcon, HouseIcon, SignInIcon } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 
 /** @internal Exported for tests. */
@@ -59,7 +59,7 @@ export function DevBar() {
             />
           }
         >
-          <Code data-icon="inline-start" />
+          <CodeIcon data-icon="inline-start" />
           <span className="max-sm:sr-only">Dev</span>
         </DropdownMenuTrigger>
 
@@ -83,7 +83,7 @@ export function DevBar() {
                   />
                 }
               >
-                {currentPublicId === baby.publicId ? <Check data-icon="inline-start" /> : null}
+                {currentPublicId === baby.publicId ? <CheckIcon data-icon="inline-start" /> : null}
                 <span className="min-w-0 flex-1 truncate">{baby.label}</span>
                 <span className="text-muted-foreground">{baby.name}</span>
               </DropdownMenuItem>
@@ -107,7 +107,9 @@ export function DevBar() {
                     />
                   }
                 >
-                  {currentPublicId === baby.publicId ? <Check data-icon="inline-start" /> : null}
+                  {currentPublicId === baby.publicId ? (
+                    <CheckIcon data-icon="inline-start" />
+                  ) : null}
                   <span className="min-w-0 flex-1 truncate">{baby.name}</span>
                   <span className="text-muted-foreground">{locale}</span>
                 </DropdownMenuItem>
@@ -123,20 +125,28 @@ export function DevBar() {
               render={<Link aria-current={currentPage(onDashboard)} to="/dashboard" />}
             >
               {onDashboard ? (
-                <Check data-icon="inline-start" />
+                <CheckIcon data-icon="inline-start" />
               ) : (
-                <House data-icon="inline-start" />
+                <HouseIcon data-icon="inline-start" />
               )}
               Dashboard
             </DropdownMenuItem>
             <DropdownMenuItem
               render={<Link aria-current={currentPage(onLogin)} to="/auth/login" />}
             >
-              {onLogin ? <Check data-icon="inline-start" /> : <SignIn data-icon="inline-start" />}
+              {onLogin ? (
+                <CheckIcon data-icon="inline-start" />
+              ) : (
+                <SignInIcon data-icon="inline-start" />
+              )}
               Login
             </DropdownMenuItem>
             <DropdownMenuItem render={<Link aria-current={currentPage(onPreview)} to="/preview" />}>
-              {onPreview ? <Check data-icon="inline-start" /> : <Code data-icon="inline-start" />}
+              {onPreview ? (
+                <CheckIcon data-icon="inline-start" />
+              ) : (
+                <CodeIcon data-icon="inline-start" />
+              )}
               Preview
             </DropdownMenuItem>
           </DropdownMenuGroup>

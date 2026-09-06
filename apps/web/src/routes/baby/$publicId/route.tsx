@@ -1,5 +1,5 @@
 import { BabyNav } from "@/components/baby/baby-nav";
-import { Baby } from "@phosphor-icons/react";
+import { BabyIcon } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed } from "@/components/baby/timeline";
 import {
@@ -339,7 +339,7 @@ function BabyPageLayout() {
             to="/"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-              <Baby className="h-4 w-4 text-primary" />
+              <BabyIcon className="h-4 w-4 text-primary" />
             </span>
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
