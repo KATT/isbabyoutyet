@@ -618,9 +618,11 @@ const enGB = {
   "When did labour start?": "When did labour start?",
   "When did you head to the hospital?": "When did you head to the hospital?",
   "When was {{name}} born?": "When was {{name}} born?",
-  "Write a note, add a photo, or update the status.": "Write a note, add a photo, or update the status.",
+  "Write a note, add a photo, or update the status.":
+    "Write a note, add a photo, or update the status.",
   "Write a note (optional)": "Write a note (optional)",
-  "You get a minute to cancel before it goes out.": "You get a minute to cancel before it goes out.",
+  "You get a minute to cancel before it goes out.":
+    "You get a minute to cancel before it goes out.",
 } as const;
 
 export type TranslationKey = keyof typeof enGB;
@@ -1244,8 +1246,10 @@ const sv: TranslationCatalog = {
   "Optional. You can change this later.": "Valfritt. Du kan ändra det senare.",
   "or drag one in": "eller dra in ett",
   Photo: "Foto",
-  "Posting notifies {{count}} subscriber.": "Publiceringen skickar en notis till {{count}} prenumerant.",
-  "Posting notifies {{count}} subscribers.": "Publiceringen skickar en notis till {{count}} prenumeranter.",
+  "Posting notifies {{count}} subscriber.":
+    "Publiceringen skickar en notis till {{count}} prenumerant.",
+  "Posting notifies {{count}} subscribers.":
+    "Publiceringen skickar en notis till {{count}} prenumeranter.",
   "Swap the photo": "Byt foto",
   "The page will announce that {{name}} is here.": "Sidan kommer berätta att {{name}} är här.",
   "The page will say labour has started.": "Sidan kommer visa att förlossningen har börjat.",
@@ -1254,9 +1258,11 @@ const sv: TranslationCatalog = {
   "When did labour start?": "När började förlossningen?",
   "When did you head to the hospital?": "När åkte ni till sjukhuset?",
   "When was {{name}} born?": "När föddes {{name}}?",
-  "Write a note, add a photo, or update the status.": "Skriv något, lägg till ett foto eller uppdatera statusen.",
+  "Write a note, add a photo, or update the status.":
+    "Skriv något, lägg till ett foto eller uppdatera statusen.",
   "Write a note (optional)": "Skriv något (valfritt)",
-  "You get a minute to cancel before it goes out.": "Du har en minut att avbryta innan den skickas.",
+  "You get a minute to cancel before it goes out.":
+    "Du har en minut att avbryta innan den skickas.",
 };
 
 const es: TranslationCatalog = {
@@ -1872,9 +1878,11 @@ const es: TranslationCatalog = {
   "When did labour start?": "¿Cuándo empezó el parto?",
   "When did you head to the hospital?": "¿Cuándo fuisteis al hospital?",
   "When was {{name}} born?": "¿Cuándo nació {{name}}?",
-  "Write a note, add a photo, or update the status.": "Escribe una nota, añade una foto o actualiza el estado.",
+  "Write a note, add a photo, or update the status.":
+    "Escribe una nota, añade una foto o actualiza el estado.",
   "Write a note (optional)": "Escribe una nota (opcional)",
-  "You get a minute to cancel before it goes out.": "Tienes un minuto para cancelar antes de que se envíe.",
+  "You get a minute to cancel before it goes out.":
+    "Tienes un minuto para cancelar antes de que se envíe.",
 };
 
 const ptBR: TranslationCatalog = {
@@ -2486,8 +2494,10 @@ const ptBR: TranslationCatalog = {
   "Optional. You can change this later.": "Opcional. Você pode alterar depois.",
   "or drag one in": "ou arraste uma para aqui",
   Photo: "Foto",
-  "Posting notifies {{count}} subscriber.": "Ao publicar, {{count}} inscrito recebe uma notificação.",
-  "Posting notifies {{count}} subscribers.": "Ao publicar, {{count}} inscritos recebem uma notificação.",
+  "Posting notifies {{count}} subscriber.":
+    "Ao publicar, {{count}} inscrito recebe uma notificação.",
+  "Posting notifies {{count}} subscribers.":
+    "Ao publicar, {{count}} inscritos recebem uma notificação.",
   "Swap the photo": "Trocar a foto",
   "The page will announce that {{name}} is here.": "A página vai anunciar que {{name}} chegou.",
   "The page will say labour has started.": "A página vai dizer que o trabalho de parto começou.",
@@ -2496,9 +2506,11 @@ const ptBR: TranslationCatalog = {
   "When did labour start?": "Quando o trabalho de parto começou?",
   "When did you head to the hospital?": "Quando vocês foram para o hospital?",
   "When was {{name}} born?": "Quando {{name}} nasceu?",
-  "Write a note, add a photo, or update the status.": "Escreva uma nota, adicione uma foto ou atualize o status.",
+  "Write a note, add a photo, or update the status.":
+    "Escreva uma nota, adicione uma foto ou atualize o status.",
   "Write a note (optional)": "Escreva uma nota (opcional)",
-  "You get a minute to cancel before it goes out.": "Você tem um minuto para cancelar antes do envio.",
+  "You get a minute to cancel before it goes out.":
+    "Você tem um minuto para cancelar antes do envio.",
 };
 
 const enUS: PartialTranslationCatalog = {

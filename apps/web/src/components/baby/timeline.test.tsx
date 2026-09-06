@@ -177,9 +177,7 @@ test("the status radio group is labelled and offers only future stages", async (
   const group = view.getByRole("radiogroup", { name: "Status change (optional)" });
   expect(group).toBeTruthy();
 
-  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe("true");
   expect(view.getByRole("radio", { name: "Labour started" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
@@ -241,17 +239,13 @@ test("a stale milestone selection is cleared when the status advances elsewhere"
   );
 
   composer.setBaby(laborStartedBaby);
-  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe("true");
 
   composer.setBaby(notYetBaby);
   expect(view.getByRole("radio", { name: "Labour started" }).getAttribute("aria-checked")).toBe(
     "false",
   );
-  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe("true");
 });
 
 test("an empty event-time picker does not post occurredAt", async () => {

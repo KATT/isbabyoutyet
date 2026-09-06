@@ -652,7 +652,8 @@ function MilestoneRadioCards(props: { composer: ComposerState }) {
           >
             {options.map((option) => {
               const id = `${idPrefix}-${option.value}`;
-              const selected = option.value !== "none" && composer.selectedMilestone === option.value;
+              const selected =
+                option.value !== "none" && composer.selectedMilestone === option.value;
               return (
                 <Fragment key={option.value}>
                   <FieldLabel
