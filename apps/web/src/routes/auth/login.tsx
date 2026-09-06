@@ -3,8 +3,9 @@ import type { LinkProps } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
-import { waitForMe } from "@/lib/convex-auth";
+import { authenticateConvexFromAuthResponse, waitForMe } from "@/lib/convex-auth";
 import { authDebug } from "@/lib/auth-debug";
+import { parseConvexTokenFromAuthResponse } from "@workspace/convex/src/convexToken";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -74,6 +75,7 @@ export async function signInThenGo(
     throw new Error(result.error.message || opts.t("Failed to sign in"));
   }
 
+  authenticateConvexFromAuthResponse(parseConvexTokenFromAuthResponse(result.data));
   await settled;
   authDebug("signIn.settled", { ms: Date.now() - started });
   await opts.navigate();

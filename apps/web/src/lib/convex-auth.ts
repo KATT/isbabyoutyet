@@ -69,11 +69,53 @@ function clearQueryCacheKeepingMe(queryClient: QueryClient, meKey: QueryKey) {
 }
 
 type AuthRuntime = {
+  authClient: ConvexAuthClient;
+  convexClient: Pick<ConvexQueryClient["convexClient"], "setAuth">;
   convexQueryClient: Pick<ConvexQueryClient, "queryOptions">;
   queryClient: QueryClient;
 };
 
 let authRuntime: AuthRuntime | null = null;
+
+/** GET `/api/auth/convex/token` — one Vercel → Convex round trip. */
+async function fetchConvexToken(authClient: ConvexAuthClient) {
+  const result = await authClient.convex.token({ fetchOptions: { throw: false } }).catch(() => null);
+  return result?.data?.token ?? null;
+}
+
+/**
+ * Authenticate the Convex websocket straight from a sign-in / sign-up
+ * response instead of waiting for `ConvexBetterAuthProvider`.
+ *
+ * The provider only calls `setAuth` after better-auth's `useSession` has
+ * refetched `/get-session`, and then fetches `/convex/token` — two sequential
+ * round trips (~450 ms each on a normal connection) before `profile.get` can
+ * flip to the signed-in user. The server already minted a JWT during sign-in
+ * (`convexTokenInAuthResponse` puts it in the body), so we hand it to Convex
+ * immediately; only the websocket confirmation remains. When the body carries
+ * no token (older backend), the fetcher falls back to `/convex/token`, which
+ * still skips the `/get-session` hop. Convex's own refresh schedule always
+ * calls with `forceRefreshToken`, so the inline token is used at most once.
+ *
+ * The provider still runs its own `setAuth` once `/get-session` lands; that
+ * re-confirms the same identity and is harmless.
+ */
+export function authenticateConvexFromAuthResponse(token: string | null) {
+  const runtime = authRuntime;
+  if (!runtime) {
+    return;
+  }
+  authDebug("authenticateConvexFromAuthResponse", { hasInlineToken: token !== null });
+  let inlineToken = token;
+  runtime.convexClient.setAuth(async (args) => {
+    if (inlineToken !== null && !args.forceRefreshToken) {
+      const once = inlineToken;
+      inlineToken = null;
+      return once;
+    }
+    return await fetchConvexToken(runtime.authClient);
+  });
+}
 
 /**
  * Establishes Convex auth state on the browser client at creation time.
@@ -103,6 +145,8 @@ export function setupClientConvexAuthWithClient(opts: {
   queryClient: QueryClient;
 }) {
   authRuntime = {
+    authClient: opts.authClient,
+    convexClient: opts.convexQueryClient.convexClient,
     convexQueryClient: opts.convexQueryClient,
     queryClient: opts.queryClient,
   };
@@ -115,10 +159,7 @@ export function setupClientConvexAuthWithClient(opts: {
 
   opts.convexQueryClient.convexClient.setAuth(async () => {
     const started = Date.now();
-    const result = await opts.authClient.convex
-      .token({ fetchOptions: { throw: false } })
-      .catch(() => null);
-    const token = result?.data?.token ?? null;
+    const token = await fetchConvexToken(opts.authClient);
     authDebug("creation-fetcher.token", { hasToken: token !== null, ms: Date.now() - started });
     return token;
   });

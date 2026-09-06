@@ -2,7 +2,12 @@ import { QueryClient } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
-import { setupClientConvexAuthWithClient, waitForMe, waitForMeQuery } from "@/lib/convex-auth";
+import {
+  authenticateConvexFromAuthResponse,
+  setupClientConvexAuthWithClient,
+  waitForMe,
+  waitForMeQuery,
+} from "@/lib/convex-auth";
 
 const profileKey = convexQuery(api.profile.get, {}).queryKey;
 const babyListKey = convexQuery(api.baby.listByUser, {}).queryKey;
@@ -143,6 +148,58 @@ test("waitForMeQuery leaves the cache alone when presence never matches", async 
 
   expect(clients.queryClient.getQueryData(profileKey)).toBeNull();
   expect(clients.queryClient.getQueryData(babyListKey)).toEqual([]);
+});
+
+function setupRuntime() {
+  const clients = makeClients();
+  const auth = makeAuthClient();
+  setupClientConvexAuthWithClient({
+    // @ts-expect-error — stand-in only implements token({ fetchOptions })
+    authClient: auth.authClient,
+    // @ts-expect-error — stand-in only implements setAuth + queryOptions
+    convexQueryClient: clients.convexQueryClient,
+    queryClient: clients.queryClient,
+  });
+  clients.setAuth.mockClear();
+  return { auth, clients };
+}
+
+function lastTokenFetcher(setAuth: ReturnType<typeof makeClients>["setAuth"]) {
+  const fetchToken = setAuth.mock.lastCall?.[0] as
+    | ((args: { forceRefreshToken: boolean }) => Promise<string | null | undefined>)
+    | undefined;
+  if (!fetchToken) {
+    throw new Error("expected setAuth to receive a token fetcher");
+  }
+  return fetchToken;
+}
+
+test("authenticateConvexFromAuthResponse hands the inline JWT to Convex without a token round trip", async () => {
+  const { auth, clients } = setupRuntime();
+
+  authenticateConvexFromAuthResponse("jwt-from-sign-in");
+
+  expect(clients.setAuth).toHaveBeenCalledTimes(1);
+  const fetchToken = lastTokenFetcher(clients.setAuth);
+  expect(await fetchToken({ forceRefreshToken: false })).toBe("jwt-from-sign-in");
+  expect(auth.token).not.toHaveBeenCalled();
+
+  // Convex's refresh schedule and any later call go to the token endpoint.
+  auth.token.mockResolvedValue({ data: { token: "refreshed" } });
+  expect(await fetchToken({ forceRefreshToken: true })).toBe("refreshed");
+  expect(await fetchToken({ forceRefreshToken: false })).toBe("refreshed");
+  expect(auth.token).toHaveBeenCalledTimes(2);
+});
+
+test("authenticateConvexFromAuthResponse falls back to the token endpoint when the body has no JWT", async () => {
+  const { auth, clients } = setupRuntime();
+  auth.token.mockResolvedValueOnce({ data: { token: "fetched" } });
+
+  authenticateConvexFromAuthResponse(null);
+
+  const fetchToken = lastTokenFetcher(clients.setAuth);
+  expect(await fetchToken({ forceRefreshToken: false })).toBe("fetched");
+  expect(auth.token).toHaveBeenCalledTimes(1);
 });
 
 test("waitForMe uses the runtime queryOptions after setup", async () => {
