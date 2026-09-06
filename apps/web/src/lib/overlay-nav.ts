@@ -205,8 +205,6 @@ function useRouteOverlay(spec: OverlaySpec): RouteOverlay {
     rootProps: {
       ...guard.rootProps,
       onOpenChangeComplete: (nextOpen) => {
-        // oxlint-disable-next-line no-console -- dismiss-flow debugging aid (see PR)
-        console.log("onOpenChangeComplete", nextOpen);
         if (nextOpen) {
           return;
         }

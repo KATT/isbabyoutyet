@@ -125,8 +125,8 @@ describe("applyCachePolicy", () => {
   });
 
   test.each([
-    "/baby/$publicId/settings",
-    "/baby/$publicId/post",
+    "/baby/$publicId/_auth/settings",
+    "/baby/$publicId/_auth/post",
     "/baby/$publicId/login",
     "/baby/$publicId/future-manager-overlay",
   ])("treats the %s overlay match as private", (routeId) => {

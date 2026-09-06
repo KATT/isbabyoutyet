@@ -118,7 +118,7 @@ function publicPagePolicy(pathname: string): PublicCachePolicy | null {
   }
 
   // Public overlay routes render only public baby data. Manager overlays
-  // (`settings` and `post`) intentionally do not match and stay private.
+  // (`/_auth/settings` and `/_auth/post`) intentionally do not match and stay private.
   const babyPageMatch = /^\/baby\/([^/]+)(?:\/(?:share|photo)|\/updates\/[^/]+\/photo)?\/?$/.exec(
     pathname,
   );

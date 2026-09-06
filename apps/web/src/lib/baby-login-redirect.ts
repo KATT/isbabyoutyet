@@ -50,3 +50,15 @@ export function babyLoginHomeLink(redirect: string | undefined) {
 export function loginSuccessTarget(redirect: string | undefined) {
   return { href: parseSameOriginPath(redirect) ?? "/dashboard" };
 }
+
+/**
+ * Baby-page overlay login: return to the overlay the user was on, or `null`
+ * so the dialog can close back to the public baby page.
+ */
+export function overlayLoginSuccessTarget(redirect: string | undefined) {
+  const path = parseSameOriginPath(redirect);
+  if (path === null) {
+    return null;
+  }
+  return { href: path };
+}

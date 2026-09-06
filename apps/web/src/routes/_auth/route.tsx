@@ -1,11 +1,9 @@
 import { authServer } from "@/lib/auth-server";
-import type { ConvexQueryClient } from "@convex-dev/react-query";
+import { loadSignedInProfile } from "@/lib/signed-in-profile";
+import type { SignedInProfileContext } from "@/lib/signed-in-profile";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import type { QueryClient } from "@tanstack/react-query";
-import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
-import { api } from "@workspace/convex/convex/_generated/api";
-import type { ConvexReactClient } from "convex/react";
 import { noIndexHeaders } from "@/lib/robots";
 
 // Server function to check authentication
@@ -13,12 +11,8 @@ const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
   return await authServer.getToken();
 });
 
-type AuthGuardContext = {
-  convexClient: ConvexReactClient;
-  convexPreloader: ConvexQueryPreloader;
-  convexQueryClient: ConvexQueryClient;
+type AuthGuardContext = SignedInProfileContext & {
   queryClient: QueryClient;
-  token: string | null;
 };
 
 function redirectToLogin(pathname: string): never {
@@ -42,41 +36,14 @@ export async function resolveAuthGuard(opts: {
   fetchToken: () => Promise<string | null>;
   pathname: string;
 }) {
-  const preloader = opts.context.convexPreloader;
-
-  if (globalThis.window === undefined) {
-    const token = opts.context.token ?? (await opts.fetchToken());
-    if (!token) {
-      redirectToLogin(opts.pathname);
-    }
-    opts.context.convexQueryClient.serverHttpClient?.setAuth(token);
-    opts.context.convexClient.setAuth(async () => token);
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    const profile = profileHandle.initialData;
-    if (!profile) {
-      redirectToLogin(opts.pathname);
-    }
-    return {
-      locale: profile.locale,
-      profile: profileHandle,
-      token,
-    };
-  }
-
-  // Client navigations: the cached profile IS the auth signal — no token
-  // round-trip. Login/signup already wait for `profile.get` before navigating
-  // here. If the session expires mid-browse the cache self-heals: profile.get
-  // flips to null and the next navigation sends the user back to login.
-  const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-  const profile = profileHandle.initialData;
-  if (!profile) {
+  const session = await loadSignedInProfile({
+    context: opts.context,
+    fetchToken: opts.fetchToken,
+  });
+  if (!session) {
     redirectToLogin(opts.pathname);
   }
-  return {
-    locale: profile.locale,
-    profile: profileHandle,
-    token: opts.context.token,
-  };
+  return session;
 }
 
 export const Route = createFileRoute("/_auth")({

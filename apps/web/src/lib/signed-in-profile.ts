@@ -1,0 +1,58 @@
+import type { ConvexQueryClient } from "@convex-dev/react-query";
+import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
+import { api } from "@workspace/convex/convex/_generated/api";
+import type { ConvexReactClient } from "convex/react";
+
+export type SignedInProfileContext = {
+  convexClient: ConvexReactClient;
+  convexPreloader: ConvexQueryPreloader;
+  convexQueryClient: ConvexQueryClient;
+  token: string | null | undefined;
+};
+
+/**
+ * Shared signed-in signal for `/_auth` and baby manager overlays.
+ *
+ * SSR: cookie token, then `profile.get`. Client: cached `profile.get` only —
+ * login/signup already wait for me before navigating, and an expired session
+ * flips the cache to null.
+ *
+ * Returns `null` when the user is not signed in so callers can bounce to
+ * their own login (dashboard `/auth/login` vs baby-page overlay).
+ */
+export async function loadSignedInProfile(opts: {
+  context: SignedInProfileContext;
+  fetchToken: () => Promise<string | null>;
+}) {
+  const preloader = opts.context.convexPreloader;
+
+  if (globalThis.window === undefined) {
+    const token = opts.context.token ?? (await opts.fetchToken());
+    if (!token) {
+      return null;
+    }
+    opts.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    opts.context.convexClient.setAuth(async () => token);
+    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+    const profile = profileHandle.initialData;
+    if (!profile) {
+      return null;
+    }
+    return {
+      locale: profile.locale,
+      profile: profileHandle,
+      token,
+    };
+  }
+
+  const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+  const profile = profileHandle.initialData;
+  if (!profile) {
+    return null;
+  }
+  return {
+    locale: profile.locale,
+    profile: profileHandle,
+    token: opts.context.token,
+  };
+}

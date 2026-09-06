@@ -1,11 +1,11 @@
 import { PhotoLightbox } from "@/components/baby/photo-lightbox";
-import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
+import { prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useBabyPhotoOverlay } from "@/lib/overlay-nav";
+import { useLastMatch } from "@/lib/use-last-match";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { useQuery } from "@tanstack/react-query";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { preloadedQueryOptions } from "@workspace/query-prefetch";
 
 export const Route = createFileRoute("/baby/$publicId/photo")({
   loader: async (opts) => {
@@ -17,7 +17,6 @@ export const Route = createFileRoute("/baby/$publicId/photo")({
       throw notFound();
     }
     const imagePrefetch = prefetchBrowserImage(opts.context.queryClient, babyDoc.photoUrl);
-    // oxlint-disable-next-line workspace/use-loader-preloads -- Snapshot must stay stable while the lightbox is open.
     return {
       baby,
       imagePrefetch,
@@ -31,8 +30,14 @@ export function BabyPhotoOverlay() {
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
   const photo = useBabyPhotoOverlay(params.publicId);
-  useQuery(preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch));
-  const babyDoc = loaderData.baby.initialData;
+
+  const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
+  const babyDoc = useLastMatch(babyQuery.data, (v) => {
+    if (!v?.photoUrl) {
+      return false;
+    }
+    return true;
+  });
   if (!babyDoc?.photoUrl) {
     throw notFound();
   }

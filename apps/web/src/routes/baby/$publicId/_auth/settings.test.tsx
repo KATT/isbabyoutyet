@@ -7,7 +7,7 @@ import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
 import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { runRouteLoader } from "@/test/routeTestContext";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
-import { Route } from "@/routes/baby/$publicId/settings";
+import { Route } from "@/routes/baby/$publicId/_auth/settings";
 import { htmlButton } from "@/test/htmlElement";
 
 test("settings loader fetches only manager settings data", async () => {
@@ -25,6 +25,7 @@ test("settings loader fetches only manager settings data", async () => {
     vapidPublicKey: { initialData: string };
   }>({
     harness,
+    location: { pathname: `/baby/${baby.publicId}/settings` },
     params: { publicId: baby.publicId },
     route: Route,
   });
@@ -40,28 +41,6 @@ test("settings loader fetches only manager settings data", async () => {
   expect(result.profile?.initialData?.locale).toBeTruthy();
   expect(result.vapidPublicKey.initialData).toBeTruthy();
   expect(result.browserPush).toMatchObject({ input: baby.publicId });
-});
-
-test("settings loader 404s for non-managers", async () => {
-  await using harness = await createConvexTestHarness({ identity: null });
-  const aliceId = await signUpTestUser(harness, {
-    email: "alice@example.com",
-    name: "Alice",
-    password: "password123",
-  });
-  harness.withIdentity({ subject: aliceId });
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
-  harness.withIdentity(null);
-
-  await expect(
-    runRouteLoader({
-      harness,
-      params: { publicId: baby.publicId },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
-    isNotFound: true,
-  });
 });
 
 test("managerDocToBabyData maps manager fields for the settings panel", async () => {

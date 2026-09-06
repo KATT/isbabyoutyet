@@ -14,6 +14,7 @@ test("loader 404s when the baby has no page photo", async () => {
   await expect(
     runRouteLoader({
       harness,
+      location: undefined,
       params: { publicId: baby.publicId },
       route: Route,
     }),
@@ -35,6 +36,7 @@ test("loader prefetches the full image in the browser", async () => {
 
   const data = await runRouteLoader<{ imagePrefetch: { input: string | undefined } }>({
     harness,
+    location: undefined,
     params: { publicId: baby.publicId },
     route: Route,
   });

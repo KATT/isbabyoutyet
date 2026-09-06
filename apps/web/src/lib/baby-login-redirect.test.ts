@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { babyLoginHomeLink, loginSuccessTarget } from "./baby-login-redirect";
+import {
+  babyLoginHomeLink,
+  loginSuccessTarget,
+  overlayLoginSuccessTarget,
+} from "./baby-login-redirect";
 
 test.each([
   { publicId: "baby-waiting", redirect: "/baby/baby-waiting" },
@@ -15,6 +19,7 @@ test.each(["/dashboard", "/dashboard/settings", "/baby/baby-waiting/settings", "
   "allows the same-origin path %s after login",
   (redirect) => {
     expect(loginSuccessTarget(redirect)).toEqual({ href: redirect });
+    expect(overlayLoginSuccessTarget(redirect)).toEqual({ href: redirect });
   },
 );
 
@@ -27,5 +32,6 @@ test.each([
   "baby-waiting",
 ])("rejects %s as a login redirect", (redirect) => {
   expect(loginSuccessTarget(redirect)).toEqual({ href: "/dashboard" });
+  expect(overlayLoginSuccessTarget(redirect)).toBeNull();
   expect(babyLoginHomeLink(redirect)).toEqual({ to: "/" });
 });

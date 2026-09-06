@@ -3,18 +3,15 @@ import { prefetchBrowserPushCapability } from "@/components/baby/notification-su
 import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useI18n } from "@/lib/i18n";
-import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
 import { useBabySettingsOverlay } from "@/lib/overlay-nav";
+import { useLastMatch } from "@/lib/use-last-match";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
-export const Route = createFileRoute("/baby/$publicId/settings")({
-  beforeLoad: async (opts) => {
-    const token = await authenticateManagerOverlaySsr(opts.context);
-    return token ? { isAuthenticated: true, token } : undefined;
-  },
+export const Route = createFileRoute("/baby/$publicId/_auth/settings")({
   loader: async (opts) => {
     const babyRef = opts.params.publicId;
     const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, babyRef);
@@ -34,10 +31,6 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
         {},
       ),
     });
-    if (!data.myAccess.initialData.canManage || data.managerBaby.initialData === FORBIDDEN) {
-      throw notFound();
-    }
-    // oxlint-disable-next-line workspace/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
     return { ...data, browserPush };
   },
   component: BabySettingsOverlay,
@@ -54,12 +47,14 @@ export function BabySettingsOverlay() {
   const removeBaby = useMutation(api.baby.remove);
   const redateMilestone = useMutation(api.updates.redateMilestone);
   const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
-  const managerBabyDoc =
-    loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
+  const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
+  const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
+  const managerBabyDoc = useLastMatch(managerBabyQuery.data, (v) => v !== FORBIDDEN);
   if (!managerBabyDoc) {
     throw notFound();
   }
-  const isOwner = loaderData.myAccess.initialData.isOwner;
+  const isOwner = myAccessQuery.data.isOwner;
   const baby = managerDocToBabyData(managerBabyDoc);
 
   return (
@@ -101,7 +96,7 @@ export function BabySettingsOverlay() {
         await router.invalidate();
       }}
       overlay={settings}
-      profileLocale={loaderData.profile.initialData?.locale ?? locale}
+      profileLocale={profileQuery.data?.locale ?? locale}
     />
   );
 }
