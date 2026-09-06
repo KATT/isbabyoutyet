@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { Coachmark } from "./coachmark";
 import { renderResource } from "@/test/renderResource";
-import { stubJsdomWindow } from "@/test/stubJsdomWindow";
+import { createMatchMediaStub, stubJsdomWindow } from "@/test/stubJsdomWindow";
 
 test("scrolls the target into view and can hide the tip", async () => {
   const onDismiss = vi.fn<() => void>();
@@ -143,18 +143,10 @@ test("uses a bounded mobile card on narrow viewports", async () => {
       Reflect.deleteProperty(window, "matchMedia");
     }
   });
-  // SAFETY: Test fixture is a subset of the production type.
-  const mediaQuery = {
-    addEventListener: vi.fn<() => void>(),
-    dispatchEvent: vi.fn<() => boolean>(() => true),
-    matches: true,
-    media: "(max-width: 767px)",
-    onchange: null,
-    removeEventListener: vi.fn<() => void>(),
-  } as MediaQueryList;
+  const mediaQuery = createMatchMediaStub("(max-width: 767px)", true);
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
-    value: vi.fn<(query: string) => MediaQueryList>(() => mediaQuery),
+    value: vi.fn<(query: string) => ReturnType<typeof createMatchMediaStub>>(() => mediaQuery),
   });
 
   const onDismiss = vi.fn<() => void>();

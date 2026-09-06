@@ -3,7 +3,11 @@ import { webcrypto } from "node:crypto";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { isFunction, isPlainObject, isString } from "@workspace/runtime/guards";
 import { expect, test, vi } from "vitest";
-import { stubJsdomWindow } from "@/test/stubJsdomWindow";
+import {
+  createMatchMediaStub,
+  installMatchMediaStub,
+  stubJsdomWindow,
+} from "@/test/stubJsdomWindow";
 
 function betterAuthHostCleanup(symbolName: string) {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, Symbol.for(symbolName));
@@ -32,16 +36,7 @@ class CallerObserver {
 }
 
 function callerMatchMedia(query: string) {
-  return {
-    addEventListener() {},
-    dispatchEvent() {
-      return true;
-    },
-    matches: true,
-    media: query,
-    onchange: null,
-    removeEventListener() {},
-  };
+  return createMatchMediaStub(query, true);
 }
 
 function restoreNamedDescriptor(options: {
@@ -135,6 +130,24 @@ test("crypto.subtle.digest hashes ArrayBuffer and typed-array views", async () =
   const fromBuffer = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes.buffer));
   expect(fromView).toEqual(expected);
   expect(fromBuffer).toEqual(expected);
+});
+
+test("createMatchMediaStub keeps next-themes addListener / removeListener", () => {
+  const mediaQueryList = createMatchMediaStub("(prefers-color-scheme: dark)", true);
+  expect(mediaQueryList.media).toBe("(prefers-color-scheme: dark)");
+  expect(mediaQueryList.matches).toBe(true);
+  expect(() => {
+    mediaQueryList.addListener(() => {});
+    mediaQueryList.removeListener(() => {});
+  }).not.toThrow();
+});
+
+test("installMatchMediaStub replaces and restores window.matchMedia", () => {
+  const original = window.matchMedia;
+  const restore = installMatchMediaStub((query) => query.includes("reduce"));
+  expect(window.matchMedia("(prefers-reduced-motion: reduce)").matches).toBe(true);
+  restore();
+  expect(window.matchMedia).toBe(original);
 });
 
 test("does not replace caller-provided matchMedia or observers", async () => {

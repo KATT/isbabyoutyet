@@ -10,6 +10,18 @@ import {
 
 type TestInfinitePage = PaginationResult<object | string>;
 
+/**
+ * TanStack still requires deprecated `direction` on infinite `queryFn` context.
+ * Keep the field here so call sites stay lint-clean.
+ */
+function queryFnContext<TContext>(context: TContext) {
+  return {
+    ...context,
+    // oxlint-disable-next-line typescript/no-deprecated -- QueryFunctionContext still requires this field
+    direction: "forward" as const,
+  };
+}
+
 test("convexInfiniteQuery builds cursor pagination options", () => {
   // @ts-expect-error — string is not a FunctionReference
   const options = convexInfiniteQuery("timeline:listByBaby", {
@@ -52,13 +64,15 @@ test("convexInfiniteQuery queryFn uses the registered Convex client", async () =
     args: { hideDemo: true },
     initialNumItems: 20,
   });
-  const page = await options.queryFn!({
-    client: new QueryClient(),
-    meta: undefined,
-    pageParam: options.initialPageParam,
-    queryKey: options.queryKey,
-    signal: new AbortController().signal,
-  });
+  const page = await options.queryFn!(
+    queryFnContext({
+      client: new QueryClient(),
+      meta: undefined,
+      pageParam: options.initialPageParam,
+      queryKey: options.queryKey,
+      signal: new AbortController().signal,
+    }),
+  );
 
   expect(query).toHaveBeenCalledWith("admin:listBabies", {
     hideDemo: true,
@@ -81,13 +95,15 @@ test("convexInfiniteQueryFn merges pageParam into paginationOpts", async () => {
 
   // @ts-expect-error — stand-in only implements queryFn/convexClient
   const queryFn = convexInfiniteQueryFn(convexQueryClient);
-  const result = await queryFn({
-    client: new QueryClient(),
-    meta: undefined,
-    pageParam: { cursor: null, numItems: 20 },
-    queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
-    signal: new AbortController().signal,
-  });
+  const result = await queryFn(
+    queryFnContext({
+      client: new QueryClient(),
+      meta: undefined,
+      pageParam: { cursor: null, numItems: 20 },
+      queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
+      signal: new AbortController().signal,
+    }),
+  );
 
   expect(query).toHaveBeenCalledWith("admin:listBabies", {
     hideDemo: true,
@@ -106,13 +122,15 @@ test("convexInfiniteQueryFn falls back for non-infinite keys", async () => {
 
   // @ts-expect-error — stand-in only implements queryFn/convexClient
   const queryFn = convexInfiniteQueryFn(convexQueryClient);
-  const result = await queryFn({
-    client: new QueryClient(),
-    meta: undefined,
-    pageParam: undefined,
-    queryKey: ["convexQuery", "profile:get", {}],
-    signal: new AbortController().signal,
-  });
+  const result = await queryFn(
+    queryFnContext({
+      client: new QueryClient(),
+      meta: undefined,
+      pageParam: undefined,
+      queryKey: ["convexQuery", "profile:get", {}],
+      signal: new AbortController().signal,
+    }),
+  );
 
   expect(fallback).toHaveBeenCalled();
   expect(result).toBe("ok");
@@ -128,13 +146,15 @@ test("convexInfiniteQuery queryFn rejects when the client was never registered",
   });
 
   await expect(
-    options.queryFn!({
-      client: new QueryClient(),
-      meta: undefined,
-      pageParam: options.initialPageParam,
-      queryKey: options.queryKey,
-      signal: new AbortController().signal,
-    }),
+    options.queryFn!(
+      queryFnContext({
+        client: new QueryClient(),
+        meta: undefined,
+        pageParam: options.initialPageParam,
+        queryKey: options.queryKey,
+        signal: new AbortController().signal,
+      }),
+    ),
   ).rejects.toThrow("registerConvexInfiniteQueryClient() was not called");
 });
 
@@ -148,13 +168,15 @@ test("convexInfiniteQueryFn rejects without a pageParam", async () => {
   const queryFn = convexInfiniteQueryFn(convexQueryClient);
 
   await expect(
-    queryFn({
-      client: new QueryClient(),
-      meta: undefined,
-      pageParam: undefined,
-      queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
-      signal: new AbortController().signal,
-    }),
+    queryFn(
+      queryFnContext({
+        client: new QueryClient(),
+        meta: undefined,
+        pageParam: undefined,
+        queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
+        signal: new AbortController().signal,
+      }),
+    ),
   ).rejects.toThrow("Convex infinite query requires an initialPageParam");
 });
 
@@ -178,13 +200,15 @@ test("convexInfiniteQueryFn uses the SSR HTTP client when window is undefined", 
   try {
     // @ts-expect-error — stand-in only implements queryFn/convexClient
     const queryFn = convexInfiniteQueryFn(convexQueryClient);
-    const result = await queryFn({
-      client: new QueryClient(),
-      meta: undefined,
-      pageParam: { cursor: null, numItems: 20 },
-      queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
-      signal: new AbortController().signal,
-    });
+    const result = await queryFn(
+      queryFnContext({
+        client: new QueryClient(),
+        meta: undefined,
+        pageParam: { cursor: null, numItems: 20 },
+        queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
+        signal: new AbortController().signal,
+      }),
+    );
 
     expect(consistentQuery).toHaveBeenCalledWith("admin:listBabies", {
       hideDemo: true,
@@ -211,13 +235,15 @@ test("convexInfiniteQueryFn rejects on SSR when the HTTP client is missing", asy
     // @ts-expect-error — stand-in only implements queryFn/convexClient
     const queryFn = convexInfiniteQueryFn(convexQueryClient);
     await expect(
-      queryFn({
-        client: new QueryClient(),
-        meta: undefined,
-        pageParam: { cursor: null, numItems: 20 },
-        queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
-        signal: new AbortController().signal,
-      }),
+      queryFn(
+        queryFnContext({
+          client: new QueryClient(),
+          meta: undefined,
+          pageParam: { cursor: null, numItems: 20 },
+          queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
+          signal: new AbortController().signal,
+        }),
+      ),
     ).rejects.toThrow("Convex SSR HTTP client is not available");
   } finally {
     globalThis.window = originalWindow;

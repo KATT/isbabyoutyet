@@ -7,6 +7,7 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { installMatchMediaStub } from "@/test/stubJsdomWindow";
 import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
@@ -74,20 +75,11 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
     key: "standalone",
   });
 
-  const originalMatchMedia = window.matchMedia;
-  window.matchMedia = (query: string) =>
-    // SAFETY: Test fixture is a subset of the production type.
-    ({
-      addEventListener: () => {},
-      dispatchEvent: () => false,
-      matches: query === "(display-mode: standalone)" && Boolean(stub.displayModeStandalone),
-      media: query,
-      onchange: null,
-      removeEventListener: () => {},
-    }) as MediaQueryList;
-  restore.push(() => {
-    window.matchMedia = originalMatchMedia;
-  });
+  restore.push(
+    installMatchMediaStub(
+      (query) => query === "(display-mode: standalone)" && Boolean(stub.displayModeStandalone),
+    ),
+  );
 
   if (stub.hasPushManager) {
     replaceProperty(window, {

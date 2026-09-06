@@ -1,5 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { installMatchMediaStub } from "@/test/stubJsdomWindow";
 import { renderResource } from "@/test/renderResource";
 import { NOTIFICATION_CLICK_MESSAGE } from "@/lib/notification-click";
 import { useHashScroll } from "@/lib/use-hash-scroll";
@@ -31,20 +32,7 @@ function withScrollSpy() {
 }
 
 function withMatchMedia(matches: (query: string) => boolean) {
-  const original = window.matchMedia;
-  window.matchMedia = (query: string) =>
-    // SAFETY: Test fixture is a subset of the production type.
-    ({
-      addEventListener: () => {},
-      dispatchEvent: () => false,
-      matches: matches(query),
-      media: query,
-      onchange: null,
-      removeEventListener: () => {},
-    }) as MediaQueryList;
-  return makeResource({}, () => {
-    window.matchMedia = original;
-  });
+  return makeResource({}, installMatchMediaStub(matches));
 }
 
 test("smooth-scrolls to the hash landmark on load", async () => {
