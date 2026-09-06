@@ -42,7 +42,7 @@ type NewAccount = { email: string; name: string; password: string };
  */
 export async function signUpThenGo(
   values: NewAccount,
-  opts: { failedMessage: string; navigate: () => Promise<void> | void },
+  opts: { navigate: () => Promise<void> | void; t: TranslationFunction; },
 ) {
   const result = await authClient.signUp.email(
     { email: values.email, name: values.name, password: values.password },
@@ -50,7 +50,7 @@ export async function signUpThenGo(
   );
 
   if (result.error) {
-    throw new Error(result.error.message || opts.failedMessage);
+    throw new Error(result.error.message || opts.t("Failed to sign up"));
   }
 
   await opts.navigate();
@@ -92,7 +92,7 @@ export function SignupPage() {
           <SignupCard
             onSignUp={(values) =>
               signUpThenGo(values, {
-                failedMessage: t("Failed to sign up"),
+                t,
                 navigate: () => router.navigate({ to: "/dashboard" }),
               })
             }

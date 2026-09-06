@@ -33,7 +33,7 @@ export function BabySignupOverlay() {
           <SignupCard
             onSignUp={(values) =>
               signUpThenGo(values, {
-                failedMessage: t("Failed to sign up"),
+                t,
                 navigate: () => signup.close(),
               })
             }

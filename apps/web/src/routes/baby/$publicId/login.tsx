@@ -31,7 +31,7 @@ export function BabyLoginOverlay() {
           demoLoginEnabled={hasDemoLogin}
           onSignIn={(values) =>
             signInThenGo(values, {
-              failedMessage: t("Failed to sign in"),
+              t,
               navigate: () => login.close(),
             })
           }

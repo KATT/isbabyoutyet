@@ -45,7 +45,7 @@ type Credentials = { email: string; password: string };
  */
 export async function signInThenGo(
   values: Credentials,
-  opts: { failedMessage: string; navigate: () => Promise<void> | void },
+  opts: { navigate: () => Promise<void> | void; t: TranslationFunction; },
 ) {
   const result = await authClient.signIn.email(
     { email: values.email, password: values.password, rememberMe: true },
@@ -53,7 +53,7 @@ export async function signInThenGo(
   );
 
   if (result.error) {
-    throw new Error(result.error.message || opts.failedMessage);
+    throw new Error(result.error.message || opts.t("Failed to sign in"));
   }
 
   await opts.navigate();
@@ -103,7 +103,7 @@ export function LoginPage() {
             demoLoginEnabled={hasDemoLogin}
             onSignIn={(values) =>
               signInThenGo(values, {
-                failedMessage: t("Failed to sign in"),
+                t,
                 navigate: () => router.navigate(successTarget),
               })
             }

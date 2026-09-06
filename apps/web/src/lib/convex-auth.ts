@@ -62,6 +62,8 @@ export function setupClientConvexAuthWithClient(opts: {
   let lastHasSession: boolean | null = null;
 
   opts.authClient.$store.atoms.session?.subscribe((session) => {
+    // oxlint-disable-next-line no-console
+    console.log("session", session);
     if (!session || session.isPending) {
       return;
     }
