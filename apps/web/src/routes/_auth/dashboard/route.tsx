@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_auth/dashboard")({
   component: DashboardPageLayout,
   loader: async (opts) => {
     const preloader = opts.context.convexPreloader;
+    // oxlint-disable-next-line no-console
+    console.log("session dashboard route loader");
     return await allKeyed({
       babies: preloader.ensureQueryData(api.baby.listByUser, {}),
       onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
