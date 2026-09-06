@@ -11,6 +11,7 @@ import {
 } from "@workspace/convex-prefetch";
 import { RootErrorComponent } from "./routes/__root";
 import { setupClientConvexAuth } from "./lib/convex-auth";
+import { authDebug, debugIdFor, installAuthDebugDump } from "./lib/auth-debug";
 import { getDetectedLocale } from "./lib/i18n";
 
 /** Router preload policy — tested without constructing the full client graph. */
@@ -53,6 +54,12 @@ export function getRouter() {
   // Resolve auth (signed-in or anonymous) before React mounts — see the
   // function's doc comment for why the auth provider alone is not enough.
   if (globalThis.window !== undefined) {
+    installAuthDebugDump();
+    authDebug("getRouter", {
+      convexClient: debugIdFor(convexQueryClient.convexClient, "convexClient"),
+      convexQueryClient: debugIdFor(convexQueryClient, "convexQueryClient"),
+      queryClient: debugIdFor(queryClient, "queryClient"),
+    });
     setupClientConvexAuth(convexQueryClient, queryClient);
   }
 

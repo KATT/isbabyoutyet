@@ -4,6 +4,7 @@ import { hashKey, QueryObserver } from "@tanstack/react-query";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "./auth-client";
+import { authDebug, debugIdFor } from "./auth-debug";
 
 type AuthClient = typeof authClient;
 
@@ -37,6 +38,28 @@ function meMatchesPresence(
       return _exhaustive;
     }
   }
+}
+
+/** TEMPORARY: `profile.get` snapshot type for debug cache reads. */
+export type MeSnapshot = FunctionReturnType<typeof api.profile.get>;
+
+/** TEMPORARY: one-word description of a `profile.get` snapshot for the debug log. */
+export function describeMe(value: MeSnapshot | undefined) {
+  if (value === undefined) {
+    return "undefined";
+  }
+  if (value === null) {
+    return "null";
+  }
+  return "present";
+}
+
+/** TEMPORARY: identity of the QueryClient the auth runtime was set up with. */
+export function debugAuthRuntimeIds() {
+  return {
+    runtimeConvexQueryClient: debugIdFor(authRuntime?.convexQueryClient ?? null, "convexQueryClient"),
+    runtimeQueryClient: debugIdFor(authRuntime?.queryClient ?? null, "queryClient"),
+  };
 }
 
 function clearQueryCacheKeepingMe(queryClient: QueryClient, meKey: QueryKey) {
@@ -83,13 +106,70 @@ export function setupClientConvexAuthWithClient(opts: {
     convexQueryClient: opts.convexQueryClient,
     queryClient: opts.queryClient,
   };
+  authDebug("setupClientConvexAuth", {
+    convexClient: debugIdFor(opts.convexQueryClient.convexClient, "convexClient"),
+    convexQueryClient: debugIdFor(opts.convexQueryClient, "convexQueryClient"),
+    queryClient: debugIdFor(opts.queryClient, "queryClient"),
+  });
+  instrumentConvexClientAuth(opts.convexQueryClient.convexClient);
 
   opts.convexQueryClient.convexClient.setAuth(async () => {
+    const started = Date.now();
     const result = await opts.authClient.convex
       .token({ fetchOptions: { throw: false } })
       .catch(() => null);
-    return result?.data?.token ?? null;
+    const token = result?.data?.token ?? null;
+    authDebug("creation-fetcher.token", { hasToken: token !== null, ms: Date.now() - started });
+    return token;
   });
+}
+
+/** TEMPORARY: log every setAuth/clearAuth on the app Convex client, plus token fetches and auth-change callbacks. */
+const instrumentedClients = new WeakSet<ConvexQueryClient["convexClient"]>();
+
+function instrumentConvexClientAuth(client: ConvexQueryClient["convexClient"]) {
+  if (instrumentedClients.has(client)) {
+    return;
+  }
+  instrumentedClients.add(client);
+  const clientId = debugIdFor(client, "convexClient");
+  const originalSetAuth = client.setAuth.bind(client);
+  const originalClearAuth = client.clearAuth?.bind(client);
+  let setAuthSeq = 0;
+  client.setAuth = (fetchToken, onChange) => {
+    setAuthSeq += 1;
+    const seq = setAuthSeq;
+    authDebug("convex.setAuth", { clientId, seq, stack: callerHint() });
+    return originalSetAuth(
+      async (args) => {
+        const started = Date.now();
+        const token = await fetchToken(args);
+        authDebug("convex.fetchToken", {
+          clientId,
+          forceRefreshToken: args?.forceRefreshToken ?? false,
+          hasToken: token !== null && token !== undefined && token.length > 0,
+          ms: Date.now() - started,
+          seq,
+        });
+        return token;
+      },
+      (isAuthenticated) => {
+        authDebug("convex.onAuthChange", { clientId, isAuthenticated, seq });
+        onChange?.(isAuthenticated);
+      },
+    );
+  };
+  if (originalClearAuth) {
+    client.clearAuth = () => {
+      authDebug("convex.clearAuth", { clientId, stack: callerHint() });
+      originalClearAuth();
+    };
+  }
+}
+
+function callerHint() {
+  const stack = new Error("hint").stack ?? "";
+  return stack.split("\n").slice(3, 6).join(" | ").replaceAll(/\s+/g, " ").slice(0, 300);
 }
 
 /**
@@ -125,6 +205,15 @@ export function waitForMeQuery(opts: {
   const stop = new AbortController();
   const signal = AbortSignal.any([opts.signal, stop.signal]);
   let unsubscribe = emptyUnsubscribe;
+  const started = Date.now();
+  const cachedState = opts.queryClient.getQueryState<MeSnapshot>(meQuery.queryKey);
+  authDebug("waitForMe.start", {
+    cachedData: describeMe(cachedState?.data),
+    cachedUpdatedAt: cachedState?.dataUpdatedAt ?? null,
+    presence: opts.presence,
+    queryClient: debugIdFor(opts.queryClient, "queryClient"),
+    queryHash: opts.queryClient.getQueryCache().find({ queryKey: meQuery.queryKey })?.queryHash ?? null,
+  });
 
   return new Promise<void>((resolve) => {
     let settled = false;
@@ -135,6 +224,12 @@ export function waitForMeQuery(opts: {
       settled = true;
       unsubscribe();
       observer.destroy();
+      authDebug("waitForMe.finish", {
+        matched,
+        ms: Date.now() - started,
+        presence: opts.presence,
+        reason: stop.signal.aborted ? "matched" : "external-abort/timeout",
+      });
       if (matched) {
         clearQueryCacheKeepingMe(opts.queryClient, meQuery.queryKey);
       }
@@ -143,6 +238,14 @@ export function waitForMeQuery(opts: {
 
     const onResult = () => {
       const result = observer.getCurrentResult();
+      authDebug("waitForMe.result", {
+        data: describeMe(result.data),
+        dataUpdatedAt: result.dataUpdatedAt,
+        fetchStatus: result.fetchStatus,
+        isError: result.isError,
+        isPending: result.isPending,
+        ms: Date.now() - started,
+      });
       if (result.isPending || result.isError) {
         return;
       }
@@ -169,8 +272,14 @@ export function waitForMeQuery(opts: {
 export function waitForMe(opts: { presence: MePresence; queryClient: QueryClient }) {
   const runtime = authRuntime;
   if (!runtime) {
+    authDebug("waitForMe.noRuntime", { presence: opts.presence });
     return Promise.resolve();
   }
+  authDebug("waitForMe.called", {
+    presence: opts.presence,
+    queryClient: debugIdFor(opts.queryClient, "queryClient"),
+    sameQueryClientAsRuntime: runtime.queryClient === opts.queryClient,
+  });
   return waitForMeQuery({
     convexQueryClient: runtime.convexQueryClient,
     presence: opts.presence,

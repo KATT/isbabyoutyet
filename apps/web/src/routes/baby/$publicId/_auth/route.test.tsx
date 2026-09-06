@@ -18,6 +18,7 @@ type GuardCtx = {
   convexQueryClient: {
     serverHttpClient: { setAuth: (token: string) => void };
   };
+  queryClient: QueryClient;
   token: string | null;
 };
 
@@ -37,6 +38,7 @@ function makeGuardCtx() {
     convexClient: {},
     convexPreloader: getConvexQueryPreloader(queryClient),
     convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
+    queryClient,
     token: null,
   };
   return { context, queryClient, queryFn, setServerAuth };

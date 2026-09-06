@@ -3,6 +3,7 @@ import { loadSignedInProfile } from "@/lib/signed-in-profile";
 import type { SignedInProfileContext } from "@/lib/signed-in-profile";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { authDebug } from "@/lib/auth-debug";
 
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
   return await authServer.getToken();
@@ -36,6 +37,7 @@ export async function resolveBabyManagerGuard(opts: {
     fetchToken: opts.fetchToken,
   });
   if (!session) {
+    authDebug("babyGuard.redirectToLogin", { pathname: opts.pathname });
     redirectToBabyLogin({
       pathname: opts.pathname,
       publicId: opts.publicId,

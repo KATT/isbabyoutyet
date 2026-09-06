@@ -1,12 +1,18 @@
 import type { ConvexQueryClient } from "@convex-dev/react-query";
+import { convexQuery } from "@convex-dev/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { ConvexReactClient } from "convex/react";
+import { authDebug, debugIdFor } from "./auth-debug";
+import type { MeSnapshot } from "./convex-auth";
+import { debugAuthRuntimeIds, describeMe } from "./convex-auth";
 
 export type SignedInProfileContext = {
   convexClient: ConvexReactClient;
   convexPreloader: ConvexQueryPreloader;
   convexQueryClient: ConvexQueryClient;
+  queryClient: QueryClient;
   token: string | null | undefined;
 };
 
@@ -49,8 +55,26 @@ export async function loadSignedInProfile(opts: {
     };
   }
 
+  const meKey = convexQuery(api.profile.get, {}).queryKey;
+  const before = opts.context.queryClient.getQueryState<MeSnapshot>(meKey);
+  const runtimeIds = debugAuthRuntimeIds();
+  authDebug("guard.client.start", {
+    ...runtimeIds,
+    cachedData: describeMe(before?.data),
+    cachedFetchStatus: before?.fetchStatus ?? null,
+    cachedUpdatedAt: before?.dataUpdatedAt ?? null,
+    convexClient: debugIdFor(opts.context.convexClient, "convexClient"),
+    convexQueryClient: debugIdFor(opts.context.convexQueryClient, "convexQueryClient"),
+    href: globalThis.location.href,
+    queryClient: debugIdFor(opts.context.queryClient, "queryClient"),
+    sameConvexClient: opts.context.convexQueryClient.convexClient === opts.context.convexClient,
+  });
   const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
   const profile = profileHandle.initialData;
+  authDebug("guard.client.result", {
+    data: describeMe(profile),
+    updatedAt: opts.context.queryClient.getQueryState(meKey)?.dataUpdatedAt ?? null,
+  });
   if (!profile) {
     return null;
   }

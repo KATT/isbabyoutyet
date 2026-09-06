@@ -4,6 +4,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
 import { waitForMe } from "@/lib/convex-auth";
+import { authDebug } from "@/lib/auth-debug";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -56,18 +57,27 @@ export async function signInThenGo(
     t: TranslationFunction;
   },
 ) {
+  const started = Date.now();
+  authDebug("signIn.start", { email: values.email });
   const settled = waitForMe({ presence: "present", queryClient: opts.queryClient });
   const result = await authClient.signIn.email(
     { email: values.email, password: values.password, rememberMe: true },
     { headers: getBrowserAuthHeaders() },
   );
+  authDebug("signIn.response", {
+    error: result.error?.message ?? null,
+    ms: Date.now() - started,
+    ok: !result.error,
+  });
 
   if (result.error) {
     throw new Error(result.error.message || opts.t("Failed to sign in"));
   }
 
   await settled;
+  authDebug("signIn.settled", { ms: Date.now() - started });
   await opts.navigate();
+  authDebug("signIn.navigated", { href: globalThis.location.href, ms: Date.now() - started });
 }
 
 export const Route = createFileRoute("/auth/login")({

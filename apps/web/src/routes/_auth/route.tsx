@@ -5,6 +5,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import type { QueryClient } from "@tanstack/react-query";
 import { noIndexHeaders } from "@/lib/robots";
+import { authDebug } from "@/lib/auth-debug";
 
 // Server function to check authentication
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
@@ -41,6 +42,7 @@ export async function resolveAuthGuard(opts: {
     fetchToken: opts.fetchToken,
   });
   if (!session) {
+    authDebug("guard.redirectToLogin", { pathname: opts.pathname });
     redirectToLogin(opts.pathname);
   }
   return session;
