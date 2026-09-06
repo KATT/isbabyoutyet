@@ -465,6 +465,32 @@ test("beforeLoad 404s unknown babies", async () => {
   await expect(pending).rejects.toMatchObject({ isNotFound: true });
 });
 
+test("beforeLoad uses the baby's resolved locale", async () => {
+  // @ts-expect-error — stub opts are the fields beforeLoad reads
+  const beforeLoad: (opts: {
+    context: {
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+      queryClient: QueryClient;
+    };
+    location: { href: string };
+    params: { publicId: string };
+  }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
+  const queryClient = makeLoaderQueryClient({
+    "baby:getByPublicId": { ...BABY_DOC, publicId: "test-baby-4", resolvedLocale: "sv" },
+  });
+
+  await expect(
+    beforeLoad({
+      context: {
+        convexPreloader: getConvexQueryPreloader(queryClient),
+        queryClient,
+      },
+      location: { href: "/baby/test-baby-4" },
+      params: { publicId: "test-baby-4" },
+    }),
+  ).resolves.toEqual({ locale: "sv" });
+});
+
 test("beforeLoad rewrites a stale public id and keeps the subpath", async () => {
   // @ts-expect-error — stub opts are the fields beforeLoad reads
   const beforeLoad: (opts: {

@@ -4,6 +4,7 @@ import { isRedirect } from "@tanstack/react-router";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
+import { localeFromMatches } from "@/routes/__root";
 import { resolveBabyManagerGuard, Route } from "@/routes/baby/$publicId/_auth/route";
 
 test("baby manager auth layout is wired as the route component", () => {
@@ -104,9 +105,32 @@ test("client overlay navigations reuse a cached profile without an auth round-tr
     publicId: "baby-waiting",
   });
 
-  expect(result).toMatchObject({ locale: "sv" });
+  expect(result).toMatchObject({ token: null });
+  expect(result).not.toHaveProperty("locale");
   expect(fetchToken).not.toHaveBeenCalled();
   expect(guard.queryFn).not.toHaveBeenCalled();
+});
+
+test("manager overlays keep the baby page locale instead of the signed-in profile locale", async () => {
+  const fetchToken = vi.fn<() => Promise<string | null>>();
+  const guard = makeGuardCtx();
+  guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
+    isAdmin: false,
+    locale: "en-GB",
+    timeZone: "Europe/London",
+  });
+
+  const result = await runGuard({
+    context: guard.context,
+    fetchToken,
+    pathname: "/baby/test-baby-4/post",
+    publicId: "test-baby-4",
+  });
+
+  expect(result).not.toHaveProperty("locale");
+  expect(
+    localeFromMatches([{ context: { locale: "sv" } }, { context: result }], "en-GB"),
+  ).toBe("sv");
 });
 
 test("client overlay navigations without a profile open baby-page login with a return path", async () => {
@@ -166,9 +190,9 @@ test("server render reuses the layout token without calling getAuthToken", async
     });
 
     expect(result).toMatchObject({
-      locale: "en-GB",
       token: "ssr-token",
     });
+    expect(result).not.toHaveProperty("locale");
     expect(fetchToken).not.toHaveBeenCalled();
     expect(guard.setServerAuth).toHaveBeenCalledWith("ssr-token");
     expect(setAuth).toHaveBeenCalledTimes(1);

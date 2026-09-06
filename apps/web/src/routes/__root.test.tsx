@@ -9,6 +9,7 @@ import {
   NotFoundComponent,
   contextLocale,
   contextToken,
+  localeFromMatches,
   resolveRootBeforeLoad,
   RootDocument,
   RootErrorComponent,
@@ -49,6 +50,28 @@ test("route context tokens accept strings or explicit null", () => {
   expect(contextToken({ token: 1 })).toBeUndefined();
   expect(contextToken({})).toBeUndefined();
   expect(contextToken(null)).toBeUndefined();
+});
+
+test("document locale uses the last route that set one", () => {
+  expect(
+    localeFromMatches(
+      [{ context: { locale: "en-GB" } }, { context: { locale: "sv" } }],
+      "en-US",
+    ),
+  ).toBe("sv");
+});
+
+test("document locale keeps the baby page when a later match has no locale", () => {
+  expect(
+    localeFromMatches(
+      [
+        { context: { locale: "en-GB" } },
+        { context: { locale: "sv" } },
+        { context: { token: "session" } },
+      ],
+      "en-GB",
+    ),
+  ).toBe("sv");
 });
 
 test("beforeLoad keeps shared document rendering anonymous", async () => {
