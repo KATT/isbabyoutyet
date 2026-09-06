@@ -106,7 +106,7 @@ test("client navigations reuse a cached profile without an auth round-trip", asy
 });
 
 test("client navigations without a profile send the user to login with a return path", async () => {
-  const fetchToken = vi.fn<() => Promise<string | null>>();
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue(null);
   const guard = makeGuardCtx();
 
   await expectRedirectToLogin(
@@ -118,7 +118,27 @@ test("client navigations without a profile send the user to login with a return 
       }),
     "/dashboard/settings",
   );
-  expect(fetchToken).not.toHaveBeenCalled();
+  expect(fetchToken).toHaveBeenCalledTimes(1);
+});
+
+test("client navigations with a stale anonymous profile and a cookie wait for Convex", async () => {
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue("jwt");
+  const guard = makeGuardCtx();
+  guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, null);
+  guard.queryFn.mockResolvedValueOnce({
+    isAdmin: false,
+    locale: "sv",
+    timeZone: "Europe/London",
+  });
+
+  const result = await runGuard({
+    context: guard.context,
+    fetchToken,
+    pathname: "/dashboard",
+  });
+
+  expect(result).toMatchObject({ locale: "sv", token: "jwt" });
+  expect(fetchToken).toHaveBeenCalledTimes(1);
 });
 
 test("client navigations keep the cached profile", async () => {

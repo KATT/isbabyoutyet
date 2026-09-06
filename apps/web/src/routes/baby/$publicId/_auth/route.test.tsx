@@ -18,6 +18,7 @@ type GuardCtx = {
   convexQueryClient: {
     serverHttpClient: { setAuth: (token: string) => void };
   };
+  queryClient: QueryClient;
   token: string | null;
 };
 
@@ -37,6 +38,7 @@ function makeGuardCtx() {
     convexClient: {},
     convexPreloader: getConvexQueryPreloader(queryClient),
     convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
+    queryClient,
     token: null,
   };
   return { context, queryClient, queryFn, setServerAuth };
@@ -130,7 +132,7 @@ test("manager overlays keep the baby page locale instead of the signed-in profil
 });
 
 test("client overlay navigations without a profile open baby-page login with a return path", async () => {
-  const fetchToken = vi.fn<() => Promise<string | null>>();
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue(null);
   const guard = makeGuardCtx();
 
   await expectRedirectToBabyLogin(
@@ -143,7 +145,7 @@ test("client overlay navigations without a profile open baby-page login with a r
       }),
     { pathname: "/baby/baby-waiting/post", publicId: "baby-waiting" },
   );
-  expect(fetchToken).not.toHaveBeenCalled();
+  expect(fetchToken).toHaveBeenCalledTimes(1);
 });
 
 test("server render redirects to baby-page login when no auth token is available", async () => {
