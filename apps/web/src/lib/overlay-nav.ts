@@ -25,6 +25,7 @@
 import { useRouter } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import type { MouseEvent } from "react";
 import { useFormGuard } from "@workspace/form-guard";
 import type { FormGuardHandle } from "@workspace/form-guard";
 
@@ -75,6 +76,33 @@ export function closeOverlayLink(options: OverlayCloseInput): LinkProps {
     resetScroll: false,
   };
 }
+
+/**
+ * Spread onto an in-overlay `<Link>` close CTA. Primary click closes through
+ * the overlay (exit transition, then dismiss); modifier-clicks keep the href.
+ *
+ * @public
+ */
+export function overlayCloseLinkProps(
+  closeLink: LinkProps,
+  close: () => void,
+): OverlayCloseLinkProps {
+  return {
+    ...closeLink,
+    onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+        return;
+      }
+      event.preventDefault();
+      close();
+    },
+  };
+}
+
+/** Link props for an in-overlay close CTA (`href` + dismiss-on-primary-click). */
+export type OverlayCloseLinkProps = LinkProps & {
+  onClick: (event: MouseEvent<HTMLAnchorElement>) => void;
+};
 
 type OverlayHistory = {
   back: (options: { ignoreBlocker: boolean }) => void;
@@ -128,6 +156,11 @@ type RouteOverlay = {
   close: () => void;
   /** Spread onto `<Link>` / pass to `navigate` for the replace-close fallback. */
   closeLink: LinkProps;
+  /**
+   * Spread onto an in-overlay `<Link>` close CTA: real href, primary click
+   * closes through the overlay so the exit transition runs first.
+   */
+  closeLinkProps: OverlayCloseLinkProps;
   /** Wrap the overlay's forms: `<FormGuardProvider guard={overlay.guard}>`. */
   guard: FormGuardHandle;
   /** Whether the overlay should currently be visible. */
@@ -144,7 +177,7 @@ type RouteOverlay = {
 };
 
 /** What a presentational overlay component needs from its route overlay. */
-export type OverlayControl = Pick<RouteOverlay, "close" | "guard" | "rootProps">;
+export type OverlayControl = Pick<RouteOverlay, "close" | "closeLinkProps" | "guard" | "rootProps">;
 
 type OverlayLinks = {
   /** Spread onto `<Link>` / pass to `navigate` for the replace-close fallback. */
@@ -198,6 +231,7 @@ function useRouteOverlay(spec: OverlaySpec): RouteOverlay {
   return {
     close: guard.close,
     closeLink,
+    closeLinkProps: overlayCloseLinkProps(closeLink, guard.close),
     guard,
     open,
     openLink,
@@ -205,8 +239,6 @@ function useRouteOverlay(spec: OverlaySpec): RouteOverlay {
     rootProps: {
       ...guard.rootProps,
       onOpenChangeComplete: (nextOpen) => {
-        // oxlint-disable-next-line no-console -- dismiss-flow debugging aid (see PR)
-        console.log("onOpenChangeComplete", nextOpen);
         if (nextOpen) {
           return;
         }

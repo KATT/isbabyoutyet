@@ -2,7 +2,9 @@ import { PhotoLightbox } from "@/components/baby/photo-lightbox";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useBabyUpdatePhotoOverlay } from "@/lib/overlay-nav";
+import { useLastMatch } from "@/lib/use-last-match";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { preloadedQueryOptions } from "@workspace/query-prefetch";
@@ -23,7 +25,6 @@ export const Route = createFileRoute("/baby/$publicId/updates/$updateId/photo")(
       opts.context.queryClient,
       updatePhoto.initialData.photoUrl,
     );
-    // oxlint-disable-next-line workspace/use-loader-preloads -- Snapshot must stay stable while the lightbox is open.
     return {
       imagePrefetch,
       updatePhoto,
@@ -41,7 +42,11 @@ export function BabyUpdatePhotoOverlay() {
     updateId: params.updateId,
   });
   useQuery(preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch));
-  const updatePhoto = loaderData.updatePhoto.initialData;
+  const updatePhotoQuery = usePreloadedConvexQuery(
+    api.timeline.getUpdatePhoto,
+    loaderData.updatePhoto,
+  );
+  const updatePhoto = useLastMatch(updatePhotoQuery.data, (v) => !!v);
   if (!updatePhoto) {
     throw notFound();
   }

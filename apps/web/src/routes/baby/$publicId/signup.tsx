@@ -17,6 +17,7 @@ export const Route = createFileRoute("/baby/$publicId/signup")({
 
 export function BabySignupOverlay() {
   const { t } = useI18n();
+  const context = Route.useRouteContext();
   const params = Route.useParams();
   const signup = useBabySignupOverlay(params.publicId);
 
@@ -33,8 +34,9 @@ export function BabySignupOverlay() {
           <SignupCard
             onSignUp={(values) =>
               signUpThenGo(values, {
-                failedMessage: t("Failed to sign up"),
                 navigate: () => signup.close(),
+                queryClient: context.queryClient,
+                t,
               })
             }
             signInLink={{

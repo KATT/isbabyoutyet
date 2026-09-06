@@ -2,12 +2,19 @@ import { components } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { createAuth } from "./auth";
-import { DEMO_BABIES, DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials";
+import {
+  DEMO_BABIES,
+  DEMO_COPARENT_USER,
+  DEMO_EMPTY_USER,
+  DEMO_USER,
+  MILO_LEGACY_PUBLIC_ID,
+} from "../src/seedCredentials";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { clearUserOnboarding, skipUserOnboarding } from "./onboarding";
 import { DEFAULT_TIME_ZONE } from "../src/timeZone";
+import { isActive } from "./softDelete";
 import { internalMutationWithTriggers } from "./triggers";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
@@ -21,6 +28,9 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
   // Re-seeding restores the first-run state; skipTourForExistingUsers ignores
   // this account when it grandfathers everyone else.
   await clearUserOnboarding(ctx, emptyUserId);
+
+  const coParentUserId = await ensureAuthUser(ctx, DEMO_COPARENT_USER);
+  await skipUserOnboarding(ctx, coParentUserId);
 
   const existingBabies = await ctx.db
     .query("baby")
@@ -39,7 +49,13 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
         await seedEncouragements({ babyId: baby._id, ctx, now, spec });
       }
     }
+    await ensureMiloSeedExtras(ctx, {
+      addedByUserId: userId,
+      coParentUserId,
+    });
     return {
+      coParentUserEmail: DEMO_COPARENT_USER.email,
+      coParentUserId,
       count: existingBabies.length,
       email: DEMO_USER.email,
       emptyUserEmail: DEMO_EMPTY_USER.email,
@@ -51,9 +67,15 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
   }
 
   const babies = await seedBabiesForUser(ctx, userId);
+  await ensureMiloSeedExtras(ctx, {
+    addedByUserId: userId,
+    coParentUserId,
+  });
 
   return {
     babies,
+    coParentUserEmail: DEMO_COPARENT_USER.email,
+    coParentUserId,
     email: DEMO_USER.email,
     emptyUserEmail: DEMO_EMPTY_USER.email,
     emptyUserId,
@@ -91,8 +113,10 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
 /**
  * Idempotent seeder for local development and Vercel preview deployments.
  * Creates DEMO_USER (test@example.com / password) with babies in every status,
- * plus DEMO_EMPTY_USER (test+newuser@example.com / password) with no babies
- * and onboarding left unset so the first-run tour still appears.
+ * DEMO_EMPTY_USER (test+newuser@example.com / password) with no babies and
+ * onboarding left unset so the first-run tour still appears, and
+ * DEMO_COPARENT_USER (test+coparent@example.com / password) as a co-parent on
+ * Milo (`baby-born`).
  *
  * Preview deploys run this via `--preview-run`; local setup runs `pnpm seed`.
  */
@@ -130,6 +154,73 @@ async function ensureAuthUser(
   });
 
   return result.user.id;
+}
+
+/** Co-parent + `/baby/milo` → `baby-born` history redirect for the born demo baby. */
+async function ensureMiloSeedExtras(
+  ctx: MutationCtx,
+  opts: { addedByUserId: string; coParentUserId: string },
+) {
+  const milo = await ctx.db
+    .query("baby")
+    .withIndex("by_publicId", (q) => q.eq("publicId", "baby-born"))
+    .unique();
+  if (!milo || !isActive(milo)) {
+    return;
+  }
+
+  await ensureMiloLegacyPublicId(ctx, milo._id);
+  await ensureMiloCoParent(ctx, {
+    addedByUserId: opts.addedByUserId,
+    babyId: milo._id,
+    coParentUserId: opts.coParentUserId,
+  });
+}
+
+/** `/baby/milo` looks up history and the route redirects to `/baby/baby-born`. */
+async function ensureMiloLegacyPublicId(ctx: MutationCtx, babyId: Id<"baby">) {
+  const existing = await ctx.db
+    .query("babyPublicIdHistory")
+    .withIndex("by_publicId", (q) => q.eq("publicId", MILO_LEGACY_PUBLIC_ID))
+    .order("desc")
+    .first();
+  if (existing?.babyId === babyId) {
+    return;
+  }
+  if (existing) {
+    await ctx.db.delete(existing._id);
+  }
+  await ctx.db.insert("babyPublicIdHistory", {
+    babyId,
+    publicId: MILO_LEGACY_PUBLIC_ID,
+  });
+}
+
+async function ensureMiloCoParent(
+  ctx: MutationCtx,
+  opts: { addedByUserId: string; babyId: Id<"baby">; coParentUserId: string },
+) {
+  const tokenIdentifier = tokenIdentifierForAuthUserId(opts.coParentUserId);
+  const existing = await ctx.db
+    .query("babyCoParents")
+    .withIndex("by_babyId_and_tokenIdentifier", (q) =>
+      q.eq("babyId", opts.babyId).eq("tokenIdentifier", tokenIdentifier),
+    )
+    .order("desc")
+    .take(32);
+  if (existing.some(isActive)) {
+    return;
+  }
+
+  await ctx.db.insert("babyCoParents", {
+    addedAt: Date.now(),
+    addedByUserId: opts.addedByUserId,
+    babyId: opts.babyId,
+    email: DEMO_COPARENT_USER.email,
+    name: DEMO_COPARENT_USER.name,
+    tokenIdentifier,
+    userId: opts.coParentUserId,
+  });
 }
 
 type SeedBabyExtras = {

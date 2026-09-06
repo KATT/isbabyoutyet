@@ -27,6 +27,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
     shareLink: string;
   }>({
     harness,
+    location: undefined,
     params: { publicId: baby.publicId },
     route: Route,
   });
@@ -73,6 +74,7 @@ test("loader reuses a cached baby snapshot instead of refetching", async () => {
 
   const data = await runRouteLoader<{ imagePrefetch: { input: string | undefined } }>({
     harness,
+    location: undefined,
     params: { publicId: baby.publicId },
     route: Route,
   });

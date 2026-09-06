@@ -4,9 +4,9 @@ import { isRedirect } from "@tanstack/react-router";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
-import { resolveAuthGuard, Route } from "@/routes/_auth/route";
+import { resolveBabyManagerGuard, Route } from "@/routes/baby/$publicId/_auth/route";
 
-test("auth layout is wired as the route component", () => {
+test("baby manager auth layout is wired as the route component", () => {
   expect(Route.options.component).toBeTypeOf("function");
 });
 
@@ -18,7 +18,6 @@ type GuardCtx = {
   convexQueryClient: {
     serverHttpClient: { setAuth: (token: string) => void };
   };
-  queryClient: QueryClient;
   token: string | null;
 };
 
@@ -38,7 +37,6 @@ function makeGuardCtx() {
     convexClient: {},
     convexPreloader: getConvexQueryPreloader(queryClient),
     convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
-    queryClient,
     token: null,
   };
   return { context, queryClient, queryFn, setServerAuth };
@@ -48,27 +46,33 @@ async function runGuard(opts: {
   context: GuardCtx;
   fetchToken: () => Promise<string | null>;
   pathname: string;
+  publicId: string;
 }) {
-  return await resolveAuthGuard({
+  return await resolveBabyManagerGuard({
     // SAFETY: Test fixture is a subset of the production type.
-    context: opts.context as Parameters<typeof resolveAuthGuard>[0]["context"],
+    context: opts.context as Parameters<typeof resolveBabyManagerGuard>[0]["context"],
     fetchToken: opts.fetchToken,
     pathname: opts.pathname,
+    publicId: opts.publicId,
   });
 }
 
 /** Guard runs that are expected to throw a redirect (result is never observed). */
 type GuardRunResult = object | null | void;
 
-async function expectRedirectToLogin(run: () => Promise<GuardRunResult>, pathname: string) {
+async function expectRedirectToBabyLogin(
+  run: () => Promise<GuardRunResult>,
+  opts: { pathname: string; publicId: string },
+) {
   try {
     await run();
     expect.unreachable("expected a redirect");
   } catch (error) {
     expect(isRedirect(error)).toBe(true);
     if (isRedirect(error)) {
-      expect(error.options.to).toBe("/auth/login");
-      expect(error.options.search).toEqual({ redirect: pathname });
+      expect(error.options.to).toBe("/baby/$publicId/login");
+      expect(error.options.params).toEqual({ publicId: opts.publicId });
+      expect(error.options.search).toEqual({ redirect: opts.pathname });
       expect(error.options.replace).toBe(true);
     }
   }
@@ -84,7 +88,7 @@ function withoutBrowserWindow(run: () => Promise<void>) {
   });
 }
 
-test("client navigations reuse a cached profile without an auth round-trip", async () => {
+test("client overlay navigations reuse a cached profile without an auth round-trip", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>();
   const guard = makeGuardCtx();
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
@@ -96,63 +100,46 @@ test("client navigations reuse a cached profile without an auth round-trip", asy
   const result = await runGuard({
     context: guard.context,
     fetchToken,
-    pathname: "/dashboard",
+    pathname: "/baby/baby-waiting/settings",
+    publicId: "baby-waiting",
   });
 
   expect(result).toMatchObject({ locale: "sv" });
-  expect(result).not.toHaveProperty("isAuthenticated");
   expect(fetchToken).not.toHaveBeenCalled();
   expect(guard.queryFn).not.toHaveBeenCalled();
 });
 
-test("client navigations without a profile send the user to login with a return path", async () => {
+test("client overlay navigations without a profile open baby-page login with a return path", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>();
   const guard = makeGuardCtx();
 
-  await expectRedirectToLogin(
+  await expectRedirectToBabyLogin(
     () =>
       runGuard({
         context: guard.context,
         fetchToken,
-        pathname: "/dashboard/settings",
+        pathname: "/baby/baby-waiting/post",
+        publicId: "baby-waiting",
       }),
-    "/dashboard/settings",
+    { pathname: "/baby/baby-waiting/post", publicId: "baby-waiting" },
   );
   expect(fetchToken).not.toHaveBeenCalled();
 });
 
-test("client navigations keep the cached profile", async () => {
-  const fetchToken = vi.fn<() => Promise<string | null>>();
-  const cachedProfile = { isAdmin: false, locale: "sv", timeZone: "Europe/London" };
-  const guard = makeGuardCtx();
-  guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, cachedProfile);
-
-  const result = await runGuard({
-    context: guard.context,
-    fetchToken,
-    pathname: "/dashboard",
-  });
-
-  expect(result).toMatchObject({ locale: "sv" });
-  expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toEqual(
-    cachedProfile,
-  );
-  expect(guard.queryFn).not.toHaveBeenCalled();
-});
-
-test("server render redirects to login when no auth token is available", async () => {
+test("server render redirects to baby-page login when no auth token is available", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce(null);
   const guard = makeGuardCtx();
 
   await withoutBrowserWindow(async () => {
-    await expectRedirectToLogin(
+    await expectRedirectToBabyLogin(
       () =>
         runGuard({
           context: guard.context,
           fetchToken,
-          pathname: "/dashboard",
+          pathname: "/baby/juniper-hale/settings",
+          publicId: "juniper-hale",
         }),
-      "/dashboard",
+      { pathname: "/baby/juniper-hale/settings", publicId: "juniper-hale" },
     );
     expect(fetchToken).toHaveBeenCalledTimes(1);
   });
@@ -174,14 +161,14 @@ test("server render reuses the layout token without calling getAuthToken", async
     const result = await runGuard({
       context: guard.context,
       fetchToken,
-      pathname: "/dashboard",
+      pathname: "/baby/baby-waiting/settings",
+      publicId: "baby-waiting",
     });
 
     expect(result).toMatchObject({
       locale: "en-GB",
       token: "ssr-token",
     });
-    expect(result).not.toHaveProperty("isAuthenticated");
     expect(fetchToken).not.toHaveBeenCalled();
     expect(guard.setServerAuth).toHaveBeenCalledWith("ssr-token");
     expect(setAuth).toHaveBeenCalledTimes(1);
@@ -189,7 +176,7 @@ test("server render reuses the layout token without calling getAuthToken", async
   });
 });
 
-test("server render redirects to login when its authenticated profile cannot be read", async () => {
+test("server render redirects to baby-page login when its authenticated profile cannot be read", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>();
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const guard = makeGuardCtx();
@@ -197,14 +184,15 @@ test("server render redirects to login when its authenticated profile cannot be 
   guard.context.convexClient = { setAuth };
 
   await withoutBrowserWindow(async () => {
-    await expectRedirectToLogin(
+    await expectRedirectToBabyLogin(
       () =>
         runGuard({
           context: guard.context,
           fetchToken,
-          pathname: "/dashboard/admin",
+          pathname: "/baby/baby-waiting/post",
+          publicId: "baby-waiting",
         }),
-      "/dashboard/admin",
+      { pathname: "/baby/baby-waiting/post", publicId: "baby-waiting" },
     );
     expect(setAuth).toHaveBeenCalledTimes(1);
     expect(guard.queryFn).toHaveBeenCalledTimes(1);

@@ -37,7 +37,7 @@ test("parent route caches public overlays and keeps manager overlays private", (
     params: { publicId: "juniper-hale" },
   });
   const privateHeaders = headers({
-    matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/settings" }],
+    matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/_auth/settings" }],
     params: { publicId: "juniper-hale" },
   });
   const loginHeaders = headers({

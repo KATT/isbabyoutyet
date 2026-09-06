@@ -1,8 +1,8 @@
 /**
  * Shared demo login + seeded babies used by the Convex seeder and the web auth forms.
  *
- * DEMO_USER / DEMO_EMPTY_USER / DEMO_BABIES: local development and Vercel
- * preview only — never production.
+ * DEMO_USER / DEMO_EMPTY_USER / DEMO_COPARENT_USER / DEMO_BABIES: local
+ * development and Vercel preview only — never production.
  * HOMEPAGE_DEMO_BABIES: seeded in every environment, including production — one live
  * demo page per supported locale, sharing photos and timeline shape.
  *
@@ -24,6 +24,13 @@ export const DEMO_EMPTY_USER = {
   password: "password",
 } as const;
 
+/** Co-parent on Milo (`baby-born`) — manager overlays without owning the page. */
+export const DEMO_COPARENT_USER = {
+  email: "test+coparent@example.com",
+  name: "Demo Co-parent",
+  password: "password",
+} as const;
+
 export const DEMO_ACCOUNTS = [
   {
     ...DEMO_USER,
@@ -32,6 +39,10 @@ export const DEMO_ACCOUNTS = [
   {
     ...DEMO_EMPTY_USER,
     label: "test+newuser@example.com — no babies",
+  },
+  {
+    ...DEMO_COPARENT_USER,
+    label: "test+coparent@example.com — co-parent on Milo",
   },
 ] as const;
 
@@ -61,6 +72,12 @@ export const DEMO_BABIES = [
     state: "born",
   },
 ] as const;
+
+/**
+ * Historical slug for Milo. `/baby/milo` resolves via `babyPublicIdHistory` and
+ * the baby route canonicalizes to `/baby/baby-born`.
+ */
+export const MILO_LEGACY_PUBLIC_ID = "milo";
 
 export const HOMEPAGE_DEMO_OWNER_USER_ID = "homepage-demo";
 export const HOMEPAGE_DEMO_THEME = "sunny-days";

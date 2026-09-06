@@ -5,7 +5,7 @@ import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
 import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { runRouteLoader } from "@/test/routeTestContext";
-import { Route } from "@/routes/baby/$publicId/post";
+import { Route } from "@/routes/baby/$publicId/_auth/post";
 
 test("post loader fetches manager access data", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
@@ -13,9 +13,9 @@ test("post loader fetches manager access data", async () => {
 
   const result = await runRouteLoader<{
     managerBaby: { initialData: { name: string }; input: { babyId: string } };
-    myAccess: { initialData: { canManage: boolean; isCoParent: boolean; isOwner: boolean } };
   }>({
     harness,
+    location: { pathname: `/baby/${baby.publicId}/post` },
     params: { publicId: baby.publicId },
     route: Route,
   });
@@ -23,31 +23,6 @@ test("post loader fetches manager access data", async () => {
   expect(result.managerBaby).toMatchObject({
     initialData: { name: "Baby Smith" },
     input: { babyId: baby.publicId },
-  });
-  expect(result.myAccess).toMatchObject({
-    initialData: { canManage: true, isCoParent: false, isOwner: true },
-  });
-});
-
-test("post loader 404s for non-managers", async () => {
-  await using harness = await createConvexTestHarness({ identity: null });
-  const aliceId = await signUpTestUser(harness, {
-    email: "alice@example.com",
-    name: "Alice",
-    password: "password123",
-  });
-  harness.withIdentity({ subject: aliceId });
-  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
-  harness.withIdentity(null);
-
-  await expect(
-    runRouteLoader({
-      harness,
-      params: { publicId: baby.publicId },
-      route: Route,
-    }),
-  ).rejects.toMatchObject({
-    isNotFound: true,
   });
 });
 
@@ -206,6 +181,52 @@ test("BabyPostUpdateOverlay mounts from the real route loader", async () => {
     expect(ctx.view.getByRole("dialog")).toBeTruthy();
   });
   expect(ctx.view.getAllByText("Post an update").length).toBeGreaterThan(0);
+});
+
+test("signed-in visitors without manager access see the forbidden dialog", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { dueDate: "2026-09-01", name: "Baby Smith" });
+  const visitorId = await signUpTestUser(harness, {
+    email: "visitor@example.com",
+    name: "Visitor",
+    password: "password123",
+  });
+  harness.withIdentity({ subject: visitorId });
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    initialEntry: `/baby/${baby.publicId}/post`,
+    overlayHistory: { engine: "memory", overlayPush: false, parentEntry: `/baby/${baby.publicId}` },
+    path: "/baby/$publicId/post",
+    route: Route,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getByText("403")).toBeTruthy();
+  expect(ctx.view.getByRole("heading", { name: "You can't manage this page" })).toBeTruthy();
+  expect(
+    ctx.view.getByText("You're signed in, but you don't have access to manage this baby."),
+  ).toBeTruthy();
+  expect(ctx.view.queryByPlaceholderText("Write a message (optional)…")).toBeNull();
+
+  const gotIt = ctx.view.getByRole("link", { name: "Got it" });
+  expect(gotIt.getAttribute("href")).toBe(`/baby/${baby.publicId}`);
+  fireEvent.click(gotIt);
+  await vi.waitFor(() => {
+    expect(ctx.navigate).toHaveBeenCalledWith({
+      ignoreBlocker: true,
+      params: { publicId: baby.publicId },
+      replace: true,
+      resetScroll: false,
+      to: "/baby/$publicId",
+    });
+  });
+  await vi.waitFor(() => {
+    expect(ctx.router.state.location.pathname).toBe(`/baby/${baby.publicId}`);
+  });
 });
 
 test("successful post completes onboarding step", async () => {

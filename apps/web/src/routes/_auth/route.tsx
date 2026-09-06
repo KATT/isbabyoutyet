@@ -1,11 +1,9 @@
 import { authServer } from "@/lib/auth-server";
-import type { ConvexQueryClient } from "@convex-dev/react-query";
+import { loadSignedInProfile } from "@/lib/signed-in-profile";
+import type { SignedInProfileContext } from "@/lib/signed-in-profile";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import type { QueryClient } from "@tanstack/react-query";
-import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
-import { api } from "@workspace/convex/convex/_generated/api";
-import type { ConvexReactClient } from "convex/react";
 import { noIndexHeaders } from "@/lib/robots";
 
 // Server function to check authentication
@@ -13,23 +11,15 @@ const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
   return await authServer.getToken();
 });
 
-type AuthGuardContext = {
-  convexClient: ConvexReactClient;
-  convexPreloader: ConvexQueryPreloader;
-  convexQueryClient: ConvexQueryClient;
+type AuthGuardContext = SignedInProfileContext & {
   queryClient: QueryClient;
-  token: string | null;
 };
 
-/**
- * Backoff while Convex's websocket catches up to a just-set Better Auth
- * cookie. The first attempt is immediate so a ready client does not wait.
- */
-const CLIENT_AUTH_CATCHUP_DELAYS_MS = [0, 50, 100, 200, 400, 800];
-
-function delay(ms: number) {
-  return new Promise<void>((resolve) => {
-    setTimeout(resolve, ms);
+function redirectToLogin(pathname: string): never {
+  throw redirect({
+    replace: true,
+    search: { redirect: pathname },
+    to: "/auth/login",
   });
 }
 
@@ -39,77 +29,21 @@ function delay(ms: number) {
  * both the SSR and client branches — the real server function throws outside
  * an actual TanStack Start request.
  *
- * `waitForCatchup` is the pause between client-side profile refetches after a
- * fresh session. Pass `null` to use `setTimeout`; tests pass a no-op so
- * retries stay synchronous.
- *
  * @internal exported for tests
  */
 export async function resolveAuthGuard(opts: {
   context: AuthGuardContext;
   fetchToken: () => Promise<string | null>;
-  waitForCatchup: ((delayMs: number) => Promise<void>) | null;
+  pathname: string;
 }) {
-  const preloader = opts.context.convexPreloader;
-
-  if (globalThis.window === undefined) {
-    const token = opts.context.token ?? (await opts.fetchToken());
-    if (!token) {
-      throw redirect({ to: "/" });
-    }
-    opts.context.convexQueryClient.serverHttpClient?.setAuth(token);
-    opts.context.convexClient.setAuth(async () => token);
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    const profile = profileHandle.initialData;
-    if (!profile) {
-      throw redirect({ to: "/" });
-    }
-    return {
-      isAuthenticated: true,
-      locale: profile.locale,
-      profile: profileHandle,
-      token,
-    };
+  const session = await loadSignedInProfile({
+    context: opts.context,
+    fetchToken: opts.fetchToken,
+  });
+  if (!session) {
+    redirectToLogin(opts.pathname);
   }
-
-  // Client navigations: the cached profile IS the auth signal — no token
-  // round-trip. If the session expires mid-browse the cache self-heals:
-  // profile.get flips to null and the next navigation confirms with the
-  // server, then redirects home. A null profile right after sign-in also
-  // lands here: the cookie is set, but ConvexBetterAuthProvider only calls
-  // setAuth in an effect, so the websocket may still be anonymous.
-  let profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-  let profile = profileHandle.initialData;
-  if (!profile) {
-    const token = await opts.fetchToken();
-    if (!token) {
-      throw redirect({ to: "/" });
-    }
-    // The mounted provider exclusively owns browser Convex authentication.
-    // Clear anonymous cache, then refetch until Convex confirms the session
-    // (or the backoff is exhausted). Do not replace the provider's callback.
-    opts.context.queryClient.clear();
-    const waitForCatchup = opts.waitForCatchup ?? delay;
-    for (const delayMs of CLIENT_AUTH_CATCHUP_DELAYS_MS) {
-      if (delayMs > 0) {
-        await waitForCatchup(delayMs);
-      }
-      profileHandle = await preloader.fetchQueryData(api.profile.get, {});
-      profile = profileHandle.initialData;
-      if (profile) {
-        break;
-      }
-    }
-    if (!profile) {
-      throw redirect({ to: "/" });
-    }
-  }
-  return {
-    isAuthenticated: true,
-    locale: profile.locale,
-    profile: profileHandle,
-    token: opts.context.token,
-  };
+  return session;
 }
 
 export const Route = createFileRoute("/_auth")({
@@ -127,7 +61,7 @@ export const Route = createFileRoute("/_auth")({
     return await resolveAuthGuard({
       context: opts.context,
       fetchToken: async () => (await getAuthToken()) ?? null,
-      waitForCatchup: null,
+      pathname: opts.location.pathname,
     });
   },
   component: AuthLayout,

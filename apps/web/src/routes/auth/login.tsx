@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
+import { waitForMe } from "@/lib/convex-auth";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -26,11 +28,14 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { authPageCacheHeaders } from "@/lib/cachePolicy";
-import { babyLoginHomeLink, babyLoginSuccessTarget } from "@/lib/baby-login-redirect";
+import { babyLoginHomeLink, loginSuccessTarget } from "@/lib/baby-login-redirect";
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
-    email: z.email(t("Invalid email address")),
+    email: z
+      .string()
+      .trim()
+      .check(z.email(t("Invalid email address"))),
     password: z.string().min(6, t("Password must be at least 6 characters")),
   });
 }
@@ -45,17 +50,23 @@ type Credentials = { email: string; password: string };
  */
 export async function signInThenGo(
   values: Credentials,
-  opts: { failedMessage: string; navigate: () => Promise<void> | void },
+  opts: {
+    navigate: () => Promise<void> | void;
+    queryClient: QueryClient;
+    t: TranslationFunction;
+  },
 ) {
+  const settled = waitForMe({ presence: "present", queryClient: opts.queryClient });
   const result = await authClient.signIn.email(
     { email: values.email, password: values.password, rememberMe: true },
     { headers: getBrowserAuthHeaders() },
   );
 
   if (result.error) {
-    throw new Error(result.error.message || opts.failedMessage);
+    throw new Error(result.error.message || opts.t("Failed to sign in"));
   }
 
+  await settled;
   await opts.navigate();
 }
 
@@ -81,10 +92,11 @@ export const Route = createFileRoute("/auth/login")({
 export function LoginPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const context = Route.useRouteContext();
   const search = Route.useSearch();
   const redirect = search.redirect;
   const homeLink = babyLoginHomeLink(redirect);
-  const successTarget = babyLoginSuccessTarget(redirect);
+  const successTarget = loginSuccessTarget(redirect);
 
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">
@@ -103,8 +115,9 @@ export function LoginPage() {
             demoLoginEnabled={hasDemoLogin}
             onSignIn={(values) =>
               signInThenGo(values, {
-                failedMessage: t("Failed to sign in"),
                 navigate: () => router.navigate(successTarget),
+                queryClient: context.queryClient,
+                t,
               })
             }
             signUpLink={{ to: "/auth/signup" }}

@@ -55,8 +55,10 @@ one spec:
   forms in `<FormGuardProvider guard={overlay.guard}>`. `overlay.close()` is
   the unconditional close (after a save); `overlay.requestClose()` asks like a
   user dismissal. Presentational components take `OverlayControl`
-  (`{ close, guard, rootProps }`); tests build one with
-  `WithOverlayControl` from `@/test/overlayControl`.
+  (`{ close, closeLinkProps, guard, rootProps }`); tests build one with
+  `WithOverlayControl` from `@/test/overlayControl`. Spread
+  `overlay.closeLinkProps` onto in-overlay close CTAs so primary click runs
+  the exit transition while modifier-clicks keep the href.
 - **Layouts / nav docks:** `use…OverlayLinks(params)` returns `{ openLink,
   closeLink, dismiss }`. `openLink` pushes (`state: { overlay: true }`,
   viewport preload, `resetScroll: false`) — pass it to a real `<Link>` so the

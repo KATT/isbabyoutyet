@@ -1,6 +1,4 @@
 import { fireEvent } from "@testing-library/react";
-import { convexQuery } from "@convex-dev/react-query";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
@@ -11,7 +9,6 @@ import {
   DashboardSettingsSheet,
   DashboardSettingsSheetView,
   Route,
-  settingsAuthAdapter,
 } from "./settings";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { signUpTestUser } from "@/test/convexTestSeed";
@@ -205,49 +202,5 @@ test("settings sheet log-out button invokes the injected handler", async () => {
   fireEvent.click(view.getByRole("button", { name: "Log out" }));
   await vi.waitFor(() => {
     expect(onSignOut).toHaveBeenCalledTimes(1);
-  });
-});
-
-test("DashboardSettingsSheet signs out through the auth adapter", async () => {
-  await using harness = await createConvexTestHarness({ identity: null });
-  const userId = await signUpTestUser(harness, {
-    email: "admin@example.com",
-    name: "Admin",
-    password: "password123",
-  });
-  harness.withIdentity({ subject: userId });
-
-  // @ts-expect-error — stub return is not the full signOut result
-  const signOut = vi.fn<typeof settingsAuthAdapter.signOut>(async (opts) => {
-    // @ts-expect-error — empty object is not the Better Auth onSuccess context
-    opts?.fetchOptions?.onSuccess?.({});
-    return { data: null, error: null };
-  });
-  const originalSignOut = settingsAuthAdapter.signOut;
-  settingsAuthAdapter.signOut = signOut;
-  await using _adapter = makeResource({}, () => {
-    settingsAuthAdapter.signOut = originalSignOut;
-  });
-
-  const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
-  harness.queryClient.setQueryData(convexQuery(api.baby.listByUser, {}).queryKey, [
-    { _id: "baby-id", name: "Baby Smith" },
-  ]);
-
-  await using view = await renderWithConvexTest({
-    harness,
-    ui: <DashboardSettingsSheet profile={profile} queryClient={harness.queryClient} />,
-    wrap: null,
-  });
-
-  await vi.waitFor(() => {
-    expect(view.getByRole("dialog")).toBeTruthy();
-  });
-  fireEvent.click(view.getByRole("button", { name: "Log out" }));
-  await vi.waitFor(() => {
-    expect(
-      harness.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey),
-    ).toBeUndefined();
-    expect(signOut).toHaveBeenCalled();
   });
 });

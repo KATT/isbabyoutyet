@@ -18,6 +18,7 @@ test("update photo loader 404s when the update has no photo", async () => {
   await expect(
     runRouteLoader({
       harness,
+      location: undefined,
       params: { publicId: baby.publicId, updateId },
       route: Route,
     }),
@@ -46,6 +47,7 @@ test("update photo loader prefetches the full image in the browser", async () =>
 
   const data = await runRouteLoader<{ imagePrefetch: { input: string | undefined } }>({
     harness,
+    location: undefined,
     params: { publicId: baby.publicId, updateId: update.updateId },
     route: Route,
   });

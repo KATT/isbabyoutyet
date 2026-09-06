@@ -43,6 +43,7 @@ export async function runRouteBeforeLoad(opts: {
 
 export async function runRouteLoader<TLoaderData>(opts: {
   harness: ConvexTestHarness;
+  location: { pathname: string } | undefined;
   params: Record<string, string>;
   route: AnyRoute;
 }) {
@@ -50,6 +51,7 @@ export async function runRouteLoader<TLoaderData>(opts: {
   const loader = opts.route.options.loader as
     | ((routeOpts: {
         context: RouteTestContext;
+        location: { pathname: string };
         params: Record<string, string>;
       }) => Promise<TLoaderData>)
     | undefined;
@@ -58,6 +60,7 @@ export async function runRouteLoader<TLoaderData>(opts: {
   }
   return await loader({
     context: routeContextFromHarness(opts.harness),
+    location: opts.location ?? { pathname: "" },
     params: opts.params,
   });
 }

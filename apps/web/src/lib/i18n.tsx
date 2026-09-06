@@ -588,6 +588,9 @@ const enGB = {
   "You'll get a push when someone leaves a message on this page.":
     "You'll get a push when someone leaves a message on this page.",
   "You're all set": "You're all set",
+  "You're signed in, but you don't have access to manage this baby.":
+    "You're signed in, but you don't have access to manage this baby.",
+  "You can't manage this page": "You can't manage this page",
   "You can change journey, theme, and other settings anytime after creating your page.":
     "You can change journey, theme, and other settings anytime after creating your page.",
   Your: "Your",
@@ -1209,6 +1212,9 @@ const sv: TranslationCatalog = {
   "You'll get a push when someone leaves a message on this page.":
     "Du får en notis när någon lämnar en hälsning på sidan.",
   "You're all set": "Du är klar",
+  "You're signed in, but you don't have access to manage this baby.":
+    "Du är inloggad, men du har inte behörighet att hantera den här bäbisen.",
+  "You can't manage this page": "Du kan inte hantera den här sidan",
   "You can change journey, theme, and other settings anytime after creating your page.":
     "Du kan ändra resa, tema och andra inställningar när som helst efter att sidan skapats.",
   Your: "Dina",
@@ -1812,6 +1818,9 @@ const es: TranslationCatalog = {
   "You'll get a push when someone leaves a message on this page.":
     "Recibirás un aviso cuando alguien deje un mensaje en esta página.",
   "You're all set": "Ya está todo listo",
+  "You're signed in, but you don't have access to manage this baby.":
+    "Has iniciado sesión, pero no tienes acceso para gestionar este bebé.",
+  "You can't manage this page": "No puedes gestionar esta página",
   "You can change journey, theme, and other settings anytime after creating your page.":
     "Puedes cambiar el recorrido, el tema y otros ajustes en cualquier momento después de crear la página.",
   Your: "Tus",
@@ -2421,6 +2430,9 @@ const ptBR: TranslationCatalog = {
   "You'll get a push when someone leaves a message on this page.":
     "Você recebe um aviso quando alguém deixar um recado nesta página.",
   "You're all set": "Tudo certo",
+  "You're signed in, but you don't have access to manage this baby.":
+    "Você está conectado, mas não tem acesso para gerenciar este bebê.",
+  "You can't manage this page": "Você não pode gerenciar esta página",
   "You can change journey, theme, and other settings anytime after creating your page.":
     "Você pode alterar a jornada, o tema e outras configurações a qualquer momento depois de criar a página.",
   Your: "Seus",

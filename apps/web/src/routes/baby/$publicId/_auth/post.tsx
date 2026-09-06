@@ -5,33 +5,22 @@ import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-ho
 import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { createFileRoute } from "@tanstack/react-router";
 import { useRef } from "react";
 import { useI18n } from "@/lib/i18n";
-import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
 import { useBabyPostOverlay } from "@/lib/overlay-nav";
+import { ForbiddenDialog } from "@/routes/baby/$publicId/_auth/-forbidden-dialog";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
-export const Route = createFileRoute("/baby/$publicId/post")({
-  beforeLoad: async (opts) => {
-    const token = await authenticateManagerOverlaySsr(opts.context);
-    return token ? { isAuthenticated: true, token } : undefined;
-  },
+export const Route = createFileRoute("/baby/$publicId/_auth/post")({
   loader: async (opts) => {
     const babyRef = opts.params.publicId;
-    const data = await allKeyed({
+    return await allKeyed({
       managerBaby: opts.context.convexPreloader.ensureQueryData(api.baby.getManagerBaby, {
         babyId: babyRef,
       }),
-      myAccess: opts.context.convexPreloader.ensureQueryData(api.coParents.myAccess, {
-        babyId: babyRef,
-      }),
     });
-    if (!data.myAccess.initialData.canManage || data.managerBaby.initialData === FORBIDDEN) {
-      throw notFound();
-    }
-    // oxlint-disable-next-line workspace/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
-    return data;
   },
   component: BabyPostUpdateOverlay,
 });
@@ -43,11 +32,11 @@ export function BabyPostUpdateOverlay() {
   const { t } = useI18n();
   const post = useBabyPostOverlay(params.publicId);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const managerBabyDoc =
-    loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
-  if (!managerBabyDoc) {
-    throw notFound();
+  const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
+  if (managerBabyQuery.data === FORBIDDEN) {
+    return <ForbiddenDialog overlay={post} />;
   }
+  const managerBabyDoc = managerBabyQuery.data;
   const baby = managerDocToBabyData(managerBabyDoc);
 
   return (

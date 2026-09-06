@@ -25,7 +25,10 @@ import { authPageCacheHeaders } from "@/lib/cachePolicy";
 
 function forgotPasswordSchema(t: TranslationFunction) {
   return z.object({
-    email: z.email(t("Invalid email address")),
+    email: z
+      .string()
+      .trim()
+      .check(z.email(t("Invalid email address"))),
   });
 }
 
