@@ -6,7 +6,7 @@ import { parseConvexTokenFromAuthResponse } from "../src/convexToken";
 import schema from "./schema";
 import { modules, registerComponents } from "./test.setup";
 
-const JWT_SHAPE = /^[\w-]+\.[\w-]+\.[\w-]+$/;
+const COMPACT_JWT = /^[\w-]+\.[\w-]+\.[\w-]+$/;
 
 test("readConvexJwtFromSetCookie finds the JWT regardless of cookie prefix or header joining", () => {
   const headers = new Headers();
@@ -41,7 +41,7 @@ test("email sign-up and sign-in responses carry the Convex JWT in the body", asy
     });
     return parseConvexTokenFromAuthResponse(result);
   });
-  expect(signUpToken).toMatch(JWT_SHAPE);
+  expect(signUpToken).toMatch(COMPACT_JWT);
 
   const signInToken = await t.run(async (ctx) => {
     const auth = createAuth(ctx);
@@ -50,5 +50,5 @@ test("email sign-up and sign-in responses carry the Convex JWT in the body", asy
     });
     return parseConvexTokenFromAuthResponse(result);
   });
-  expect(signInToken).toMatch(JWT_SHAPE);
+  expect(signInToken).toMatch(COMPACT_JWT);
 });

@@ -60,7 +60,9 @@ export function installAuthDebugDump() {
     return;
   }
   Reflect.set(globalThis, "__authDebugDump", () => {
-    const lines = events.map((entry) => `${entry.t}\t${entry.event}\t${JSON.stringify(entry.data)}`);
+    const lines = events.map(
+      (entry) => `${entry.t}\t${entry.event}\t${JSON.stringify(entry.data)}`,
+    );
     console.info(lines.join("\n"));
     return lines.join("\n");
   });

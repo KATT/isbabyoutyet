@@ -57,7 +57,10 @@ export function describeMe(value: MeSnapshot | undefined) {
 /** TEMPORARY: identity of the QueryClient the auth runtime was set up with. */
 export function debugAuthRuntimeIds() {
   return {
-    runtimeConvexQueryClient: debugIdFor(authRuntime?.convexQueryClient ?? null, "convexQueryClient"),
+    runtimeConvexQueryClient: debugIdFor(
+      authRuntime?.convexQueryClient ?? null,
+      "convexQueryClient",
+    ),
     runtimeQueryClient: debugIdFor(authRuntime?.queryClient ?? null, "queryClient"),
   };
 }
@@ -78,8 +81,8 @@ type AuthRuntime = {
 let authRuntime: AuthRuntime | null = null;
 
 /** GET `/api/auth/convex/token` — one Vercel → Convex round trip. */
-async function fetchConvexToken(authClient: ConvexAuthClient) {
-  const result = await authClient.convex.token({ fetchOptions: { throw: false } }).catch(() => null);
+async function fetchConvexToken(client: ConvexAuthClient) {
+  const result = await client.convex.token({ fetchOptions: { throw: false } }).catch(() => null);
   return result?.data?.token ?? null;
 }
 
@@ -258,7 +261,8 @@ export function waitForMeQuery(opts: {
     cachedUpdatedAt: cachedState?.dataUpdatedAt ?? null,
     presence: opts.presence,
     queryClient: debugIdFor(opts.queryClient, "queryClient"),
-    queryHash: opts.queryClient.getQueryCache().find({ queryKey: meQuery.queryKey })?.queryHash ?? null,
+    queryHash:
+      opts.queryClient.getQueryCache().find({ queryKey: meQuery.queryKey })?.queryHash ?? null,
   });
 
   return new Promise<void>((resolve) => {

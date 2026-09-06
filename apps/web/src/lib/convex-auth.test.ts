@@ -165,6 +165,8 @@ function setupRuntime() {
 }
 
 function lastTokenFetcher(setAuth: ReturnType<typeof makeClients>["setAuth"]) {
+  // SAFETY: the stand-in types setAuth's fetcher without Convex's
+  // `{ forceRefreshToken }` argument; production passes a real AuthTokenFetcher.
   const fetchToken = setAuth.mock.lastCall?.[0] as
     | ((args: { forceRefreshToken: boolean }) => Promise<string | null | undefined>)
     | undefined;
