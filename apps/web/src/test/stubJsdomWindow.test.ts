@@ -34,7 +34,6 @@ class CallerObserver {
 function callerMatchMedia(query: string) {
   return {
     addEventListener() {},
-    addListener() {},
     dispatchEvent() {
       return true;
     },
@@ -42,7 +41,6 @@ function callerMatchMedia(query: string) {
     media: query,
     onchange: null,
     removeEventListener() {},
-    removeListener() {},
   };
 }
 

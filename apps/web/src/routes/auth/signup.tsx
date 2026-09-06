@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
-import { Baby, UserPlus } from "@phosphor-icons/react";
+import { BabyIcon, UserPlusIcon } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
@@ -26,7 +26,7 @@ import { authPageCacheHeaders } from "@/lib/cachePolicy";
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
-    email: z.string().email(t("Invalid email address")),
+    email: z.email(t("Invalid email address")),
     name: z.string().min(2, t("Name must be at least 2 characters")),
     password: z.string().min(6, t("Password must be at least 6 characters")),
   });
@@ -84,7 +84,7 @@ export function SignupPage() {
           to="/"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-            <Baby className="h-4 w-4 text-primary" />
+            <BabyIcon className="h-4 w-4 text-primary" />
           </span>
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
@@ -184,7 +184,7 @@ export function SignupCard(props: {
             <SubmitButton
               className="w-full rounded-full font-extrabold pop-shadow"
               form="context"
-              IconComponent={UserPlus}
+              IconComponent={UserPlusIcon}
               iconPosition="start"
               size="lg"
             >

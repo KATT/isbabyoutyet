@@ -11,7 +11,7 @@ import {
 } from "@workspace/ui/components/drawer";
 import { Progress, ProgressLabel, ProgressValue } from "@workspace/ui/components/progress";
 import { cn } from "@workspace/ui/lib/utils";
-import { CaretDown, CaretUp, Check, Sparkle, X } from "@phosphor-icons/react";
+import { CaretDownIcon, CaretUpIcon, CheckIcon, SparkleIcon, XIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
@@ -143,12 +143,12 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         type="button"
       >
         <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-primary">
-          <Sparkle className="size-3.5" />
+          <SparkleIcon className="size-3.5" />
         </span>
         <span className="tabular-nums text-foreground">
           {completedCount}/{total}
         </span>
-        <CaretUp className="size-4 text-muted-foreground" />
+        <CaretUpIcon className="size-4 text-muted-foreground" />
       </button>
     );
   }
@@ -167,7 +167,11 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         >
           <div className="flex items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              {NextStepIcon ? <NextStepIcon className="size-5" /> : <Check className="size-5" />}
+              {NextStepIcon ? (
+                <NextStepIcon className="size-5" />
+              ) : (
+                <CheckIcon className="size-5" />
+              )}
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-muted-foreground">
@@ -190,7 +194,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
                 />
               }
             >
-              <CaretUp />
+              <CaretUpIcon />
             </DrawerTrigger>
           </div>
           <Progress className="mt-3" value={percent}>
@@ -210,7 +214,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         >
           <DrawerHeader className="flex-row items-start text-left">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Sparkle className="size-5" />
+              <SparkleIcon className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
               <DrawerTitle>{t("Getting started")}</DrawerTitle>
@@ -228,7 +232,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
                 />
               }
             >
-              <X />
+              <XIcon />
             </DrawerClose>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto p-4 pt-3">
@@ -273,7 +277,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <Sparkle className="size-4" />
+              <SparkleIcon className="size-4" />
             </span>
             <div>
               <p className="text-sm font-semibold text-foreground">{t("Getting started")}</p>
@@ -288,7 +292,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
             size="icon-sm"
             variant="ghost"
           >
-            <CaretDown />
+            <CaretDownIcon />
           </Button>
         </div>
         <ChecklistContents
@@ -412,7 +416,7 @@ function StepRow(props: {
             : "border-muted-foreground/30",
         )}
       >
-        {props.isDone ? <Check className="size-2.5" /> : null}
+        {props.isDone ? <CheckIcon className="size-2.5" /> : null}
       </span>
       <span className={cn("leading-snug", props.isDone && "text-muted-foreground line-through")}>
         {props.title}

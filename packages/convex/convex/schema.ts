@@ -56,8 +56,8 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
   /**
-   * @deprecated Language-request inbox is retired. Keep the table so existing
-   * rows stay valid on deploy until a later migration deletes them.
+   * Language-request inbox is retired. Keep the table so existing rows stay
+   * valid on deploy until a later migration deletes them.
    */
   languageRequests: defineTable({
     userId: v.string(),

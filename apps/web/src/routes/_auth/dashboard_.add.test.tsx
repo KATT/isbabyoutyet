@@ -476,13 +476,11 @@ test("iOS Safari add-baby omits message notifications and does not subscribe", a
     // SAFETY: Test fixture is a subset of the production type.
     ({
       addEventListener: () => {},
-      addListener: () => {},
       dispatchEvent: () => false,
       matches: false,
       media: query,
       onchange: null,
       removeEventListener: () => {},
-      removeListener: () => {},
     }) as MediaQueryList;
   restore.push(() => {
     window.matchMedia = originalMatchMedia;

@@ -76,6 +76,7 @@
     "oxc-transform-react": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "playwright": "catalog:",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",

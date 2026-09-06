@@ -26,7 +26,7 @@ import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { Baby, IconContext } from "@phosphor-icons/react";
+import { BabyIcon, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { isSupportedLocale } from "@workspace/convex/src/i18n";
 import { isPlainObject, isString } from "@workspace/runtime/guards";
@@ -253,7 +253,7 @@ export function RootErrorComponent(props: { error: Error }) {
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">
       <div className="text-center space-y-5 max-w-md rounded-[2rem] border-2 border-border bg-card p-10 pop-shadow">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20">
-          <Baby className="w-10 h-10 text-primary" />
+          <BabyIcon className="w-10 h-10 text-primary" />
         </div>
         <h1 className="text-2xl font-black text-foreground">{t("Something went wrong")}</h1>
         <p className="text-muted-foreground font-medium">
@@ -295,7 +295,7 @@ export function NotFoundComponent() {
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">
       <div className="text-center space-y-5 max-w-md rounded-[2rem] border-2 border-border bg-card p-10 pop-shadow">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20">
-          <Baby className="w-10 h-10 text-primary" />
+          <BabyIcon className="w-10 h-10 text-primary" />
         </div>
         <h1 className="text-6xl font-black text-foreground">404</h1>
         <h2 className="text-2xl font-black text-foreground">{t("Not arrived yet!")}</h2>

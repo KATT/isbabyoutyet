@@ -85,7 +85,6 @@ class StubObserver {
 function stubMatchMedia(query: string) {
   return {
     addEventListener() {},
-    addListener() {},
     dispatchEvent() {
       return false;
     },
@@ -93,7 +92,6 @@ function stubMatchMedia(query: string) {
     media: query,
     onchange: null,
     removeEventListener() {},
-    removeListener() {},
   };
 }
 

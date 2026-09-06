@@ -64,6 +64,7 @@ catalog:
   oxc-transform-react: ^0.145.0
   oxfmt: ^0.64.0
   oxlint: ^1.80.0
+  oxlint-tsgolint: ^7.0.2001
   playwright: ^1.62.1
   react: ^19.2.8
   react-day-picker: ^10.0.1

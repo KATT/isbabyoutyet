@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import {
-  ArrowLeft,
-  ArrowsLeftRight,
-  CaretDown,
-  CaretUp,
-  Shield,
-  Users,
+  ArrowLeftIcon,
+  ArrowsLeftRightIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+  ShieldIcon,
+  UsersIcon,
 } from "@phosphor-icons/react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -302,7 +302,7 @@ export function PermalinkTransfersSection(props: {
       <Empty className="border border-dashed">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <ArrowsLeftRight />
+            <ArrowsLeftRightIcon />
           </EmptyMedia>
           <EmptyTitle>{t("No permalink transfers yet")}</EmptyTitle>
         </EmptyHeader>
@@ -394,7 +394,7 @@ function SortableHeaderLink(props: {
     currentOrder: props.order,
     currentSort: props.sort,
   });
-  const SortIcon = active && props.order === "asc" ? CaretUp : CaretDown;
+  const SortIcon = active && props.order === "asc" ? CaretUpIcon : CaretDownIcon;
 
   return (
     <TableHead>
@@ -437,7 +437,7 @@ export function UsersSection(props: {
       <Empty className="border border-dashed">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <Users />
+            <UsersIcon />
           </EmptyMedia>
           <EmptyTitle>{t("No users yet")}</EmptyTitle>
         </EmptyHeader>
@@ -720,7 +720,7 @@ export function AdminDashboardView(props: {
           size="sm"
           variant="outline"
         >
-          <ArrowLeft data-icon="inline-start" />
+          <ArrowLeftIcon data-icon="inline-start" />
           {t("Back to Dashboard")}
         </Button>
 
@@ -728,7 +728,7 @@ export function AdminDashboardView(props: {
           <CardHeader className="border-b">
             <div className="flex items-start gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/15">
-                <Shield className="size-5 text-primary" />
+                <ShieldIcon className="size-5 text-primary" />
               </div>
               <div className="flex flex-col gap-1">
                 <CardTitle className="text-2xl font-semibold tracking-tight">

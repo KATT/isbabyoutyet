@@ -2,7 +2,13 @@ import { Button } from "@workspace/ui/components/button";
 import { ButtonGroup, ButtonGroupSeparator } from "@workspace/ui/components/button-group";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { ChatCircleText, GearSix, House, ShareNetwork, SignIn } from "@phosphor-icons/react";
+import {
+  ChatCircleTextIcon,
+  GearSixIcon,
+  HouseIcon,
+  ShareNetworkIcon,
+  SignInIcon,
+} from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
@@ -13,7 +19,7 @@ const postUpdateButtonClassName =
 function PostUpdateLabel(props: { label: string }) {
   return (
     <>
-      <ChatCircleText data-icon="inline-start" />
+      <ChatCircleTextIcon data-icon="inline-start" />
       <span className="max-sm:sr-only">{props.label}</span>
     </>
   );
@@ -93,7 +99,7 @@ export function BabyNav(props: BabyNavProps) {
                   size="icon"
                   variant="default"
                 >
-                  <GearSix />
+                  <GearSixIcon />
                 </Button>
               ) : (
                 <Button
@@ -107,7 +113,7 @@ export function BabyNav(props: BabyNavProps) {
                   size="icon"
                   variant="ghost"
                 >
-                  <GearSix />
+                  <GearSixIcon />
                 </Button>
               )
             }
@@ -131,7 +137,7 @@ export function BabyNav(props: BabyNavProps) {
               size="icon"
               variant="default"
             >
-              <SignIn />
+              <SignInIcon />
             </Button>
           ) : (
             <Button
@@ -141,7 +147,7 @@ export function BabyNav(props: BabyNavProps) {
               size="icon"
               variant="ghost"
             >
-              <SignIn />
+              <SignInIcon />
             </Button>
           )
         }
@@ -159,7 +165,7 @@ export function BabyNav(props: BabyNavProps) {
             size="icon"
             variant="ghost"
           >
-            <House />
+            <HouseIcon />
           </Button>
         }
       />
@@ -180,7 +186,7 @@ export function BabyNav(props: BabyNavProps) {
                 size="icon"
                 variant="default"
               >
-                <ShareNetwork />
+                <ShareNetworkIcon />
               </Button>
             ) : (
               <Button
@@ -192,7 +198,7 @@ export function BabyNav(props: BabyNavProps) {
                 size="icon"
                 variant="ghost"
               >
-                <ShareNetwork />
+                <ShareNetworkIcon />
               </Button>
             )
           }

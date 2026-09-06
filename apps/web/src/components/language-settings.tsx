@@ -1,4 +1,4 @@
-import { Clock, Translate } from "@phosphor-icons/react";
+import { ClockIcon, TranslateIcon } from "@phosphor-icons/react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -68,7 +68,7 @@ export function LanguageSettings(props: { profile: PreloadedConvexQuery<typeof a
       <ItemSeparator />
       <Item>
         <ItemMedia variant="icon">
-          <Translate />
+          <TranslateIcon />
         </ItemMedia>
         <ItemContent>
           <ItemTitle>{t("Language")}</ItemTitle>
@@ -91,7 +91,7 @@ export function LanguageSettings(props: { profile: PreloadedConvexQuery<typeof a
 
       <Item>
         <ItemMedia variant="icon">
-          <Clock />
+          <ClockIcon />
         </ItemMedia>
         <ItemContent>
           <ItemTitle>{t("Time zone")}</ItemTitle>

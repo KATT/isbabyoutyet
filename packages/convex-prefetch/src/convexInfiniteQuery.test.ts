@@ -54,7 +54,6 @@ test("convexInfiniteQuery queryFn uses the registered Convex client", async () =
   });
   const page = await options.queryFn!({
     client: new QueryClient(),
-    direction: "forward",
     meta: undefined,
     pageParam: options.initialPageParam,
     queryKey: options.queryKey,
@@ -84,7 +83,6 @@ test("convexInfiniteQueryFn merges pageParam into paginationOpts", async () => {
   const queryFn = convexInfiniteQueryFn(convexQueryClient);
   const result = await queryFn({
     client: new QueryClient(),
-    direction: "forward",
     meta: undefined,
     pageParam: { cursor: null, numItems: 20 },
     queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
@@ -132,7 +130,6 @@ test("convexInfiniteQuery queryFn rejects when the client was never registered",
   await expect(
     options.queryFn!({
       client: new QueryClient(),
-      direction: "forward",
       meta: undefined,
       pageParam: options.initialPageParam,
       queryKey: options.queryKey,
@@ -153,7 +150,6 @@ test("convexInfiniteQueryFn rejects without a pageParam", async () => {
   await expect(
     queryFn({
       client: new QueryClient(),
-      direction: "forward",
       meta: undefined,
       pageParam: undefined,
       queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
@@ -184,7 +180,6 @@ test("convexInfiniteQueryFn uses the SSR HTTP client when window is undefined", 
     const queryFn = convexInfiniteQueryFn(convexQueryClient);
     const result = await queryFn({
       client: new QueryClient(),
-      direction: "forward",
       meta: undefined,
       pageParam: { cursor: null, numItems: 20 },
       queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],
@@ -218,7 +213,6 @@ test("convexInfiniteQueryFn rejects on SSR when the HTTP client is missing", asy
     await expect(
       queryFn({
         client: new QueryClient(),
-        direction: "forward",
         meta: undefined,
         pageParam: { cursor: null, numItems: 20 },
         queryKey: [CONVEX_INFINITE_QUERY_KEY, "admin:listBabies", { hideDemo: true }],

@@ -79,13 +79,11 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
     // SAFETY: Test fixture is a subset of the production type.
     ({
       addEventListener: () => {},
-      addListener: () => {},
       dispatchEvent: () => false,
       matches: query === "(display-mode: standalone)" && Boolean(stub.displayModeStandalone),
       media: query,
       onchange: null,
       removeEventListener: () => {},
-      removeListener: () => {},
     }) as MediaQueryList;
   restore.push(() => {
     window.matchMedia = originalMatchMedia;

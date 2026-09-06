@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Button } from "@workspace/ui/components/button";
-import { CaretDown } from "@phosphor-icons/react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { cn } from "@workspace/ui/lib/utils";
 import { useI18n } from "@/lib/i18n";
@@ -44,7 +44,7 @@ export function AddBabyOptionalSettings<
         )}
       >
         <span>{t("Customize your page (optional)")}</span>
-        <CaretDown className="size-4 shrink-0 transition-transform [[data-panel-open]_&]:rotate-180" />
+        <CaretDownIcon className="size-4 shrink-0 transition-transform [[data-panel-open]_&]:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent className="flex flex-col gap-5 px-4 pb-4 pt-1">
         <p className="text-sm text-muted-foreground">

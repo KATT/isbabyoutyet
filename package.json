@@ -37,6 +37,7 @@
     "knip": "catalog:",
     "npm-run-all": "catalog:",
     "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

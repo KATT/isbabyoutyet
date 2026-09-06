@@ -146,13 +146,11 @@ test("uses a bounded mobile card on narrow viewports", async () => {
   // SAFETY: Test fixture is a subset of the production type.
   const mediaQuery = {
     addEventListener: vi.fn<() => void>(),
-    addListener: vi.fn<() => void>(),
     dispatchEvent: vi.fn<() => boolean>(() => true),
     matches: true,
     media: "(max-width: 767px)",
     onchange: null,
     removeEventListener: vi.fn<() => void>(),
-    removeListener: vi.fn<() => void>(),
   } as MediaQueryList;
   Object.defineProperty(window, "matchMedia", {
     configurable: true,

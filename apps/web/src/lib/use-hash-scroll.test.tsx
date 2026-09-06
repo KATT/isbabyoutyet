@@ -36,13 +36,11 @@ function withMatchMedia(matches: (query: string) => boolean) {
     // SAFETY: Test fixture is a subset of the production type.
     ({
       addEventListener: () => {},
-      addListener: () => {},
       dispatchEvent: () => false,
       matches: matches(query),
       media: query,
       onchange: null,
       removeEventListener: () => {},
-      removeListener: () => {},
     }) as MediaQueryList;
   return makeResource({}, () => {
     window.matchMedia = original;

@@ -23,19 +23,19 @@ import {
 } from "@workspace/ui/components/popover";
 import { useMutation } from "convex/react";
 import {
-  Camera,
-  ChatCircleText,
-  Check,
-  Confetti,
-  Heart,
-  Heartbeat,
-  Hospital,
-  Images,
-  PaperPlaneTilt,
-  PencilSimple,
-  PushPin,
-  Trash,
-  X,
+  CameraIcon,
+  ChatCircleTextIcon,
+  CheckIcon,
+  ConfettiIcon,
+  HeartIcon,
+  HeartbeatIcon,
+  HospitalIcon,
+  ImagesIcon,
+  PaperPlaneTiltIcon,
+  PencilSimpleIcon,
+  PushPinIcon,
+  TrashIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { useRef } from "react";
@@ -146,10 +146,10 @@ function composerSchema(opts: {
 }
 
 const MILESTONE_META = {
-  born: { icon: Confetti, labelKey: MILESTONE_LABEL_KEYS.born },
-  gone_to_hospital: { icon: Hospital, labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital },
-  labor_started: { icon: Heartbeat, labelKey: MILESTONE_LABEL_KEYS.labor_started },
-} as const satisfies Record<Milestone, { icon: typeof Heartbeat; labelKey: TranslationKey }>;
+  born: { icon: ConfettiIcon, labelKey: MILESTONE_LABEL_KEYS.born },
+  gone_to_hospital: { icon: HospitalIcon, labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital },
+  labor_started: { icon: HeartbeatIcon, labelKey: MILESTONE_LABEL_KEYS.labor_started },
+} as const satisfies Record<Milestone, { icon: typeof HeartbeatIcon; labelKey: TranslationKey }>;
 
 const uploadResponseSchema = z.object({
   storageId: z.string().refine((value): value is Id<"_storage"> => value.length > 0),
@@ -281,7 +281,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <ChatCircleText className="w-5 h-5 text-primary" />
+        <ChatCircleTextIcon className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-foreground">{t("Post an update")}</h3>
       </div>
       <p className="text-sm text-muted-foreground">
@@ -357,7 +357,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                 type="button"
                 variant="secondary"
               >
-                <X className="w-3 h-3" />
+                <XIcon className="w-3 h-3" />
               </Button>
             </div>
           )}
@@ -475,10 +475,10 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               type="button"
               variant="outline"
             >
-              <Images className="w-4 h-4" />
+              <ImagesIcon className="w-4 h-4" />
               {photoFile ? t("Change photo") : t("Add photo (optional)")}
             </Button>
-            <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
+            <SubmitButton form="context" IconComponent={PaperPlaneTiltIcon} iconPosition="start">
               {selectedMilestone
                 ? t('Post & mark "{{status}}"', {
                     status: t(MILESTONE_META[selectedMilestone].labelKey),
@@ -537,7 +537,7 @@ function PinAsPagePhotoForm(props: {
         aria-label={t("Set as page photo")}
         className="h-8 w-8 text-muted-foreground hover:text-foreground"
         form="context"
-        IconComponent={PushPin}
+        IconComponent={PushPinIcon}
         iconPosition="start"
         size="icon"
         title={t("Set as page photo")}
@@ -582,7 +582,7 @@ function DeleteUpdateForm(props: {
               </AlertDialogCancel>
               <SubmitButton
                 form="context"
-                IconComponent={Trash}
+                IconComponent={TrashIcon}
                 iconPosition="start"
                 variant="destructive"
               >
@@ -619,7 +619,7 @@ function DeleteEncouragementForm(props: {
             size="icon"
             variant="ghost"
           >
-            <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+            <TrashIcon className="w-4 h-4 text-muted-foreground hover:text-destructive" />
           </Button>
         }
       />
@@ -646,7 +646,7 @@ function DeleteEncouragementForm(props: {
               </AlertDialogCancel>
               <SubmitButton
                 form="context"
-                IconComponent={Trash}
+                IconComponent={TrashIcon}
                 iconPosition="start"
                 variant="destructive"
               >
@@ -664,7 +664,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const { locale, t } = useI18n();
   const update = props.item.update;
   const milestoneMeta = update.milestone ? MILESTONE_META[update.milestone] : null;
-  const MilestoneIcon = milestoneMeta?.icon ?? Camera;
+  const MilestoneIcon = milestoneMeta?.icon ?? CameraIcon;
   const bubbleEmoji = update.milestone
     ? MILESTONE_EMOJI[update.milestone]
     : update.photoUrl
@@ -683,7 +683,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
       size="icon"
       variant="ghost"
     >
-      <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+      <TrashIcon className="w-4 h-4 text-muted-foreground hover:text-destructive" />
     </Button>
   );
 
@@ -727,7 +727,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
               </Badge>
             ) : update.photoUrl ? (
               <Badge className="shrink-0" variant="secondary">
-                <Camera className="w-3 h-3" />
+                <CameraIcon className="w-3 h-3" />
                 {t("New photo")}
               </Badge>
             ) : (
@@ -737,7 +737,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             )}
             {update.isCurrentPagePhoto && (
               <Badge className="shrink-0" variant="outline">
-                <PushPin className="w-3 h-3" />
+                <PushPinIcon className="w-3 h-3" />
                 {t("Page photo")}
               </Badge>
             )}
@@ -924,11 +924,11 @@ function EncouragementEditForm(props: {
           )}
         />
         <div className="flex gap-2">
-          <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
+          <SubmitButton form="context" IconComponent={CheckIcon} iconPosition="start" size="sm">
             {t("Save")}
           </SubmitButton>
           <PopoverClose render={<FormCancelButton form="context" size="sm" />}>
-            <X className="w-3 h-3" />
+            <XIcon className="w-3 h-3" />
             {t("Cancel")}
           </PopoverClose>
         </div>
@@ -992,7 +992,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                       />
                     }
                   >
-                    <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    <PencilSimpleIcon className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
                     <FormGuardProvider guard={overlay}>
@@ -1171,7 +1171,7 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="mb-4 flex items-center gap-2">
-        <Heart className="w-5 h-5 text-primary" />
+        <HeartIcon className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-extrabold text-foreground">{t("Updates & encouragements")}</h3>
       </div>
 
