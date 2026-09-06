@@ -10,6 +10,13 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+  FieldTitle,
+} from "@workspace/ui/components/field";
 import { Input } from "@workspace/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -21,16 +28,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
+import { cn } from "@workspace/ui/lib/utils";
 import { useMutation } from "convex/react";
 import {
+  BellRingingIcon,
   CameraIcon,
-  ChatCircleTextIcon,
   CheckIcon,
   ConfettiIcon,
   HeartIcon,
   HeartbeatIcon,
   HospitalIcon,
-  ImagesIcon,
+  ImageIcon,
   PaperPlaneTiltIcon,
   PencilSimpleIcon,
   PushPinIcon,
@@ -38,8 +46,8 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { useRef } from "react";
-import type { ReactElement } from "react";
+import { Fragment, useId, useRef } from "react";
+import type { DragEvent, ReactElement, ReactNode } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
@@ -66,7 +74,7 @@ import {
   useZodForm,
 } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
-import { useWatch } from "react-hook-form";
+import { useFormState, useWatch } from "react-hook-form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import { useStoredVisitorId } from "@/lib/use-visitor-id";
@@ -206,6 +214,8 @@ type UpdateComposerProps = {
   babyName: string;
   /** Called after a successful post (e.g. to close the containing dialog) */
   onPosted: () => void;
+  /** People who get a push notification when this posts. */
+  subscriptionCount: number;
 };
 
 type PostUpdateFn = (
@@ -238,9 +248,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
   );
 }
 
-function UpdateComposerForm(props: UpdateComposerFormProps) {
+/**
+ * The composer's form state and handlers, separate from layout so the
+ * sections below (note, photo, status) can each pull what they need.
+ */
+function useUpdateComposer(props: UpdateComposerFormProps) {
   const { t } = useI18n();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
@@ -268,7 +281,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   });
 
   const milestone = useWatch({ control: form.control, name: "milestone" });
-  const photoFile = useWatch({ control: form.control, name: "photo" });
+  const photoFile = useWatch({ control: form.control, name: "photo" }) ?? null;
 
   // Mask stale selections while the form remounts on status change via key.
   const selectedMilestone =
@@ -276,223 +289,475 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
       ? milestone
       : null;
 
-  const photoPreviewUrl = useObjectUrl(photoFile ?? null);
+  const photoPreviewUrl = useObjectUrl(photoFile);
 
+  const acceptPhoto = (file: File | undefined) => {
+    if (!file) {
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("Please select an image file"));
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      toast.error(t("Photo must be 10 MB or smaller"));
+      return;
+    }
+    form.setValue("photo", file, { shouldDirty: true });
+  };
+
+  return {
+    acceptPhoto,
+    baby: props.baby,
+    babyName: props.babyName,
+    clearPhoto: () => {
+      form.setValue("photo", null, { shouldDirty: true });
+    },
+    form,
+    futureMilestones,
+    photoFile,
+    photoPreviewUrl,
+    selectedMilestone,
+    setMilestone: (value: Milestone | "none") => {
+      form.setValue("milestone", value, { shouldDirty: true });
+      // Deselecting forgets any backdate; reselecting starts from "now"
+      if (value === "none") {
+        form.resetField("occurredAt");
+      }
+    },
+    submit: async (values: PostUpdateArgs & { photo: File | null }) => {
+      const { photo, ...args } = values;
+      let photoId: PostUpdateArgs["photoId"] = null;
+      if (photo) {
+        const uploadUrl = await props.generateUploadUrl({ babyId: args.babyId });
+        const response = await fetch(uploadUrl, {
+          body: photo,
+          headers: { "Content-Type": photo.type },
+          method: "POST",
+        });
+        if (!response.ok) {
+          throw new Error(t("Failed to upload photo"));
+        }
+        const uploaded = uploadResponseSchema.parse(await response.json());
+        photoId = uploaded.storageId;
+      }
+
+      await props.postUpdate({ ...args, photoId });
+
+      toast.success(t("Update posted!"));
+      // No reset needed: the composer lives in a dialog that unmounts on close
+      props.onPosted();
+    },
+  };
+}
+
+type ComposerState = ReturnType<typeof useUpdateComposer>;
+
+/** Each part of the post is its own soft card: label on top, content below. */
+const COMPOSER_SECTION_CARD =
+  "space-y-2 rounded-2xl border border-border/50 bg-card p-3 transition-colors focus-within:border-primary/40";
+
+/**
+ * Three cards — note, photo, status change — with the notification notice and
+ * the submit button underneath. The whole dialog surface is a photo drop
+ * zone: drag an image anywhere over it and a drop hint takes over.
+ */
+function UpdateComposerForm(props: UpdateComposerFormProps) {
+  const { t } = useI18n();
+  const composer = useUpdateComposer(props);
+  // Subscribe via the hook, not `form.formState.isDirty` (RHF proxy + compiler).
+  const { isDirty } = useFormState({ control: composer.form.control });
+  const photoInputId = useId();
+  // The file input ref stays here (not in the hook) so the rest of the
+  // composer state is plain data as far as the React Compiler is concerned.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const openPhotoPicker = () => {
+    fileInputRef.current?.click();
+  };
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <ChatCircleTextIcon className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">{t("Post an update")}</h3>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        {t(
-          "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.",
-          { name: props.babyName },
-        )}
-      </p>
-
-      <Form
-        form={form}
-        handleSubmit={async (values) => {
-          const { photo, ...args } = values;
-          let photoId: PostUpdateArgs["photoId"] = null;
-          if (photo) {
-            const uploadUrl = await props.generateUploadUrl({ babyId: args.babyId });
-            const response = await fetch(uploadUrl, {
-              body: photo,
-              headers: { "Content-Type": photo.type },
-              method: "POST",
-            });
-            if (!response.ok) {
-              throw new Error(t("Failed to upload photo"));
-            }
-            const uploaded = uploadResponseSchema.parse(await response.json());
-            photoId = uploaded.storageId;
-          }
-
-          await props.postUpdate({ ...args, photoId });
-
-          toast.success(t("Update posted!"));
-          // No reset needed: the composer lives in a dialog that unmounts on close
-          props.onPosted();
-        }}
+    // Negative margin + matching padding so this box (and its drop handlers)
+    // covers the whole dialog surface, not just the area inside its padding.
+    <div className="group relative -m-4 space-y-4 rounded-xl p-4" {...photoDropProps(composer)}>
+      {/* Drop hint: only visible while a file is dragged over the dialog. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl border-4 border-dashed border-primary bg-background/90 text-center opacity-0 transition-opacity group-data-[dragging=true]:opacity-100"
       >
+        <span className="flex size-16 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <ImageIcon className="size-8" weight="fill" />
+        </span>
+        <p className="text-lg font-black text-foreground">{t("Drop the photo here")}</p>
+        <p className="text-sm text-muted-foreground">{t("It will be added to this update")}</p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-11 items-center justify-center rounded-full bg-primary/15 text-2xl"
+        >
+          👶
+        </span>
+        <div>
+          <h3 className="text-lg font-black text-foreground">
+            {t("What's new with {{name}}?", { name: props.babyName })}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {t("Write a note, add a photo, or update the status.")}
+          </p>
+        </div>
+      </div>
+
+      <Form form={composer.form} handleSubmit={composer.submit}>
+        <input
+          accept="image/*"
+          className="hidden"
+          id={photoInputId}
+          onChange={(event) => {
+            composer.acceptPhoto(event.target.files?.[0]);
+          }}
+          ref={fileInputRef}
+          type="file"
+        />
         <div className="space-y-3">
-          <FormField
-            control={form.control}
-            name="message"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Textarea
-                    aria-label={t("Update message (optional)")}
-                    className="min-h-20"
-                    maxLength={MAX_UPDATE_MESSAGE_LENGTH}
-                    placeholder={t("Write a message (optional)…")}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Note — the whole card is the textarea's <label>, so clicking
+              anywhere in it (including the heading) focuses the field. */}
+          <label className={`${COMPOSER_SECTION_CARD} block cursor-text`}>
+            <ComposerSectionLabel>{t("Note")}</ComposerSectionLabel>
+            <FormField
+              control={composer.form.control}
+              name="message"
+              render={({ field }) => (
+                <FormItem className="gap-1">
+                  <FormControl>
+                    <Textarea
+                      className="min-h-20 resize-none rounded-xl border-0 bg-muted/30 shadow-none focus-visible:ring-0"
+                      maxLength={MAX_UPDATE_MESSAGE_LENGTH}
+                      placeholder={t("Write a note (optional)")}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </label>
 
-          {photoPreviewUrl && (
-            <div className="relative w-fit">
-              <img
-                alt={t("Photo to post")}
-                className="max-h-40 rounded-lg border border-border object-cover"
-                src={photoPreviewUrl}
-              />
-              <Button
-                aria-label={t("Remove photo")}
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
-                onClick={() => {
-                  form.setValue("photo", null);
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = "";
-                  }
-                }}
-                size="icon"
-                type="button"
-                variant="secondary"
-              >
-                <XIcon className="w-3 h-3" />
-              </Button>
-            </div>
-          )}
-
-          {futureMilestones.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground" id="composer-status-label">
-                {t("Status change (optional)")}
-              </p>
-              <FormField
-                control={form.control}
-                name="milestone"
-                render={(renderProps) => (
-                  <RadioGroup
-                    aria-labelledby="composer-status-label"
-                    className="gap-1.5"
-                    onValueChange={(value) => {
-                      renderProps.field.onChange(value);
-                      // Deselecting forgets any backdate; reselecting starts from "now"
-                      if (value === "none") {
-                        form.resetField("occurredAt");
-                      }
-                    }}
-                    value={selectedMilestone ?? "none"}
-                  >
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <RadioGroupItem value="none" />
-                      {t("No status change")}
-                    </label>
-                    {futureMilestones.map((candidate) => {
-                      const meta = MILESTONE_META[candidate];
-                      const MilestoneIcon = meta.icon;
-                      return (
-                        <label
-                          className="flex items-center gap-2 text-sm cursor-pointer"
-                          key={candidate}
-                        >
-                          <RadioGroupItem value={candidate} />
-                          <MilestoneIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                          {t(meta.labelKey)}
-                        </label>
-                      );
-                    })}
-                  </RadioGroup>
-                )}
-              />
-              {selectedMilestone && (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    {t(
-                      'This changes the page status to "{{status}}" and notifies everyone subscribed.',
-                      {
-                        status: t(MILESTONE_META[selectedMilestone].labelKey),
-                      },
-                    )}
-                  </p>
-                  <FormField
-                    control={form.control}
-                    name="occurredAt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <label className="block space-y-1">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {t("When did it happen? (optional)")}
-                          </span>
-                          <FormControl>
-                            <Input
-                              className="w-fit"
-                              max={htmlDateTimeNow(props.baby.timeZone)}
-                              type="datetime-local"
-                              {...field}
-                            />
-                          </FormControl>
-                        </label>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t(
-                      "Optional — leave blank for now. You can change the time later in settings.",
-                    )}
+          {/* Photo — the card is a <label> for the hidden file input, so a
+              click anywhere on it opens the picker. Clicks on the buttons
+              inside are interactive content and don't re-trigger the label. */}
+          <label className={`${COMPOSER_SECTION_CARD} block cursor-pointer`} htmlFor={photoInputId}>
+            <ComposerSectionLabel>{t("Photo")}</ComposerSectionLabel>
+            {composer.photoFile ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 rounded-xl bg-muted/30 p-2">
+                  {composer.photoPreviewUrl && (
+                    <img
+                      alt={t("Photo to post")}
+                      className="size-16 rounded-lg object-cover"
+                      src={composer.photoPreviewUrl}
+                    />
+                  )}
+                  <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+                    {composer.photoFile.name}
                   </p>
                 </div>
-              )}
-            </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    className="rounded-full"
+                    onClick={openPhotoPicker}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <CameraIcon className="size-4" weight="bold" />
+                    {t("Swap the photo")}
+                  </Button>
+                  <Button
+                    className="rounded-full"
+                    onClick={() => {
+                      composer.clearPhoto();
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                      }
+                    }}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <XIcon className="size-4" />
+                    {t("Remove photo")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Button
+                  className="rounded-full"
+                  onClick={openPhotoPicker}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <CameraIcon className="size-4" weight="bold" />
+                  {t("Add a photo")}
+                </Button>
+                <span className="text-xs text-muted-foreground">{t("or drag one in")}</span>
+              </div>
+            )}
+          </label>
+
+          {composer.futureMilestones.length > 0 && (
+            <section className={COMPOSER_SECTION_CARD}>
+              <ComposerSectionLabel>{t("Change status")}</ComposerSectionLabel>
+              <MilestoneRadioCards composer={composer} />
+            </section>
           )}
 
-          <input
-            accept="image/*"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) {
-                return;
-              }
-              if (!file.type.startsWith("image/")) {
-                toast.error(t("Please select an image file"));
-                return;
-              }
-              if (file.size > MAX_PHOTO_SIZE_BYTES) {
-                toast.error(t("Photo must be 10 MB or smaller"));
-                return;
-              }
-              form.setValue("photo", file, { shouldDirty: true });
-            }}
-            ref={fileInputRef}
-            type="file"
-          />
-
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              size="sm"
-              type="button"
-              variant="outline"
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <NotificationNotice
+              className="min-w-0 flex-1"
+              subscriptionCount={props.subscriptionCount}
+            />
+            <SubmitButton
+              className="rounded-full font-bold"
+              disabled={!isDirty}
+              form="context"
+              IconComponent={PaperPlaneTiltIcon}
+              iconPosition="start"
             >
-              <ImagesIcon className="w-4 h-4" />
-              {photoFile ? t("Change photo") : t("Add photo (optional)")}
-            </Button>
-            <SubmitButton form="context" IconComponent={PaperPlaneTiltIcon} iconPosition="start">
-              {selectedMilestone
-                ? t('Post & mark "{{status}}"', {
-                    status: t(MILESTONE_META[selectedMilestone].labelKey),
-                  })
-                : t("Post update")}
+              {t("Post update")}
             </SubmitButton>
           </div>
-
-          <p className="text-xs text-muted-foreground text-right">
-            {t("Add a message, a photo, or a milestone — any one is enough.")}
-          </p>
         </div>
       </Form>
     </div>
+  );
+}
+
+function ComposerSectionLabel(props: { children: ReactNode }) {
+  return (
+    <span className="block text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+      {props.children}
+    </span>
+  );
+}
+
+/**
+ * Spread onto any element to make it accept a dropped image. While a file is
+ * dragged over it the element gets `data-dragging="true"` (toggled straight on
+ * the DOM node from the drag events — no render state needed) so descendants
+ * can style a drop hint with `group-data-[dragging=true]:…`.
+ */
+function isDomNode(value: EventTarget | null): value is Node {
+  return value !== null && Object.prototype.isPrototypeOf.call(Node.prototype, value);
+}
+
+function setDragging(event: DragEvent<HTMLElement>, dragging: boolean) {
+  if (dragging) {
+    event.currentTarget.dataset.dragging = "true";
+  } else {
+    delete event.currentTarget.dataset.dragging;
+  }
+}
+
+function photoDropProps(composer: ComposerState) {
+  return {
+    onDragLeave: (event: DragEvent<HTMLElement>) => {
+      // Ignore leave events fired when moving between children.
+      const nextTarget = event.relatedTarget;
+      if (isDomNode(nextTarget) && event.currentTarget.contains(nextTarget)) {
+        return;
+      }
+      setDragging(event, false);
+    },
+    onDragOver: (event: DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      setDragging(event, true);
+    },
+    onDrop: (event: DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      setDragging(event, false);
+      composer.acceptPhoto(event.dataTransfer.files[0]);
+    },
+  };
+}
+
+/**
+ * "Posting notifies N people — you can still cancel." Every post schedules a
+ * push to subscribers with a grace window (the countdown toast on the page),
+ * so this makes the consequence and the escape hatch visible up front.
+ */
+function NotificationNotice(props: { className: string; subscriptionCount: number }) {
+  const { t } = useI18n();
+  const count = props.subscriptionCount;
+  return (
+    <div className={cn("flex items-start gap-2 text-xs text-muted-foreground", props.className)}>
+      <BellRingingIcon className="mt-0.5 size-4 shrink-0 text-primary" weight="fill" />
+      <span>
+        <span className="font-semibold text-foreground">
+          {count === 1
+            ? t("Posting notifies {{count}} subscriber.", { count })
+            : t("Posting notifies {{count}} subscribers.", { count })}
+        </span>{" "}
+        {t("You get a minute to cancel before it goes out.")}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Milestone picker as a vertical stack of shadcn "choice cards" (FieldLabel
+ * wrapping a Field + RadioGroupItem): each option is a full-width tappable
+ * card with a one-line description, and the checked card tints. "No change"
+ * is the explicit default. When a milestone is picked, its when-question
+ * expands right under that card, indented.
+ */
+function MilestoneRadioCards(props: { composer: ComposerState }) {
+  const { t } = useI18n();
+  const composer = props.composer;
+  const idPrefix = useId();
+  const options: Array<{
+    description: string;
+    emoji: string;
+    label: string;
+    value: Milestone | "none";
+  }> = [
+    {
+      description: t("Just a note or a photo. The page status stays the same."),
+      emoji: "💬",
+      label: t("No change"),
+      value: "none",
+    },
+    ...composer.futureMilestones.map((candidate) => ({
+      description: milestoneDescription({ babyName: composer.babyName, milestone: candidate, t }),
+      emoji: MILESTONE_EMOJI[candidate],
+      label: t(MILESTONE_META[candidate].labelKey),
+      value: candidate,
+    })),
+  ];
+  return (
+    <FormField
+      control={composer.form.control}
+      name="milestone"
+      render={() => (
+        <FormItem className="gap-0">
+          <RadioGroup
+            aria-label={t("Status change (optional)")}
+            className="gap-1.5"
+            onValueChange={(value) => {
+              const picked = composer.futureMilestones.find((candidate) => candidate === value);
+              composer.setMilestone(picked ?? "none");
+            }}
+            value={composer.selectedMilestone ?? "none"}
+          >
+            {options.map((option) => {
+              const id = `${idPrefix}-${option.value}`;
+              const selected =
+                option.value !== "none" && composer.selectedMilestone === option.value;
+              return (
+                <Fragment key={option.value}>
+                  <FieldLabel
+                    // Quiet unchecked cards: hairline border + faint fill; only
+                    // the checked one gets the primary tint.
+                    className="cursor-pointer border-border/40 bg-muted/30 hover:border-border/70 has-[>[data-slot=field]]:rounded-xl"
+                    htmlFor={id}
+                  >
+                    <Field className="*:data-[slot=field]:p-2" orientation="horizontal">
+                      <span
+                        aria-hidden="true"
+                        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-base"
+                      >
+                        {option.emoji}
+                      </span>
+                      <FieldContent className="gap-0">
+                        <FieldTitle id={`${id}-title`}>{option.label}</FieldTitle>
+                        <FieldDescription className="text-xs" id={`${id}-description`}>
+                          {option.description}
+                        </FieldDescription>
+                      </FieldContent>
+                      {/* Name the radio by its title only (not the emoji and
+                          description the wrapping label would otherwise read). */}
+                      <RadioGroupItem
+                        aria-describedby={`${id}-description`}
+                        aria-labelledby={`${id}-title`}
+                        className="border-foreground/30"
+                        id={id}
+                        value={option.value}
+                      />
+                    </Field>
+                  </FieldLabel>
+                  {selected && option.value !== "none" && (
+                    <div className="ml-4 border-l-2 border-primary/40 pl-3">
+                      <MilestoneWhenField composer={composer} milestone={option.value} />
+                    </div>
+                  )}
+                </Fragment>
+              );
+            })}
+          </RadioGroup>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function milestoneDescription(opts: {
+  babyName: string;
+  milestone: Milestone;
+  t: TranslationFunction;
+}) {
+  switch (opts.milestone) {
+    case "labor_started":
+      return opts.t("The page will say labour has started.");
+    case "gone_to_hospital":
+      return opts.t("The page will say you're at the hospital.");
+    case "born":
+      return opts.t("The page will announce that {{name}} is here.", { name: opts.babyName });
+  }
+}
+
+/** Backdate field shown once a milestone is selected. */
+function MilestoneWhenField(props: { composer: ComposerState; milestone: Milestone }) {
+  const { t } = useI18n();
+  const composer = props.composer;
+  // The card and the notice already say which status is being set (and every
+  // post notifies subscribers anyway), so this row only asks the one thing
+  // that is specific to the milestone: when it happened.
+  const question = (() => {
+    switch (props.milestone) {
+      case "labor_started":
+        return t("When did labour start?");
+      case "gone_to_hospital":
+        return t("When did you head to the hospital?");
+      case "born":
+        return t("When was {{name}} born?", { name: composer.babyName });
+    }
+  })();
+  return (
+    <FormField
+      control={composer.form.control}
+      name="occurredAt"
+      render={({ field }) => (
+        <FormItem className="gap-1 px-1">
+          <label className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-sm font-semibold text-foreground">{question}</span>
+            <FormControl>
+              <Input
+                className="h-8 w-fit"
+                max={htmlDateTimeNow(composer.baby.timeZone)}
+                type="datetime-local"
+                {...field}
+              />
+            </FormControl>
+            <span className="text-xs text-muted-foreground">
+              {t("Optional. You can change this later.")}
+            </span>
+          </label>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
 

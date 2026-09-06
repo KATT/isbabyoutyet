@@ -20,6 +20,10 @@ export const Route = createFileRoute("/baby/$publicId/_auth/post")({
       managerBaby: opts.context.convexPreloader.ensureQueryData(api.baby.getManagerBaby, {
         babyId: babyRef,
       }),
+      subscriptionCount: opts.context.convexPreloader.ensureQueryData(
+        api.pushSubscriptions.getSubscriptionCount,
+        { babyId: babyRef },
+      ),
     });
   },
   component: BabyPostUpdateOverlay,
@@ -33,6 +37,10 @@ export function BabyPostUpdateOverlay() {
   const post = useBabyPostOverlay(params.publicId);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
+  const subscriptionCountQuery = usePreloadedConvexQuery(
+    api.pushSubscriptions.getSubscriptionCount,
+    loaderData.subscriptionCount,
+  );
   if (managerBabyQuery.data === FORBIDDEN) {
     return <ForbiddenDialog overlay={post} />;
   }
@@ -52,6 +60,9 @@ export function BabyPostUpdateOverlay() {
               void completeOnboardingStep({ stepId: "post_update" });
               post.close();
             }}
+            subscriptionCount={
+              subscriptionCountQuery.data === FORBIDDEN ? 0 : subscriptionCountQuery.data
+            }
           />
         </FormGuardProvider>
       </DialogContent>

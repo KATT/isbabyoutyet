@@ -77,6 +77,7 @@ function renderComposerTree(
             babyId={opts.babyId}
             babyName={opts.baby.name}
             onPosted={() => {}}
+            subscriptionCount={0}
           />
         </LocaleProvider>
       </ConvexProvider>
@@ -176,9 +177,7 @@ test("the status radio group is labelled and offers only future stages", async (
   const group = view.getByRole("radiogroup", { name: "Status change (optional)" });
   expect(group).toBeTruthy();
 
-  expect(view.getByRole("radio", { name: "No status change" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe("true");
   expect(view.getByRole("radio", { name: "Labour started" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
@@ -199,7 +198,7 @@ test("the milestone metadata resolves through the Swedish catalog", async () => 
   const view = composer.view;
 
   expect(view.getByRole("radiogroup", { name: "Statusändring (valfritt)" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Ingen statusändring" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Ingen ändring" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Förlossningen är igång" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Åkt in till förlossningen" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Bäbisen är född" })).toBeTruthy();
@@ -240,17 +239,13 @@ test("a stale milestone selection is cleared when the status advances elsewhere"
   );
 
   composer.setBaby(laborStartedBaby);
-  expect(view.getByRole("radio", { name: "No status change" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe("true");
 
   composer.setBaby(notYetBaby);
   expect(view.getByRole("radio", { name: "Labour started" }).getAttribute("aria-checked")).toBe(
     "false",
   );
-  expect(view.getByRole("radio", { name: "No status change" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(view.getByRole("radio", { name: "No change" }).getAttribute("aria-checked")).toBe("true");
 });
 
 test("an empty event-time picker does not post occurredAt", async () => {
@@ -265,9 +260,9 @@ test("an empty event-time picker does not post occurredAt", async () => {
   const postedBefore = Date.now();
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
-  const picker = htmlInput(view.getByLabelText(/when did it happen/i));
+  const picker = htmlInput(view.getByLabelText(/when did labour start/i));
   expect(picker.value).toBe("");
-  fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
+  fireEvent.click(view.getByRole("button", { name: "Post update" }));
 
   await vi.waitFor(async () => {
     const feed = await harness.client.query(api.timeline.listByBaby, {
@@ -297,10 +292,10 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
-  fireEvent.change(view.getByLabelText(/when did it happen/i), {
+  fireEvent.change(view.getByLabelText(/when did labour start/i), {
     target: { value: "2026-08-10T08:30" },
   });
-  fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
+  fireEvent.click(view.getByRole("button", { name: "Post update" }));
 
   await vi.waitFor(async () => {
     const feed = await harness.client.query(api.timeline.listByBaby, {
