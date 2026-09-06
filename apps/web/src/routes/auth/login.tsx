@@ -28,7 +28,7 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { authPageCacheHeaders } from "@/lib/cachePolicy";
-import { babyLoginHomeLink, babyLoginSuccessTarget } from "@/lib/baby-login-redirect";
+import { babyLoginHomeLink, loginSuccessTarget } from "@/lib/baby-login-redirect";
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
@@ -93,7 +93,7 @@ export function LoginPage() {
   const search = Route.useSearch();
   const redirect = search.redirect;
   const homeLink = babyLoginHomeLink(redirect);
-  const successTarget = babyLoginSuccessTarget(redirect);
+  const successTarget = loginSuccessTarget(redirect);
 
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">

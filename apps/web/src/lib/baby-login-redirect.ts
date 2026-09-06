@@ -1,7 +1,8 @@
 /**
- * Allowlist for `/auth/login?redirect=` so a PWA logo escape hatch can return
- * to that baby page without becoming an open redirect.
+ * Same-origin paths for `/auth/login?redirect=` so auth-guard bounces and the
+ * PWA logo escape hatch can return without becoming an open redirect.
  */
+
 function parseBabyLoginPublicId(redirect: string | undefined): string | null {
   if (redirect === undefined) {
     return null;
@@ -28,6 +29,16 @@ function parseBabyLoginPublicId(redirect: string | undefined): string | null {
   return publicId;
 }
 
+function parseSameOriginPath(redirect: string | undefined): string | null {
+  if (redirect === undefined || redirect === "") {
+    return null;
+  }
+  if (!redirect.startsWith("/") || redirect.startsWith("//") || redirect.includes("\\")) {
+    return null;
+  }
+  return redirect;
+}
+
 export function babyLoginHomeLink(redirect: string | undefined) {
   const publicId = parseBabyLoginPublicId(redirect);
   if (publicId === null) {
@@ -36,10 +47,6 @@ export function babyLoginHomeLink(redirect: string | undefined) {
   return { params: { publicId }, to: "/baby/$publicId" as const };
 }
 
-export function babyLoginSuccessTarget(redirect: string | undefined) {
-  const publicId = parseBabyLoginPublicId(redirect);
-  if (publicId === null) {
-    return { to: "/dashboard" as const };
-  }
-  return { params: { publicId }, to: "/baby/$publicId" as const };
+export function loginSuccessTarget(redirect: string | undefined) {
+  return { href: parseSameOriginPath(redirect) ?? "/dashboard" };
 }
