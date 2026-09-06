@@ -16,7 +16,6 @@ type GuardCtx = {
     | Record<string, never>;
   convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
   convexQueryClient: {
-    queryOptions: typeof convexQuery;
     serverHttpClient: { setAuth: (token: string) => void };
   };
   queryClient: QueryClient;
@@ -38,10 +37,7 @@ function makeGuardCtx() {
   const context: GuardCtx = {
     convexClient: {},
     convexPreloader: getConvexQueryPreloader(queryClient),
-    convexQueryClient: {
-      queryOptions: convexQuery,
-      serverHttpClient: { setAuth: setServerAuth },
-    },
+    convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
     queryClient,
     token: null,
   };

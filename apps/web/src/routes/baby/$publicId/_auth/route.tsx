@@ -32,7 +32,6 @@ export async function resolveBabyManagerGuard(opts: {
   publicId: string;
 }) {
   const session = await loadSignedInProfile({
-    catchUpSignal: null,
     context: opts.context,
     fetchToken: opts.fetchToken,
   });
