@@ -45,7 +45,7 @@ type Credentials = { email: string; password: string };
  */
 export async function signInThenGo(
   values: Credentials,
-  opts: { navigate: () => Promise<void> | void; t: TranslationFunction; },
+  opts: { navigate: () => Promise<void> | void; t: TranslationFunction },
 ) {
   const result = await authClient.signIn.email(
     { email: values.email, password: values.password, rememberMe: true },
@@ -55,6 +55,9 @@ export async function signInThenGo(
   if (result.error) {
     throw new Error(result.error.message || opts.t("Failed to sign in"));
   }
+
+  // oxlint-disable-next-line no-console
+  console.log("session successful login");
 
   await opts.navigate();
 }
