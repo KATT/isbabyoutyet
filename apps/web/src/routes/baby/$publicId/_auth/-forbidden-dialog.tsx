@@ -1,21 +1,27 @@
 import { useI18n } from "@/lib/i18n";
+import type { OverlayControl } from "@/lib/overlay-nav";
 import { BabyIcon } from "@phosphor-icons/react";
-import { Button } from "@workspace/ui/components/button";
+import { Link } from "@tanstack/react-router";
+import { buttonVariants } from "@workspace/ui/components/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import type { ComponentProps } from "react";
+import { cn } from "@workspace/ui/lib/utils";
+
+type ForbiddenDialogProps = {
+  overlay: OverlayControl;
+};
 
 /** Overlay body when a signed-in user cannot manage this baby. */
-export function ForbiddenDialog(props: ComponentProps<typeof Dialog>) {
+export function ForbiddenDialog(props: ForbiddenDialogProps) {
   const { t } = useI18n();
+  const overlay = props.overlay;
   return (
-    <Dialog {...props}>
+    <Dialog {...overlay.rootProps}>
       <DialogContent
         className="gap-5 rounded-[2rem] border-2 border-border bg-card p-10 text-center pop-shadow sm:max-w-md"
         showCloseButton={false}
@@ -32,11 +38,12 @@ export function ForbiddenDialog(props: ComponentProps<typeof Dialog>) {
             {t("You're signed in, but you don't have access to manage this baby.")}
           </DialogDescription>
         </DialogHeader>
-        <DialogClose
-          render={<Button className="rounded-full font-extrabold" size="lg" />}
+        <Link
+          {...overlay.closeLinkProps}
+          className={cn(buttonVariants({ size: "lg" }), "rounded-full font-extrabold")}
         >
           {t("Got it")}
-        </DialogClose>
+        </Link>
       </DialogContent>
     </Dialog>
   );

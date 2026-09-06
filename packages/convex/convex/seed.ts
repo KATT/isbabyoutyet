@@ -208,7 +208,7 @@ async function ensureMiloCoParent(
     )
     .order("desc")
     .take(32);
-  if (existing.find(isActive)) {
+  if (existing.some(isActive)) {
     return;
   }
 

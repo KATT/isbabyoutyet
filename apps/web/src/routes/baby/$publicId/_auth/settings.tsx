@@ -51,7 +51,7 @@ export function BabySettingsOverlay() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
   if (managerBabyQuery.data === FORBIDDEN) {
-    return <ForbiddenDialog {...settings.rootProps} />;
+    return <ForbiddenDialog overlay={settings} />;
   }
   const managerBabyDoc = managerBabyQuery.data;
   const isOwner = myAccessQuery.data.isOwner;

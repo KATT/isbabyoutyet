@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useFormGuard } from "@/components/Form";
+import { closeOverlayLink, overlayCloseLinkProps } from "@/lib/overlay-nav";
 import type { OverlayControl } from "@/lib/overlay-nav";
 
 /**
@@ -14,8 +15,10 @@ export function WithOverlayControl(props: {
   open: boolean;
 }) {
   const guard = useFormGuard({ onOpenChange: props.onOpenChange, open: props.open });
+  const closeLink = closeOverlayLink({ to: "/" });
   return props.children({
     close: guard.close,
+    closeLinkProps: overlayCloseLinkProps(closeLink, guard.close),
     guard,
     rootProps: { ...guard.rootProps, onOpenChangeComplete: props.onOpenChangeComplete },
   });

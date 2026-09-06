@@ -212,7 +212,9 @@ test("signed-in visitors without manager access see the forbidden dialog", async
   ).toBeTruthy();
   expect(ctx.view.queryByPlaceholderText("Write a message (optional)…")).toBeNull();
 
-  fireEvent.click(ctx.view.getByRole("button", { name: "Got it" }));
+  const gotIt = ctx.view.getByRole("link", { name: "Got it" });
+  expect(gotIt.getAttribute("href")).toBe(`/baby/${baby.publicId}`);
+  fireEvent.click(gotIt);
   await vi.waitFor(() => {
     expect(ctx.navigate).toHaveBeenCalledWith({
       ignoreBlocker: true,
@@ -221,6 +223,9 @@ test("signed-in visitors without manager access see the forbidden dialog", async
       resetScroll: false,
       to: "/baby/$publicId",
     });
+  });
+  await vi.waitFor(() => {
+    expect(ctx.router.state.location.pathname).toBe(`/baby/${baby.publicId}`);
   });
 });
 

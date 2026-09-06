@@ -34,7 +34,7 @@ export function BabyPostUpdateOverlay() {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
   if (managerBabyQuery.data === FORBIDDEN) {
-    return <ForbiddenDialog {...post.rootProps} />;
+    return <ForbiddenDialog overlay={post} />;
   }
   const managerBabyDoc = managerBabyQuery.data;
   const baby = managerDocToBabyData(managerBabyDoc);

@@ -3,7 +3,12 @@ import { expect, test } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
 import { getCurrentStatus } from "../src/types";
-import { DEMO_COPARENT_USER, DEMO_EMPTY_USER, DEMO_USER, MILO_LEGACY_PUBLIC_ID } from "../src/seedCredentials";
+import {
+  DEMO_COPARENT_USER,
+  DEMO_EMPTY_USER,
+  DEMO_USER,
+  MILO_LEGACY_PUBLIC_ID,
+} from "../src/seedCredentials";
 import { seedBabiesForUser } from "./seed";
 import { skipUserOnboarding } from "./onboarding";
 import { modules, registerComponents } from "./test.setup";

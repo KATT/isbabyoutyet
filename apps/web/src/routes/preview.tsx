@@ -14,6 +14,7 @@ import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n, getDetectedLocale } from "@/lib/i18n";
+import { closeOverlayLink, overlayCloseLinkProps } from "@/lib/overlay-nav";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import { previewCacheHeaders } from "@/lib/cachePolicy";
@@ -179,6 +180,7 @@ export function PreviewPage() {
         }}
         overlay={{
           close: settingsGuard.close,
+          closeLinkProps: overlayCloseLinkProps(closeOverlayLink({ to: "/" }), settingsGuard.close),
           guard: settingsGuard,
           rootProps: { ...settingsGuard.rootProps, onOpenChangeComplete: noop },
         }}
