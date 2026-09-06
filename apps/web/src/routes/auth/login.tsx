@@ -64,10 +64,6 @@ export async function signInThenGo(
   }
 
   await settled;
-
-  // oxlint-disable-next-line no-console
-  console.log("session successful login");
-
   await opts.navigate();
 }
 
