@@ -45,15 +45,12 @@ const enGB = {
   "Add a Baby": "Add a Baby",
   "Add a baby": "Add a baby",
   "Add a baby – Is Baby Out Yet?": "Add a baby | Is Baby Out Yet?",
-  "Add a message, a photo, or a milestone — any one is enough.":
-    "Add a message, photo or milestone.",
   "Add a message, a photo, or a milestone to post":
     "Add a message, a photo, or a milestone to post",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
     "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
   "Add Baby": "Add Baby",
   "Add Baby 🍼": "Add Baby 🍼",
-  "Add photo (optional)": "Add photo (optional)",
   "Add Your First Baby": "Add Your First Baby",
   "Add your first baby": "Add your first baby",
   Admin: "Admin",
@@ -106,7 +103,6 @@ const enGB = {
   Catppuccin: "Catppuccin",
   "Celebrate the arrival": "Celebrate the arrival",
   Change: "Change",
-  "Change photo": "Change photo",
   "Change theme": "Change theme",
   "Check your inbox for the next step.": "Check your inbox for the next step.",
   "Choose a journey": "Choose a journey",
@@ -195,8 +191,6 @@ const enGB = {
     "Enter your email and we'll send you a secure reset link.",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
     "Everyone sees the countdown, even when baby is taking their sweet time.",
-  "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
-    "Everyone following {{name}}'s page will see this. Add any mix of message, photo or milestone.",
   "Everything the family needs": "One page. No group-chat chaos.",
   "Everything you need to share the journey": "Keep everyone posted without the group-chat chaos",
   "Failed to cancel notification": "Failed to cancel notification",
@@ -328,7 +322,6 @@ const enGB = {
     "No co-parents yet. Add a partner so they can post updates too.",
   "No one is subscribed yet": "No one is subscribed yet",
   "No permalink transfers yet": "No permalink transfers yet",
-  "No status change": "No status change",
   "No subscription endpoint found": "Couldn't set up notifications. Try again.",
   "Not arrived yet!": "Not arrived yet!",
   "Not gone to hospital yet": "Not at hospital yet",
@@ -389,7 +382,6 @@ const enGB = {
   "Pick what this device should receive.": "Pick what this device should receive.",
   "Planned C-section": "Planned C-section",
   "Please select an image file": "Please select an image file",
-  'Post & mark "{{status}}"': 'Post and mark "{{status}}"',
   "Post an update": "Post an update",
   "Post each milestone once and everyone following gets the news.":
     "Post each milestone once and everyone following gets the news.",
@@ -506,8 +498,6 @@ const enGB = {
   "This action cannot be undone.": "You can't undo this.",
   "This also unmarks the milestone on the status card.":
     "This also unmarks the milestone on the status card.",
-  'This changes the page status to "{{status}}" and notifies everyone subscribed.':
-    'This changes the page status to "{{status}}" and notifies everyone subscribed.',
   "This is a demo baby": "This is a demo page",
   "This is how your page will look when shared.": "This is how your page will look when shared.",
   "This is initially chosen from your browser. New baby pages inherit it.":
@@ -541,7 +531,6 @@ const enGB = {
   "Update as you go": "Update as you go",
   Updated: "Updated",
   "Updated {{relative}}": "Updated {{relative}}",
-  "Update message (optional)": "Update message (optional)",
   "Update password": "Update password",
   "Update posted": "Update posted",
   "Update posted!": "Update posted!",
@@ -578,11 +567,9 @@ const enGB = {
   "What everyone you share with gets": "What everyone you share with gets",
   When: "When",
   "When did it happen?": "When did it happen?",
-  "When did it happen? (optional)": "When did it happen? (optional)",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Post a status update and everyone subscribed gets the news.",
   "Why this permalink is being moved.": "Recorded with the transfer. Shown in the audit trail.",
-  "Write a message (optional)…": "Write a message (optional)…",
   "Write your message of encouragement...": "Write your message...",
   "Yes! Baby is out": "Yes! Baby is out",
   "You'll get a push when someone leaves a message on this page.":
@@ -609,56 +596,31 @@ const enGB = {
   "Your email has been updated.": "Your email has been updated.",
   "Your name has been updated.": "Your name has been updated.",
   "Your password has been updated.": "Your password has been updated.",
-  // Composer redesign prototypes (/post-2, /post-3, /post-4) — temporary
-  "A moment worth sharing": "A moment worth sharing",
-  "Add a note": "Add a note",
+  // Post-update composer
   "Add a photo": "Add a photo",
-  "Swap the photo": "Swap the photo",
-  "or drag one in": "or drag one in",
-  Added: "Added",
-  "Any big news?": "Any big news?",
-  "Big news": "Big news",
-  "Everyone following {{name}}'s page gets it — a note, a photo, big news, or all three.":
-    "Everyone following {{name}}'s page gets it — a note, a photo, big news, or all three.",
-  "Just an update": "Just an update",
-  "just now": "just now",
-  "Labour, hospital or born — updates the page status":
-    "Labour, hospital or born — updates the page status",
-  "Nothing added yet": "Nothing added yet",
+  "Change status": "Change status",
   "Drop the photo here": "Drop the photo here",
   "It will be added to this update": "It will be added to this update",
-  "Photo attached": "Photo attached",
-  "No change": "No change",
-  Note: "Note",
-  "Change status": "Change status",
   "Just a note or a photo. The page status stays the same.":
     "Just a note or a photo. The page status stays the same.",
+  "No change": "No change",
+  Note: "Note",
+  "Optional. You can change this later.": "Optional. You can change this later.",
+  "or drag one in": "or drag one in",
+  Photo: "Photo",
+  "Posting notifies {{count}} subscriber.": "Posting notifies {{count}} subscriber.",
+  "Posting notifies {{count}} subscribers.": "Posting notifies {{count}} subscribers.",
+  "Swap the photo": "Swap the photo",
+  "The page will announce that {{name}} is here.": "The page will announce that {{name}} is here.",
   "The page will say labour has started.": "The page will say labour has started.",
   "The page will say you're at the hospital.": "The page will say you're at the hospital.",
-  "The page will announce that {{name}} is here.": "The page will announce that {{name}} is here.",
+  "What's new with {{name}}?": "What's new with {{name}}?",
   "When did labour start?": "When did labour start?",
   "When did you head to the hospital?": "When did you head to the hospital?",
   "When was {{name}} born?": "When was {{name}} born?",
-  "Optional. You can change this later.": "Optional. You can change this later.",
-  "One is enough — a note, a photo or big news.": "One is enough — a note, a photo or big news.",
-  Photo: "Photo",
-  "Pick anything below — one is enough, or mix all three.":
-    "Pick anything below — one is enough, or mix all three.",
-  "Post to {{name}}'s page": "Post to {{name}}'s page",
-  "Posting notifies {{count}} subscriber.": "Posting notifies {{count}} subscriber.",
-  "Posting notifies {{count}} subscribers.": "Posting notifies {{count}} subscribers.",
-  "You get a minute to cancel before it goes out.": "You get a minute to cancel before it goes out.",
-  Preview: "Preview",
   "Write a note, add a photo, or update the status.": "Write a note, add a photo, or update the status.",
   "Write a note (optional)": "Write a note (optional)",
-  "Share a moment": "Share a moment",
-  "Share with everyone": "Share with everyone",
-  "Sharing:": "Sharing:",
-  "Tap to choose, or drop one here": "Tap to choose, or drop one here",
-  "Tell everyone what's happening": "Tell everyone what's happening",
-  "What's new with {{name}}?": "What's new with {{name}}?",
-  "Your post shows up here as you build it — a message, a photo, a milestone, or any mix.":
-    "Your post shows up here as you build it — a message, a photo, a milestone, or any mix.",
+  "You get a minute to cancel before it goes out.": "You get a minute to cancel before it goes out.",
 } as const;
 
 export type TranslationKey = keyof typeof enGB;
@@ -718,15 +680,12 @@ const sv: TranslationCatalog = {
   "Add a Baby": "Lägg till en bäbis",
   "Add a baby": "Lägg till bäbis",
   "Add a baby – Is Baby Out Yet?": "Lägg till bäbis | Har bäbisen kommit?",
-  "Add a message, a photo, or a milestone — any one is enough.":
-    "Lägg till ett meddelande, ett foto eller en milstolpe. En räcker.",
   "Add a message, a photo, or a milestone to post":
     "Lägg till ett meddelande, ett foto eller en milstolpe",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
     "Lägg till namn och datum och välj sedan en resa. Den bestämmer bara vilka statusar besökare kan se.",
   "Add Baby": "Lägg till bäbis",
   "Add Baby 🍼": "Lägg till bäbis 🍼",
-  "Add photo (optional)": "Lägg till foto (valfritt)",
   "Add Your First Baby": "Lägg till din första bäbis",
   "Add your first baby": "Lägg till din första bäbis",
   Admin: "Admin",
@@ -780,7 +739,6 @@ const sv: TranslationCatalog = {
   Catppuccin: "Catppuccin",
   "Celebrate the arrival": "Fira att bäbisen är här",
   Change: "Ändra",
-  "Change photo": "Byt foto",
   "Change theme": "Byt tema",
   "Check your inbox for the next step.": "Kolla inkorgen för nästa steg.",
   "Choose a journey": "Välj en resa",
@@ -867,8 +825,6 @@ const sv: TranslationCatalog = {
     "Ange din e-post så skickar vi en säker återställningslänk.",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
     "Alla ser hur många dagar som är kvar. Om bäbisen dröjer visar vi hur många dagar ni gått över tiden.",
-  "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
-    "Alla som följer sidan för {{name}} ser den. Lägg till ett meddelande, ett foto eller en milstolpe. Välj en eller flera.",
   "Everything the family needs": "Allt familjen behöver",
   "Everything you need to share the journey": "Allt du behöver för att hålla alla uppdaterade",
   "Failed to cancel notification": "Det gick inte att avbryta notisen",
@@ -1001,7 +957,6 @@ const sv: TranslationCatalog = {
     "Inga medföräldrar än. Lägg till en partner så att de också kan lägga upp uppdateringar.",
   "No one is subscribed yet": "Ingen prenumererar än",
   "No permalink transfers yet": "Inga permalinkflyttar ännu",
-  "No status change": "Ingen statusändring",
   "No subscription endpoint found": "Vi hittade inga aktiva notiser",
   "Not arrived yet!": "Har inte kommit än!",
   "Not gone to hospital yet": "Inte åkt in än",
@@ -1062,7 +1017,6 @@ const sv: TranslationCatalog = {
   "Pick what this device should receive.": "Välj vad den här enheten ska ta emot.",
   "Planned C-section": "Planerat kejsarsnitt",
   "Please select an image file": "Välj en bildfil",
-  'Post & mark "{{status}}"': 'Publicera och markera "{{status}}"',
   "Post an update": "Publicera en uppdatering",
   "Post each milestone once and everyone following gets the news.":
     "Lägg upp varje milstolpe en gång så får alla veta.",
@@ -1178,8 +1132,6 @@ const sv: TranslationCatalog = {
   "This action cannot be undone.": "Det går inte att ångra.",
   "This also unmarks the milestone on the status card.":
     "Då avmarkeras också milstolpen på statuskortet.",
-  'This changes the page status to "{{status}}" and notifies everyone subscribed.':
-    "Sidans status ändras till ”{{status}}” och alla prenumeranter får en notis.",
   "This is a demo baby": "Det här är en demobäbis",
   "This is how your page will look when shared.": "Så här ser sidan ut när du delar den.",
   "This is initially chosen from your browser. New baby pages inherit it.":
@@ -1213,7 +1165,6 @@ const sv: TranslationCatalog = {
   "Update as you go": "Uppdatera när det händer",
   Updated: "Uppdaterad",
   "Updated {{relative}}": "Uppdaterat {{relative}}",
-  "Update message (optional)": "Uppdateringsmeddelande (valfritt)",
   "Update password": "Uppdatera lösenordet",
   "Update posted": "Uppdatering publicerad",
   "Update posted!": "Klart! Uppdateringen är ute.",
@@ -1252,11 +1203,9 @@ const sv: TranslationCatalog = {
   "What everyone you share with gets": "Det här får familj och vänner",
   When: "När",
   "When did it happen?": "När hände det?",
-  "When did it happen? (optional)": "När hände det? (valfritt)",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "När det börjar hända saker uppdaterar du statusen. Alla får en notis automatiskt.",
   "Why this permalink is being moved.": "Skrivs in vid flytten och sparas i historiken.",
-  "Write a message (optional)…": "Skriv ett meddelande (valfritt)…",
   "Write your message of encouragement...": "Skriv din hälsning...",
   "Yes! Baby is out": "Ja! Bäbisen har kommit",
   "You'll get a push when someone leaves a message on this page.":
@@ -1283,57 +1232,31 @@ const sv: TranslationCatalog = {
   "Your email has been updated.": "Din e-post har uppdaterats.",
   "Your name has been updated.": "Ditt namn har uppdaterats.",
   "Your password has been updated.": "Ditt lösenord har uppdaterats.",
-  // Composer redesign prototypes (/post-2, /post-3, /post-4) — temporary
-  "A moment worth sharing": "Ett ögonblick värt att dela",
-  "Add a note": "Skriv en rad",
+  // Post-update composer
   "Add a photo": "Lägg till ett foto",
-  "Swap the photo": "Byt foto",
-  "or drag one in": "eller dra in ett",
-  Added: "Tillagd",
-  "Any big news?": "Några stora nyheter?",
-  "Big news": "Stora nyheter",
-  "Everyone following {{name}}'s page gets it — a note, a photo, big news, or all three.":
-    "Alla som följer {{name}}s sida får det – en rad, ett foto, stora nyheter eller alla tre.",
-  "Just an update": "Bara en uppdatering",
-  "just now": "just nu",
-  "Labour, hospital or born — updates the page status":
-    "Förlossning, sjukhus eller född – uppdaterar sidans status",
-  "Nothing added yet": "Inget tillagt än",
+  "Change status": "Ändra status",
   "Drop the photo here": "Släpp fotot här",
   "It will be added to this update": "Det läggs till i den här uppdateringen",
-  "Photo attached": "Foto bifogat",
-  "No change": "Ingen ändring",
-  Note: "Text",
-  "Change status": "Ändra status",
   "Just a note or a photo. The page status stays the same.":
     "Bara en notis eller ett foto. Sidans status ändras inte.",
+  "No change": "Ingen ändring",
+  Note: "Text",
+  "Optional. You can change this later.": "Valfritt. Du kan ändra det senare.",
+  "or drag one in": "eller dra in ett",
+  Photo: "Foto",
+  "Posting notifies {{count}} subscriber.": "Publiceringen skickar en notis till {{count}} prenumerant.",
+  "Posting notifies {{count}} subscribers.": "Publiceringen skickar en notis till {{count}} prenumeranter.",
+  "Swap the photo": "Byt foto",
+  "The page will announce that {{name}} is here.": "Sidan kommer berätta att {{name}} är här.",
   "The page will say labour has started.": "Sidan kommer visa att förlossningen har börjat.",
   "The page will say you're at the hospital.": "Sidan kommer visa att ni är på sjukhuset.",
-  "The page will announce that {{name}} is here.": "Sidan kommer berätta att {{name}} är här.",
+  "What's new with {{name}}?": "Vad är nytt med {{name}}?",
   "When did labour start?": "När började förlossningen?",
   "When did you head to the hospital?": "När åkte ni till sjukhuset?",
   "When was {{name}} born?": "När föddes {{name}}?",
-  "Optional. You can change this later.": "Valfritt. Du kan ändra det senare.",
-  "One is enough — a note, a photo or big news.":
-    "Ett räcker – en rad, ett foto eller stora nyheter.",
-  Photo: "Foto",
-  "Pick anything below — one is enough, or mix all three.":
-    "Välj vad du vill nedan – ett räcker, eller blanda alla tre.",
-  "Post to {{name}}'s page": "Publicera på {{name}}s sida",
-  "Posting notifies {{count}} subscriber.": "Publiceringen skickar en notis till {{count}} prenumerant.",
-  "Posting notifies {{count}} subscribers.": "Publiceringen skickar en notis till {{count}} prenumeranter.",
-  "You get a minute to cancel before it goes out.": "Du har en minut att avbryta innan den skickas.",
-  Preview: "Förhandsvisning",
   "Write a note, add a photo, or update the status.": "Skriv något, lägg till ett foto eller uppdatera statusen.",
   "Write a note (optional)": "Skriv något (valfritt)",
-  "Share a moment": "Dela ett ögonblick",
-  "Share with everyone": "Dela med alla",
-  "Sharing:": "Delar:",
-  "Tap to choose, or drop one here": "Tryck för att välja, eller släpp ett här",
-  "Tell everyone what's happening": "Berätta för alla vad som händer",
-  "What's new with {{name}}?": "Vad är nytt med {{name}}?",
-  "Your post shows up here as you build it — a message, a photo, a milestone, or any mix.":
-    "Ditt inlägg visas här medan du bygger det – ett meddelande, ett foto, en milstolpe eller valfri mix.",
+  "You get a minute to cancel before it goes out.": "Du har en minut att avbryta innan den skickas.",
 };
 
 const es: TranslationCatalog = {
@@ -1368,15 +1291,12 @@ const es: TranslationCatalog = {
   "Add a Baby": "Añadir un bebé",
   "Add a baby": "Añadir un bebé",
   "Add a baby – Is Baby Out Yet?": "Añadir un bebé | ¿Ya nació el bebé?",
-  "Add a message, a photo, or a milestone — any one is enough.":
-    "Con un mensaje, una foto o un hito basta.",
   "Add a message, a photo, or a milestone to post":
     "Para publicar, añade un mensaje, una foto o un hito",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
     "Añade un nombre y una fecha y después elige un recorrido. Solo define qué estados pueden ver los visitantes.",
   "Add Baby": "Añadir bebé",
   "Add Baby 🍼": "Añadir bebé 🍼",
-  "Add photo (optional)": "Añadir foto (opcional)",
   "Add Your First Baby": "Añade tu primer bebé",
   "Add your first baby": "Añade tu primer bebé",
   Admin: "Admin",
@@ -1430,7 +1350,6 @@ const es: TranslationCatalog = {
   Catppuccin: "Catppuccin",
   "Celebrate the arrival": "Celebra la llegada",
   Change: "Cambiar",
-  "Change photo": "Cambiar foto",
   "Change theme": "Cambiar tema",
   "Check your inbox for the next step.": "Revisa tu correo para el siguiente paso.",
   "Choose a journey": "Elige un recorrido",
@@ -1520,8 +1439,6 @@ const es: TranslationCatalog = {
     "Escribe tu correo y te enviaremos un enlace seguro para restablecerla.",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
     "Todos ven cuántos días faltan y, si el bebé se hace esperar, cuántos días han pasado desde la fecha prevista.",
-  "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
-    "Todos los que siguen la página de {{name}} la verán. El mensaje, la foto y el hito son opcionales y se pueden combinar.",
   "Everything the family needs": "Todo lo que la familia necesita",
   "Everything you need to share the journey": "Todo lo que necesitas para compartir el camino",
   "Failed to cancel notification": "No se pudo cancelar la notificación",
@@ -1656,7 +1573,6 @@ const es: TranslationCatalog = {
     "Aún no hay nadie más con acceso. Invita a tu pareja para que también pueda publicar novedades.",
   "No one is subscribed yet": "Nadie está suscrito todavía",
   "No permalink transfers yet": "Aún no hay transferencias de permalink",
-  "No status change": "Sin cambio de estado",
   "No subscription endpoint found": "No encontramos la suscripción",
   "Not arrived yet!": "¡Aún no ha llegado!",
   "Not gone to hospital yet": "Aún no han ido al hospital",
@@ -1718,7 +1634,6 @@ const es: TranslationCatalog = {
   "Pick what this device should receive.": "Elige qué debe recibir este dispositivo.",
   "Planned C-section": "Cesárea programada",
   "Please select an image file": "Selecciona un archivo de imagen",
-  'Post & mark "{{status}}"': 'Publicar y marcar "{{status}}"',
   "Post an update": "Publicar una novedad",
   "Post each milestone once and everyone following gets the news.":
     "Publica cada hito una vez y todos los seguidores recibirán la noticia.",
@@ -1835,8 +1750,6 @@ const es: TranslationCatalog = {
   "This action cannot be undone.": "Esta acción no se puede deshacer.",
   "This also unmarks the milestone on the status card.":
     "También desmarca el hito en la tarjeta de estado.",
-  'This changes the page status to "{{status}}" and notifies everyone subscribed.':
-    'Esto cambia el estado de la página a "{{status}}" y avisa a todos los suscriptores.',
   "This is a demo baby": "Esta página es una demo",
   "This is how your page will look when shared.": "Así se verá tu página cuando la compartas.",
   "This is initially chosen from your browser. New baby pages inherit it.":
@@ -1871,7 +1784,6 @@ const es: TranslationCatalog = {
   "Update as you go": "Actualiza sobre la marcha",
   Updated: "Actualizado",
   "Updated {{relative}}": "Última actualización: {{relative}}",
-  "Update message (optional)": "Mensaje de la novedad (opcional)",
   "Update password": "Actualizar contraseña",
   "Update posted": "Novedad publicada",
   "Update posted!": "¡Novedad publicada!",
@@ -1909,11 +1821,9 @@ const es: TranslationCatalog = {
   "What everyone you share with gets": "Lo que verán tus familiares y amigos",
   When: "Cuándo",
   "When did it happen?": "¿Cuándo ocurrió?",
-  "When did it happen? (optional)": "¿Cuándo ocurrió? (opcional)",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Cuando empiece todo, actualiza el estado. Todos recibirán un aviso automáticamente.",
   "Why this permalink is being moved.": "Se guarda con la transferencia y queda en el registro.",
-  "Write a message (optional)…": "Escribe un mensaje (opcional)…",
   "Write your message of encouragement...": "Escribe tu mensaje de ánimo...",
   "Yes! Baby is out": "¡Sí! El bebé ya nació",
   "You'll get a push when someone leaves a message on this page.":
@@ -1940,57 +1850,31 @@ const es: TranslationCatalog = {
   "Your email has been updated.": "Tu correo se ha actualizado.",
   "Your name has been updated.": "Tu nombre se ha actualizado.",
   "Your password has been updated.": "Tu contraseña se ha actualizado.",
-  // Composer redesign prototypes (/post-2, /post-3, /post-4) — temporary
-  "A moment worth sharing": "Un momento que vale la pena compartir",
-  "Add a note": "Añade una nota",
+  // Post-update composer
   "Add a photo": "Añade una foto",
-  "Swap the photo": "Cambiar la foto",
-  "or drag one in": "o arrastra una aquí",
-  Added: "Añadido",
-  "Any big news?": "¿Alguna gran noticia?",
-  "Big news": "Gran noticia",
-  "Everyone following {{name}}'s page gets it — a note, a photo, big news, or all three.":
-    "Todos los que siguen la página de {{name}} lo verán: una nota, una foto, una gran noticia o las tres cosas.",
-  "Just an update": "Solo una actualización",
-  "just now": "ahora mismo",
-  "Labour, hospital or born — updates the page status":
-    "Parto, hospital o nacimiento: actualiza el estado de la página",
-  "Nothing added yet": "Aún no has añadido nada",
+  "Change status": "Cambiar estado",
   "Drop the photo here": "Suelta la foto aquí",
   "It will be added to this update": "Se añadirá a esta actualización",
-  "Photo attached": "Foto adjunta",
-  "No change": "Sin cambios",
-  Note: "Nota",
-  "Change status": "Cambiar estado",
   "Just a note or a photo. The page status stays the same.":
     "Solo una nota o una foto. El estado de la página no cambia.",
+  "No change": "Sin cambios",
+  Note: "Nota",
+  "Optional. You can change this later.": "Opcional. Puedes cambiarlo más tarde.",
+  "or drag one in": "o arrastra una aquí",
+  Photo: "Foto",
+  "Posting notifies {{count}} subscriber.": "Al publicar se avisa a {{count}} suscriptor.",
+  "Posting notifies {{count}} subscribers.": "Al publicar se avisa a {{count}} suscriptores.",
+  "Swap the photo": "Cambiar la foto",
+  "The page will announce that {{name}} is here.": "La página anunciará que {{name}} ya está aquí.",
   "The page will say labour has started.": "La página dirá que ha comenzado el parto.",
   "The page will say you're at the hospital.": "La página dirá que estáis en el hospital.",
-  "The page will announce that {{name}} is here.": "La página anunciará que {{name}} ya está aquí.",
+  "What's new with {{name}}?": "¿Qué hay de nuevo con {{name}}?",
   "When did labour start?": "¿Cuándo empezó el parto?",
   "When did you head to the hospital?": "¿Cuándo fuisteis al hospital?",
   "When was {{name}} born?": "¿Cuándo nació {{name}}?",
-  "Optional. You can change this later.": "Opcional. Puedes cambiarlo más tarde.",
-  "One is enough — a note, a photo or big news.":
-    "Con una basta: una nota, una foto o una gran noticia.",
-  Photo: "Foto",
-  "Pick anything below — one is enough, or mix all three.":
-    "Elige lo que quieras: con una cosa basta, o combina las tres.",
-  "Post to {{name}}'s page": "Publicar en la página de {{name}}",
-  "Posting notifies {{count}} subscriber.": "Al publicar se avisa a {{count}} suscriptor.",
-  "Posting notifies {{count}} subscribers.": "Al publicar se avisa a {{count}} suscriptores.",
-  "You get a minute to cancel before it goes out.": "Tienes un minuto para cancelar antes de que se envíe.",
-  Preview: "Vista previa",
   "Write a note, add a photo, or update the status.": "Escribe una nota, añade una foto o actualiza el estado.",
   "Write a note (optional)": "Escribe una nota (opcional)",
-  "Share a moment": "Comparte un momento",
-  "Share with everyone": "Compartir con todos",
-  "Sharing:": "Compartiendo:",
-  "Tap to choose, or drop one here": "Toca para elegir, o suelta una aquí",
-  "Tell everyone what's happening": "Cuéntales a todos qué está pasando",
-  "What's new with {{name}}?": "¿Qué hay de nuevo con {{name}}?",
-  "Your post shows up here as you build it — a message, a photo, a milestone, or any mix.":
-    "Tu publicación aparece aquí mientras la creas: un mensaje, una foto, un hito o cualquier combinación.",
+  "You get a minute to cancel before it goes out.": "Tienes un minuto para cancelar antes de que se envíe.",
 };
 
 const ptBR: TranslationCatalog = {
@@ -2025,15 +1909,12 @@ const ptBR: TranslationCatalog = {
   "Add a Baby": "Adicionar um bebê",
   "Add a baby": "Adicionar um bebê",
   "Add a baby – Is Baby Out Yet?": "Adicionar um bebê | O bebê já nasceu?",
-  "Add a message, a photo, or a milestone — any one is enough.":
-    "Adicione uma mensagem, uma foto ou uma etapa. Qualquer uma já basta.",
   "Add a message, a photo, or a milestone to post":
     "Adicione uma mensagem, uma foto ou uma etapa para publicar",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
     "Adicione um nome e uma data e depois escolha uma jornada. Ela só define quais status os visitantes podem ver.",
   "Add Baby": "Adicionar bebê",
   "Add Baby 🍼": "Adicionar bebê 🍼",
-  "Add photo (optional)": "Adicionar foto (opcional)",
   "Add Your First Baby": "Adicionar seu primeiro bebê",
   "Add your first baby": "Adicione seu primeiro bebê",
   Admin: "Admin",
@@ -2087,7 +1968,6 @@ const ptBR: TranslationCatalog = {
   Catppuccin: "Catppuccin",
   "Celebrate the arrival": "Comemore a chegada",
   Change: "Alterar",
-  "Change photo": "Alterar foto",
   "Change theme": "Alterar tema",
   "Check your inbox for the next step.": "Confira sua caixa de entrada para o próximo passo.",
   "Choose a journey": "Escolha uma jornada",
@@ -2177,8 +2057,6 @@ const ptBR: TranslationCatalog = {
     "Digite seu e-mail e enviaremos um link seguro para redefinir a senha.",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
     "Todo mundo vê quantos dias faltam. Se o bebê resolver ficar mais um pouquinho, a contagem continua depois da data prevista.",
-  "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
-    "Quem acompanha a página de {{name}} vai ver a novidade. Escolha uma mensagem, uma foto ou uma etapa, ou combine como quiser.",
   "Everything the family needs": "Tudo o que a família precisa",
   "Everything you need to share the journey": "Tudo para compartilhar cada novidade",
   "Failed to cancel notification": "Não foi possível cancelar a notificação",
@@ -2316,7 +2194,6 @@ const ptBR: TranslationCatalog = {
     "Ainda não há outros responsáveis. Adicione alguém para ajudar e também publicar novidades.",
   "No one is subscribed yet": "Ninguém está inscrito ainda",
   "No permalink transfers yet": "Ainda não há transferências de permalink",
-  "No status change": "Sem alteração de status",
   "No subscription endpoint found": "Não foi possível encontrar os dados das notificações",
   "Not arrived yet!": "Ainda não chegou!",
   "Not gone to hospital yet": "A família ainda não foi para o hospital",
@@ -2379,7 +2256,6 @@ const ptBR: TranslationCatalog = {
   "Pick what this device should receive.": "Escolha o que este dispositivo deve receber.",
   "Planned C-section": "Cesárea programada",
   "Please select an image file": "Selecione um arquivo de imagem",
-  'Post & mark "{{status}}"': 'Publicar e marcar "{{status}}"',
   "Post an update": "Publicar uma novidade",
   "Post each milestone once and everyone following gets the news.":
     "Publique cada etapa uma vez e pronto: todo mundo que acompanha recebe a novidade.",
@@ -2496,8 +2372,6 @@ const ptBR: TranslationCatalog = {
   "This action cannot be undone.": "Esta ação não pode ser desfeita.",
   "This also unmarks the milestone on the status card.":
     "Isso também desmarca essa etapa no cartão de status.",
-  'This changes the page status to "{{status}}" and notifies everyone subscribed.':
-    'Isso muda o status da página para "{{status}}" e avisa todo mundo que ativou as notificações.',
   "This is a demo baby": "Esta é uma página de demonstração",
   "This is how your page will look when shared.":
     "É assim que sua página vai aparecer ao ser compartilhada.",
@@ -2532,7 +2406,6 @@ const ptBR: TranslationCatalog = {
   "Update as you go": "Vá atualizando",
   Updated: "Atualizado",
   "Updated {{relative}}": "Atualizado {{relative}}",
-  "Update message (optional)": "Mensagem da novidade (opcional)",
   "Update password": "Atualizar senha",
   "Update posted": "Novidade publicada",
   "Update posted!": "Novidade publicada!",
@@ -2572,11 +2445,9 @@ const ptBR: TranslationCatalog = {
   "What everyone you share with gets": "O que ganha quem recebe o link",
   When: "Quando",
   "When did it happen?": "Quando aconteceu?",
-  "When did it happen? (optional)": "Quando aconteceu? (opcional)",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Quando as coisas começarem a acontecer, atualize o status. Todo mundo é avisado automaticamente.",
   "Why this permalink is being moved.": "Registrado na transferência e guardado no histórico.",
-  "Write a message (optional)…": "Escreva uma mensagem (opcional)…",
   "Write your message of encouragement...": "Escreva sua mensagem de carinho...",
   "Yes! Baby is out": "Sim! O bebê nasceu",
   "You'll get a push when someone leaves a message on this page.":
@@ -2603,57 +2474,31 @@ const ptBR: TranslationCatalog = {
   "Your email has been updated.": "Seu e-mail foi atualizado.",
   "Your name has been updated.": "Seu nome foi atualizado.",
   "Your password has been updated.": "Sua senha foi atualizada.",
-  // Composer redesign prototypes (/post-2, /post-3, /post-4) — temporary
-  "A moment worth sharing": "Um momento que vale compartilhar",
-  "Add a note": "Escreva um recado",
+  // Post-update composer
   "Add a photo": "Adicione uma foto",
-  "Swap the photo": "Trocar a foto",
-  "or drag one in": "ou arraste uma para aqui",
-  Added: "Adicionado",
-  "Any big news?": "Alguma grande novidade?",
-  "Big news": "Grande novidade",
-  "Everyone following {{name}}'s page gets it — a note, a photo, big news, or all three.":
-    "Todos que acompanham a página de {{name}} vão ver: um recado, uma foto, uma grande novidade ou os três.",
-  "Just an update": "Só uma atualização",
-  "just now": "agora mesmo",
-  "Labour, hospital or born — updates the page status":
-    "Trabalho de parto, hospital ou nascimento: atualiza o status da página",
-  "Nothing added yet": "Nada adicionado ainda",
+  "Change status": "Alterar status",
   "Drop the photo here": "Solte a foto aqui",
   "It will be added to this update": "Ela será adicionada a esta atualização",
-  "Photo attached": "Foto anexada",
-  "No change": "Sem alteração",
-  Note: "Nota",
-  "Change status": "Alterar status",
   "Just a note or a photo. The page status stays the same.":
     "Só uma nota ou uma foto. O status da página continua igual.",
+  "No change": "Sem alteração",
+  Note: "Nota",
+  "Optional. You can change this later.": "Opcional. Você pode alterar depois.",
+  "or drag one in": "ou arraste uma para aqui",
+  Photo: "Foto",
+  "Posting notifies {{count}} subscriber.": "Ao publicar, {{count}} inscrito recebe uma notificação.",
+  "Posting notifies {{count}} subscribers.": "Ao publicar, {{count}} inscritos recebem uma notificação.",
+  "Swap the photo": "Trocar a foto",
+  "The page will announce that {{name}} is here.": "A página vai anunciar que {{name}} chegou.",
   "The page will say labour has started.": "A página vai dizer que o trabalho de parto começou.",
   "The page will say you're at the hospital.": "A página vai dizer que vocês estão no hospital.",
-  "The page will announce that {{name}} is here.": "A página vai anunciar que {{name}} chegou.",
+  "What's new with {{name}}?": "O que há de novo com {{name}}?",
   "When did labour start?": "Quando o trabalho de parto começou?",
   "When did you head to the hospital?": "Quando vocês foram para o hospital?",
   "When was {{name}} born?": "Quando {{name}} nasceu?",
-  "Optional. You can change this later.": "Opcional. Você pode alterar depois.",
-  "One is enough — a note, a photo or big news.":
-    "Um já basta: um recado, uma foto ou uma grande novidade.",
-  Photo: "Foto",
-  "Pick anything below — one is enough, or mix all three.":
-    "Escolha o que quiser abaixo: um já basta, ou combine os três.",
-  "Post to {{name}}'s page": "Publicar na página de {{name}}",
-  "Posting notifies {{count}} subscriber.": "Ao publicar, {{count}} inscrito recebe uma notificação.",
-  "Posting notifies {{count}} subscribers.": "Ao publicar, {{count}} inscritos recebem uma notificação.",
-  "You get a minute to cancel before it goes out.": "Você tem um minuto para cancelar antes do envio.",
-  Preview: "Prévia",
   "Write a note, add a photo, or update the status.": "Escreva uma nota, adicione uma foto ou atualize o status.",
   "Write a note (optional)": "Escreva uma nota (opcional)",
-  "Share a moment": "Compartilhe um momento",
-  "Share with everyone": "Compartilhar com todos",
-  "Sharing:": "Compartilhando:",
-  "Tap to choose, or drop one here": "Toque para escolher ou solte uma aqui",
-  "Tell everyone what's happening": "Conte a todos o que está acontecendo",
-  "What's new with {{name}}?": "O que há de novo com {{name}}?",
-  "Your post shows up here as you build it — a message, a photo, a milestone, or any mix.":
-    "Sua publicação aparece aqui enquanto você a monta: uma mensagem, uma foto, um marco ou qualquer combinação.",
+  "You get a minute to cancel before it goes out.": "Você tem um minuto para cancelar antes do envio.",
 };
 
 const enUS: PartialTranslationCatalog = {
@@ -2670,7 +2515,6 @@ const enUS: PartialTranslationCatalog = {
   "Gone to hospital!": "Gone to the hospital!",
   Labour: "Labor",
   "Labour started": "Labor started",
-  "When did labour start?": "When did labor start?",
   "Labour started!": "Labor started!",
   "Not gone to hospital yet": "Not at the hospital yet",
   "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
@@ -2679,6 +2523,7 @@ const enUS: PartialTranslationCatalog = {
     "Mark labor, hospital or born once. Everyone subscribed gets the news.",
   "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.":
     "Pick soft pastels, bold colors or whatever feels like you.",
+  "The page will say labour has started.": "The page will say labor has started.",
   "Track the progress of labour and birth": "Follow labor and birth",
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labor and birth. Know when baby arrives!",
@@ -2687,6 +2532,7 @@ const enUS: PartialTranslationCatalog = {
   "Visitors see: Labour started → Baby born": "Visitors see: Labor started → Baby born",
   "Visitors see: Labour started → Gone to hospital → Baby born":
     "Visitors see: Labor started → Gone to the hospital → Baby born",
+  "When did labour start?": "When did labor start?",
 };
 
 const translations: TranslationsByLocale = {

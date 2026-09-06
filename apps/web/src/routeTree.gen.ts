@@ -36,9 +36,6 @@ import { Route as BabyPublicIdSignupRouteImport } from './routes/baby/$publicId/
 import { Route as BabyManifest_idRouteImport } from './routes/baby/manifest/$_id'
 import { Route as OgBabyPublicIdRouteImport } from './routes/og.baby.$publicId'
 import { Route as BabyPublicIdAuthPostRouteImport } from './routes/baby/$publicId/_auth/post'
-import { Route as BabyPublicIdAuthPost2RouteImport } from './routes/baby/$publicId/_auth/post-2'
-import { Route as BabyPublicIdAuthPost3RouteImport } from './routes/baby/$publicId/_auth/post-3'
-import { Route as BabyPublicIdAuthPost4RouteImport } from './routes/baby/$publicId/_auth/post-4'
 import { Route as BabyPublicIdAuthSettingsRouteImport } from './routes/baby/$publicId/_auth/settings'
 import { Route as BabyPublicIdUpdatesUpdateIdPhotoRouteImport } from './routes/baby/$publicId/updates.$updateId.photo'
 
@@ -175,21 +172,6 @@ const BabyPublicIdAuthPostRoute = BabyPublicIdAuthPostRouteImport.update({
   path: '/post',
   getParentRoute: () => BabyPublicIdAuthRouteRoute,
 } as any)
-const BabyPublicIdAuthPost2Route = BabyPublicIdAuthPost2RouteImport.update({
-  id: '/post-2',
-  path: '/post-2',
-  getParentRoute: () => BabyPublicIdAuthRouteRoute,
-} as any)
-const BabyPublicIdAuthPost3Route = BabyPublicIdAuthPost3RouteImport.update({
-  id: '/post-3',
-  path: '/post-3',
-  getParentRoute: () => BabyPublicIdAuthRouteRoute,
-} as any)
-const BabyPublicIdAuthPost4Route = BabyPublicIdAuthPost4RouteImport.update({
-  id: '/post-4',
-  path: '/post-4',
-  getParentRoute: () => BabyPublicIdAuthRouteRoute,
-} as any)
 const BabyPublicIdAuthSettingsRoute =
   BabyPublicIdAuthSettingsRouteImport.update({
     id: '/settings',
@@ -229,9 +211,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof AuthDashboardIndexRoute
   '/baby/$publicId/': typeof BabyPublicIdIndexRoute
   '/baby/$publicId/post': typeof BabyPublicIdAuthPostRoute
-  '/baby/$publicId/post-2': typeof BabyPublicIdAuthPost2Route
-  '/baby/$publicId/post-3': typeof BabyPublicIdAuthPost3Route
-  '/baby/$publicId/post-4': typeof BabyPublicIdAuthPost4Route
   '/baby/$publicId/settings': typeof BabyPublicIdAuthSettingsRoute
   '/baby/$publicId/updates/$updateId/photo': typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
@@ -259,9 +238,6 @@ export interface FileRoutesByTo {
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/dashboard': typeof AuthDashboardIndexRoute
   '/baby/$publicId/post': typeof BabyPublicIdAuthPostRoute
-  '/baby/$publicId/post-2': typeof BabyPublicIdAuthPost2Route
-  '/baby/$publicId/post-3': typeof BabyPublicIdAuthPost3Route
-  '/baby/$publicId/post-4': typeof BabyPublicIdAuthPost4Route
   '/baby/$publicId/settings': typeof BabyPublicIdAuthSettingsRoute
   '/baby/$publicId/updates/$updateId/photo': typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
@@ -294,9 +270,6 @@ export interface FileRoutesById {
   '/_auth/dashboard/': typeof AuthDashboardIndexRoute
   '/baby/$publicId/': typeof BabyPublicIdIndexRoute
   '/baby/$publicId/_auth/post': typeof BabyPublicIdAuthPostRoute
-  '/baby/$publicId/_auth/post-2': typeof BabyPublicIdAuthPost2Route
-  '/baby/$publicId/_auth/post-3': typeof BabyPublicIdAuthPost3Route
-  '/baby/$publicId/_auth/post-4': typeof BabyPublicIdAuthPost4Route
   '/baby/$publicId/_auth/settings': typeof BabyPublicIdAuthSettingsRoute
   '/baby/$publicId/updates/$updateId/photo': typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
@@ -328,9 +301,6 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/baby/$publicId/'
     | '/baby/$publicId/post'
-    | '/baby/$publicId/post-2'
-    | '/baby/$publicId/post-3'
-    | '/baby/$publicId/post-4'
     | '/baby/$publicId/settings'
     | '/baby/$publicId/updates/$updateId/photo'
   fileRoutesByTo: FileRoutesByTo
@@ -358,9 +328,6 @@ export interface FileRouteTypes {
     | '/og/baby/$publicId'
     | '/dashboard'
     | '/baby/$publicId/post'
-    | '/baby/$publicId/post-2'
-    | '/baby/$publicId/post-3'
-    | '/baby/$publicId/post-4'
     | '/baby/$publicId/settings'
     | '/baby/$publicId/updates/$updateId/photo'
   id:
@@ -392,9 +359,6 @@ export interface FileRouteTypes {
     | '/_auth/dashboard/'
     | '/baby/$publicId/'
     | '/baby/$publicId/_auth/post'
-    | '/baby/$publicId/_auth/post-2'
-    | '/baby/$publicId/_auth/post-3'
-    | '/baby/$publicId/_auth/post-4'
     | '/baby/$publicId/_auth/settings'
     | '/baby/$publicId/updates/$updateId/photo'
   fileRoutesById: FileRoutesById
@@ -607,27 +571,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BabyPublicIdAuthPostRouteImport
       parentRoute: typeof BabyPublicIdAuthRouteRoute
     }
-    '/baby/$publicId/_auth/post-2': {
-      id: '/baby/$publicId/_auth/post-2'
-      path: '/post-2'
-      fullPath: '/baby/$publicId/post-2'
-      preLoaderRoute: typeof BabyPublicIdAuthPost2RouteImport
-      parentRoute: typeof BabyPublicIdAuthRouteRoute
-    }
-    '/baby/$publicId/_auth/post-3': {
-      id: '/baby/$publicId/_auth/post-3'
-      path: '/post-3'
-      fullPath: '/baby/$publicId/post-3'
-      preLoaderRoute: typeof BabyPublicIdAuthPost3RouteImport
-      parentRoute: typeof BabyPublicIdAuthRouteRoute
-    }
-    '/baby/$publicId/_auth/post-4': {
-      id: '/baby/$publicId/_auth/post-4'
-      path: '/post-4'
-      fullPath: '/baby/$publicId/post-4'
-      preLoaderRoute: typeof BabyPublicIdAuthPost4RouteImport
-      parentRoute: typeof BabyPublicIdAuthRouteRoute
-    }
     '/baby/$publicId/_auth/settings': {
       id: '/baby/$publicId/_auth/settings'
       path: '/settings'
@@ -686,17 +629,11 @@ const OgRouteWithChildren = OgRoute._addFileChildren(OgRouteChildren)
 
 interface BabyPublicIdAuthRouteRouteChildren {
   BabyPublicIdAuthPostRoute: typeof BabyPublicIdAuthPostRoute
-  BabyPublicIdAuthPost2Route: typeof BabyPublicIdAuthPost2Route
-  BabyPublicIdAuthPost3Route: typeof BabyPublicIdAuthPost3Route
-  BabyPublicIdAuthPost4Route: typeof BabyPublicIdAuthPost4Route
   BabyPublicIdAuthSettingsRoute: typeof BabyPublicIdAuthSettingsRoute
 }
 
 const BabyPublicIdAuthRouteRouteChildren: BabyPublicIdAuthRouteRouteChildren = {
   BabyPublicIdAuthPostRoute: BabyPublicIdAuthPostRoute,
-  BabyPublicIdAuthPost2Route: BabyPublicIdAuthPost2Route,
-  BabyPublicIdAuthPost3Route: BabyPublicIdAuthPost3Route,
-  BabyPublicIdAuthPost4Route: BabyPublicIdAuthPost4Route,
   BabyPublicIdAuthSettingsRoute: BabyPublicIdAuthSettingsRoute,
 }
 

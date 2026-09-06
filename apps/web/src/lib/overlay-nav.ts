@@ -326,33 +326,6 @@ export function useBabyPostOverlayLinks(publicId: string) {
   return useRouteOverlayLinks(babyPostOverlay(publicId));
 }
 
-/**
- * Composer redesign prototypes (`/post-2`, `/post-3`, `/post-4`). Temporary:
- * fold the chosen variant into `/post` and delete the rest.
- */
-export type BabyPostPrototypeVariant = 2 | 3 | 4;
-
-function babyPostPrototypeOverlay(opts: {
-  publicId: string;
-  variant: BabyPostPrototypeVariant;
-}): OverlaySpec {
-  const close = { params: { publicId: opts.publicId }, to: "/baby/$publicId" } as const;
-  switch (opts.variant) {
-    case 2:
-      return { close, open: { params: { publicId: opts.publicId }, to: "/baby/$publicId/post-2" } };
-    case 3:
-      return { close, open: { params: { publicId: opts.publicId }, to: "/baby/$publicId/post-3" } };
-    case 4:
-      return { close, open: { params: { publicId: opts.publicId }, to: "/baby/$publicId/post-4" } };  }
-}
-
-export function useBabyPostPrototypeOverlay(opts: {
-  publicId: string;
-  variant: BabyPostPrototypeVariant;
-}) {
-  return useRouteOverlay(babyPostPrototypeOverlay(opts));
-}
-
 function babyShareOverlay(publicId: string): OverlaySpec {
   return {
     close: { params: { publicId }, to: "/baby/$publicId" },
