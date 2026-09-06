@@ -3,12 +3,17 @@ import { loadSignedInProfile } from "@/lib/signed-in-profile";
 import type { SignedInProfileContext } from "@/lib/signed-in-profile";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import type { QueryClient } from "@tanstack/react-query";
 import { noIndexHeaders } from "@/lib/robots";
 
 // Server function to check authentication
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
   return await authServer.getToken();
 });
+
+type AuthGuardContext = SignedInProfileContext & {
+  queryClient: QueryClient;
+};
 
 function redirectToLogin(pathname: string): never {
   throw redirect({
@@ -27,7 +32,7 @@ function redirectToLogin(pathname: string): never {
  * @internal exported for tests
  */
 export async function resolveAuthGuard(opts: {
-  context: SignedInProfileContext;
+  context: AuthGuardContext;
   fetchToken: () => Promise<string | null>;
   pathname: string;
 }) {
