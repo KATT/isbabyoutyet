@@ -28,7 +28,10 @@ import { authPageCacheHeaders } from "@/lib/cachePolicy";
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
-    email: z.email(t("Invalid email address")),
+    email: z
+      .string()
+      .trim()
+      .check(z.email(t("Invalid email address"))),
     name: z.string().min(2, t("Name must be at least 2 characters")),
     password: z.string().min(6, t("Password must be at least 6 characters")),
   });

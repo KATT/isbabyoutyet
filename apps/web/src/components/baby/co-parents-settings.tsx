@@ -27,7 +27,7 @@ function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
       email: z
         .string()
         .trim()
-        .pipe(z.email(t("Invalid email address"))),
+        .check(z.email(t("Invalid email address"))),
     })
     .transform((values): InviteArgs => ({
       babyId,

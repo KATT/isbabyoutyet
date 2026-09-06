@@ -131,7 +131,7 @@ function changeEmailSchema(t: TranslationFunction, currentEmail: string) {
       newEmail: z
         .string()
         .trim()
-        .pipe(z.email(t("Invalid email address"))),
+        .check(z.email(t("Invalid email address"))),
     })
     .refine((values) => values.newEmail.toLowerCase() !== currentEmail.toLowerCase(), {
       message: t("Choose a different email address."),
