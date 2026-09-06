@@ -174,12 +174,17 @@ function callerHint() {
 
 /**
  * How long login/signup/logout wait for `profile.get` to match the expected
- * presence. Time out so a stuck websocket cannot pin the submit button —
- * `/_auth` still has its own catch-up backoff.
+ * presence. After a sign-in response the identity still needs four sequential
+ * hops before the query flips: better-auth refetches `/get-session`, the
+ * provider calls `setAuth`, Convex fetches the JWT, then the websocket
+ * re-authenticates and the server confirms. Measured at ~2.1 s on a normal
+ * connection, so the budget must cover several seconds; it only exists so a
+ * stuck websocket cannot pin the submit button forever (`/_auth` no longer has
+ * its own catch-up).
  *
  * @internal Exported for tests.
  */
-export const SETTLED_ME_WAIT_MS = 1000;
+export const SETTLED_ME_WAIT_MS = 10_000;
 
 /**
  * Starts a live `profile.get` observer from Convex React Query
