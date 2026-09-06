@@ -1,9 +1,7 @@
 import { authServer } from "@/lib/auth-server";
 import { loadSignedInProfile } from "@/lib/signed-in-profile";
 import type { SignedInProfileContext } from "@/lib/signed-in-profile";
-import { api } from "@workspace/convex/convex/_generated/api";
-import { FORBIDDEN } from "@workspace/convex/src/types";
-import { createFileRoute, notFound, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
@@ -20,8 +18,10 @@ function redirectToBabyLogin(opts: { pathname: string; publicId: string }): neve
 }
 
 /**
- * Same signed-in profile check as `/_auth`, then 404 if the caller cannot
- * manage this baby. Expired sessions bounce to the baby-page login overlay.
+ * Same signed-in profile check as `/_auth`. Manager access is left to the
+ * child overlays (settings / post), which show a forbidden dialog when
+ * `getManagerBaby` is `FORBIDDEN`. Expired sessions bounce to the baby-page
+ * login overlay.
  *
  * @internal exported for tests
  */
@@ -40,12 +40,6 @@ export async function resolveBabyManagerGuard(opts: {
       pathname: opts.pathname,
       publicId: opts.publicId,
     });
-  }
-  const managerBaby = await opts.context.convexPreloader.ensureQueryData(api.baby.getManagerBaby, {
-    babyId: opts.publicId,
-  });
-  if (managerBaby.initialData === FORBIDDEN) {
-    throw notFound();
   }
   return session;
 }

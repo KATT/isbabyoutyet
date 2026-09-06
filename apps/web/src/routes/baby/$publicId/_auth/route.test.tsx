@@ -3,7 +3,6 @@ import { convexQuery } from "@convex-dev/react-query";
 import { isRedirect } from "@tanstack/react-router";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { FORBIDDEN } from "@workspace/convex/src/types";
 import { expect, test, vi } from "vitest";
 import { resolveBabyManagerGuard, Route } from "@/routes/baby/$publicId/_auth/route";
 
@@ -28,14 +27,8 @@ type ProfileSnapshot = {
   timeZone: string;
 };
 
-type ManagerBabySnapshot = {
-  name: string;
-};
-
 function makeGuardCtx() {
-  const queryFn = vi.fn<() => Promise<null | ProfileSnapshot | ManagerBabySnapshot>>(() =>
-    Promise.resolve(null),
-  );
+  const queryFn = vi.fn<() => Promise<null | ProfileSnapshot>>(() => Promise.resolve(null));
   const queryClient = new QueryClient({
     defaultOptions: { queries: { queryFn, retry: false } },
   });
@@ -103,10 +96,6 @@ test("client overlay navigations reuse a cached profile without an auth round-tr
     locale: "sv",
     timeZone: "Europe/London",
   });
-  guard.queryClient.setQueryData(
-    convexQuery(api.baby.getManagerBaby, { babyId: "baby-waiting" }).queryKey,
-    { name: "Avery" },
-  );
 
   const result = await runGuard({
     context: guard.context,
@@ -160,13 +149,11 @@ test("server render reuses the layout token without calling getAuthToken", async
   const fetchToken = vi.fn<() => Promise<string | null>>();
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const guard = makeGuardCtx();
-  guard.queryFn
-    .mockResolvedValueOnce({
-      isAdmin: false,
-      locale: "en-GB",
-      timeZone: "Europe/London",
-    })
-    .mockResolvedValueOnce({ name: "Avery" });
+  guard.queryFn.mockResolvedValueOnce({
+    isAdmin: false,
+    locale: "en-GB",
+    timeZone: "Europe/London",
+  });
   guard.context.token = "ssr-token";
   guard.context.convexClient = { setAuth };
 
@@ -185,7 +172,7 @@ test("server render reuses the layout token without calling getAuthToken", async
     expect(fetchToken).not.toHaveBeenCalled();
     expect(guard.setServerAuth).toHaveBeenCalledWith("ssr-token");
     expect(setAuth).toHaveBeenCalledTimes(1);
-    expect(guard.queryFn).toHaveBeenCalledTimes(2);
+    expect(guard.queryFn).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -210,28 +197,4 @@ test("server render redirects to baby-page login when its authenticated profile 
     expect(setAuth).toHaveBeenCalledTimes(1);
     expect(guard.queryFn).toHaveBeenCalledTimes(1);
   });
-});
-
-test("client overlay navigations 404 when the signed-in user cannot manage the baby", async () => {
-  const fetchToken = vi.fn<() => Promise<string | null>>();
-  const guard = makeGuardCtx();
-  guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
-    isAdmin: false,
-    locale: "sv",
-    timeZone: "Europe/London",
-  });
-  guard.queryClient.setQueryData(
-    convexQuery(api.baby.getManagerBaby, { babyId: "baby-waiting" }).queryKey,
-    FORBIDDEN,
-  );
-
-  await expect(
-    runGuard({
-      context: guard.context,
-      fetchToken,
-      pathname: "/baby/baby-waiting/settings",
-      publicId: "baby-waiting",
-    }),
-  ).rejects.toMatchObject({ isNotFound: true });
-  expect(fetchToken).not.toHaveBeenCalled();
 });

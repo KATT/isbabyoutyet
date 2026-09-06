@@ -29,7 +29,9 @@ exception — `id` is `v.id(...)` or a composite `v.object` of two or more
 ## Demo seed
 
 Preview and local backends share `seed:seedDemoData` (login + babies in every
-status, plus `test+newuser@example.com` with no babies) plus
+status, plus `test+newuser@example.com` with no babies and
+`test+coparent@example.com` as a co-parent on Milo; `/baby/milo` is kept as a
+historical slug that canonicalizes to `/baby/baby-born`) plus
 `homepageDemo:refresh` once per locale (the public live-demo pages
 linked from the homepage). Those babies are stored with `demo: true`; the
 refresh mutation also requires a reserved homepage publicId plus the sentinel

@@ -6,11 +6,11 @@ import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useBabyPostOverlay } from "@/lib/overlay-nav";
-import { useLastMatch } from "@/lib/use-last-match";
+import { ForbiddenDialog } from "@/routes/baby/$publicId/_auth/-forbidden-dialog";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/_auth/post")({
@@ -33,10 +33,10 @@ export function BabyPostUpdateOverlay() {
   const post = useBabyPostOverlay(params.publicId);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
-  const managerBabyDoc = useLastMatch(managerBabyQuery.data, (v) => v !== FORBIDDEN);
-  if (!managerBabyDoc) {
-    throw notFound();
+  if (managerBabyQuery.data === FORBIDDEN) {
+    return <ForbiddenDialog {...post.rootProps} />;
   }
+  const managerBabyDoc = managerBabyQuery.data;
   const baby = managerDocToBabyData(managerBabyDoc);
 
   return (

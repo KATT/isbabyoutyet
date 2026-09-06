@@ -16,12 +16,13 @@ pnpm install
 pnpm dev
 ```
 
-Local and Vercel preview backends are seeded with a demo login:
+Local and Vercel preview backends are seeded with demo logins:
 
-- email: `test@example.com`
-- password: `password`
+- email: `test@example.com` / password: `password` — owns babies in every status (waiting, labour, hospital, born)
+- email: `test+newuser@example.com` / password: `password` — empty dashboard / first-run tour
+- email: `test+coparent@example.com` / password: `password` — co-parent on Milo (`/baby/baby-born`)
 
-That account owns babies in every status (waiting, labour, hospital, born). Re-run with `pnpm --filter @workspace/convex seed` (idempotent). Wipe the local anonymous Convex DB with `pnpm reset-dev`, then run `pnpm dev` to provision and seed again.
+Re-run with `pnpm --filter @workspace/convex seed` (idempotent). Wipe the local anonymous Convex DB with `pnpm reset-dev`, then run `pnpm dev` to provision and seed again.
 
 The homepage also links to a locale-specific public live demo (Juniper Hale, Willow Brooks, Ella Holm, Lucía Navarro, or Helena Costa) seeded in every environment, including production. Production deploys refresh their dates and wipe visitor comments.
 

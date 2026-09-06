@@ -4,11 +4,11 @@ import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useI18n } from "@/lib/i18n";
 import { useBabySettingsOverlay } from "@/lib/overlay-nav";
-import { useLastMatch } from "@/lib/use-last-match";
+import { ForbiddenDialog } from "@/routes/baby/$publicId/_auth/-forbidden-dialog";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/_auth/settings")({
@@ -50,10 +50,10 @@ export function BabySettingsOverlay() {
   const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
-  const managerBabyDoc = useLastMatch(managerBabyQuery.data, (v) => v !== FORBIDDEN);
-  if (!managerBabyDoc) {
-    throw notFound();
+  if (managerBabyQuery.data === FORBIDDEN) {
+    return <ForbiddenDialog {...settings.rootProps} />;
   }
+  const managerBabyDoc = managerBabyQuery.data;
   const isOwner = myAccessQuery.data.isOwner;
   const baby = managerDocToBabyData(managerBabyDoc);
 

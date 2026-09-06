@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
 import { getCurrentStatus } from "../src/types";
-import { DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials";
+import { DEMO_COPARENT_USER, DEMO_EMPTY_USER, DEMO_USER, MILO_LEGACY_PUBLIC_ID } from "../src/seedCredentials";
 import { seedBabiesForUser } from "./seed";
 import { skipUserOnboarding } from "./onboarding";
 import { modules, registerComponents } from "./test.setup";
@@ -189,6 +189,87 @@ test("seedDemoData creates an empty demo user with no babies", async () => {
   const second = await t.mutation(internal.seed.seedDemoData, {});
   expect(second.emptyUserId).toBe(first.emptyUserId);
   expect(second.emptyUserEmail).toBe(DEMO_EMPTY_USER.email);
+});
+
+test("seedDemoData adds a co-parent on Milo and is idempotent", async () => {
+  const t = await setup();
+
+  const first = await t.mutation(internal.seed.seedDemoData, {});
+  expect(first.coParentUserEmail).toBe(DEMO_COPARENT_USER.email);
+
+  const authUser = await t.query(components.betterAuth.adapter.findOne, {
+    model: "user",
+    where: [{ field: "email", value: DEMO_COPARENT_USER.email }],
+  });
+  expect(authUser).toMatchObject({
+    email: DEMO_COPARENT_USER.email,
+    name: DEMO_COPARENT_USER.name,
+  });
+
+  const milo = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("baby")
+      .withIndex("by_publicId", (q) => q.eq("publicId", "baby-born"))
+      .unique();
+  });
+  if (!milo) {
+    throw new Error("missing Milo");
+  }
+
+  const coParents = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("babyCoParents")
+      .withIndex("by_babyId", (q) => q.eq("babyId", milo._id))
+      .collect();
+  });
+  expect(coParents).toHaveLength(1);
+  expect(coParents[0]).toMatchObject({
+    email: DEMO_COPARENT_USER.email,
+    name: DEMO_COPARENT_USER.name,
+    userId: first.coParentUserId,
+  });
+
+  const asCoParent = t.withIdentity({ subject: first.coParentUserId });
+  expect(await asCoParent.query(api.coParents.myAccess, { babyId: milo.publicId })).toEqual({
+    canManage: true,
+    isCoParent: true,
+    isOwner: false,
+  });
+  expect(await asCoParent.query(api.baby.getManagerBaby, { babyId: milo.publicId })).toMatchObject({
+    name: "Milo",
+    publicId: "baby-born",
+  });
+
+  const viaLegacySlug = await t.query(api.baby.getByPublicId, { id: MILO_LEGACY_PUBLIC_ID });
+  expect(viaLegacySlug).toMatchObject({
+    name: "Milo",
+    publicId: "baby-born",
+  });
+  const history = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("babyPublicIdHistory")
+      .withIndex("by_publicId", (q) => q.eq("publicId", MILO_LEGACY_PUBLIC_ID))
+      .collect();
+  });
+  expect(history).toHaveLength(1);
+  expect(history[0]?.babyId).toBe(milo._id);
+
+  const second = await t.mutation(internal.seed.seedDemoData, {});
+  expect(second.coParentUserId).toBe(first.coParentUserId);
+  const after = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("babyCoParents")
+      .withIndex("by_babyId", (q) => q.eq("babyId", milo._id))
+      .collect();
+  });
+  expect(after).toHaveLength(1);
+  const historyAfter = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("babyPublicIdHistory")
+      .withIndex("by_publicId", (q) => q.eq("publicId", MILO_LEGACY_PUBLIC_ID))
+      .collect();
+  });
+  expect(historyAfter).toHaveLength(1);
 });
 
 test("seedDemoData clears onboarding for the empty demo user", async () => {
