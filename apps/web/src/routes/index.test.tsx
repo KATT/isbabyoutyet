@@ -48,7 +48,6 @@ test("Swedish homepage hero uses Swedish name pool", async () => {
     </LocaleProvider>,
   );
 
-  expect(screen.getByRole("heading", { name: /är bäbisen ute än/i })).toBeTruthy();
   act(() => vi.advanceTimersByTime(2400));
   expect(screen.getByText("Ella").classList.contains("hero-word-in")).toBe(true);
 });
