@@ -207,6 +207,16 @@ export function contextToken<TContext>(context: TContext) {
   return token;
 }
 
+/** Last match that set a supported locale wins; matches without one keep the previous. */
+export function localeFromMatches(
+  matches: ReadonlyArray<{ context: unknown }>,
+  fallback: SupportedLocale,
+) {
+  return matches.reduce((currentLocale, match) => {
+    return contextLocale(match.context) ?? currentLocale;
+  }, fallback);
+}
+
 // better-auth and @convex-dev/better-auth currently expose structurally
 // incompatible client types despite supporting the same peer-version range.
 const convexAuthClient = bridgedAuthClient();
@@ -217,9 +227,7 @@ function RootComponent() {
   const token = matches.reduce<string | null | undefined>((currentToken, match) => {
     return contextToken(match.context) ?? currentToken;
   }, context.token);
-  const locale = matches.reduce((currentLocale, match) => {
-    return contextLocale(match.context) ?? currentLocale;
-  }, context.locale);
+  const locale = localeFromMatches(matches, context.locale);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

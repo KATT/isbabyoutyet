@@ -41,7 +41,14 @@ export async function resolveBabyManagerGuard(opts: {
       publicId: opts.publicId,
     });
   }
-  return session;
+  // Root reduces locale from route matches (last match wins). The parent baby
+  // route already set `resolvedLocale`; forwarding the profile locale here
+  // would switch a Swedish baby page to the owner's saved language on /post
+  // and /settings.
+  return {
+    profile: session.profile,
+    token: session.token,
+  };
 }
 
 export const Route = createFileRoute("/baby/$publicId/_auth")({

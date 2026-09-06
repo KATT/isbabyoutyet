@@ -19,6 +19,10 @@ export type SignedInProfileContext = {
  *
  * Returns `null` when the user is not signed in so callers can bounce to
  * their own login (dashboard `/auth/login` vs baby-page overlay).
+ *
+ * `locale` is the signed-in profile language for dashboard `/_auth`. Baby
+ * manager overlays must not put it in route context — the baby page already
+ * set `resolvedLocale`, and a later match would overwrite it.
  */
 export async function loadSignedInProfile(opts: {
   context: SignedInProfileContext;
