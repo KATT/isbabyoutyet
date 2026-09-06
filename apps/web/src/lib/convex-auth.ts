@@ -95,7 +95,7 @@ export function setupClientConvexAuthWithClient(opts: {
 /**
  * How long login/signup/logout wait for `profile.get` to match the expected
  * presence. Time out so a stuck websocket cannot pin the submit button —
- * `/_auth` still has its own catch-up backoff.
+ * `loadSignedInProfile` keeps waiting on the guard when the cookie exists.
  *
  * @internal Exported for tests.
  */
@@ -108,7 +108,7 @@ export const SETTLED_ME_WAIT_MS = 1000;
  *
  * On a matching snapshot the query cache is cleared except `profile.get`.
  *
- * @internal Exported for tests.
+ * Shared by {@link waitForMe} and the signed-in guard catch-up.
  */
 export function waitForMeQuery(opts: {
   convexQueryClient: Pick<ConvexQueryClient, "queryOptions">;

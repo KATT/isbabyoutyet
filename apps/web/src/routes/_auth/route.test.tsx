@@ -16,6 +16,7 @@ type GuardCtx = {
     | Record<string, never>;
   convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
   convexQueryClient: {
+    queryOptions: typeof convexQuery;
     serverHttpClient: { setAuth: (token: string) => void };
   };
   queryClient: QueryClient;
@@ -37,7 +38,10 @@ function makeGuardCtx() {
   const context: GuardCtx = {
     convexClient: {},
     convexPreloader: getConvexQueryPreloader(queryClient),
-    convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
+    convexQueryClient: {
+      queryOptions: convexQuery,
+      serverHttpClient: { setAuth: setServerAuth },
+    },
     queryClient,
     token: null,
   };
@@ -124,24 +128,30 @@ test("client navigations without a profile send the user to login with a return 
 test("client navigations with a stale anonymous cache wait for Convex when a cookie exists", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue("jwt");
   const guard = makeGuardCtx();
-  guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, null);
-  guard.queryFn.mockResolvedValue({
+  const profileKey = convexQuery(api.profile.get, {}).queryKey;
+  guard.queryClient.setQueryData(profileKey, null);
+
+  const pending = runGuard({
+    context: guard.context,
+    fetchToken,
+    pathname: "/dashboard",
+  });
+  await vi.waitFor(() => {
+    expect(fetchToken).toHaveBeenCalledTimes(1);
+  });
+  guard.queryClient.setQueryData(profileKey, {
     isAdmin: false,
     locale: "sv",
     timeZone: "Europe/London",
   });
 
-  const result = await runGuard({
-    context: guard.context,
-    fetchToken,
-    pathname: "/dashboard",
-  });
+  const result = await pending;
 
   expect(result).toMatchObject({
     locale: "sv",
     token: "jwt",
   });
-  expect(fetchToken).toHaveBeenCalledTimes(1);
+  expect(guard.queryFn).not.toHaveBeenCalled();
 });
 
 test("client navigations keep the cached profile", async () => {
