@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
+import { waitForMe } from "@/lib/convex-auth";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -30,7 +32,7 @@ import { babyLoginHomeLink, babyLoginSuccessTarget } from "@/lib/baby-login-redi
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
-    email: z.string().email(t("Invalid email address")),
+    email: z.email(t("Invalid email address")),
     password: z.string().min(6, t("Password must be at least 6 characters")),
   });
 }
@@ -45,8 +47,13 @@ type Credentials = { email: string; password: string };
  */
 export async function signInThenGo(
   values: Credentials,
-  opts: { navigate: () => Promise<void> | void; t: TranslationFunction },
+  opts: {
+    navigate: () => Promise<void> | void;
+    queryClient: QueryClient;
+    t: TranslationFunction;
+  },
 ) {
+  const settled = waitForMe({ presence: "present", queryClient: opts.queryClient });
   const result = await authClient.signIn.email(
     { email: values.email, password: values.password, rememberMe: true },
     { headers: getBrowserAuthHeaders() },
@@ -55,6 +62,8 @@ export async function signInThenGo(
   if (result.error) {
     throw new Error(result.error.message || opts.t("Failed to sign in"));
   }
+
+  await settled;
 
   // oxlint-disable-next-line no-console
   console.log("session successful login");
@@ -84,6 +93,7 @@ export const Route = createFileRoute("/auth/login")({
 export function LoginPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const context = Route.useRouteContext();
   const search = Route.useSearch();
   const redirect = search.redirect;
   const homeLink = babyLoginHomeLink(redirect);
@@ -106,8 +116,9 @@ export function LoginPage() {
             demoLoginEnabled={hasDemoLogin}
             onSignIn={(values) =>
               signInThenGo(values, {
-                t,
                 navigate: () => router.navigate(successTarget),
+                queryClient: context.queryClient,
+                t,
               })
             }
             signUpLink={{ to: "/auth/signup" }}

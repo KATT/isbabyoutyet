@@ -17,6 +17,7 @@ export const Route = createFileRoute("/baby/$publicId/login")({
 
 export function BabyLoginOverlay() {
   const { t } = useI18n();
+  const context = Route.useRouteContext();
   const params = Route.useParams();
   const login = useBabyLoginOverlay(params.publicId);
 
@@ -31,8 +32,9 @@ export function BabyLoginOverlay() {
           demoLoginEnabled={hasDemoLogin}
           onSignIn={(values) =>
             signInThenGo(values, {
-              t,
               navigate: () => login.close(),
+              queryClient: context.queryClient,
+              t,
             })
           }
           signUpLink={{

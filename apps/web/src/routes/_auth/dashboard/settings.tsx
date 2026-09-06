@@ -21,6 +21,7 @@ import { AccountSettings } from "@/components/account-settings";
 import { Form, FormGuardProvider, SubmitButton, useZodForm } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
+import { waitForMe } from "@/lib/convex-auth";
 import { useI18n } from "@/lib/i18n";
 import { useDashboardSettingsOverlay } from "@/lib/overlay-nav";
 import type { OverlayControl } from "@/lib/overlay-nav";
@@ -51,16 +52,6 @@ function SettingsSection(props: { children: ReactNode; title: string }) {
 }
 
 /**
- * Mutable sign-out adapter so sheet tests can avoid the Proxy-backed
- * better-auth client without `vi.mock`.
- *
- * @internal
- */
-export const settingsAuthAdapter = {
-  signOut: (opts: Parameters<typeof authClient.signOut>[0]) => authClient.signOut(opts),
-};
-
-/**
  * Convex-wired sheet: resolves the admin flag from the preloaded profile and
  * owns sign-out.
  *
@@ -80,13 +71,17 @@ export function DashboardSettingsSheet(props: {
       isAdmin={profileQuery.data?.isAdmin === true}
       languageSettings={<LanguageSettings profile={props.profile} />}
       onSignOut={async () => {
-        props.queryClient.clear();
-        await settingsAuthAdapter.signOut({
+        const settled = waitForMe({
+          presence: "absent",
+          queryClient: props.queryClient,
+        });
+        await authClient.signOut({
           fetchOptions: {
             onError: (error) => {
               toast.error(error.error.message);
             },
             onSuccess: async () => {
+              await settled;
               await router.navigate({
                 to: "/",
               });
