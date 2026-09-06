@@ -1,5 +1,5 @@
 import { Dialog, DialogContent } from "@workspace/ui/components/dialog";
-import { X } from "@phosphor-icons/react";
+import { XIcon } from "@phosphor-icons/react";
 import { useI18n } from "@/lib/i18n";
 import { BlurImage } from "@/components/blur-image";
 import type { OverlayControl } from "@/lib/overlay-nav";
@@ -26,7 +26,7 @@ export function PhotoLightbox(props: PhotoLightboxProps) {
           onClick={props.overlay.close}
           type="button"
         >
-          <X className="h-6 w-6" />
+          <XIcon className="h-6 w-6" />
         </button>
         <BlurImage
           alt={props.alt}

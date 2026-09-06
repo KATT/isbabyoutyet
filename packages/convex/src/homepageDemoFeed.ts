@@ -412,9 +412,6 @@ export function homepageDemoFeedFor(locale: SupportedLocale): Array<HomepageDemo
   });
 }
 
-/** @deprecated Prefer `homepageDemoFeedFor(locale)` — kept as the en-GB fixture. */
-export const HOMEPAGE_DEMO_FEED = homepageDemoFeedFor("en-GB");
-
 export function homepageDemoLocales(): Array<SupportedLocale> {
   return [...SUPPORTED_LOCALES];
 }

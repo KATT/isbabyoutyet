@@ -82,18 +82,51 @@ class StubObserver {
   }
 }
 
-function stubMatchMedia(query: string) {
+/**
+ * jsdom matchMedia stand-in. next-themes still calls the deprecated
+ * `addListener` / `removeListener` pair, so the stub implements those
+ * methods on a local type instead of `MediaQueryList`.
+ */
+export function createMatchMediaStub(query: string, matches = false) {
   return {
-    addEventListener() {},
-    addListener() {},
+    addEventListener(_type: string, _listener: EventListenerOrEventListenerObject) {},
+    addListener(_listener: (event: MediaQueryListEvent) => void) {},
     dispatchEvent() {
       return false;
     },
-    matches: false,
+    matches,
     media: query,
     onchange: null,
-    removeEventListener() {},
-    removeListener() {},
+    removeEventListener(_type: string, _listener: EventListenerOrEventListenerObject) {},
+    removeListener(_listener: (event: MediaQueryListEvent) => void) {},
+  };
+}
+
+function stubMatchMedia(query: string) {
+  return createMatchMediaStub(query);
+}
+
+/**
+ * Replace `window.matchMedia` with {@link createMatchMediaStub} and return a
+ * restore function. Use this instead of assigning a `MediaQueryList` so
+ * next-themes can keep calling deprecated `addListener` without linting that
+ * type.
+ */
+export function installMatchMediaStub(matches: (query: string) => boolean) {
+  const previous = Object.getOwnPropertyDescriptor(window, "matchMedia");
+  function matchMedia(query: string) {
+    return createMatchMediaStub(query, matches(query));
+  }
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: matchMedia,
+  });
+  return () => {
+    if (previous) {
+      Object.defineProperty(window, "matchMedia", previous);
+      return;
+    }
+    Reflect.deleteProperty(window, "matchMedia");
   };
 }
 

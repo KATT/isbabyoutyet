@@ -5,7 +5,7 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { Baby as BabyIcon, Plus, User } from "@phosphor-icons/react";
+import { BabyIcon, PlusIcon, UserIcon } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import type { FunctionReturnType } from "convex/server";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
@@ -101,7 +101,7 @@ export function DashboardHeader() {
               render={<Link to="/dashboard/add" />}
               variant="default"
             >
-              <Plus data-icon="inline-start" />
+              <PlusIcon data-icon="inline-start" />
               {t("Add Baby")}
             </Button>
           </ButtonGroup>
@@ -116,7 +116,7 @@ export function DashboardHeader() {
             >
               <Avatar className="after:border-0" size="sm">
                 <AvatarFallback>
-                  <User />
+                  <UserIcon />
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -166,7 +166,7 @@ export function DashboardBabyList(props: {
           render={<Link to="/dashboard/add" />}
           size="lg"
         >
-          <Plus className="w-4 h-4" />
+          <PlusIcon className="w-4 h-4" />
           {t("Add Your First Baby")}
         </Button>
       </div>

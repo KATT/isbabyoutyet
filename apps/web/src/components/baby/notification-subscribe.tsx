@@ -3,7 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { ensureWebPushSubscription, readWebPushSubscription } from "@/lib/web-push-subscription";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { convexQuery } from "@convex-dev/react-query";
-import { Bell, BellSlash, Export } from "@phosphor-icons/react";
+import { BellIcon, BellSlashIcon, ExportIcon } from "@phosphor-icons/react";
 import {
   queryOptions,
   skipToken,
@@ -246,7 +246,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
           audience={props.audience === "manager" ? "owner" : "visitor"}
           trigger={
             <Button size="lg" variant="default">
-              <Bell className="w-5 h-5" />
+              <BellIcon className="w-5 h-5" />
               {t("Get Notifications")}
             </Button>
           }
@@ -330,7 +330,7 @@ function GetNotificationsPending() {
   const { t } = useI18n();
   return (
     <Button disabled size="lg" variant="default">
-      <Bell className="w-5 h-5" />
+      <BellIcon className="w-5 h-5" />
       {t("Get Notifications")}
     </Button>
   );
@@ -365,7 +365,7 @@ export function IosPwaInstallPrompt(props: {
           <li className="flex items-start gap-2">
             <span className="font-medium min-w-5">1.</span>
             <span>
-              {t("Tap the Share button in Safari")} <Export className="inline w-4 h-4 mx-1" />
+              {t("Tap the Share button in Safari")} <ExportIcon className="inline w-4 h-4 mx-1" />
             </span>
           </li>
           <li className="flex items-start gap-2">
@@ -569,14 +569,14 @@ function GetNotificationsButtonLabel(props: { isLoading: boolean; isSubscribed: 
   if (props.isSubscribed) {
     return (
       <>
-        {props.isLoading ? <Spinner className="w-5 h-5" /> : <BellSlash className="w-5 h-5" />}
+        {props.isLoading ? <Spinner className="w-5 h-5" /> : <BellSlashIcon className="w-5 h-5" />}
         {t("Unsubscribe")}
       </>
     );
   }
   return (
     <>
-      {props.isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+      {props.isLoading ? <Spinner className="w-5 h-5" /> : <BellIcon className="w-5 h-5" />}
       {t("Get Notifications")}
     </>
   );

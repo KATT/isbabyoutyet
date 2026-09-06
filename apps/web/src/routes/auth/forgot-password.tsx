@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
-import { Baby, EnvelopeSimple } from "@phosphor-icons/react";
+import { BabyIcon, EnvelopeSimpleIcon } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
@@ -25,7 +25,7 @@ import { authPageCacheHeaders } from "@/lib/cachePolicy";
 
 function forgotPasswordSchema(t: TranslationFunction) {
   return z.object({
-    email: z.string().email(t("Invalid email address")),
+    email: z.email(t("Invalid email address")),
   });
 }
 
@@ -150,7 +150,7 @@ export function ForgotPasswordCard(props: {
           to="/"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-            <Baby className="h-4 w-4 text-primary" />
+            <BabyIcon className="h-4 w-4 text-primary" />
           </span>
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
@@ -206,7 +206,7 @@ export function ForgotPasswordCard(props: {
                     <SubmitButton
                       className="w-full rounded-full font-extrabold pop-shadow"
                       form="context"
-                      IconComponent={EnvelopeSimple}
+                      IconComponent={EnvelopeSimpleIcon}
                       iconPosition="start"
                       size="lg"
                     >

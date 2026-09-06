@@ -1,4 +1,4 @@
-import { Check, EnvelopeSimple, Key, User } from "@phosphor-icons/react";
+import { CheckIcon, EnvelopeSimpleIcon, KeyIcon, UserIcon } from "@phosphor-icons/react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -128,7 +128,10 @@ function nameSchema(t: TranslationFunction) {
 function changeEmailSchema(t: TranslationFunction, currentEmail: string) {
   return z
     .object({
-      newEmail: z.string().trim().email(t("Invalid email address")),
+      newEmail: z
+        .string()
+        .trim()
+        .pipe(z.email(t("Invalid email address"))),
     })
     .refine((values) => values.newEmail.toLowerCase() !== currentEmail.toLowerCase(), {
       message: t("Choose a different email address."),
@@ -160,7 +163,7 @@ function EditorActions() {
       <SubmitButton
         disabled={!isDirty}
         form="context"
-        IconComponent={Check}
+        IconComponent={CheckIcon}
         iconPosition="start"
         size="sm"
       >
@@ -291,7 +294,7 @@ export function AccountSettingsView(props: {
     <>
       <Item>
         <ItemMedia variant="icon">
-          <User />
+          <UserIcon />
         </ItemMedia>
         <ItemContent>
           <ItemTitle>{t("Your name")}</ItemTitle>
@@ -308,7 +311,7 @@ export function AccountSettingsView(props: {
 
       <Item>
         <ItemMedia variant="icon">
-          <EnvelopeSimple />
+          <EnvelopeSimpleIcon />
         </ItemMedia>
         <ItemContent>
           <ItemTitle>{t("Email")}</ItemTitle>
@@ -325,7 +328,7 @@ export function AccountSettingsView(props: {
 
       <Item>
         <ItemMedia variant="icon">
-          <Key />
+          <KeyIcon />
         </ItemMedia>
         <ItemContent>
           <ItemTitle>{t("Password")}</ItemTitle>

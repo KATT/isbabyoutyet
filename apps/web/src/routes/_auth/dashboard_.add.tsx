@@ -25,7 +25,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { htmlDate } from "@/lib/html-date";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
@@ -139,7 +139,7 @@ export function AddBabyPageView(props: {
             size="sm"
             variant="outline"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeftIcon className="w-4 h-4" />
             {t("Back to Dashboard")}
           </Button>
 

@@ -1,4 +1,4 @@
-import { Shield, SignOut } from "@phosphor-icons/react";
+import { ShieldIcon, SignOutIcon } from "@phosphor-icons/react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
@@ -143,7 +143,7 @@ export function DashboardSettingsSheetView(props: {
                   }
                 >
                   <ItemMedia variant="icon">
-                    <Shield />
+                    <ShieldIcon />
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>{t("Admin dashboard")}</ItemTitle>
@@ -176,7 +176,7 @@ function SignOutForm(props: { onSignOut: () => void | Promise<void> }) {
         await props.onSignOut();
       }}
     >
-      <SubmitButton form="context" IconComponent={SignOut} iconPosition="start">
+      <SubmitButton form="context" IconComponent={SignOutIcon} iconPosition="start">
         {t("Logout")}
       </SubmitButton>
     </Form>

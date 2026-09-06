@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import { CheckCircle } from "@phosphor-icons/react";
+import { CheckCircleIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -123,7 +123,7 @@ export function BabyShareOverlay() {
                 void copyShareLink();
               }}
             >
-              {copied ? <CheckCircle data-icon="inline-start" /> : null}
+              {copied ? <CheckCircleIcon data-icon="inline-start" /> : null}
               {copied ? t("Copied!") : t("Copy link to share")}
             </Button>
           </CardFooter>

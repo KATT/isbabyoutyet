@@ -29,15 +29,15 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import {
-  Baby,
-  CalendarHeart,
-  Confetti,
-  Heartbeat,
-  Hospital,
-  Palette,
-  Translate,
-  Trash,
-  Users,
+  BabyIcon,
+  CalendarHeartIcon,
+  ConfettiIcon,
+  HeartbeatIcon,
+  HospitalIcon,
+  PaletteIcon,
+  TranslateIcon,
+  TrashIcon,
+  UsersIcon,
 } from "@phosphor-icons/react";
 import type {
   BabyData,
@@ -232,7 +232,7 @@ function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Pr
               </AlertDialogCancel>
               <SubmitButton
                 form="context"
-                IconComponent={Trash}
+                IconComponent={TrashIcon}
                 iconPosition="start"
                 variant="destructive"
               >
@@ -270,7 +270,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <SettingsSection title={t("Page details")}>
               <Item>
                 <ItemMedia variant="icon">
-                  <Baby className="w-4 h-4" />
+                  <BabyIcon className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{t("Baby Name")}</ItemTitle>
@@ -285,7 +285,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
 
               <Item>
                 <ItemMedia variant="icon">
-                  <CalendarHeart className="w-4 h-4" />
+                  <CalendarHeartIcon className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{t("Due Date")}</ItemTitle>
@@ -313,7 +313,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <SettingsSection title={t("Birth journey")}>
               <Item>
                 <ItemMedia variant="icon">
-                  <Heartbeat className="w-4 h-4" />
+                  <HeartbeatIcon className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{t("Journey")}</ItemTitle>
@@ -332,7 +332,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemSeparator />
                   <Item>
                     <ItemMedia variant="icon">
-                      <Heartbeat className="w-4 h-4" />
+                      <HeartbeatIcon className="w-4 h-4" />
                     </ItemMedia>
                     <ItemContent>
                       <ItemTitle>{t("Labour started")}</ItemTitle>
@@ -362,7 +362,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemSeparator />
                   <Item>
                     <ItemMedia variant="icon">
-                      <Hospital className="w-4 h-4" />
+                      <HospitalIcon className="w-4 h-4" />
                     </ItemMedia>
                     <ItemContent>
                       <ItemTitle>{t("Gone to hospital")}</ItemTitle>
@@ -392,7 +392,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemSeparator />
                   <Item>
                     <ItemMedia variant="icon">
-                      <Confetti className="w-4 h-4" />
+                      <ConfettiIcon className="w-4 h-4" />
                     </ItemMedia>
                     <ItemContent>
                       <ItemTitle>{t("Baby born")}</ItemTitle>
@@ -421,7 +421,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <SettingsSection title={t("Appearance")}>
               <Item>
                 <ItemMedia variant="icon">
-                  <Palette className="w-4 h-4" />
+                  <PaletteIcon className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{t("Theme")}</ItemTitle>
@@ -438,7 +438,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
 
               <Item>
                 <ItemMedia variant="icon">
-                  <Translate />
+                  <TranslateIcon />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{t("Language")}</ItemTitle>
@@ -472,7 +472,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <SettingsSection title={t("Access")}>
                 <Item className="items-start" variant="default">
                   <ItemMedia variant="icon">
-                    <Users className="w-4 h-4" />
+                    <UsersIcon className="w-4 h-4" />
                   </ItemMedia>
                   <ItemContent className="gap-3">
                     <div>
@@ -497,7 +497,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <SettingsSection title={t("Danger zone")}>
                 <Item>
                   <ItemMedia variant="icon">
-                    <Trash className="w-4 h-4" />
+                    <TrashIcon className="w-4 h-4" />
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>{t("Delete page")}</ItemTitle>

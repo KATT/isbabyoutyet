@@ -8,6 +8,7 @@ import { LocaleProvider } from "@/lib/i18n";
 import { AddBabyPage, AddBabyPageView, Route, type CreateBaby } from "./dashboard_.add";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { htmlInput } from "@/test/htmlElement";
+import { installMatchMediaStub } from "@/test/stubJsdomWindow";
 
 type NavigateFn = (args: NavigateOptions) => Promise<void>;
 type SubscribeOwnerMessages = (babyId: Id<"baby">) => Promise<void>;
@@ -468,25 +469,12 @@ test("iOS Safari add-baby omits message notifications and does not subscribe", a
     configurable: true,
     value: false,
   });
-  restore.push(() => {
-    Reflect.deleteProperty(navigator, "standalone");
-  });
-  const originalMatchMedia = window.matchMedia;
-  window.matchMedia = (query: string) =>
-    // SAFETY: Test fixture is a subset of the production type.
-    ({
-      addEventListener: () => {},
-      addListener: () => {},
-      dispatchEvent: () => false,
-      matches: false,
-      media: query,
-      onchange: null,
-      removeEventListener: () => {},
-      removeListener: () => {},
-    }) as MediaQueryList;
-  restore.push(() => {
-    window.matchMedia = originalMatchMedia;
-  });
+  restore.push(
+    () => {
+      Reflect.deleteProperty(navigator, "standalone");
+    },
+    installMatchMediaStub(() => false),
+  );
   await using _ios = makeResource({}, () => {
     for (const fn of restore.toReversed()) {
       fn();

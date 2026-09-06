@@ -8,7 +8,6 @@ import { createEncouragementArgs, modules, registerComponents } from "./test.set
 import { getCurrentStatus } from "../src/types";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "../src/seedCredentials";
 import {
-  HOMEPAGE_DEMO_FEED,
   HOMEPAGE_DEMO_FEED_SLOTS,
   HOMEPAGE_DEMO_PHOTO_KEYS,
   homepageDemoFeedFor,
@@ -17,6 +16,7 @@ import {
 import { SUPPORTED_LOCALES } from "../src/i18n";
 
 const FIRST_PAGE = { cursor: null, numItems: 50 };
+const HOMEPAGE_DEMO_FEED = homepageDemoFeedFor("en-GB");
 
 const FIXTURE_UPDATES = HOMEPAGE_DEMO_FEED.filter((item) => item.kind === "update");
 const FIXTURE_ENCOURAGEMENTS = HOMEPAGE_DEMO_FEED.filter((item) => item.kind === "encouragement");

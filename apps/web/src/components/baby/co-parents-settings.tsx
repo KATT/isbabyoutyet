@@ -3,7 +3,7 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
-import { UserMinus, UserPlus, X } from "@phosphor-icons/react";
+import { UserMinusIcon, UserPlusIcon, XIcon } from "@phosphor-icons/react";
 import { z } from "zod";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -24,7 +24,10 @@ type InviteArgs = FunctionArgs<typeof api.coParents.invite>;
 function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
   return z
     .object({
-      email: z.string().trim().email(t("Invalid email address")),
+      email: z
+        .string()
+        .trim()
+        .pipe(z.email(t("Invalid email address"))),
     })
     .transform((values): InviteArgs => ({
       babyId,
@@ -68,7 +71,7 @@ function InviteCoParentForm(props: {
             </FormItem>
           )}
         />
-        <SubmitButton form="context" IconComponent={UserPlus} iconPosition="start" size="sm">
+        <SubmitButton form="context" IconComponent={UserPlusIcon} iconPosition="start" size="sm">
           {t("Add")}
         </SubmitButton>
       </div>
@@ -98,7 +101,7 @@ function RemoveCoParentForm(props: {
       <SubmitButton
         aria-label={t("Remove {{email}}", { email: props.email })}
         form="context"
-        IconComponent={UserMinus}
+        IconComponent={UserMinusIcon}
         iconPosition="start"
         size="icon-sm"
         variant="ghost"
@@ -129,7 +132,7 @@ function CancelInviteForm(props: {
       <SubmitButton
         aria-label={t("Cancel invite to {{email}}", { email: props.email })}
         form="context"
-        IconComponent={X}
+        IconComponent={XIcon}
         iconPosition="start"
         size="icon-sm"
         variant="ghost"

@@ -13,7 +13,7 @@ import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { Check, X } from "@phosphor-icons/react";
+import { CheckIcon, XIcon } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -114,7 +114,7 @@ function ScheduledNotificationItem(props: {
       variant="outline"
     >
       <ItemMedia className="size-10 rounded-full bg-green-500/10">
-        <Check className="size-5 text-green-500" />
+        <CheckIcon className="size-5 text-green-500" />
       </ItemMedia>
       <ItemContent>
         <ItemTitle>{t("Notification sent!")}</ItemTitle>
@@ -174,7 +174,7 @@ function NotificationToastContent(props: NotificationToastContentProps) {
           <SubmitButton
             className="relative after:absolute after:-inset-3 after:content-['']"
             form="context"
-            IconComponent={X}
+            IconComponent={XIcon}
             iconPosition="start"
             size="default"
             variant="outline"

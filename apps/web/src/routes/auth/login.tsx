@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
-import { Baby, SignIn } from "@phosphor-icons/react";
+import { BabyIcon, SignInIcon } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { DemoAccountPicker } from "@/components/demo-account-picker";
 import { hasDemoLogin } from "@/lib/has-demo-login";
@@ -30,7 +30,7 @@ import { babyLoginHomeLink, babyLoginSuccessTarget } from "@/lib/baby-login-redi
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
-    email: z.string().email(t("Invalid email address")),
+    email: z.email(t("Invalid email address")),
     password: z.string().min(6, t("Password must be at least 6 characters")),
   });
 }
@@ -94,7 +94,7 @@ export function LoginPage() {
           className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm transition-transform hover:-rotate-2"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-            <Baby className="h-4 w-4 text-primary" />
+            <BabyIcon className="h-4 w-4 text-primary" />
           </span>
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
@@ -202,7 +202,7 @@ export function LoginCard(props: {
             <SubmitButton
               className="w-full rounded-full font-extrabold pop-shadow"
               form="context"
-              IconComponent={SignIn}
+              IconComponent={SignInIcon}
               iconPosition="start"
               size="lg"
             >

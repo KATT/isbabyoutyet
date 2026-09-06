@@ -10,7 +10,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
-import { PaperPlaneTilt } from "@phosphor-icons/react";
+import { PaperPlaneTiltIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -180,7 +180,7 @@ function EncouragementFormFields(
           <SubmitButton
             className="w-full"
             form="context"
-            IconComponent={PaperPlaneTilt}
+            IconComponent={PaperPlaneTiltIcon}
             iconPosition="start"
           >
             {t("Send Encouragement")}

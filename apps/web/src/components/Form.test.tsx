@@ -1,4 +1,4 @@
-import { Check } from "@phosphor-icons/react";
+import { CheckIcon } from "@phosphor-icons/react";
 import { fireEvent } from "@testing-library/react";
 import { Dialog, DialogContent } from "@workspace/ui/components/dialog";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
@@ -48,7 +48,7 @@ function ContextSubmitForm(props: {
       <SubmitButton
         disabled={props.disabled}
         form="context"
-        IconComponent={Check}
+        IconComponent={CheckIcon}
         iconPosition="start"
       >
         Send
@@ -67,7 +67,7 @@ function ExplicitSubmitForm(props: { onSubmit: (values: { note: string }) => Pro
       <Form form={form} handleSubmit={props.onSubmit}>
         <span>fields</span>
       </Form>
-      <SubmitButton form={form} IconComponent={Check} iconPosition="end">
+      <SubmitButton form={form} IconComponent={CheckIcon} iconPosition="end">
         Send
       </SubmitButton>
     </div>
@@ -160,7 +160,7 @@ test("SubmitButton throws when used outside a Form without an explicit form", ()
   expect(() => {
     renderResource(
       <LocaleProvider locale="en-GB">
-        <SubmitButton form="context" IconComponent={Check} iconPosition="start">
+        <SubmitButton form="context" IconComponent={CheckIcon} iconPosition="start">
           Send
         </SubmitButton>
       </LocaleProvider>,
@@ -427,7 +427,7 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
         <input defaultValue="unset" id="imperative-result" readOnly />
         <Form form={form} handleSubmit={onSubmit}>
           <FormCancelButton form={form}>Cancel</FormCancelButton>
-          <SubmitButton form="context" IconComponent={Check} iconPosition="start">
+          <SubmitButton form="context" IconComponent={CheckIcon} iconPosition="start">
             Send
           </SubmitButton>
         </Form>

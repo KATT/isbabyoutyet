@@ -1,4 +1,4 @@
-import { Translate } from "@phosphor-icons/react";
+import { TranslateIcon } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { SUPPORTED_LOCALES } from "@workspace/convex/src/i18n";
 import {
@@ -63,7 +63,7 @@ export function LanguagePicker(props: LanguagePickerProps) {
         value={selectedLocale}
       >
         <SelectTrigger aria-label={props.label}>
-          <Translate data-icon="inline-start" />
+          <TranslateIcon data-icon="inline-start" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>

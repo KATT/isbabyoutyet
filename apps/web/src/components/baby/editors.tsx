@@ -29,7 +29,7 @@ import {
 } from "@workspace/ui/components/popover";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { Check, Clock, Trash } from "@phosphor-icons/react";
+import { CheckIcon, ClockIcon, TrashIcon } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useFormState, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -81,7 +81,7 @@ function EditorActions(props: { isBusy: boolean }) {
       <SubmitButton
         disabled={!isDirty || props.isBusy}
         form="context"
-        IconComponent={Check}
+        IconComponent={CheckIcon}
         iconPosition="start"
         size="sm"
       >
@@ -197,7 +197,7 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
       <PopoverTrigger
         render={
           <Button size="sm" variant="outline">
-            <Clock className="w-4 h-4 mr-2" />
+            <ClockIcon className="w-4 h-4 mr-2" />
             {t("Edit")}
           </Button>
         }
@@ -242,7 +242,7 @@ function StatusDateForm(props: {
 
   const deleteButton = (
     <Button disabled={Boolean(blocker)} size="sm" type="button" variant="destructive">
-      <Trash data-icon="inline-start" />
+      <TrashIcon data-icon="inline-start" />
       {t("Delete")}
     </Button>
   );
@@ -333,7 +333,7 @@ function StatusDateForm(props: {
                   </AlertDialogCancel>
                   <SubmitButton
                     form={deleteForm}
-                    IconComponent={Trash}
+                    IconComponent={TrashIcon}
                     iconPosition="start"
                     variant="destructive"
                   >
