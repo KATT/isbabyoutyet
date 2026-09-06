@@ -54,10 +54,7 @@ test("route context tokens accept strings or explicit null", () => {
 
 test("document locale uses the last route that set one", () => {
   expect(
-    localeFromMatches(
-      [{ context: { locale: "en-GB" } }, { context: { locale: "sv" } }],
-      "en-US",
-    ),
+    localeFromMatches([{ context: { locale: "en-GB" } }, { context: { locale: "sv" } }], "en-US"),
   ).toBe("sv");
 });
 

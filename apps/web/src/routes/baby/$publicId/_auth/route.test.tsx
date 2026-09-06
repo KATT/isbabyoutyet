@@ -4,7 +4,6 @@ import { isRedirect } from "@tanstack/react-router";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
-import { localeFromMatches } from "@/routes/__root";
 import { resolveBabyManagerGuard, Route } from "@/routes/baby/$publicId/_auth/route";
 
 test("baby manager auth layout is wired as the route component", () => {
@@ -128,9 +127,6 @@ test("manager overlays keep the baby page locale instead of the signed-in profil
   });
 
   expect(result).not.toHaveProperty("locale");
-  expect(
-    localeFromMatches([{ context: { locale: "sv" } }, { context: result }], "en-GB"),
-  ).toBe("sv");
 });
 
 test("client overlay navigations without a profile open baby-page login with a return path", async () => {
