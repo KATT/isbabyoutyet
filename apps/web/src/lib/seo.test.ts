@@ -283,6 +283,43 @@ test("born babies keep the base title without a due-date countdown", async () =>
   expect(seo.title).not.toContain("until due date");
 });
 
+test("Swedish baby SEO titles use Är … ute än", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
+  const waiting = babySeoHead(
+    seoBaby({
+      babyBorn: null,
+      dueDateDisplayMode: "message",
+      laborStarted: null,
+      locale: "sv",
+      name: "Ella",
+      publicDueDateText: "Vilken dag som helst",
+      publicId: "ella-holm",
+      theme: "sunny-days",
+      wentToHospital: null,
+    }),
+  );
+  expect(waiting.title).toContain("Är Ella ute än?");
+
+  const overdue = babySeoHead(
+    seoBaby({
+      babyBorn: null,
+      dueDate: "2026-08-10",
+      dueDateDisplayMode: "exact",
+      laborStarted: null,
+      locale: "sv",
+      name: "Ella",
+      publicId: "ella-holm",
+      theme: null,
+      wentToHospital: null,
+    }),
+  );
+  expect(overdue.title).toContain("Är Ella ute än?");
+
+  expect(babyStatusLabel({ locale: "sv", status: { date: "2026-08-10", type: "born" } })).toBe(
+    "Ja! Bäbisen är här!",
+  );
+});
+
 test("baby status labels cover hospital and waiting states", () => {
   expect(
     babyStatusLabel({

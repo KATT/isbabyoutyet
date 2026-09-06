@@ -37,6 +37,17 @@ test("keeps British and American English copy distinct", () => {
   ).toBe("Pick soft pastels, bold colors or whatever feels like you.");
 });
 
+test("Swedish product copy uses Är … ute än", () => {
+  expect(translate("sv", "Is Baby Out Yet?")).toBe("Är bäbisen ute än?");
+  expect(translate("sv", "Is {{name}} out yet?", { name: "Ella" })).toBe("Är Ella ute än?");
+  expect(translate("sv", "Is Baby Out Yet? – Share Your Baby's Arrival")).toBe(
+    "Är bäbisen ute än? Håll alla uppdaterade tills bäbisen är här",
+  );
+  expect(translate("sv", "Not arrived yet!")).toBe("Inte ute än!");
+  expect(translate("sv", "Yes! Baby is out")).toBe("Ja! Bäbisen är här!");
+  expect(translate("sv", "Log in – Is Baby Out Yet?")).toBe("Logga in | Är bäbisen ute än?");
+});
+
 test("reads Accept-Language from the current request", () => {
   expect(
     detectLocaleFromRequestHeaders(undefined, {

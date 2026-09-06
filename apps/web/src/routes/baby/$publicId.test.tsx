@@ -268,6 +268,35 @@ test("renders the public baby status in the baby's Swedish override", async () =
   expect(view.getByText("Beräknat datum: 1 september 2026")).toBeTruthy();
 });
 
+test("renders the born status in Swedish as Ja! Bäbisen är här", async () => {
+  const baby: BabyData = {
+    babyBorn: "2026-08-10T10:00:00.000Z",
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    laborStarted: "2026-08-10T02:00:00.000Z",
+    name: "Nova",
+    publicDueDateText: null,
+    timeZone: "Europe/London",
+    wentToHospital: "2026-08-10T06:00:00.000Z",
+  };
+
+  await using view = renderResource(
+    <LocaleProvider locale="sv">
+      <StatusDisplay
+        baby={baby}
+        blurDataUrl={null}
+        currentStatus={getCurrentStatus(baby)}
+        latestUpdate={null}
+        photoUrl={null}
+        publicId={null}
+        thumbnailUrl={null}
+      />
+    </LocaleProvider>,
+  );
+
+  expect(view.getByRole("heading", { name: "Ja! Bäbisen är här!" })).toBeTruthy();
+});
+
 test("renders the public baby status in Brazilian Portuguese", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby: BabyData = {

@@ -191,7 +191,19 @@ test("the not-found page offers a way back home", async () => {
   );
 
   expect(view.getByText("404")).toBeTruthy();
+  expect(view.getByText("Not arrived yet!")).toBeTruthy();
   expect(view.getByText("Go Home")).toBeTruthy();
+});
+
+test("the Swedish not-found page uses Inte ute än", async () => {
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="sv">
+      <NotFoundComponent />
+    </LocaleProvider>,
+  );
+
+  expect(view.getByRole("heading", { name: "Inte ute än!" })).toBeTruthy();
+  expect(view.getByText("Gå hem")).toBeTruthy();
 });
 
 test("no progress bar renders while the router is idle", async () => {
