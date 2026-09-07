@@ -1,10 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
-import type { QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
-import { authenticateConvexFromAuthResponse, waitForMe } from "@/lib/convex-auth";
-import { parseConvexTokenFromAuthResponse } from "@workspace/convex/src/convexToken";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -50,11 +47,9 @@ export async function signUpThenGo(
   values: NewAccount,
   opts: {
     navigate: () => Promise<void> | void;
-    queryClient: QueryClient;
     t: TranslationFunction;
   },
 ) {
-  const settled = waitForMe({ presence: "present", queryClient: opts.queryClient });
   const result = await authClient.signUp.email(
     { email: values.email, name: values.name, password: values.password },
     { headers: getBrowserAuthHeaders() },
@@ -64,8 +59,6 @@ export async function signUpThenGo(
     throw new Error(result.error.message || opts.t("Failed to sign up"));
   }
 
-  authenticateConvexFromAuthResponse(parseConvexTokenFromAuthResponse(result.data));
-  await settled;
   await opts.navigate();
 }
 
@@ -88,7 +81,6 @@ export const Route = createFileRoute("/auth/signup")({
 export function SignupPage() {
   const { t } = useI18n();
   const router = useRouter();
-  const context = Route.useRouteContext();
 
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">
@@ -107,7 +99,6 @@ export function SignupPage() {
             onSignUp={(values) =>
               signUpThenGo(values, {
                 navigate: () => router.navigate({ to: "/dashboard" }),
-                queryClient: context.queryClient,
                 t,
               })
             }

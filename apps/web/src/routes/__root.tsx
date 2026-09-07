@@ -31,44 +31,19 @@ import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { isSupportedLocale } from "@workspace/convex/src/i18n";
 import { isPlainObject, isString } from "@workspace/runtime/guards";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
-import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
 import { TanStackAppDevtools } from "@/components/tanstack-devtools";
 import { m } from "@/paraglide/messages";
 import "@/lib/register-service-worker";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { useDelayedBoolean } from "@/lib/use-delayed-action";
+import { createServerFn } from "@tanstack/react-start";
+import { authServer } from "@/lib/auth-server";
 
-/**
- * Root `beforeLoad` with locale detection injected so tests can drive the SSR
- * branch without mocking `createServerFn` / `detectRequestLocale`.
- *
- * @internal exported for tests
- */
-export async function resolveRootBeforeLoad(opts: {
-  detectLocale: () => Promise<SupportedLocale>;
-  getClientLocale: () => SupportedLocale;
-}) {
-  // SSR: resolve the locale from request headers (PARAGLIDE_LOCALE cookie,
-  // then Accept-Language) via the server function.
-  if (globalThis.window === undefined) {
-    return {
-      isAuthenticated: false,
-      locale: await opts.detectLocale(),
-      token: null,
-    };
-  }
-  // Client navigations: zero network. beforeLoad re-runs on EVERY navigation
-  // (back button included) and the router blocks on it, so a server-function
-  // round-trip here would tax them all — that's what made cached navigations
-  // show the top progress bar. Paraglide resolves the same cookie →
-  // preferredLanguage chain locally.
-  return {
-    isAuthenticated: false,
-    locale: opts.getClientLocale(),
-    token: null,
-  };
-}
+// Get auth information for SSR using available cookies
+const getAuth = createServerFn({ method: "GET" }).handler(async () => {
+  return await authServer.getToken();
+});
 
 export const Route = createRootRouteWithContext<{
   convexClient: ConvexReactClient;
@@ -79,11 +54,16 @@ export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
   token: string | null | undefined;
 }>()({
-  beforeLoad: async () =>
-    await resolveRootBeforeLoad({
-      detectLocale: detectRequestLocale,
-      getClientLocale: getDetectedLocale,
-    }),
+  beforeLoad: async (ctx) => {
+    const token = await getAuth();
+    if (token) {
+      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    }
+    return {
+      isAuthenticated: !!token,
+      token,
+    };
+  },
   head: (opts) => {
     const locale = opts.match.context.locale ?? getDetectedLocale();
     const description = translate(
@@ -193,20 +173,6 @@ export function contextLocale<TContext>(context: TContext): SupportedLocale | un
   return locale;
 }
 
-export function contextToken<TContext>(context: TContext) {
-  if (!isPlainObject(context) || !("token" in context)) {
-    return undefined;
-  }
-  const token = context.token;
-  if (token === null) {
-    return token;
-  }
-  if (!isString(token)) {
-    return undefined;
-  }
-  return token;
-}
-
 /** Last match that set a supported locale wins; matches without one keep the previous. */
 export function localeFromMatches(
   matches: ReadonlyArray<{ context: unknown }>,
@@ -224,9 +190,7 @@ const convexAuthClient = bridgedAuthClient();
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
-  const token = matches.reduce<string | null | undefined>((currentToken, match) => {
-    return contextToken(match.context) ?? currentToken;
-  }, context.token);
+  const token = context.token;
   const locale = localeFromMatches(matches, context.locale);
 
   return (
