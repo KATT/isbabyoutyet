@@ -11,6 +11,7 @@ import {
 } from "@workspace/convex-prefetch";
 import { RootErrorComponent } from "./routes/__root";
 import { getDetectedLocale } from "./lib/i18n";
+import { setClientToken } from "./lib/auth-client";
 
 /** Router preload policy — tested without constructing the full client graph. */
 export const routerPreloadOptions = {
@@ -49,6 +50,12 @@ export function getRouter() {
   convexQueryClient.connect(queryClient);
   const convexPreloader = getConvexQueryPreloader(queryClient);
 
+  // Resolve auth (signed-in or anonymous) before React mounts — see the
+  // function's doc comment for why the auth provider alone is not enough.
+  if (globalThis.window !== undefined) {
+    setClientToken(convexQueryClient.convexClient, null);
+  }
+
   const router = createRouter({
     routeTree,
     // Viewport preload runs loaders when a Link scrolls into view (not just on
@@ -60,10 +67,9 @@ export function getRouter() {
       convexClient: convexQueryClient.convexClient,
       convexPreloader,
       convexQueryClient,
-      isAuthenticated: false,
       locale: getDetectedLocale(),
       queryClient,
-      token: null,
+      token: undefined,
     },
     defaultErrorComponent: RootErrorComponent,
     scrollRestoration: true,

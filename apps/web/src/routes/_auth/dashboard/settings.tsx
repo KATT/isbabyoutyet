@@ -1,5 +1,8 @@
 import { ShieldIcon, SignOutIcon } from "@phosphor-icons/react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
+import type { ConvexQueryClient } from "@convex-dev/react-query";
+import type { ConvexReactClient } from "convex/react";
 import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
@@ -19,7 +22,7 @@ import {
 import { AccountSettings } from "@/components/account-settings";
 import { Form, FormGuardProvider, SubmitButton, useZodForm } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
-import { authClient } from "@/lib/auth-client";
+import { authClient, setClientToken, waitForMe } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { useDashboardSettingsOverlay } from "@/lib/overlay-nav";
 import type { OverlayControl } from "@/lib/overlay-nav";
@@ -32,7 +35,14 @@ export const Route = createFileRoute("/_auth/dashboard/settings")({
 export function DashboardSettingsRoute() {
   const context = Route.useRouteContext();
 
-  return <DashboardSettingsSheet profile={context.profile} />;
+  return (
+    <DashboardSettingsSheet
+      convexClient={context.convexClient}
+      convexQueryClient={context.convexQueryClient}
+      profile={context.profile}
+      queryClient={context.queryClient}
+    />
+  );
 }
 
 function SettingsSection(props: { children: ReactNode; title: string }) {
@@ -55,7 +65,10 @@ function SettingsSection(props: { children: ReactNode; title: string }) {
  * @internal exported for tests
  */
 export function DashboardSettingsSheet(props: {
+  convexClient: ConvexReactClient;
+  convexQueryClient: ConvexQueryClient;
   profile: PreloadedConvexQuery<typeof api.profile.get>;
+  queryClient: QueryClient;
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const settings = useDashboardSettingsOverlay();
@@ -67,18 +80,21 @@ export function DashboardSettingsSheet(props: {
       isAdmin={profileQuery.data?.isAdmin === true}
       languageSettings={<LanguageSettings profile={props.profile} />}
       onSignOut={async () => {
-        const result = await authClient.signOut({
-          fetchOptions: {
-            onSuccess: async () => {
-              await router.navigate({
-                to: "/",
-              });
-            },
-          },
+        const settled = waitForMe({
+          convexQueryClient: props.convexQueryClient,
+          presence: "absent",
+          queryClient: props.queryClient,
         });
+        const result = await authClient.signOut();
         if (result.error) {
           toast.error(result.error.message);
+          return;
         }
+        setClientToken(props.convexClient, null);
+        await settled;
+        await router.navigate({
+          to: "/",
+        });
       }}
       overlay={settings}
     />

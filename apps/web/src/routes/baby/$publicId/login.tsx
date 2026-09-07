@@ -22,6 +22,7 @@ export const Route = createFileRoute("/baby/$publicId/login")({
 
 export function BabyLoginOverlay() {
   const { t } = useI18n();
+  const context = Route.useRouteContext();
   const params = Route.useParams();
   const router = useRouter();
   const search = Route.useSearch();
@@ -39,8 +40,11 @@ export function BabyLoginOverlay() {
           demoLoginEnabled={hasDemoLogin}
           onSignIn={(values) =>
             signInThenGo(values, {
+              convexClient: context.convexClient,
+              convexQueryClient: context.convexQueryClient,
               navigate: () =>
                 successTarget === null ? login.close() : router.navigate(successTarget),
+              queryClient: context.queryClient,
               t,
             })
           }

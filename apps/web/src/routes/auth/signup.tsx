@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
+import type { ConvexQueryClient } from "@convex-dev/react-query";
+import type { ConvexReactClient } from "convex/react";
 import { z } from "zod";
-import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
+import { authClient, getBrowserAuthHeaders, setClientToken, waitForMe } from "@/lib/auth-client";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -46,10 +49,18 @@ type NewAccount = { email: string; name: string; password: string };
 export async function signUpThenGo(
   values: NewAccount,
   opts: {
+    convexClient: ConvexReactClient;
+    convexQueryClient: ConvexQueryClient;
     navigate: () => Promise<void> | void;
+    queryClient: QueryClient;
     t: TranslationFunction;
   },
 ) {
+  const settled = waitForMe({
+    convexQueryClient: opts.convexQueryClient,
+    presence: "present",
+    queryClient: opts.queryClient,
+  });
   const result = await authClient.signUp.email(
     { email: values.email, name: values.name, password: values.password },
     { headers: getBrowserAuthHeaders() },
@@ -59,6 +70,8 @@ export async function signUpThenGo(
     throw new Error(result.error.message || opts.t("Failed to sign up"));
   }
 
+  setClientToken(opts.convexClient, result.data.token);
+  await settled;
   await opts.navigate();
 }
 
@@ -81,6 +94,7 @@ export const Route = createFileRoute("/auth/signup")({
 export function SignupPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const context = Route.useRouteContext();
 
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">
@@ -98,7 +112,10 @@ export function SignupPage() {
           <SignupCard
             onSignUp={(values) =>
               signUpThenGo(values, {
+                convexClient: context.convexClient,
+                convexQueryClient: context.convexQueryClient,
                 navigate: () => router.navigate({ to: "/dashboard" }),
+                queryClient: context.queryClient,
                 t,
               })
             }

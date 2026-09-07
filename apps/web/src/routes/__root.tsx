@@ -41,7 +41,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { authServer } from "@/lib/auth-server";
 
 // Get auth information for SSR using available cookies
-const getAuth = createServerFn({ method: "GET" }).handler(async () => {
+export const getAuth = createServerFn({ method: "GET" }).handler(async () => {
   return await authServer.getToken();
 });
 
@@ -49,19 +49,12 @@ export const Route = createRootRouteWithContext<{
   convexClient: ConvexReactClient;
   convexPreloader: ConvexQueryPreloader;
   convexQueryClient: ConvexQueryClient;
-  isAuthenticated: boolean;
   locale: SupportedLocale;
   queryClient: QueryClient;
-  token: string | null | undefined;
+  token: string | undefined;
 }>()({
   beforeLoad: async (ctx) => {
     if (globalThis.window !== undefined) {
-      // Client navigation: zero network. beforeLoad re-runs on EVERY navigation
-      // (back button included) and the router blocks on it, so a server-function
-      // round-trip here would tax them all — that's what made cached navigations
-      // show the top progress bar. Paraglide resolves the same cookie →
-      // preferredLanguage chain locally.
-      ctx.context.convexClient.setAuth(() => getAuth());
       return {
         token: undefined,
       };
@@ -200,7 +193,6 @@ const convexAuthClient = bridgedAuthClient();
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
-  const token = context.token;
   const locale = localeFromMatches(matches, context.locale);
 
   return (
@@ -208,7 +200,7 @@ function RootComponent() {
       <ConvexBetterAuthProvider
         authClient={convexAuthClient}
         client={context.convexQueryClient.convexClient}
-        initialToken={token}
+        initialToken={context.token}
       >
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
