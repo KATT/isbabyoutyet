@@ -29,6 +29,7 @@ import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { isSupportedLocale } from "@workspace/convex/src/i18n";
 import { isPlainObject, isString } from "@workspace/runtime/guards";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
+import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
 import { TanStackAppDevtools } from "@/components/tanstack-devtools";
 import { m } from "@/paraglide/messages";
@@ -59,14 +60,19 @@ export const Route = createRootRouteWithContext<{
     // from router `hydrate` / login / signup (`setClientToken`).
     if (globalThis.window !== undefined) {
       return {
+        locale: getDetectedLocale(),
         token: undefined,
       };
     }
-    const token = await getAuth();
+    // SSR: cookie JWT for Convex plus the request locale (PARAGLIDE_LOCALE
+    // cookie, then Accept-Language) so the document renders in the visitor's
+    // language instead of the base locale and re-rendering on the client.
+    const [token, locale] = await Promise.all([getAuth(), detectRequestLocale()]);
     if (token) {
       ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
     }
     return {
+      locale,
       token,
     };
   },

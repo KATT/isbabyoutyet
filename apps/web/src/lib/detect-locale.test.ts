@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { resolveAcceptLanguage } from "./accept-language";
+import { detectRequestLocale } from "./detect-locale";
 import { getLanguageName, translate } from "./i18n";
 import { detectLocaleFromRequestHeaders } from "./locale-request-handler";
 
@@ -52,4 +53,8 @@ test("a saved locale takes precedence over Accept-Language", () => {
       readHeader: () => "en-GB,en;q=0.9",
     }),
   ).toBe("sv");
+});
+
+test("registers the request locale server function", () => {
+  expect(detectRequestLocale).toEqual(expect.any(Function));
 });
