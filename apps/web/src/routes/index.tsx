@@ -125,9 +125,9 @@ const HERO_HEADLINES = {
     ],
   },
   sv: {
-    after: "kommit?",
-    before: "Har",
-    words: ["bäbis", "Ella", "Hugo", "Astrid", "Nils", "Maja", "Sixten", "Vera"],
+    after: "ute än?",
+    before: "Är",
+    words: ["bäbisen", "Ella", "Hugo", "Astrid", "Nils", "Maja", "Sixten", "Vera"],
   },
 } as const satisfies Record<
   SupportedLocale,

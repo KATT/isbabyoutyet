@@ -655,23 +655,23 @@ type TranslationsByLocale = {
 const sv: TranslationCatalog = {
   "(you)": "(du)",
   "{{count}} day overdue": "{{count}} dag över tiden",
-  "{{count}} day overdue – Is {{name}} out yet?": "{{count}} dag över tiden: Har {{name}} kommit?",
+  "{{count}} day overdue – Is {{name}} out yet?": "{{count}} dag över tiden: Är {{name}} ute än?",
   "{{count}} days overdue": "{{count}} dagar över tiden",
   "{{count}} days overdue – Is {{name}} out yet?":
-    "{{count}} dagar över tiden: Har {{name}} kommit?",
+    "{{count}} dagar över tiden: Är {{name}} ute än?",
   "{{count}} days until due date": "{{count}} dagar kvar till beräknat datum",
   "{{count}} days until due date – Is {{name}} out yet?":
-    "{{count}} dagar kvar till beräknat datum: Har {{name}} kommit?",
+    "{{count}} dagar kvar till beräknat datum: Är {{name}} ute än?",
   "{{count}} day until due date": "{{count}} dag kvar till beräknat datum",
   "{{count}} day until due date – Is {{name}} out yet?":
-    "{{count}} dag kvar till beräknat datum: Har {{name}} kommit?",
+    "{{count}} dag kvar till beräknat datum: Är {{name}} ute än?",
   "{{count}} people": "{{count}} personer",
   "{{count}} person": "{{count}} person",
   "{{name}}'s family": "{{name}} med familj",
   "{{name}}'s family has gone to hospital — follow live updates on the baby page.":
-    "{{name}}s familj har åkt in till förlossningen — följ liveuppdateringar på babyssida.",
+    "{{name}}s familj har åkt in till förlossningen — följ liveuppdateringar på bäbissidan.",
   "{{name}}'s labour has started — follow live updates on the baby page.":
-    "{{name}}s förlossning är igång — följ liveuppdateringar på babyssida.",
+    "{{name}}s förlossning är igång — följ liveuppdateringar på bäbissidan.",
   "{{name}}'s page is a live demo — leave a note, look around, try it out":
     "Det här är livedemon för {{name}}. Lämna en hälsning, kika runt och testa allt.",
   "{{name}} has arrived! See the announcement and follow along.":
@@ -682,7 +682,7 @@ const sv: TranslationCatalog = {
   "Add a": "Lägg till en",
   "Add a Baby": "Lägg till en bäbis",
   "Add a baby": "Lägg till bäbis",
-  "Add a baby – Is Baby Out Yet?": "Lägg till bäbis | Har bäbisen kommit?",
+  "Add a baby – Is Baby Out Yet?": "Lägg till bäbis | Är bäbisen ute än?",
   "Add a message, a photo, or a milestone to post":
     "Lägg till ett meddelande, ett foto eller en milstolpe",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
@@ -692,7 +692,7 @@ const sv: TranslationCatalog = {
   "Add Your First Baby": "Lägg till din första bäbis",
   "Add your first baby": "Lägg till din första bäbis",
   Admin: "Admin",
-  "Admin – Is Baby Out Yet?": "Admin | Har bäbisen kommit?",
+  "Admin – Is Baby Out Yet?": "Admin | Är bäbisen ute än?",
   "Admin dashboard": "Adminöversikt",
   "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
     "En livedemo med två dygn av värkar, foton och hälsningar. Skicka lite testpepp och prova själv.",
@@ -746,7 +746,7 @@ const sv: TranslationCatalog = {
   "Check your inbox for the next step.": "Kolla inkorgen för nästa steg.",
   "Choose a journey": "Välj en resa",
   "Choose a new password": "Välj ett nytt lösenord",
-  "Choose a new password – Is Baby Out Yet?": "Välj ett nytt lösenord | Har bäbisen kommit?",
+  "Choose a new password – Is Baby Out Yet?": "Välj ett nytt lösenord | Är bäbisen ute än?",
   "Choose a theme that matches your style — your page, your way.":
     "Välj ett tema som känns som ni. Det är ju er sida.",
   "Choose notifications": "Välj notiser",
@@ -783,7 +783,7 @@ const sv: TranslationCatalog = {
   "Customize your page (optional)": "Anpassa sidan (valfritt)",
   "Danger zone": "Farozon",
   Dashboard: "Översikt",
-  "Dashboard – Is Baby Out Yet?": "Översikt | Har bäbisen kommit?",
+  "Dashboard – Is Baby Out Yet?": "Översikt | Är bäbisen ute än?",
   "Defaults to now — set an earlier time if you're sharing the news after the fact.":
     "Vi använder tiden just nu. Välj en tidigare tid om du berättar i efterhand.",
   Delete: "Ta bort",
@@ -905,10 +905,10 @@ const sv: TranslationCatalog = {
   "Invite pending": "Inväntar svar",
   "Invite sent — they'll get access after signing up with that email":
     "Inbjudan är skickad. Personen får åtkomst när hen registrerar sig med den e-postadressen.",
-  "Is {{name}} out yet?": "Har {{name}} kommit?",
-  "Is Baby Out Yet?": "Har bäbisen kommit?",
+  "Is {{name}} out yet?": "Är {{name}} ute än?",
+  "Is Baby Out Yet?": "Är bäbisen ute än?",
   "Is Baby Out Yet? – Share Your Baby's Arrival":
-    "Har bäbisen kommit? Låt alla följa med fram till födseln",
+    "Är bäbisen ute än? Håll alla uppdaterade tills bäbisen är här",
   "Join families already sharing their special moments. It takes less than a minute.":
     "Gör som andra familjer och håll alla uppdaterade. Det tar mindre än en minut.",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -926,7 +926,7 @@ const sv: TranslationCatalog = {
   Loading: "Laddar",
   "Loading co-parents…": "Laddar medföräldrar…",
   "Loading the timeline...": "Laddar tidslinjen...",
-  "Log in – Is Baby Out Yet?": "Logga in | Har bäbisen kommit?",
+  "Log in – Is Baby Out Yet?": "Logga in | Är bäbisen ute än?",
   Logout: "Logga ut",
   "Looks like this page hasn't arrived yet. Let's get you back home!":
     "Den här sidan verkar inte ha kommit än. Vi tar dig tillbaka hem!",
@@ -962,7 +962,7 @@ const sv: TranslationCatalog = {
   "No one is subscribed yet": "Ingen prenumererar än",
   "No permalink transfers yet": "Inga permalinkflyttar ännu",
   "No subscription endpoint found": "Vi hittade inga aktiva notiser",
-  "Not arrived yet!": "Har inte kommit än!",
+  "Not arrived yet!": "Inte ute än!",
   "Not gone to hospital yet": "Inte åkt in än",
   "Nothing here yet": "Inget här än",
   "Notification cancelled": "Notisen har stoppats",
@@ -1052,7 +1052,7 @@ const sv: TranslationCatalog = {
     "Ett namnbyte kan ändra sidans adress, men länkar du redan har delat fortsätter att fungera.",
   "Request another link": "Begär en ny länk",
   "Reset your password": "Återställ lösenordet",
-  "Reset your password – Is Baby Out Yet?": "Återställ lösenordet | Har bäbisen kommit?",
+  "Reset your password – Is Baby Out Yet?": "Återställ lösenordet | Är bäbisen ute än?",
   "Restart getting started tour": "Starta om introduktionsguiden",
   "Restart tour": "Starta om guiden",
   "Review babies and users across the platform.": "Granska bäbisar och användare på plattformen.",
@@ -1096,7 +1096,7 @@ const sv: TranslationCatalog = {
   "Sign in to track your babies": "Logga in för att hålla koll på dina bäbissidor",
   "Sign up": "Registrera dig",
   "Sign Up": "Registrera dig",
-  "Sign up – Is Baby Out Yet?": "Skapa konto | Har bäbisen kommit?",
+  "Sign up – Is Baby Out Yet?": "Skapa konto | Är bäbisen ute än?",
   "Sign up and add your baby's name and due date. That's it.":
     "Registrera dig och lägg till bäbisens namn och beräknade datum. Klart!",
   Since: "Sedan",
@@ -1211,7 +1211,7 @@ const sv: TranslationCatalog = {
     "När det börjar hända saker uppdaterar du statusen. Alla får en notis automatiskt.",
   "Why this permalink is being moved.": "Skrivs in vid flytten och sparas i historiken.",
   "Write your message of encouragement...": "Skriv din hälsning...",
-  "Yes! Baby is out": "Ja! Bäbisen har kommit",
+  "Yes! Baby is out": "Ja! Bäbisen är här!",
   "You'll get a push when someone leaves a message on this page.":
     "Du får en notis när någon lämnar en hälsning på sidan.",
   "You're all set": "Du är klar",
