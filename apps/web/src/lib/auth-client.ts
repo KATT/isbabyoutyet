@@ -11,7 +11,6 @@ import { isValidTimeZone, TIME_ZONE_HINT_HEADER } from "@workspace/convex/src/ti
 import { parseVisitorIdHint, VISITOR_ID_HINT_HEADER } from "@workspace/convex/src/visitorId";
 import type { TranslationFunction } from "@/lib/i18n";
 import { peekVisitorId } from "@/lib/use-visitor-id";
-import { authDebug, describeToken } from "@/lib/auth-debug";
 
 function browserTimeZone() {
   try {
@@ -56,30 +55,25 @@ export const authClient = createAuthClient({
  */
 export function setClientToken(convexReactClient: ConvexReactClient, token: string | null) {
   let nextToken = token;
-  authDebug("setClientToken", { token: describeToken(token) });
   convexReactClient.setAuth(async (opts) => {
     if (!opts.forceRefreshToken && nextToken) {
-      authDebug("setClientToken.fetch.inline", { token: describeToken(nextToken) });
       return nextToken;
     }
-    const started = Date.now();
     const result = await authClient.convex
       .token({ fetchOptions: { throw: false } })
       .catch(() => null);
 
     nextToken = result?.data?.token ?? null;
-    authDebug("setClientToken.fetch.remote", {
-      forceRefreshToken: opts.forceRefreshToken,
-      ms: Date.now() - started,
-      token: describeToken(nextToken),
-    });
     return nextToken;
   });
 }
 
-/** Drop the identity on the live socket right away (sign-out). */
+/**
+ * Drop the identity on the live socket right away (sign-out).
+ *
+ * @internal exported for tests
+ */
 export function clearClientToken(convexReactClient: ConvexReactClient) {
-  authDebug("clearClientToken", {});
   convexReactClient.clearAuth();
 }
 
@@ -142,13 +136,6 @@ export function waitForMe(opts: {
   const stop = new AbortController();
   const combined = AbortSignal.any([signal, stop.signal]);
   let unsubscribe = emptyUnsubscribe;
-  const started = Date.now();
-  const cached = opts.queryClient.getQueryState(meQuery.queryKey);
-  authDebug("waitForMe.start", {
-    cachedData: cached?.data === undefined ? "undefined" : JSON.stringify(cached.data),
-    cachedFetchStatus: cached?.fetchStatus ?? "none",
-    presence: opts.presence,
-  });
 
   return new Promise<void>((resolve) => {
     let settled = false;
@@ -157,12 +144,6 @@ export function waitForMe(opts: {
         return;
       }
       settled = true;
-      authDebug("waitForMe.finish", {
-        matched,
-        ms: Date.now() - started,
-        presence: opts.presence,
-        reason: stop.signal.aborted ? "matched" : "timeout",
-      });
       unsubscribe();
       observer.destroy();
       if (matched) {
@@ -173,13 +154,6 @@ export function waitForMe(opts: {
 
     const onResult = () => {
       const result = observer.getCurrentResult();
-      authDebug("waitForMe.result", {
-        data: result.data === undefined ? "undefined" : JSON.stringify(result.data),
-        fetchStatus: result.fetchStatus,
-        isError: result.isError,
-        isPending: result.isPending,
-        ms: Date.now() - started,
-      });
       if (result.isPending || result.isError) {
         return;
       }
@@ -222,26 +196,16 @@ export async function signInThenGo(
     presence: "present",
     queryClient: opts.queryClient,
   });
-  const started = Date.now();
-  authDebug("signIn.start", { email: values.email });
   const result = await authClient.signIn.email(
     { email: values.email, password: values.password, rememberMe: true },
     { headers: getBrowserAuthHeaders() },
   );
-  authDebug("signIn.response", {
-    convexToken: describeToken(parseConvexTokenFromAuthResponse(result.data)),
-    error: result.error?.message ?? null,
-    ms: Date.now() - started,
-    token: describeToken(result.data?.token),
-  });
   if (result.error) {
     throw new Error(result.error.message || opts.t("Failed to sign in"));
   }
   setClientToken(opts.convexClient, parseConvexTokenFromAuthResponse(result.data));
   await settled;
-  authDebug("signIn.settled", { ms: Date.now() - started });
   await opts.navigate();
-  authDebug("signIn.navigated", { href: globalThis.location.href, ms: Date.now() - started });
 }
 
 /**
@@ -278,16 +242,11 @@ export async function signOutThenGo(opts: AuthThenGoOpts & { t: TranslationFunct
     presence: "absent",
     queryClient: opts.queryClient,
   });
-  const started = Date.now();
-  authDebug("signOut.start", {});
   const result = await authClient.signOut();
-  authDebug("signOut.response", { error: result.error?.message ?? null, ms: Date.now() - started });
   if (result.error) {
     throw new Error(result.error.message || opts.t("Failed to sign out"));
   }
   clearClientToken(opts.convexClient);
   await settled;
-  authDebug("signOut.settled", { ms: Date.now() - started });
   await opts.navigate();
-  authDebug("signOut.navigated", { href: globalThis.location.href, ms: Date.now() - started });
 }

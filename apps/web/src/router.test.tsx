@@ -7,7 +7,9 @@ test("rootAuthToken dehydrates the root cookie JWT and null for anonymous reques
   expect(rootAuthToken([{ context: { token: "a.b.c" }, routeId: rootRouteId }, child])).toBe(
     "a.b.c",
   );
-  expect(rootAuthToken([{ context: { token: undefined }, routeId: rootRouteId }, child])).toBeNull();
+  expect(
+    rootAuthToken([{ context: { token: undefined }, routeId: rootRouteId }, child]),
+  ).toBeNull();
   expect(rootAuthToken([{ context: { token: 42 }, routeId: rootRouteId }])).toBeNull();
   expect(rootAuthToken([])).toBeNull();
 });

@@ -13,7 +13,6 @@ import {
 import { RootErrorComponent } from "./routes/__root";
 import { getDetectedLocale } from "./lib/i18n";
 import { setClientToken } from "./lib/auth-client";
-import { instrumentConvexClient } from "./lib/auth-debug";
 
 /** Router preload policy — tested without constructing the full client graph. */
 export const routerPreloadOptions = {
@@ -55,9 +54,7 @@ export function getRouter() {
   // hydration; public pages still run once auth resolves as anonymous.
   const convexQueryClient = new ConvexQueryClient(convexUrl, {
     expectAuth: true,
-    verbose: globalThis.window !== undefined,
   });
-  instrumentConvexClient(convexQueryClient.convexClient);
   registerConvexInfiniteQueryClient(convexQueryClient);
 
   const queryClient = new QueryClient({
