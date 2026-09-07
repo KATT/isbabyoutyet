@@ -55,12 +55,21 @@ export const Route = createRootRouteWithContext<{
   token: string | null | undefined;
 }>()({
   beforeLoad: async (ctx) => {
+    if (globalThis.window !== undefined) {
+      // Client navigation: zero network. beforeLoad re-runs on EVERY navigation
+      // (back button included) and the router blocks on it, so a server-function
+      // round-trip here would tax them all — that's what made cached navigations
+      // show the top progress bar. Paraglide resolves the same cookie →
+      // preferredLanguage chain locally.
+      return {
+        token: undefined,
+      };
+    }
     const token = await getAuth();
     if (token) {
       ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
     }
     return {
-      isAuthenticated: !!token,
       token,
     };
   },
