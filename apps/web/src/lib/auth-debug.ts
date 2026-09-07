@@ -17,7 +17,7 @@ function nowMs() {
   return typeof performance === "undefined" ? Date.now() : Math.round(performance.now());
 }
 
-export function tokenShape(token: string | null | undefined) {
+export function describeToken(token: string | null | undefined) {
   if (token === null || token === undefined) {
     return "null";
   }
@@ -64,7 +64,7 @@ export function instrumentConvexClient(client: ConvexReactClient) {
         forceRefreshToken: opts.forceRefreshToken,
         ms: nowMs() - started,
         seq: mySeq,
-        token: tokenShape(token),
+        token: describeToken(token),
       });
       return token;
     };

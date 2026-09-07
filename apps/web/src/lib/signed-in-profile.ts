@@ -16,8 +16,8 @@ export type SignedInProfileContext = {
  * Shared signed-in signal for `/_auth` and baby manager overlays.
  *
  * SSR: cookie token, then `profile.get`. Client: cached `profile.get` —
- * login and logout load a new document so the cookie and Convex provider
- * start in sync. An expired session flips the cache to null.
+ * login, signup, and sign-out wait for me to settle (`waitForMe`) before
+ * they navigate here. An expired session flips the cache to null.
  *
  * Returns `null` when the user is not signed in so callers can bounce to
  * their own login (dashboard `/auth/login` vs baby-page overlay).

@@ -4,7 +4,12 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import { TIME_ZONE_HINT_HEADER } from "@workspace/convex/src/timeZone";
 import { VISITOR_ID_HINT_HEADER } from "@workspace/convex/src/visitorId";
-import { getBrowserAuthHeaders, setClientToken, waitForMe } from "@/lib/auth-client";
+import {
+  clearClientToken,
+  getBrowserAuthHeaders,
+  setClientToken,
+  waitForMe,
+} from "@/lib/auth-client";
 
 const profileKey = convexQuery(api.profile.get, {}).queryKey;
 const babyListKey = convexQuery(api.baby.listByUser, {}).queryKey;
@@ -102,4 +107,15 @@ test("setClientToken hands the inline JWT to Convex without a token round trip",
     throw new Error("expected setAuth to receive a token fetcher");
   }
   expect(await fetchToken({ forceRefreshToken: false })).toBe("jwt-from-sign-in");
+});
+
+test("clearClientToken drops the identity on the live socket instead of re-running setAuth", () => {
+  const clearAuth = vi.fn();
+  const setAuth = vi.fn();
+
+  // @ts-expect-error — stand-in only implements clearAuth / setAuth
+  clearClientToken({ clearAuth, setAuth });
+
+  expect(clearAuth).toHaveBeenCalledTimes(1);
+  expect(setAuth).not.toHaveBeenCalled();
 });

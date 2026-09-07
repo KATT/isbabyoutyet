@@ -11,7 +11,7 @@ import { isValidTimeZone, TIME_ZONE_HINT_HEADER } from "@workspace/convex/src/ti
 import { parseVisitorIdHint, VISITOR_ID_HINT_HEADER } from "@workspace/convex/src/visitorId";
 import type { TranslationFunction } from "@/lib/i18n";
 import { peekVisitorId } from "@/lib/use-visitor-id";
-import { authDebug, tokenShape } from "@/lib/auth-debug";
+import { authDebug, describeToken } from "@/lib/auth-debug";
 
 function browserTimeZone() {
   try {
@@ -56,10 +56,10 @@ export const authClient = createAuthClient({
  */
 export function setClientToken(convexReactClient: ConvexReactClient, token: string | null) {
   let nextToken = token;
-  authDebug("setClientToken", { token: tokenShape(token) });
+  authDebug("setClientToken", { token: describeToken(token) });
   convexReactClient.setAuth(async (opts) => {
     if (!opts.forceRefreshToken && nextToken) {
-      authDebug("setClientToken.fetch.inline", { token: tokenShape(nextToken) });
+      authDebug("setClientToken.fetch.inline", { token: describeToken(nextToken) });
       return nextToken;
     }
     const started = Date.now();
@@ -71,7 +71,7 @@ export function setClientToken(convexReactClient: ConvexReactClient, token: stri
     authDebug("setClientToken.fetch.remote", {
       forceRefreshToken: opts.forceRefreshToken,
       ms: Date.now() - started,
-      token: tokenShape(nextToken),
+      token: describeToken(nextToken),
     });
     return nextToken;
   });
@@ -229,10 +229,10 @@ export async function signInThenGo(
     { headers: getBrowserAuthHeaders() },
   );
   authDebug("signIn.response", {
-    convexToken: tokenShape(parseConvexTokenFromAuthResponse(result.data)),
+    convexToken: describeToken(parseConvexTokenFromAuthResponse(result.data)),
     error: result.error?.message ?? null,
     ms: Date.now() - started,
-    token: tokenShape(result.data?.token),
+    token: describeToken(result.data?.token),
   });
   if (result.error) {
     throw new Error(result.error.message || opts.t("Failed to sign in"));
