@@ -61,6 +61,7 @@ export const Route = createRootRouteWithContext<{
       // round-trip here would tax them all — that's what made cached navigations
       // show the top progress bar. Paraglide resolves the same cookie →
       // preferredLanguage chain locally.
+      ctx.context.convexClient.setAuth(() => getAuth());
       return {
         token: undefined,
       };
