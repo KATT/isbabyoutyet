@@ -54,15 +54,23 @@ export const Route = createRootRouteWithContext<{
   token: string | undefined;
 }>()({
   beforeLoad: async (ctx) => {
-    const serverHttpClient = ctx.context.convexQueryClient.serverHttpClient;
-    return await resolveRootBeforeLoad({
-      fetchToken: getAuth,
-      setServerAuth: serverHttpClient
-        ? (token) => {
-            serverHttpClient.setAuth(token);
-          }
-        : null,
-    });
+    // Client navigation: zero network. beforeLoad re-runs on every navigation
+    // (back button included) and the router blocks on it, so a server-function
+    // hop here would waterfall into every cached click and flash the top
+    // progress bar. Convex already has a client token fetcher from login /
+    // signup / `setClientToken`.
+    if (globalThis.window !== undefined) {
+      return {
+        token: undefined,
+      };
+    }
+    const token = await getAuth();
+    if (token) {
+      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    }
+    return {
+      token,
+    };
   },
   head: (opts) => {
     const locale = opts.match.context.locale ?? getDetectedLocale();
@@ -160,34 +168,6 @@ export const Route = createRootRouteWithContext<{
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
 });
-
-/**
- * Root beforeLoad, with the cookie-token hop taken as a dependency so tests
- * can drive the SSR vs client branches — the real `createServerFn` throws
- * outside an actual TanStack Start request.
- *
- * Client navigations skip the server function: beforeLoad re-runs on every
- * navigation and a round-trip here flashes the progress bar.
- *
- * @internal exported for tests
- */
-export async function resolveRootBeforeLoad(opts: {
-  fetchToken: () => Promise<string | null | undefined>;
-  setServerAuth: ((token: string) => void) | null;
-}) {
-  if (globalThis.window !== undefined) {
-    return {
-      token: undefined,
-    };
-  }
-  const token = await opts.fetchToken();
-  if (token && opts.setServerAuth) {
-    opts.setServerAuth(token);
-  }
-  return {
-    token,
-  };
-}
 
 /** Loose match-context bag before locale/token narrowing. */
 export function contextLocale<TContext>(context: TContext): SupportedLocale | undefined {

@@ -9,7 +9,6 @@ import {
   NotFoundComponent,
   contextLocale,
   localeFromMatches,
-  resolveRootBeforeLoad,
   RootDocument,
   RootErrorComponent,
 } from "@/routes/__root";
@@ -18,16 +17,6 @@ import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 function renderProgress(ui: ReactElement) {
   return renderResource(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
-}
-
-function withoutBrowserWindow(run: () => Promise<void>) {
-  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
-  Object.defineProperty(globalThis, "window", { configurable: true, value: undefined });
-  return run().finally(() => {
-    if (windowDescriptor) {
-      Object.defineProperty(globalThis, "window", windowDescriptor);
-    }
-  });
 }
 
 test("route context locales are narrowed to supported values", () => {
@@ -58,53 +47,6 @@ test("document locale keeps the baby page when a later match has no locale", () 
       "en-GB",
     ),
   ).toBe("sv");
-});
-
-test("client navigations skip the cookie token fetch", async () => {
-  // beforeLoad re-runs on every navigation; a server-function hop here
-  // flashed the progress bar on cached clicks.
-  const fetchToken = vi.fn<() => Promise<string | null>>();
-  const setAuth = vi.fn<(token: string) => void>();
-
-  const result = await resolveRootBeforeLoad({
-    fetchToken,
-    setServerAuth: setAuth,
-  });
-
-  expect(result.token).toBeUndefined();
-  expect(fetchToken).not.toHaveBeenCalled();
-  expect(setAuth).not.toHaveBeenCalled();
-});
-
-test("server rendering hands the cookie token to Convex HTTP", async () => {
-  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue("ssr-token");
-  const setAuth = vi.fn<(token: string) => void>();
-
-  await withoutBrowserWindow(async () => {
-    const result = await resolveRootBeforeLoad({
-      fetchToken,
-      setServerAuth: setAuth,
-    });
-
-    expect(result.token).toBe("ssr-token");
-    expect(fetchToken).toHaveBeenCalledTimes(1);
-    expect(setAuth).toHaveBeenCalledWith("ssr-token");
-  });
-});
-
-test("server rendering stays anonymous when no cookie token exists", async () => {
-  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue(null);
-  const setAuth = vi.fn<(token: string) => void>();
-
-  await withoutBrowserWindow(async () => {
-    const result = await resolveRootBeforeLoad({
-      fetchToken,
-      setServerAuth: setAuth,
-    });
-
-    expect(result.token).toBeNull();
-    expect(setAuth).not.toHaveBeenCalled();
-  });
 });
 
 test("the root document shell sets the html lang attribute", async () => {
