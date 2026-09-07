@@ -14,13 +14,11 @@ import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { ThemeProvider } from "next-themes";
 import appCss from "../../../../packages/ui/src/styles/globals.css?url";
 import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
-import { bridgedAuthClient } from "@/lib/auth-client-bridge";
 import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
@@ -57,8 +55,8 @@ export const Route = createRootRouteWithContext<{
     // Client navigation: zero network. beforeLoad re-runs on every navigation
     // (back button included) and the router blocks on it, so a server-function
     // hop here would waterfall into every cached click and flash the top
-    // progress bar. Convex already has a client token fetcher from login /
-    // signup / `setClientToken`.
+    // progress bar. The browser Convex client already has its token fetcher
+    // from router `hydrate` / login / signup (`setClientToken`).
     if (globalThis.window !== undefined) {
       return {
         token: undefined,
@@ -191,10 +189,11 @@ export function localeFromMatches(
   }, fallback);
 }
 
-// better-auth and @convex-dev/better-auth currently expose structurally
-// incompatible client types despite supporting the same peer-version range.
-const convexAuthClient = bridgedAuthClient();
-
+// Convex auth on the browser client is owned by `setClientToken` (router
+// `hydrate`, login, signup) and `clearClientToken` (sign-out) — no
+// `ConvexBetterAuthProvider`. Two `setAuth` owners on one client can strand a
+// stopped socket, and the provider flips the identity to anonymous while its
+// session store settles on every signed-in page load.
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
@@ -202,22 +201,16 @@ function RootComponent() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ConvexBetterAuthProvider
-        authClient={convexAuthClient}
-        client={context.convexQueryClient.convexClient}
-        initialToken={context.token}
-      >
-        {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
-        <IconContext.Provider value={{ weight: "duotone" }}>
-          <TooltipProvider>
-            <LocaleProvider locale={locale}>
-              <RootDocument locale={locale}>
-                <Outlet />
-              </RootDocument>
-            </LocaleProvider>
-          </TooltipProvider>
-        </IconContext.Provider>
-      </ConvexBetterAuthProvider>
+      {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
+      <IconContext.Provider value={{ weight: "duotone" }}>
+        <TooltipProvider>
+          <LocaleProvider locale={locale}>
+            <RootDocument locale={locale}>
+              <Outlet />
+            </RootDocument>
+          </LocaleProvider>
+        </TooltipProvider>
+      </IconContext.Provider>
     </ThemeProvider>
   );
 }
