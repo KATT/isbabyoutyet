@@ -8,7 +8,6 @@ import {
   NavigationProgressBar,
   NotFoundComponent,
   contextLocale,
-  contextToken,
   localeFromMatches,
   resolveRootBeforeLoad,
   RootDocument,
@@ -42,16 +41,6 @@ test("route context locales are narrowed to supported values", () => {
   expect(contextLocale(["sv"])).toBeUndefined();
 });
 
-test("route context tokens accept strings or explicit null", () => {
-  expect(contextToken({ token: "abc" })).toBe("abc");
-  expect(contextToken({ token: null })).toBeNull();
-  expect(contextToken({ token: undefined })).toBeUndefined();
-  expect(contextToken({ token: true })).toBeUndefined();
-  expect(contextToken({ token: 1 })).toBeUndefined();
-  expect(contextToken({})).toBeUndefined();
-  expect(contextToken(null)).toBeUndefined();
-});
-
 test("document locale uses the last route that set one", () => {
   expect(
     localeFromMatches([{ context: { locale: "en-GB" } }, { context: { locale: "sv" } }], "en-US"),
@@ -71,42 +60,50 @@ test("document locale keeps the baby page when a later match has no locale", () 
   ).toBe("sv");
 });
 
-test("beforeLoad keeps shared document rendering anonymous", async () => {
-  const anonymous = await resolveRootBeforeLoad({
-    detectLocale: async () => "sv",
-    getClientLocale: () => "en-GB",
-  });
-  expect(anonymous.locale).toBe("en-GB");
-  expect(anonymous.isAuthenticated).toBe(false);
-  expect(anonymous.token).toBeNull();
-});
-
-test("client navigations resolve the locale without a server round-trip", async () => {
-  // Regression (PR #112 undid PR #108): the root beforeLoad blocks every
-  // client navigation, so calling the detect-locale server function made all
-  // cached navigations wait on an HTTP request and flash the progress bar.
-  const detectLocale = vi.fn<() => Promise<"sv">>(() => Promise.resolve("sv"));
+test("client navigations skip the cookie token fetch", async () => {
+  // beforeLoad re-runs on every navigation; a server-function hop here
+  // flashed the progress bar on cached clicks.
+  const fetchToken = vi.fn<() => Promise<string | null>>();
+  const setAuth = vi.fn<(token: string) => void>();
 
   const result = await resolveRootBeforeLoad({
-    detectLocale,
-    getClientLocale: () => "en-GB",
+    fetchToken,
+    setServerAuth: setAuth,
   });
 
-  expect(result.locale).toBe("en-GB");
-  expect(detectLocale).not.toHaveBeenCalled();
+  expect(result.token).toBeUndefined();
+  expect(fetchToken).not.toHaveBeenCalled();
+  expect(setAuth).not.toHaveBeenCalled();
 });
 
-test("server rendering resolves the locale from request headers", async () => {
-  const detectLocale = vi.fn<() => Promise<"sv">>(() => Promise.resolve("sv"));
+test("server rendering hands the cookie token to Convex HTTP", async () => {
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue("ssr-token");
+  const setAuth = vi.fn<(token: string) => void>();
 
   await withoutBrowserWindow(async () => {
     const result = await resolveRootBeforeLoad({
-      detectLocale,
-      getClientLocale: () => "en-GB",
+      fetchToken,
+      setServerAuth: setAuth,
     });
 
-    expect(result.locale).toBe("sv");
-    expect(detectLocale).toHaveBeenCalledTimes(1);
+    expect(result.token).toBe("ssr-token");
+    expect(fetchToken).toHaveBeenCalledTimes(1);
+    expect(setAuth).toHaveBeenCalledWith("ssr-token");
+  });
+});
+
+test("server rendering stays anonymous when no cookie token exists", async () => {
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue(null);
+  const setAuth = vi.fn<(token: string) => void>();
+
+  await withoutBrowserWindow(async () => {
+    const result = await resolveRootBeforeLoad({
+      fetchToken,
+      setServerAuth: setAuth,
+    });
+
+    expect(result.token).toBeNull();
+    expect(setAuth).not.toHaveBeenCalled();
   });
 });
 

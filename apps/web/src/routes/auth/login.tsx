@@ -1,9 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { z } from "zod";
-import type { QueryClient } from "@tanstack/react-query";
-import type { ConvexQueryClient } from "@convex-dev/react-query";
-import { authClient, getBrowserAuthHeaders, setClientToken, waitForMe } from "@/lib/auth-client";
+import { signInThenGo } from "@/lib/auth-client";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -29,7 +27,6 @@ import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { authPageCacheHeaders } from "@/lib/cachePolicy";
 import { babyLoginHomeLink, loginSuccessTarget } from "@/lib/baby-login-redirect";
-import type { ConvexReactClient } from "convex/react";
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
@@ -42,41 +39,6 @@ function loginSchema(t: TranslationFunction) {
 }
 
 type Credentials = { email: string; password: string };
-
-/**
- * Sign in, then SPA-navigate. Callers own the destination (dashboard, baby
- * page, or overlay close).
- *
- * @internal Shared by the login page and the baby-page overlay.
- */
-export async function signInThenGo(
-  values: Credentials,
-  opts: {
-    convexClient: ConvexReactClient;
-    convexQueryClient: ConvexQueryClient;
-    navigate: () => Promise<void> | void;
-    queryClient: QueryClient;
-    t: TranslationFunction;
-  },
-) {
-  const settled = waitForMe({
-    convexQueryClient: opts.convexQueryClient,
-    presence: "present",
-    queryClient: opts.queryClient,
-  });
-  const result = await authClient.signIn.email(
-    { email: values.email, password: values.password, rememberMe: true },
-    { headers: getBrowserAuthHeaders() },
-  );
-
-  if (result.error) {
-    throw new Error(result.error.message || opts.t("Failed to sign in"));
-  }
-
-  setClientToken(opts.convexClient, result.data.token);
-  await settled;
-  await opts.navigate();
-}
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,

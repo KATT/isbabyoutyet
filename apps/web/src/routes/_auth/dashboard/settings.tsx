@@ -22,7 +22,7 @@ import {
 import { AccountSettings } from "@/components/account-settings";
 import { Form, FormGuardProvider, SubmitButton, useZodForm } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
-import { authClient, setClientToken, waitForMe } from "@/lib/auth-client";
+import { signOutThenGo } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { useDashboardSettingsOverlay } from "@/lib/overlay-nav";
 import type { OverlayControl } from "@/lib/overlay-nav";
@@ -72,6 +72,7 @@ export function DashboardSettingsSheet(props: {
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const settings = useDashboardSettingsOverlay();
+  const { t } = useI18n();
   const router = useRouter();
 
   return (
@@ -80,21 +81,24 @@ export function DashboardSettingsSheet(props: {
       isAdmin={profileQuery.data?.isAdmin === true}
       languageSettings={<LanguageSettings profile={props.profile} />}
       onSignOut={async () => {
-        const settled = waitForMe({
-          convexQueryClient: props.convexQueryClient,
-          presence: "absent",
-          queryClient: props.queryClient,
-        });
-        const result = await authClient.signOut();
-        if (result.error) {
-          toast.error(result.error.message);
-          return;
+        try {
+          await signOutThenGo({
+            convexClient: props.convexClient,
+            convexQueryClient: props.convexQueryClient,
+            navigate: () =>
+              router.navigate({
+                to: "/",
+              }),
+            queryClient: props.queryClient,
+            t,
+          });
+        } catch (error) {
+          if (error instanceof Error) {
+            toast.error(error.message);
+            return;
+          }
+          throw error;
         }
-        setClientToken(props.convexClient, null);
-        await settled;
-        await router.navigate({
-          to: "/",
-        });
       }}
       overlay={settings}
     />

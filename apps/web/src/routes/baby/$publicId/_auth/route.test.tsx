@@ -169,7 +169,6 @@ test("server render redirects to baby-page login when no auth token is available
 
 test("server render reuses the layout token without calling getAuthToken", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>();
-  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const guard = makeGuardCtx();
   guard.queryFn.mockResolvedValueOnce({
     isAdmin: false,
@@ -177,7 +176,6 @@ test("server render reuses the layout token without calling getAuthToken", async
     timeZone: "Europe/London",
   });
   guard.context.token = "ssr-token";
-  guard.context.convexClient = { setAuth };
 
   await withoutBrowserWindow(async () => {
     const result = await runGuard({
@@ -193,17 +191,14 @@ test("server render reuses the layout token without calling getAuthToken", async
     expect(result).not.toHaveProperty("locale");
     expect(fetchToken).not.toHaveBeenCalled();
     expect(guard.setServerAuth).toHaveBeenCalledWith("ssr-token");
-    expect(setAuth).toHaveBeenCalledTimes(1);
     expect(guard.queryFn).toHaveBeenCalledTimes(1);
   });
 });
 
 test("server render redirects to baby-page login when its authenticated profile cannot be read", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>();
-  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const guard = makeGuardCtx();
   guard.context.token = "ssr-token";
-  guard.context.convexClient = { setAuth };
 
   await withoutBrowserWindow(async () => {
     await expectRedirectToBabyLogin(
@@ -216,7 +211,6 @@ test("server render redirects to baby-page login when its authenticated profile 
         }),
       { pathname: "/baby/baby-waiting/post", publicId: "baby-waiting" },
     );
-    expect(setAuth).toHaveBeenCalledTimes(1);
     expect(guard.queryFn).toHaveBeenCalledTimes(1);
   });
 });

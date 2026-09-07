@@ -8,6 +8,7 @@ import type { ConvexReactClient } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { isValidTimeZone, TIME_ZONE_HINT_HEADER } from "@workspace/convex/src/timeZone";
 import { parseVisitorIdHint, VISITOR_ID_HINT_HEADER } from "@workspace/convex/src/visitorId";
+import type { TranslationFunction } from "@/lib/i18n";
 import { peekVisitorId } from "@/lib/use-visitor-id";
 
 function browserTimeZone() {
@@ -19,6 +20,7 @@ function browserTimeZone() {
   }
 }
 
+/** @internal */
 export function getBrowserAuthHeaders() {
   const headers: Record<string, string> = {};
   if (globalThis.window === undefined) {
@@ -96,6 +98,8 @@ export const SETTLED_ME_WAIT_MS = 10_000;
  * sign-out) and resolves once the result matches `opts.presence`.
  *
  * On a matching snapshot the query cache is cleared except `profile.get`.
+ *
+ * @internal
  */
 export function waitForMe(opts: {
   convexQueryClient: Pick<ConvexQueryClient, "queryOptions">;
@@ -150,4 +154,79 @@ export function waitForMe(opts: {
       onAbort();
     }
   });
+}
+
+type AuthThenGoOpts = {
+  convexClient: ConvexReactClient;
+  convexQueryClient: ConvexQueryClient;
+  navigate: () => Promise<void> | void;
+  queryClient: QueryClient;
+};
+
+/**
+ * Sign in, then SPA-navigate. Callers own the destination (dashboard, baby
+ * page, or overlay close).
+ */
+export async function signInThenGo(
+  values: { email: string; password: string },
+  opts: AuthThenGoOpts & { t: TranslationFunction },
+) {
+  const settled = waitForMe({
+    convexQueryClient: opts.convexQueryClient,
+    presence: "present",
+    queryClient: opts.queryClient,
+  });
+  const result = await authClient.signIn.email(
+    { email: values.email, password: values.password, rememberMe: true },
+    { headers: getBrowserAuthHeaders() },
+  );
+  if (result.error) {
+    throw new Error(result.error.message || opts.t("Failed to sign in"));
+  }
+  setClientToken(opts.convexClient, result.data.token);
+  await settled;
+  await opts.navigate();
+}
+
+/**
+ * Create the account, then SPA-navigate. Callers own the destination
+ * (dashboard, or overlay close).
+ */
+export async function signUpThenGo(
+  values: { email: string; name: string; password: string },
+  opts: AuthThenGoOpts & { t: TranslationFunction },
+) {
+  const settled = waitForMe({
+    convexQueryClient: opts.convexQueryClient,
+    presence: "present",
+    queryClient: opts.queryClient,
+  });
+  const result = await authClient.signUp.email(
+    { email: values.email, name: values.name, password: values.password },
+    { headers: getBrowserAuthHeaders() },
+  );
+  if (result.error) {
+    throw new Error(result.error.message || opts.t("Failed to sign up"));
+  }
+  setClientToken(opts.convexClient, result.data.token);
+  await settled;
+  await opts.navigate();
+}
+
+/**
+ * Sign out, then SPA-navigate. Callers own the destination (usually home).
+ */
+export async function signOutThenGo(opts: AuthThenGoOpts & { t: TranslationFunction }) {
+  const settled = waitForMe({
+    convexQueryClient: opts.convexQueryClient,
+    presence: "absent",
+    queryClient: opts.queryClient,
+  });
+  const result = await authClient.signOut();
+  if (result.error) {
+    throw new Error(result.error.message || opts.t("Failed to sign out"));
+  }
+  setClientToken(opts.convexClient, null);
+  await settled;
+  await opts.navigate();
 }
